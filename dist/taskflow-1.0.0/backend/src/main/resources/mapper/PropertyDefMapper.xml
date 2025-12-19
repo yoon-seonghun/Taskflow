@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.PropertyDefMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="PropertyDefResultMap" type="com.taskflow.domain.PropertyDef">
+        <id property="propertyId" column="PROPERTY_ID"/>
+        <result property="boardId" column="BOARD_ID"/>
+        <result property="propertyName" column="PROPERTY_NAME"/>
+        <result property="propertyType" column="PROPERTY_TYPE"/>
+        <result property="requiredYn" column="REQUIRED_YN"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="visibleYn" column="VISIBLE_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+    </resultMap>
+
+    <!-- 옵션 포함 Result Map -->
+    <resultMap id="PropertyDefWithOptionsResultMap" type="com.taskflow.domain.PropertyDef" extends="PropertyDefResultMap">
+        <collection property="options" ofType="com.taskflow.domain.PropertyOption"
+                    column="PROPERTY_ID" select="selectOptionsByPropertyId"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectPropertyDef">
+        SELECT
+            p.PROPERTY_ID,
+            p.BOARD_ID,
+            p.PROPERTY_NAME,
+            p.PROPERTY_TYPE,
+            p.REQUIRED_YN,
+            p.SORT_ORDER,
+            p.VISIBLE_YN,
+            p.CREATED_AT,
+            p.CREATED_BY,
+            p.UPDATED_AT,
+            p.UPDATED_BY
+        FROM TB_PROPERTY_DEF p
+    </sql>
+
+    <!-- 옵션 조회용 (collection용) -->
+    <select id="selectOptionsByPropertyId" resultType="com.taskflow.domain.PropertyOption">
+        SELECT
+            OPTION_ID,
+            PROPERTY_ID,
+            OPTION_LABEL AS OPTION_NAME,
+            COLOR,
+            SORT_ORDER,
+            USE_YN,
+            CREATED_AT,
+            CREATED_BY,
+            UPDATED_AT,
+            UPDATED_BY
+        FROM TB_PROPERTY_OPTION
+        WHERE PROPERTY_ID = #{propertyId}
+          AND USE_YN = 'Y'
+        ORDER BY SORT_ORDER, OPTION_LABEL
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 속성 정의 ID로 조회 -->
+    <select id="findById" resultMap="PropertyDefResultMap">
+        <include refid="selectPropertyDef"/>
+        WHERE p.PROPERTY_ID = #{propertyId}
+    </select>
+
+    <!-- 보드별 속성 정의 목록 조회 -->
+    <select id="findByBoardId" resultMap="PropertyDefResultMap">
+        <include refid="selectPropertyDef"/>
+        WHERE p.BOARD_ID = #{boardId}
+        <if test="visibleYn != null and visibleYn != ''">
+            AND p.VISIBLE_YN = #{visibleYn}
+        </if>
+        ORDER BY p.SORT_ORDER, p.PROPERTY_NAME
+    </select>
+
+    <!-- 보드별 속성 정의 목록 조회 (옵션 포함) -->
+    <select id="findByBoardIdWithOptions" resultMap="PropertyDefWithOptionsResultMap">
+        <include refid="selectPropertyDef"/>
+        WHERE p.BOARD_ID = #{boardId}
+        <if test="visibleYn != null and visibleYn != ''">
+            AND p.VISIBLE_YN = #{visibleYn}
+        </if>
+        ORDER BY p.SORT_ORDER, p.PROPERTY_NAME
+    </select>
+
+    <!-- 보드 내 속성명으로 조회 -->
+    <select id="findByBoardIdAndName" resultMap="PropertyDefResultMap">
+        <include refid="selectPropertyDef"/>
+        WHERE p.BOARD_ID = #{boardId}
+          AND p.PROPERTY_NAME = #{propertyName}
+    </select>
+
+    <!-- 보드 내 속성명 중복 확인 -->
+    <select id="existsByBoardIdAndName" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_PROPERTY_DEF
+            WHERE BOARD_ID = #{boardId}
+              AND PROPERTY_NAME = #{propertyName}
+        )
+    </select>
+
+    <!-- 보드 내 속성명 중복 확인 (자신 제외) -->
+    <select id="existsByBoardIdAndNameAndIdNot" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_PROPERTY_DEF
+            WHERE BOARD_ID = #{boardId}
+              AND PROPERTY_NAME = #{propertyName}
+              AND PROPERTY_ID != #{propertyId}
+        )
+    </select>
+
+    <!-- 보드 내 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0)
+        FROM TB_PROPERTY_DEF
+        WHERE BOARD_ID = #{boardId}
+    </select>
+
+    <!-- 속성에 값이 사용 중인지 확인 -->
+    <select id="hasPropertyValues" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_ITEM_PROPERTY
+            WHERE PROPERTY_ID = #{propertyId}
+        )
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 속성 정의 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.PropertyDef" useGeneratedKeys="true" keyProperty="propertyId">
+        INSERT INTO TB_PROPERTY_DEF (
+            BOARD_ID,
+            PROPERTY_NAME,
+            PROPERTY_TYPE,
+            REQUIRED_YN,
+            SORT_ORDER,
+            VISIBLE_YN,
+            CREATED_BY
+        ) VALUES (
+            #{boardId},
+            #{propertyName},
+            #{propertyType},
+            #{requiredYn},
+            #{sortOrder},
+            #{visibleYn},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 속성 정의 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.PropertyDef">
+        UPDATE TB_PROPERTY_DEF
+        SET
+            PROPERTY_NAME = #{propertyName},
+            PROPERTY_TYPE = #{propertyType},
+            REQUIRED_YN = #{requiredYn},
+            SORT_ORDER = #{sortOrder},
+            VISIBLE_YN = #{visibleYn},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE PROPERTY_ID = #{propertyId}
+    </update>
+
+    <!-- 속성 정의 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_PROPERTY_DEF
+        WHERE PROPERTY_ID = #{propertyId}
+    </delete>
+
+    <!-- 보드의 모든 속성 정의 삭제 -->
+    <delete id="deleteByBoardId">
+        DELETE FROM TB_PROPERTY_DEF
+        WHERE BOARD_ID = #{boardId}
+    </delete>
+
+</mapper>

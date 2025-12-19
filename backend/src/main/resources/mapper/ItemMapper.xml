@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.ItemMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="ItemResultMap" type="com.taskflow.domain.Item">
+        <id property="itemId" column="ITEM_ID"/>
+        <result property="boardId" column="BOARD_ID"/>
+        <result property="groupId" column="GROUP_ID"/>
+        <result property="categoryId" column="CATEGORY_ID"/>
+        <result property="title" column="TITLE"/>
+        <result property="content" column="CONTENT"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="status" column="STATUS"/>
+        <result property="priority" column="PRIORITY"/>
+        <result property="assigneeId" column="ASSIGNEE_ID"/>
+        <result property="startTime" column="START_TIME"/>
+        <result property="endTime" column="END_TIME"/>
+        <result property="previousStatus" column="PREVIOUS_STATUS"/>
+        <result property="completedBy" column="COMPLETED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="boardName" column="BOARD_NAME"/>
+        <result property="groupName" column="GROUP_NAME"/>
+        <result property="groupColor" column="GROUP_COLOR"/>
+        <result property="assigneeName" column="ASSIGNEE_NAME"/>
+        <result property="createdByName" column="CREATED_BY_NAME"/>
+        <result property="updatedByName" column="UPDATED_BY_NAME"/>
+        <result property="commentCount" column="COMMENT_COUNT"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectItem">
+        SELECT
+            i.ITEM_ID,
+            i.BOARD_ID,
+            i.GROUP_ID,
+            i.CATEGORY_ID,
+            i.CONTENT AS TITLE,
+            i.CONTENT,
+            i.DESCRIPTION,
+            i.STATUS,
+            i.PRIORITY,
+            i.ASSIGNEE_ID,
+            i.START_TIME,
+            i.END_TIME,
+            i.PREVIOUS_STATUS,
+            i.COMPLETED_BY,
+            i.DELETED_AT,
+            i.DELETED_BY,
+            i.CREATED_AT,
+            i.CREATED_BY,
+            i.UPDATED_AT,
+            i.UPDATED_BY,
+            b.BOARD_NAME,
+            g.GROUP_NAME,
+            g.GROUP_COLOR,
+            ua.NAME AS ASSIGNEE_NAME,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME,
+            (SELECT COUNT(*) FROM TB_COMMENT c WHERE c.ITEM_ID = i.ITEM_ID) AS COMMENT_COUNT
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+        LEFT JOIN TB_USER ua ON i.ASSIGNEE_ID = ua.USER_ID
+        LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USER_ID
+        LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USER_ID
+    </sql>
+
+    <!-- 필터 조건 -->
+    <sql id="filterConditions">
+        <if test="request.keyword != null and request.keyword != ''">
+            AND i.CONTENT LIKE CONCAT('%', #{request.keyword}, '%')
+        </if>
+        <if test="request.status != null and request.status != ''">
+            AND i.STATUS = #{request.status}
+        </if>
+        <if test="request.priority != null and request.priority != ''">
+            AND i.PRIORITY = #{request.priority}
+        </if>
+        <if test="request.assigneeId != null">
+            AND i.ASSIGNEE_ID = #{request.assigneeId}
+        </if>
+        <if test="request.groupId != null">
+            AND i.GROUP_ID = #{request.groupId}
+        </if>
+        <if test="request.categoryId != null">
+            AND i.CATEGORY_ID = #{request.categoryId}
+        </if>
+        <if test="request.startDate != null">
+            AND DATE(i.CREATED_AT) >= #{request.startDate}
+        </if>
+        <if test="request.endDate != null">
+            AND DATE(i.CREATED_AT) &lt;= #{request.endDate}
+        </if>
+        <if test="request.includeCompleted == null or request.includeCompleted == false">
+            AND i.STATUS != 'COMPLETED'
+        </if>
+        <if test="request.includeDeleted == null or request.includeDeleted == false">
+            AND i.STATUS != 'DELETED'
+        </if>
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 아이템 ID로 조회 -->
+    <select id="findById" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.ITEM_ID = #{itemId}
+    </select>
+
+    <!-- 보드별 아이템 목록 조회 (필터/정렬/페이징) -->
+    <select id="findByBoardIdWithFilter" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.BOARD_ID = #{boardId}
+        <include refid="filterConditions"/>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 보드별 아이템 총 개수 조회 -->
+    <select id="countByBoardIdWithFilter" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        WHERE i.BOARD_ID = #{boardId}
+        <include refid="filterConditions"/>
+    </select>
+
+    <!-- 보드별 활성 아이템 목록 조회 -->
+    <select id="findActiveByBoardId" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.BOARD_ID = #{boardId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY i.CREATED_AT DESC
+    </select>
+
+    <!-- 그룹별 아이템 목록 조회 -->
+    <select id="findByGroupId" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.GROUP_ID = #{groupId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY i.CREATED_AT DESC
+    </select>
+
+    <!-- 담당자별 아이템 목록 조회 -->
+    <select id="findByAssigneeId" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.ASSIGNEE_ID = #{assigneeId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <if test="boardId != null">
+            AND i.BOARD_ID = #{boardId}
+        </if>
+        ORDER BY i.PRIORITY DESC, i.CREATED_AT DESC
+    </select>
+
+    <!-- 오늘 완료/삭제된 아이템 목록 조회 -->
+    <select id="findTodayCompletedOrDeleted" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.BOARD_ID = #{boardId}
+          AND (
+              (i.STATUS = 'COMPLETED' AND DATE(i.END_TIME) = CURDATE())
+              OR (i.STATUS = 'DELETED' AND DATE(i.DELETED_AT) = CURDATE())
+          )
+        ORDER BY
+            CASE WHEN i.STATUS = 'COMPLETED' THEN i.END_TIME ELSE i.DELETED_AT END DESC
+    </select>
+
+    <!-- 보드 내 최대 정렬 순서 조회 (SORT_ORDER 컬럼이 DB에 없어 0 반환) -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT 0
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 아이템 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.Item" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO TB_ITEM (
+            BOARD_ID,
+            GROUP_ID,
+            CATEGORY_ID,
+            CONTENT,
+            DESCRIPTION,
+            STATUS,
+            PRIORITY,
+            ASSIGNEE_ID,
+            START_TIME,
+            END_TIME,
+            CREATED_BY
+        ) VALUES (
+            #{boardId},
+            #{groupId},
+            #{categoryId},
+            COALESCE(#{content}, #{title}),
+            #{description},
+            COALESCE(#{status}, 'NOT_STARTED'),
+            COALESCE(#{priority}, 'NORMAL'),
+            #{assigneeId},
+            #{startTime},
+            #{endTime},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 아이템 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.Item">
+        UPDATE TB_ITEM
+        SET
+            GROUP_ID = #{groupId},
+            CATEGORY_ID = #{categoryId},
+            CONTENT = COALESCE(#{content}, #{title}),
+            DESCRIPTION = #{description},
+            STATUS = #{status},
+            PRIORITY = #{priority},
+            ASSIGNEE_ID = #{assigneeId},
+            START_TIME = #{startTime},
+            END_TIME = #{endTime},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 상태 변경 -->
+    <update id="updateStatus">
+        UPDATE TB_ITEM
+        SET
+            STATUS = #{status},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 완료 처리 -->
+    <update id="complete">
+        UPDATE TB_ITEM
+        SET
+            PREVIOUS_STATUS = STATUS,
+            STATUS = 'COMPLETED',
+            END_TIME = CASE WHEN END_TIME IS NULL THEN CURRENT_TIMESTAMP ELSE END_TIME END,
+            COMPLETED_BY = #{completedBy},
+            UPDATED_BY = #{completedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 삭제 처리 (논리 삭제) -->
+    <update id="softDelete">
+        UPDATE TB_ITEM
+        SET
+            PREVIOUS_STATUS = STATUS,
+            STATUS = 'DELETED',
+            DELETED_AT = CURRENT_TIMESTAMP,
+            DELETED_BY = #{deletedBy},
+            UPDATED_BY = #{deletedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 복원 -->
+    <update id="restore">
+        UPDATE TB_ITEM
+        SET
+            STATUS = COALESCE(PREVIOUS_STATUS, 'NOT_STARTED'),
+            PREVIOUS_STATUS = NULL,
+            DELETED_AT = NULL,
+            DELETED_BY = NULL,
+            COMPLETED_BY = NULL,
+            END_TIME = CASE WHEN PREVIOUS_STATUS = 'COMPLETED' THEN END_TIME ELSE NULL END,
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 물리 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_ITEM
+        WHERE ITEM_ID = #{itemId}
+    </delete>
+
+    <!-- 보드의 모든 아이템 삭제 -->
+    <delete id="deleteByBoardId">
+        DELETE FROM TB_ITEM
+        WHERE BOARD_ID = #{boardId}
+    </delete>
+
+    <!-- ============================================= -->
+    <!-- Cross-board 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 사용자 접근 가능 보드 조건 -->
+    <sql id="accessibleBoardCondition">
+        AND (
+            b.OWNER_ID = #{userId}
+            OR EXISTS (
+                SELECT 1 FROM TB_BOARD_SHARE bs
+                WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USER_ID = #{userId}
+            )
+        )
+        AND b.USE_YN = 'Y'
+    </sql>
+
+    <!-- Cross-board 공통 필터 조건 -->
+    <sql id="crossBoardFilterConditions">
+        <if test="request.keyword != null and request.keyword != ''">
+            AND i.CONTENT LIKE CONCAT('%', #{request.keyword}, '%')
+        </if>
+        <if test="request.priority != null and request.priority != ''">
+            AND i.PRIORITY = #{request.priority}
+        </if>
+        <if test="request.assigneeId != null">
+            AND i.ASSIGNEE_ID = #{request.assigneeId}
+        </if>
+        <if test="request.groupId != null">
+            AND i.GROUP_ID = #{request.groupId}
+        </if>
+        <if test="request.categoryId != null">
+            AND i.CATEGORY_ID = #{request.categoryId}
+        </if>
+        <if test="request.boardId != null">
+            AND i.BOARD_ID = #{request.boardId}
+        </if>
+        <if test="request.startDate != null">
+            AND DATE(i.CREATED_AT) >= #{request.startDate}
+        </if>
+        <if test="request.endDate != null">
+            AND DATE(i.CREATED_AT) &lt;= #{request.endDate}
+        </if>
+    </sql>
+
+    <!-- 지연 아이템 목록 조회 (Cross-board) - END_TIME 기준 -->
+    <select id="findOverdueItems" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.END_TIME IS NOT NULL
+          AND i.END_TIME &lt; CURRENT_TIMESTAMP
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 지연 아이템 총 개수 조회 (Cross-board) - END_TIME 기준 -->
+    <select id="countOverdueItems" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        WHERE i.END_TIME IS NOT NULL
+          AND i.END_TIME &lt; CURRENT_TIMESTAMP
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+    </select>
+
+    <!-- 보류 아이템 목록 조회 (Cross-board) -->
+    <select id="findPendingItems" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.STATUS = 'PENDING'
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 보류 아이템 총 개수 조회 (Cross-board) -->
+    <select id="countPendingItems" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        WHERE i.STATUS = 'PENDING'
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+    </select>
+
+    <!-- 활성 아이템 목록 조회 (Cross-board) -->
+    <select id="findActiveItemsCrossBoard" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+        <if test="request.status != null and request.status != ''">
+            AND i.STATUS = #{request.status}
+        </if>
+        <if test="request.overdueOnly != null and request.overdueOnly == true">
+            AND i.END_TIME IS NOT NULL
+            AND i.END_TIME &lt; CURRENT_TIMESTAMP
+        </if>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 활성 아이템 총 개수 조회 (Cross-board) -->
+    <select id="countActiveItemsCrossBoard" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        WHERE i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+        <if test="request.status != null and request.status != ''">
+            AND i.STATUS = #{request.status}
+        </if>
+        <if test="request.overdueOnly != null and request.overdueOnly == true">
+            AND i.END_TIME IS NOT NULL
+            AND i.END_TIME &lt; CURRENT_TIMESTAMP
+        </if>
+    </select>
+
+</mapper>

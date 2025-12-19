@@ -1,0 +1,319 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-size-compact: 13px;
+  --font-size-table: 14px;
+  --row-height: 36px;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --sidebar-width: 240px;
+  --panel-width: 400px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: var(--font-size-compact);
+  line-height: 1.5;
+  color: #1f2937;
+  background-color: #f9fafb;
+}
+
+/* 스크롤바 스타일링 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+@layer base {
+  /* 포커스 스타일 */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-1;
+  }
+}
+
+@layer components {
+  /* 버튼 */
+  .btn {
+    @apply px-3 py-1.5 rounded text-sm font-medium transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200;
+  }
+
+  .btn-sm {
+    @apply px-2 py-1 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-4 py-2 text-base;
+  }
+
+  .btn-icon {
+    @apply p-1.5 rounded hover:bg-gray-100;
+  }
+
+  /* 입력 필드 */
+  .input {
+    @apply w-full px-3 py-1.5 border border-gray-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow;
+  }
+
+  .input-sm {
+    @apply px-2 py-1 text-xs;
+  }
+
+  .input-error {
+    @apply border-red-500 focus:ring-red-500;
+  }
+
+  /* 라벨 */
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  /* 테이블 */
+  .table-row {
+    @apply h-9 border-b border-gray-100 hover:bg-gray-50 transition-colors;
+  }
+
+  .table-cell {
+    @apply px-2 py-1.5 text-sm text-gray-700 truncate;
+  }
+
+  .table-header {
+    @apply px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200;
+  }
+
+  /* 카드 */
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+  }
+
+  .card-header {
+    @apply px-4 py-3 border-b border-gray-200;
+  }
+
+  .card-body {
+    @apply p-4;
+  }
+
+  .card-footer {
+    @apply px-4 py-3 border-t border-gray-200 bg-gray-50;
+  }
+
+  /* 칸반 카드 */
+  .kanban-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow;
+  }
+
+  /* 드롭다운 */
+  .dropdown {
+    @apply absolute z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px];
+  }
+
+  .dropdown-item {
+    @apply px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2;
+  }
+
+  .dropdown-divider {
+    @apply my-1 border-t border-gray-200;
+  }
+
+  /* 태그/뱃지 */
+  .tag {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .tag-status-not-started {
+    @apply bg-gray-100 text-gray-700;
+  }
+
+  .tag-status-in-progress {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  .tag-status-completed {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .tag-status-deleted {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .tag-priority-urgent {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .tag-priority-high {
+    @apply bg-orange-100 text-orange-700;
+  }
+
+  .tag-priority-normal {
+    @apply bg-gray-100 text-gray-700;
+  }
+
+  .tag-priority-low {
+    @apply bg-gray-50 text-gray-500;
+  }
+
+  /* 사이드바 */
+  .sidebar {
+    @apply fixed left-0 top-0 h-full w-sidebar bg-white border-r border-gray-200 z-sidebar;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer transition-colors;
+  }
+
+  .sidebar-item-active {
+    @apply bg-primary-50 text-primary-700 font-medium;
+  }
+
+  /* 슬라이드오버 패널 */
+  .slide-over {
+    @apply fixed right-0 top-0 h-full w-panel bg-white border-l border-gray-200 z-panel shadow-xl;
+  }
+
+  .slide-over-backdrop {
+    @apply fixed inset-0 bg-black bg-opacity-30 z-panel;
+  }
+
+  /* 모달 */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black bg-opacity-50 z-modal flex items-center justify-center;
+  }
+
+  .modal {
+    @apply bg-white rounded-lg shadow-xl max-w-md w-full mx-4;
+  }
+
+  .modal-header {
+    @apply px-4 py-3 border-b border-gray-200 flex items-center justify-between;
+  }
+
+  .modal-body {
+    @apply p-4;
+  }
+
+  .modal-footer {
+    @apply px-4 py-3 border-t border-gray-200 flex items-center justify-end gap-2;
+  }
+
+  /* 토스트 */
+  .toast-container {
+    @apply fixed bottom-4 right-4 z-toast flex flex-col gap-2;
+  }
+
+  .toast {
+    @apply px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 min-w-[280px] max-w-md animate-fade-in;
+  }
+
+  .toast-success {
+    @apply bg-green-600 text-white;
+  }
+
+  .toast-error {
+    @apply bg-red-600 text-white;
+  }
+
+  .toast-warning {
+    @apply bg-yellow-500 text-white;
+  }
+
+  .toast-info {
+    @apply bg-blue-600 text-white;
+  }
+
+  /* 툴팁 */
+  .tooltip {
+    @apply absolute z-tooltip px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg;
+  }
+
+  /* 로딩 스피너 */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+  }
+
+  .spinner-sm {
+    @apply w-4 h-4;
+  }
+
+  .spinner-md {
+    @apply w-6 h-6;
+  }
+
+  .spinner-lg {
+    @apply w-8 h-8;
+  }
+
+  /* 빈 상태 */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-12 text-gray-500;
+  }
+
+  /* 인라인 편집 */
+  .inline-edit {
+    @apply px-1 py-0.5 -mx-1 -my-0.5 rounded hover:bg-gray-100 cursor-text;
+  }
+
+  .inline-edit-active {
+    @apply bg-white border border-primary-500 shadow-sm;
+  }
+}
+
+@layer utilities {
+  /* 텍스트 줄임 */
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 스크롤 숨김 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

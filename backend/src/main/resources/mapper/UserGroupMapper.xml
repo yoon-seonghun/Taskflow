@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.UserGroupMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="UserGroupResultMap" type="com.taskflow.domain.UserGroup">
+        <id property="userGroupId" column="USER_GROUP_ID"/>
+        <result property="userId" column="USER_ID"/>
+        <result property="groupId" column="GROUP_ID"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="userName" column="USER_NAME"/>
+        <result property="loginId" column="LOGIN_ID"/>
+        <result property="groupName" column="GROUP_NAME"/>
+        <result property="groupCode" column="GROUP_CODE"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 매핑 ID로 조회 -->
+    <select id="findById" resultMap="UserGroupResultMap">
+        SELECT
+            ug.USER_GROUP_ID,
+            ug.USER_ID,
+            ug.GROUP_ID,
+            ug.CREATED_AT,
+            ug.CREATED_BY,
+            u.NAME AS USER_NAME,
+            u.USERNAME AS LOGIN_ID,
+            g.GROUP_NAME,
+            g.GROUP_CODE
+        FROM TB_USER_GROUP ug
+        INNER JOIN TB_USER u ON ug.USER_ID = u.USER_ID
+        INNER JOIN TB_GROUP g ON ug.GROUP_ID = g.GROUP_ID
+        WHERE ug.USER_GROUP_ID = #{userGroupId}
+    </select>
+
+    <!-- 그룹별 멤버 목록 조회 -->
+    <select id="findByGroupId" resultMap="UserGroupResultMap">
+        SELECT
+            ug.USER_GROUP_ID,
+            ug.USER_ID,
+            ug.GROUP_ID,
+            ug.CREATED_AT,
+            ug.CREATED_BY,
+            u.NAME AS USER_NAME,
+            u.USERNAME AS LOGIN_ID,
+            g.GROUP_NAME,
+            g.GROUP_CODE
+        FROM TB_USER_GROUP ug
+        INNER JOIN TB_USER u ON ug.USER_ID = u.USER_ID
+        INNER JOIN TB_GROUP g ON ug.GROUP_ID = g.GROUP_ID
+        WHERE ug.GROUP_ID = #{groupId}
+        ORDER BY u.NAME
+    </select>
+
+    <!-- 사용자별 소속 그룹 목록 조회 -->
+    <select id="findByUserId" resultMap="UserGroupResultMap">
+        SELECT
+            ug.USER_GROUP_ID,
+            ug.USER_ID,
+            ug.GROUP_ID,
+            ug.CREATED_AT,
+            ug.CREATED_BY,
+            u.NAME AS USER_NAME,
+            u.USERNAME AS LOGIN_ID,
+            g.GROUP_NAME,
+            g.GROUP_CODE
+        FROM TB_USER_GROUP ug
+        INNER JOIN TB_USER u ON ug.USER_ID = u.USER_ID
+        INNER JOIN TB_GROUP g ON ug.GROUP_ID = g.GROUP_ID
+        WHERE ug.USER_ID = #{userId}
+          AND g.USE_YN = 'Y'
+        ORDER BY g.SORT_ORDER, g.GROUP_NAME
+    </select>
+
+    <!-- 특정 사용자가 특정 그룹에 소속되어 있는지 확인 -->
+    <select id="existsByUserIdAndGroupId" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_USER_GROUP
+            WHERE USER_ID = #{userId}
+              AND GROUP_ID = #{groupId}
+        )
+    </select>
+
+    <!-- 그룹에 멤버가 있는지 확인 -->
+    <select id="hasMembers" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_USER_GROUP WHERE GROUP_ID = #{groupId}
+        )
+    </select>
+
+    <!-- 그룹 멤버 수 조회 -->
+    <select id="countByGroupId" resultType="int">
+        SELECT COUNT(*) FROM TB_USER_GROUP WHERE GROUP_ID = #{groupId}
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 그룹 멤버 추가 -->
+    <insert id="insert" parameterType="com.taskflow.domain.UserGroup" useGeneratedKeys="true" keyProperty="userGroupId">
+        INSERT INTO TB_USER_GROUP (
+            USER_ID,
+            GROUP_ID,
+            CREATED_BY
+        ) VALUES (
+            #{userId},
+            #{groupId},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 그룹 멤버 제거 (특정 사용자) -->
+    <delete id="deleteByGroupIdAndUserId">
+        DELETE FROM TB_USER_GROUP
+        WHERE GROUP_ID = #{groupId}
+          AND USER_ID = #{userId}
+    </delete>
+
+    <!-- 그룹의 모든 멤버 제거 -->
+    <delete id="deleteByGroupId">
+        DELETE FROM TB_USER_GROUP
+        WHERE GROUP_ID = #{groupId}
+    </delete>
+
+    <!-- 사용자의 모든 그룹 소속 제거 -->
+    <delete id="deleteByUserId">
+        DELETE FROM TB_USER_GROUP
+        WHERE USER_ID = #{userId}
+    </delete>
+
+</mapper>

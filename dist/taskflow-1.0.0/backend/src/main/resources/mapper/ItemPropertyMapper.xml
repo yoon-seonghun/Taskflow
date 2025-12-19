@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.ItemPropertyMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="ItemPropertyResultMap" type="com.taskflow.domain.ItemProperty">
+        <id property="itemPropertyId" column="ITEM_PROPERTY_ID"/>
+        <result property="itemId" column="ITEM_ID"/>
+        <result property="propertyId" column="PROPERTY_ID"/>
+        <result property="valueText" column="VALUE_TEXT"/>
+        <result property="valueNumber" column="VALUE_NUMBER"/>
+        <result property="valueDate" column="VALUE_DATE"/>
+        <result property="valueUserId" column="VALUE_USER_ID"/>
+        <result property="valueOptionId" column="VALUE_OPTION_ID"/>
+        <result property="valueCheckbox" column="VALUE_CHECKBOX"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="propertyName" column="PROPERTY_NAME"/>
+        <result property="propertyType" column="PROPERTY_TYPE"/>
+        <result property="valueUserName" column="VALUE_USER_NAME"/>
+        <result property="optionName" column="OPTION_NAME"/>
+        <result property="optionColor" column="OPTION_COLOR"/>
+    </resultMap>
+
+    <resultMap id="ItemPropertyMultiResultMap" type="com.taskflow.domain.ItemPropertyMulti">
+        <id property="itemPropertyMultiId" column="ITEM_PROPERTY_MULTI_ID"/>
+        <result property="itemId" column="ITEM_ID"/>
+        <result property="propertyId" column="PROPERTY_ID"/>
+        <result property="optionId" column="OPTION_ID"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="optionName" column="OPTION_NAME"/>
+        <result property="optionColor" column="COLOR"/>
+        <result property="propertyName" column="PROPERTY_NAME"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 아이템 속성값 ID로 조회 -->
+    <select id="findById" resultMap="ItemPropertyResultMap">
+        SELECT
+            v.ITEM_PROPERTY_ID,
+            v.ITEM_ID,
+            v.PROPERTY_ID,
+            v.VALUE_TEXT,
+            v.VALUE_NUMBER,
+            v.VALUE_DATE,
+            v.VALUE_USER_ID,
+            v.VALUE_OPTION_ID,
+            v.VALUE_CHECKBOX,
+            v.CREATED_AT,
+            v.CREATED_BY,
+            v.UPDATED_AT,
+            v.UPDATED_BY,
+            p.PROPERTY_NAME,
+            p.PROPERTY_TYPE,
+            u.NAME AS VALUE_USER_NAME,
+            o.OPTION_LABEL AS OPTION_NAME,
+            o.COLOR AS OPTION_COLOR
+        FROM TB_ITEM_PROPERTY v
+        INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
+        LEFT JOIN TB_USER u ON v.VALUE_USER_ID = u.USER_ID
+        LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
+            AND v.VALUE_OPTION_ID = o.OPTION_ID
+        WHERE v.ITEM_PROPERTY_ID = #{itemPropertyId}
+    </select>
+
+    <!-- 아이템별 속성값 목록 조회 -->
+    <select id="findByItemId" resultMap="ItemPropertyResultMap">
+        SELECT
+            v.ITEM_PROPERTY_ID,
+            v.ITEM_ID,
+            v.PROPERTY_ID,
+            v.VALUE_TEXT,
+            v.VALUE_NUMBER,
+            v.VALUE_DATE,
+            v.VALUE_USER_ID,
+            v.VALUE_OPTION_ID,
+            v.VALUE_CHECKBOX,
+            v.CREATED_AT,
+            v.CREATED_BY,
+            v.UPDATED_AT,
+            v.UPDATED_BY,
+            p.PROPERTY_NAME,
+            p.PROPERTY_TYPE,
+            u.NAME AS VALUE_USER_NAME,
+            o.OPTION_LABEL AS OPTION_NAME,
+            o.COLOR AS OPTION_COLOR
+        FROM TB_ITEM_PROPERTY v
+        INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
+        LEFT JOIN TB_USER u ON v.VALUE_USER_ID = u.USER_ID
+        LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
+            AND v.VALUE_OPTION_ID = o.OPTION_ID
+        WHERE v.ITEM_ID = #{itemId}
+        ORDER BY p.SORT_ORDER
+    </select>
+
+    <!-- 여러 아이템의 속성값 목록 일괄 조회 (N+1 쿼리 최적화) -->
+    <select id="findByItemIds" resultMap="ItemPropertyResultMap">
+        SELECT
+            v.ITEM_PROPERTY_ID,
+            v.ITEM_ID,
+            v.PROPERTY_ID,
+            v.VALUE_TEXT,
+            v.VALUE_NUMBER,
+            v.VALUE_DATE,
+            v.VALUE_USER_ID,
+            v.VALUE_OPTION_ID,
+            v.VALUE_CHECKBOX,
+            v.CREATED_AT,
+            v.CREATED_BY,
+            v.UPDATED_AT,
+            v.UPDATED_BY,
+            p.PROPERTY_NAME,
+            p.PROPERTY_TYPE,
+            u.NAME AS VALUE_USER_NAME,
+            o.OPTION_LABEL AS OPTION_NAME,
+            o.COLOR AS OPTION_COLOR
+        FROM TB_ITEM_PROPERTY v
+        INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
+        LEFT JOIN TB_USER u ON v.VALUE_USER_ID = u.USER_ID
+        LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
+            AND v.VALUE_OPTION_ID = o.OPTION_ID
+        WHERE v.ITEM_ID IN
+        <foreach collection="itemIds" item="itemId" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+        ORDER BY v.ITEM_ID, p.SORT_ORDER
+    </select>
+
+    <!-- 아이템의 특정 속성값 조회 -->
+    <select id="findByItemIdAndPropertyId" resultMap="ItemPropertyResultMap">
+        SELECT
+            v.ITEM_PROPERTY_ID,
+            v.ITEM_ID,
+            v.PROPERTY_ID,
+            v.VALUE_TEXT,
+            v.VALUE_NUMBER,
+            v.VALUE_DATE,
+            v.VALUE_USER_ID,
+            v.VALUE_OPTION_ID,
+            v.VALUE_CHECKBOX,
+            v.CREATED_AT,
+            v.CREATED_BY,
+            v.UPDATED_AT,
+            v.UPDATED_BY,
+            p.PROPERTY_NAME,
+            p.PROPERTY_TYPE,
+            u.NAME AS VALUE_USER_NAME,
+            o.OPTION_LABEL AS OPTION_NAME,
+            o.COLOR AS OPTION_COLOR
+        FROM TB_ITEM_PROPERTY v
+        INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
+        LEFT JOIN TB_USER u ON v.VALUE_USER_ID = u.USER_ID
+        LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
+            AND v.VALUE_OPTION_ID = o.OPTION_ID
+        WHERE v.ITEM_ID = #{itemId}
+          AND v.PROPERTY_ID = #{propertyId}
+    </select>
+
+    <!-- 아이템의 다중선택 속성값 목록 조회 -->
+    <select id="findMultiByItemIdAndPropertyId" resultMap="ItemPropertyMultiResultMap">
+        SELECT
+            m.ITEM_PROPERTY_MULTI_ID,
+            m.ITEM_ID,
+            m.PROPERTY_ID,
+            m.OPTION_ID,
+            m.CREATED_AT,
+            m.CREATED_BY,
+            o.OPTION_LABEL AS OPTION_NAME,
+            o.COLOR,
+            p.PROPERTY_NAME
+        FROM TB_ITEM_PROPERTY_MULTI m
+        INNER JOIN TB_PROPERTY_OPTION o ON m.OPTION_ID = o.OPTION_ID
+        INNER JOIN TB_PROPERTY_DEF p ON m.PROPERTY_ID = p.PROPERTY_ID
+        WHERE m.ITEM_ID = #{itemId}
+          AND m.PROPERTY_ID = #{propertyId}
+        ORDER BY o.SORT_ORDER
+    </select>
+
+    <!-- 속성별 아이템 속성값 목록 조회 -->
+    <select id="findByPropertyId" resultMap="ItemPropertyResultMap">
+        SELECT
+            v.ITEM_PROPERTY_ID,
+            v.ITEM_ID,
+            v.PROPERTY_ID,
+            v.VALUE_TEXT,
+            v.VALUE_NUMBER,
+            v.VALUE_DATE,
+            v.VALUE_USER_ID,
+            v.VALUE_OPTION_ID,
+            v.VALUE_CHECKBOX,
+            v.CREATED_AT,
+            v.CREATED_BY,
+            v.UPDATED_AT,
+            v.UPDATED_BY,
+            p.PROPERTY_NAME,
+            p.PROPERTY_TYPE
+        FROM TB_ITEM_PROPERTY v
+        INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
+        WHERE v.PROPERTY_ID = #{propertyId}
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 아이템 속성값 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.ItemProperty" useGeneratedKeys="true" keyProperty="itemPropertyId">
+        INSERT INTO TB_ITEM_PROPERTY (
+            ITEM_ID,
+            PROPERTY_ID,
+            VALUE_TEXT,
+            VALUE_NUMBER,
+            VALUE_DATE,
+            VALUE_USER_ID,
+            VALUE_OPTION_ID,
+            VALUE_CHECKBOX,
+            CREATED_BY
+        ) VALUES (
+            #{itemId},
+            #{propertyId},
+            #{valueText},
+            #{valueNumber},
+            #{valueDate},
+            #{valueUserId},
+            #{valueOptionId},
+            #{valueCheckbox},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 아이템 속성값 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.ItemProperty">
+        UPDATE TB_ITEM_PROPERTY
+        SET
+            VALUE_TEXT = #{valueText},
+            VALUE_NUMBER = #{valueNumber},
+            VALUE_DATE = #{valueDate},
+            VALUE_USER_ID = #{valueUserId},
+            VALUE_OPTION_ID = #{valueOptionId},
+            VALUE_CHECKBOX = #{valueCheckbox},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_PROPERTY_ID = #{itemPropertyId}
+    </update>
+
+    <!-- 아이템 속성값 저장 (UPSERT) -->
+    <insert id="upsert" parameterType="com.taskflow.domain.ItemProperty">
+        INSERT INTO TB_ITEM_PROPERTY (
+            ITEM_ID,
+            PROPERTY_ID,
+            VALUE_TEXT,
+            VALUE_NUMBER,
+            VALUE_DATE,
+            VALUE_USER_ID,
+            VALUE_OPTION_ID,
+            VALUE_CHECKBOX,
+            CREATED_BY
+        ) VALUES (
+            #{itemId},
+            #{propertyId},
+            #{valueText},
+            #{valueNumber},
+            #{valueDate},
+            #{valueUserId},
+            #{valueOptionId},
+            #{valueCheckbox},
+            #{createdBy}
+        )
+        ON DUPLICATE KEY UPDATE
+            VALUE_TEXT = #{valueText},
+            VALUE_NUMBER = #{valueNumber},
+            VALUE_DATE = #{valueDate},
+            VALUE_USER_ID = #{valueUserId},
+            VALUE_OPTION_ID = #{valueOptionId},
+            VALUE_CHECKBOX = #{valueCheckbox},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- 아이템 속성값 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_ITEM_PROPERTY
+        WHERE ITEM_PROPERTY_ID = #{itemPropertyId}
+    </delete>
+
+    <!-- 아이템의 모든 속성값 삭제 -->
+    <delete id="deleteByItemId">
+        DELETE FROM TB_ITEM_PROPERTY
+        WHERE ITEM_ID = #{itemId}
+    </delete>
+
+    <!-- 아이템의 특정 속성값 삭제 -->
+    <delete id="deleteByItemIdAndPropertyId">
+        DELETE FROM TB_ITEM_PROPERTY
+        WHERE ITEM_ID = #{itemId}
+          AND PROPERTY_ID = #{propertyId}
+    </delete>
+
+    <!-- ============================================= -->
+    <!-- 다중선택 속성값 (MULTI_SELECT) -->
+    <!-- ============================================= -->
+
+    <!-- 다중선택 속성값 등록 -->
+    <insert id="insertMulti" parameterType="com.taskflow.domain.ItemPropertyMulti" useGeneratedKeys="true" keyProperty="itemPropertyMultiId">
+        INSERT INTO TB_ITEM_PROPERTY_MULTI (
+            ITEM_ID,
+            PROPERTY_ID,
+            OPTION_ID,
+            CREATED_BY
+        ) VALUES (
+            #{itemId},
+            #{propertyId},
+            #{optionId},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 아이템의 다중선택 속성값 삭제 -->
+    <delete id="deleteMultiByItemIdAndPropertyId">
+        DELETE FROM TB_ITEM_PROPERTY_MULTI
+        WHERE ITEM_ID = #{itemId}
+          AND PROPERTY_ID = #{propertyId}
+    </delete>
+
+    <!-- 아이템의 모든 다중선택 속성값 삭제 -->
+    <delete id="deleteMultiByItemId">
+        DELETE FROM TB_ITEM_PROPERTY_MULTI
+        WHERE ITEM_ID = #{itemId}
+    </delete>
+
+</mapper>

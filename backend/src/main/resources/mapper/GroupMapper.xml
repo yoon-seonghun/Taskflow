@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.GroupMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="GroupResultMap" type="com.taskflow.domain.Group">
+        <id property="groupId" column="GROUP_ID"/>
+        <result property="groupCode" column="GROUP_CODE"/>
+        <result property="groupName" column="GROUP_NAME"/>
+        <result property="description" column="GROUP_DESC"/>
+        <result property="color" column="GROUP_COLOR"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 추가 필드 -->
+        <result property="memberCount" column="MEMBER_COUNT"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectGroup">
+        SELECT
+            g.GROUP_ID,
+            g.GROUP_CODE,
+            g.GROUP_NAME,
+            g.DESCRIPTION AS GROUP_DESC,
+            g.GROUP_COLOR,
+            g.SORT_ORDER,
+            g.USE_YN,
+            g.CREATED_AT,
+            g.CREATED_BY,
+            g.UPDATED_AT,
+            g.UPDATED_BY,
+            (SELECT COUNT(*) FROM TB_USER_GROUP ug WHERE ug.GROUP_ID = g.GROUP_ID) AS MEMBER_COUNT
+        FROM TB_GROUP g
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 그룹 ID로 조회 -->
+    <select id="findById" resultMap="GroupResultMap">
+        <include refid="selectGroup"/>
+        WHERE g.GROUP_ID = #{groupId}
+    </select>
+
+    <!-- 그룹 코드로 조회 -->
+    <select id="findByCode" resultMap="GroupResultMap">
+        <include refid="selectGroup"/>
+        WHERE g.GROUP_CODE = #{groupCode}
+    </select>
+
+    <!-- 전체 그룹 목록 조회 -->
+    <select id="findAll" resultMap="GroupResultMap">
+        <include refid="selectGroup"/>
+        <where>
+            <if test="useYn != null and useYn != ''">
+                g.USE_YN = #{useYn}
+            </if>
+        </where>
+        ORDER BY g.SORT_ORDER, g.GROUP_NAME
+    </select>
+
+    <!-- 그룹 코드 중복 확인 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_GROUP WHERE GROUP_CODE = #{groupCode}
+        )
+    </select>
+
+    <!-- 그룹 코드 중복 확인 (자신 제외) -->
+    <select id="existsByCodeAndIdNot" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_GROUP
+            WHERE GROUP_CODE = #{groupCode}
+              AND GROUP_ID != #{groupId}
+        )
+    </select>
+
+    <!-- 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0) FROM TB_GROUP
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 그룹 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.Group" useGeneratedKeys="true" keyProperty="groupId">
+        INSERT INTO TB_GROUP (
+            GROUP_CODE,
+            GROUP_NAME,
+            DESCRIPTION,
+            GROUP_COLOR,
+            SORT_ORDER,
+            USE_YN,
+            CREATED_BY
+        ) VALUES (
+            #{groupCode},
+            #{groupName},
+            #{description},
+            #{color},
+            #{sortOrder},
+            #{useYn},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 그룹 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.Group">
+        UPDATE TB_GROUP
+        SET
+            GROUP_NAME = #{groupName},
+            DESCRIPTION = #{description},
+            GROUP_COLOR = #{color},
+            SORT_ORDER = #{sortOrder},
+            USE_YN = #{useYn},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE GROUP_ID = #{groupId}
+    </update>
+
+    <!-- 그룹 순서 변경 -->
+    <update id="updateOrder">
+        UPDATE TB_GROUP
+        SET
+            SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE GROUP_ID = #{groupId}
+    </update>
+
+    <!-- 그룹 삭제 (물리 삭제) -->
+    <delete id="delete">
+        DELETE FROM TB_GROUP
+        WHERE GROUP_ID = #{groupId}
+    </delete>
+
+    <!-- 그룹 비활성화 (논리 삭제) -->
+    <update id="deactivate">
+        UPDATE TB_GROUP
+        SET
+            USE_YN = 'N',
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE GROUP_ID = #{groupId}
+    </update>
+
+</mapper>

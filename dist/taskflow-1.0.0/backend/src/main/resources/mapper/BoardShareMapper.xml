@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.BoardShareMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="BoardShareResultMap" type="com.taskflow.domain.BoardShare">
+        <id property="boardShareId" column="BOARD_SHARE_ID"/>
+        <result property="boardId" column="BOARD_ID"/>
+        <result property="userId" column="USER_ID"/>
+        <result property="permission" column="PERMISSION"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="boardName" column="BOARD_NAME"/>
+        <result property="userName" column="USER_NAME"/>
+        <result property="loginId" column="LOGIN_ID"/>
+        <result property="departmentName" column="DEPARTMENT_NAME"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 공유 ID로 조회 -->
+    <select id="findById" resultMap="BoardShareResultMap">
+        SELECT
+            bs.BOARD_SHARE_ID,
+            bs.BOARD_ID,
+            bs.USER_ID,
+            bs.PERMISSION,
+            bs.CREATED_AT,
+            bs.CREATED_BY,
+            b.BOARD_NAME,
+            u.NAME AS USER_NAME,
+            u.USERNAME AS LOGIN_ID,
+            d.DEPARTMENT_NAME
+        FROM TB_BOARD_SHARE bs
+        INNER JOIN TB_BOARD b ON bs.BOARD_ID = b.BOARD_ID
+        INNER JOIN TB_USER u ON bs.USER_ID = u.USER_ID
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        WHERE bs.BOARD_SHARE_ID = #{boardShareId}
+    </select>
+
+    <!-- 보드별 공유 사용자 목록 조회 -->
+    <select id="findByBoardId" resultMap="BoardShareResultMap">
+        SELECT
+            bs.BOARD_SHARE_ID,
+            bs.BOARD_ID,
+            bs.USER_ID,
+            bs.PERMISSION,
+            bs.CREATED_AT,
+            bs.CREATED_BY,
+            b.BOARD_NAME,
+            u.NAME AS USER_NAME,
+            u.USERNAME AS LOGIN_ID,
+            d.DEPARTMENT_NAME
+        FROM TB_BOARD_SHARE bs
+        INNER JOIN TB_BOARD b ON bs.BOARD_ID = b.BOARD_ID
+        INNER JOIN TB_USER u ON bs.USER_ID = u.USER_ID
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        WHERE bs.BOARD_ID = #{boardId}
+        ORDER BY u.NAME
+    </select>
+
+    <!-- 사용자별 공유받은 보드 목록 조회 -->
+    <select id="findByUserId" resultMap="BoardShareResultMap">
+        SELECT
+            bs.BOARD_SHARE_ID,
+            bs.BOARD_ID,
+            bs.USER_ID,
+            bs.PERMISSION,
+            bs.CREATED_AT,
+            bs.CREATED_BY,
+            b.BOARD_NAME,
+            u.NAME AS USER_NAME,
+            u.USERNAME AS LOGIN_ID,
+            d.DEPARTMENT_NAME
+        FROM TB_BOARD_SHARE bs
+        INNER JOIN TB_BOARD b ON bs.BOARD_ID = b.BOARD_ID
+        INNER JOIN TB_USER u ON bs.USER_ID = u.USER_ID
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        WHERE bs.USER_ID = #{userId}
+          AND b.USE_YN = 'Y'
+        ORDER BY b.BOARD_NAME
+    </select>
+
+    <!-- 특정 사용자가 특정 보드에 공유되어 있는지 확인 -->
+    <select id="existsByBoardIdAndUserId" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_BOARD_SHARE
+            WHERE BOARD_ID = #{boardId}
+              AND USER_ID = #{userId}
+        )
+    </select>
+
+    <!-- 특정 사용자의 특정 보드에 대한 공유 정보 조회 -->
+    <select id="findByBoardIdAndUserId" resultMap="BoardShareResultMap">
+        SELECT
+            bs.BOARD_SHARE_ID,
+            bs.BOARD_ID,
+            bs.USER_ID,
+            bs.PERMISSION,
+            bs.CREATED_AT,
+            bs.CREATED_BY,
+            b.BOARD_NAME,
+            u.NAME AS USER_NAME,
+            u.USERNAME AS LOGIN_ID,
+            d.DEPARTMENT_NAME
+        FROM TB_BOARD_SHARE bs
+        INNER JOIN TB_BOARD b ON bs.BOARD_ID = b.BOARD_ID
+        INNER JOIN TB_USER u ON bs.USER_ID = u.USER_ID
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        WHERE bs.BOARD_ID = #{boardId}
+          AND bs.USER_ID = #{userId}
+    </select>
+
+    <!-- 보드에 공유된 사용자가 있는지 확인 -->
+    <select id="hasShares" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_BOARD_SHARE WHERE BOARD_ID = #{boardId}
+        )
+    </select>
+
+    <!-- 보드 공유 사용자 수 조회 -->
+    <select id="countByBoardId" resultType="int">
+        SELECT COUNT(*) FROM TB_BOARD_SHARE WHERE BOARD_ID = #{boardId}
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 보드 공유 추가 -->
+    <insert id="insert" parameterType="com.taskflow.domain.BoardShare" useGeneratedKeys="true" keyProperty="boardShareId">
+        INSERT INTO TB_BOARD_SHARE (
+            BOARD_ID,
+            USER_ID,
+            PERMISSION,
+            CREATED_BY
+        ) VALUES (
+            #{boardId},
+            #{userId},
+            #{permission},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 보드 공유 권한 수정 -->
+    <update id="updatePermission">
+        UPDATE TB_BOARD_SHARE
+        SET PERMISSION = #{permission}
+        WHERE BOARD_SHARE_ID = #{boardShareId}
+    </update>
+
+    <!-- 보드 공유 제거 (특정 사용자) -->
+    <delete id="deleteByBoardIdAndUserId">
+        DELETE FROM TB_BOARD_SHARE
+        WHERE BOARD_ID = #{boardId}
+          AND USER_ID = #{userId}
+    </delete>
+
+    <!-- 보드의 모든 공유 제거 -->
+    <delete id="deleteByBoardId">
+        DELETE FROM TB_BOARD_SHARE
+        WHERE BOARD_ID = #{boardId}
+    </delete>
+
+    <!-- 사용자의 모든 공유 제거 -->
+    <delete id="deleteByUserId">
+        DELETE FROM TB_BOARD_SHARE
+        WHERE USER_ID = #{userId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.DepartmentMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="DepartmentResultMap" type="com.taskflow.domain.Department">
+        <id property="departmentId" column="DEPARTMENT_ID"/>
+        <result property="departmentCode" column="DEPARTMENT_CODE"/>
+        <result property="departmentName" column="DEPARTMENT_NAME"/>
+        <result property="parentId" column="PARENT_ID"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 계층 구조 필드 -->
+        <result property="level" column="LEVEL"/>
+        <result property="path" column="PATH"/>
+        <result property="parentName" column="PARENT_NAME"/>
+        <result property="childCount" column="CHILD_COUNT"/>
+        <result property="userCount" column="USER_COUNT"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectDepartment">
+        SELECT
+            d.DEPARTMENT_ID,
+            d.DEPARTMENT_CODE,
+            d.DEPARTMENT_NAME,
+            d.PARENT_ID,
+            d.SORT_ORDER,
+            d.USE_YN,
+            d.CREATED_AT,
+            d.CREATED_BY,
+            d.UPDATED_AT,
+            d.UPDATED_BY,
+            p.DEPARTMENT_NAME AS PARENT_NAME,
+            (SELECT COUNT(*) FROM TB_DEPARTMENT c WHERE c.PARENT_ID = d.DEPARTMENT_ID) AS CHILD_COUNT,
+            (SELECT COUNT(*) FROM TB_USER u WHERE u.DEPARTMENT_ID = d.DEPARTMENT_ID) AS USER_COUNT
+        FROM TB_DEPARTMENT d
+        LEFT JOIN TB_DEPARTMENT p ON d.PARENT_ID = p.DEPARTMENT_ID
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 부서 ID로 조회 -->
+    <select id="findById" resultMap="DepartmentResultMap">
+        <include refid="selectDepartment"/>
+        WHERE d.DEPARTMENT_ID = #{departmentId}
+    </select>
+
+    <!-- 부서 코드로 조회 -->
+    <select id="findByCode" resultMap="DepartmentResultMap">
+        <include refid="selectDepartment"/>
+        WHERE d.DEPARTMENT_CODE = #{departmentCode}
+    </select>
+
+    <!-- 전체 부서 목록 조회 (평면 구조, 계층 순서) -->
+    <!-- WITH RECURSIVE를 사용하여 트리 순서대로 정렬 -->
+    <select id="findAllFlat" resultMap="DepartmentResultMap">
+        WITH RECURSIVE dept_tree AS (
+            <!-- 최상위 부서 (anchor) -->
+            SELECT
+                d.DEPARTMENT_ID,
+                d.DEPARTMENT_CODE,
+                d.DEPARTMENT_NAME,
+                d.PARENT_ID,
+                d.SORT_ORDER,
+                d.USE_YN,
+                d.CREATED_AT,
+                d.CREATED_BY,
+                d.UPDATED_AT,
+                d.UPDATED_BY,
+                0 AS LEVEL,
+                CAST(d.DEPARTMENT_ID AS CHAR(500)) AS PATH,
+                CAST(LPAD(d.SORT_ORDER, 5, '0') AS CHAR(500)) AS SORT_PATH
+            FROM TB_DEPARTMENT d
+            WHERE d.PARENT_ID IS NULL
+            <if test="useYn != null and useYn != ''">
+                AND d.USE_YN = #{useYn}
+            </if>
+
+            UNION ALL
+
+            <!-- 하위 부서 (recursive) -->
+            SELECT
+                d.DEPARTMENT_ID,
+                d.DEPARTMENT_CODE,
+                d.DEPARTMENT_NAME,
+                d.PARENT_ID,
+                d.SORT_ORDER,
+                d.USE_YN,
+                d.CREATED_AT,
+                d.CREATED_BY,
+                d.UPDATED_AT,
+                d.UPDATED_BY,
+                t.LEVEL + 1,
+                CONCAT(t.PATH, '/', d.DEPARTMENT_ID),
+                CONCAT(t.SORT_PATH, '/', LPAD(d.SORT_ORDER, 5, '0'))
+            FROM TB_DEPARTMENT d
+            INNER JOIN dept_tree t ON d.PARENT_ID = t.DEPARTMENT_ID
+            <if test="useYn != null and useYn != ''">
+                WHERE d.USE_YN = #{useYn}
+            </if>
+        )
+        SELECT
+            dt.DEPARTMENT_ID,
+            dt.DEPARTMENT_CODE,
+            dt.DEPARTMENT_NAME,
+            dt.PARENT_ID,
+            dt.SORT_ORDER,
+            dt.USE_YN,
+            dt.CREATED_AT,
+            dt.CREATED_BY,
+            dt.UPDATED_AT,
+            dt.UPDATED_BY,
+            dt.LEVEL,
+            dt.PATH,
+            p.DEPARTMENT_NAME AS PARENT_NAME,
+            (SELECT COUNT(*) FROM TB_DEPARTMENT c WHERE c.PARENT_ID = dt.DEPARTMENT_ID) AS CHILD_COUNT,
+            (SELECT COUNT(*) FROM TB_USER u WHERE u.DEPARTMENT_ID = dt.DEPARTMENT_ID) AS USER_COUNT
+        FROM dept_tree dt
+        LEFT JOIN TB_DEPARTMENT p ON dt.PARENT_ID = p.DEPARTMENT_ID
+        ORDER BY dt.SORT_PATH
+    </select>
+
+    <!-- 최상위 부서 목록 조회 -->
+    <select id="findRootDepartments" resultMap="DepartmentResultMap">
+        <include refid="selectDepartment"/>
+        WHERE d.PARENT_ID IS NULL
+        <if test="useYn != null and useYn != ''">
+            AND d.USE_YN = #{useYn}
+        </if>
+        ORDER BY d.SORT_ORDER
+    </select>
+
+    <!-- 특정 부서의 하위 부서 목록 조회 (직계 자식만) -->
+    <select id="findChildren" resultMap="DepartmentResultMap">
+        <include refid="selectDepartment"/>
+        WHERE d.PARENT_ID = #{parentId}
+        ORDER BY d.SORT_ORDER
+    </select>
+
+    <!-- 특정 부서의 모든 하위 부서 조회 (재귀) -->
+    <select id="findAllDescendants" resultMap="DepartmentResultMap">
+        WITH RECURSIVE descendants AS (
+            SELECT
+                d.DEPARTMENT_ID,
+                d.DEPARTMENT_CODE,
+                d.DEPARTMENT_NAME,
+                d.PARENT_ID,
+                d.SORT_ORDER,
+                d.USE_YN,
+                d.CREATED_AT,
+                d.CREATED_BY,
+                d.UPDATED_AT,
+                d.UPDATED_BY,
+                1 AS LEVEL,
+                CAST(d.DEPARTMENT_ID AS CHAR(500)) AS PATH
+            FROM TB_DEPARTMENT d
+            WHERE d.PARENT_ID = #{departmentId}
+
+            UNION ALL
+
+            SELECT
+                d.DEPARTMENT_ID,
+                d.DEPARTMENT_CODE,
+                d.DEPARTMENT_NAME,
+                d.PARENT_ID,
+                d.SORT_ORDER,
+                d.USE_YN,
+                d.CREATED_AT,
+                d.CREATED_BY,
+                d.UPDATED_AT,
+                d.UPDATED_BY,
+                ds.LEVEL + 1,
+                CONCAT(ds.PATH, '/', d.DEPARTMENT_ID)
+            FROM TB_DEPARTMENT d
+            INNER JOIN descendants ds ON d.PARENT_ID = ds.DEPARTMENT_ID
+        )
+        SELECT
+            ds.DEPARTMENT_ID,
+            ds.DEPARTMENT_CODE,
+            ds.DEPARTMENT_NAME,
+            ds.PARENT_ID,
+            ds.SORT_ORDER,
+            ds.USE_YN,
+            ds.CREATED_AT,
+            ds.CREATED_BY,
+            ds.UPDATED_AT,
+            ds.UPDATED_BY,
+            ds.LEVEL,
+            ds.PATH,
+            p.DEPARTMENT_NAME AS PARENT_NAME,
+            (SELECT COUNT(*) FROM TB_DEPARTMENT c WHERE c.PARENT_ID = ds.DEPARTMENT_ID) AS CHILD_COUNT,
+            (SELECT COUNT(*) FROM TB_USER u WHERE u.DEPARTMENT_ID = ds.DEPARTMENT_ID) AS USER_COUNT
+        FROM descendants ds
+        LEFT JOIN TB_DEPARTMENT p ON ds.PARENT_ID = p.DEPARTMENT_ID
+        ORDER BY ds.PATH
+    </select>
+
+    <!-- 특정 부서의 상위 부서 경로 조회 (루트까지) -->
+    <select id="findAncestors" resultMap="DepartmentResultMap">
+        WITH RECURSIVE ancestors AS (
+            SELECT
+                d.DEPARTMENT_ID,
+                d.DEPARTMENT_CODE,
+                d.DEPARTMENT_NAME,
+                d.PARENT_ID,
+                d.SORT_ORDER,
+                d.USE_YN,
+                d.CREATED_AT,
+                d.CREATED_BY,
+                d.UPDATED_AT,
+                d.UPDATED_BY,
+                0 AS LEVEL
+            FROM TB_DEPARTMENT d
+            WHERE d.DEPARTMENT_ID = #{departmentId}
+
+            UNION ALL
+
+            SELECT
+                d.DEPARTMENT_ID,
+                d.DEPARTMENT_CODE,
+                d.DEPARTMENT_NAME,
+                d.PARENT_ID,
+                d.SORT_ORDER,
+                d.USE_YN,
+                d.CREATED_AT,
+                d.CREATED_BY,
+                d.UPDATED_AT,
+                d.UPDATED_BY,
+                a.LEVEL + 1
+            FROM TB_DEPARTMENT d
+            INNER JOIN ancestors a ON d.DEPARTMENT_ID = a.PARENT_ID
+        )
+        SELECT
+            a.DEPARTMENT_ID,
+            a.DEPARTMENT_CODE,
+            a.DEPARTMENT_NAME,
+            a.PARENT_ID,
+            a.SORT_ORDER,
+            a.USE_YN,
+            a.CREATED_AT,
+            a.CREATED_BY,
+            a.UPDATED_AT,
+            a.UPDATED_BY,
+            a.LEVEL,
+            p.DEPARTMENT_NAME AS PARENT_NAME
+        FROM ancestors a
+        LEFT JOIN TB_DEPARTMENT p ON a.PARENT_ID = p.DEPARTMENT_ID
+        WHERE a.DEPARTMENT_ID != #{departmentId}
+        ORDER BY a.LEVEL DESC
+    </select>
+
+    <!-- 부서 코드 중복 확인 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_DEPARTMENT WHERE DEPARTMENT_CODE = #{departmentCode}
+        )
+    </select>
+
+    <!-- 부서 코드 중복 확인 (자신 제외) -->
+    <select id="existsByCodeAndIdNot" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_DEPARTMENT
+            WHERE DEPARTMENT_CODE = #{departmentCode}
+              AND DEPARTMENT_ID != #{departmentId}
+        )
+    </select>
+
+    <!-- 특정 부서에 하위 부서가 있는지 확인 -->
+    <select id="hasChildren" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_DEPARTMENT WHERE PARENT_ID = #{departmentId}
+        )
+    </select>
+
+    <!-- 특정 부서에 소속된 사용자가 있는지 확인 -->
+    <select id="hasUsers" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_USER WHERE DEPARTMENT_ID = #{departmentId}
+        )
+    </select>
+
+    <!-- 특정 부서의 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0)
+        FROM TB_DEPARTMENT
+        WHERE
+        <choose>
+            <when test="parentId != null">
+                PARENT_ID = #{parentId}
+            </when>
+            <otherwise>
+                PARENT_ID IS NULL
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 부서 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.Department" useGeneratedKeys="true" keyProperty="departmentId">
+        INSERT INTO TB_DEPARTMENT (
+            DEPARTMENT_CODE,
+            DEPARTMENT_NAME,
+            PARENT_ID,
+            SORT_ORDER,
+            USE_YN,
+            CREATED_BY
+        ) VALUES (
+            #{departmentCode},
+            #{departmentName},
+            #{parentId},
+            #{sortOrder},
+            #{useYn},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 부서 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.Department">
+        UPDATE TB_DEPARTMENT
+        SET
+            DEPARTMENT_NAME = #{departmentName},
+            PARENT_ID = #{parentId},
+            SORT_ORDER = #{sortOrder},
+            USE_YN = #{useYn},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE DEPARTMENT_ID = #{departmentId}
+    </update>
+
+    <!-- 부서 순서 변경 -->
+    <update id="updateOrder">
+        UPDATE TB_DEPARTMENT
+        SET
+            PARENT_ID = #{parentId},
+            SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE DEPARTMENT_ID = #{departmentId}
+    </update>
+
+    <!-- 부서 삭제 (물리 삭제) -->
+    <delete id="delete">
+        DELETE FROM TB_DEPARTMENT
+        WHERE DEPARTMENT_ID = #{departmentId}
+    </delete>
+
+    <!-- 부서 비활성화 (논리 삭제) -->
+    <update id="deactivate">
+        UPDATE TB_DEPARTMENT
+        SET
+            USE_YN = 'N',
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE DEPARTMENT_ID = #{departmentId}
+    </update>
+
+    <!-- 같은 상위 부서 내에서 정렬 순서 재정렬 -->
+    <update id="incrementSortOrder">
+        UPDATE TB_DEPARTMENT
+        SET SORT_ORDER = SORT_ORDER + 1
+        WHERE
+        <choose>
+            <when test="parentId != null">
+                PARENT_ID = #{parentId}
+            </when>
+            <otherwise>
+                PARENT_ID IS NULL
+            </otherwise>
+        </choose>
+        AND SORT_ORDER >= #{fromOrder}
+    </update>
+
+</mapper>
