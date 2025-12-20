@@ -80,7 +80,111 @@ npm run dev
 **Backend:**
 ```bash
 cd backend
-./mvnw spring-boot:run
+./gradlew bootRun
+```
+
+## 📦 배포
+
+### 배포본 생성
+
+배포용 압축 파일을 생성하는 스크립트가 제공됩니다.
+
+**Linux/Mac/WSL:**
+```bash
+# 기본 버전 (1.0.0)
+./build-release.sh
+
+# 버전 지정
+./build-release.sh 1.1.0
+```
+
+**Windows PowerShell:**
+```powershell
+# 기본 버전 (1.0.0)
+.\build-release.ps1
+
+# 버전 지정
+.\build-release.ps1 -Version 1.1.0
+```
+
+### 배포본 구조
+
+```
+taskflow-{version}/
+├── backend/              # 백엔드 소스 (Docker에서 빌드)
+├── frontend/             # 프론트엔드 소스 + 빌드 결과물
+├── docker/
+│   └── mysql/init/       # DB 초기화 스크립트
+├── scripts/
+│   ├── start.sh          # 시작 스크립트
+│   └── stop.sh           # 중지 스크립트
+├── docker-compose.yml
+└── .env.example
+```
+
+### 서버 배포 방법
+
+1. **압축 파일 서버로 전송**
+   ```bash
+   scp dist/taskflow-1.0.0.tar.gz user@server:/path/to/
+   ```
+
+2. **서버에서 압축 해제**
+   ```bash
+   tar -xzvf taskflow-1.0.0.tar.gz
+   cd taskflow-1.0.0
+   ```
+
+3. **환경 설정**
+   ```bash
+   cp .env.example .env
+   vi .env
+   ```
+
+   주요 설정 항목:
+   | 항목 | 설명 | 예시 |
+   |------|------|------|
+   | `MYSQL_ROOT_PASSWORD` | MySQL root 비밀번호 | `your_secure_password` |
+   | `MYSQL_PASSWORD` | 앱 DB 비밀번호 | `your_app_password` |
+   | `JWT_SECRET` | JWT 시크릿 키 (Base64) | `openssl rand -base64 32` |
+   | `CORS_ALLOWED_ORIGINS` | 프론트엔드 접속 URL | `http://서버IP:9800` |
+   | `FRONTEND_PORT` | 프론트엔드 포트 | `9800` |
+   | `BACKEND_PORT` | 백엔드 API 포트 | `8080` |
+
+4. **Docker 실행**
+   ```bash
+   # 스크립트 사용
+   ./scripts/start.sh
+
+   # 또는 직접 실행
+   docker compose up -d --build
+   ```
+
+5. **상태 확인**
+   ```bash
+   docker compose ps
+   docker compose logs -f
+   ```
+
+### 서비스 관리
+
+```bash
+# 시작
+./scripts/start.sh
+# 또는
+docker compose up -d
+
+# 중지
+./scripts/stop.sh
+# 또는
+docker compose down
+
+# 로그 확인
+docker compose logs -f backend
+docker compose logs -f frontend
+
+# 재시작
+docker compose restart
 ```
 
 ## 📖 문서

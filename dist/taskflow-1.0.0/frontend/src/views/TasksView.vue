@@ -42,13 +42,6 @@ const boardOptions = computed(() =>
   }))
 )
 
-// 뷰 타입 옵션
-const viewTypeOptions = [
-  { value: 'table', label: '테이블' },
-  { value: 'kanban', label: '칸반' },
-  { value: 'list', label: '리스트' }
-]
-
 // 현재 뷰 타입
 const viewType = computed({
   get: () => boardStore.viewType,
@@ -174,17 +167,48 @@ onMounted(() => {
           />
 
           <!-- 뷰 타입 선택 -->
-          <div class="flex items-center bg-gray-100 rounded-lg p-0.5">
+          <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
             <button
-              v-for="option in viewTypeOptions"
-              :key="option.value"
-              class="px-3 py-1.5 text-[13px] rounded-md transition-colors"
-              :class="viewType === option.value
-                ? 'bg-white text-gray-900 shadow-sm'
+              type="button"
+              class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap"
+              :class="viewType === 'table'
+                ? 'bg-white text-primary-700 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'"
-              @click="handleViewTypeChange(option.value)"
+              @click="handleViewTypeChange('table')"
             >
-              {{ option.label }}
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 10h18M3 14h18M3 6h18M3 18h18M10 6v12M17 6v12" />
+              </svg>
+              <span>테이블</span>
+            </button>
+            <button
+              type="button"
+              class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap"
+              :class="viewType === 'kanban'
+                ? 'bg-white text-primary-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'"
+              @click="handleViewTypeChange('kanban')"
+            >
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+              </svg>
+              <span>칸반</span>
+            </button>
+            <button
+              type="button"
+              class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap"
+              :class="viewType === 'list'
+                ? 'bg-white text-primary-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'"
+              @click="handleViewTypeChange('list')"
+            >
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              <span>리스트</span>
             </button>
           </div>
         </div>

@@ -1,0 +1,1 @@
+import{D as f}from"./index-D8qsMxsh.js";function w(){const o=f();function t(r,n){return o.showSuccess(r,n)}function e(r,n){return o.showError(r,n)}function s(r,n){return o.showWarning(r,n)}function u(r,n){return o.showInfo(r,n)}function c(r){o.removeToast(r)}function i(){o.clearToasts()}return{success:t,error:e,warning:s,info:u,remove:c,clear:i}}export{w as u};

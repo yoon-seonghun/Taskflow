@@ -244,7 +244,7 @@ onMounted(() => {
       <div class="flex flex-wrap items-center gap-4">
         <!-- 보드 필터 -->
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-700">보드:</span>
+          <span class="text-sm font-medium text-gray-700 whitespace-nowrap">보드:</span>
           <Select
             v-model="selectedBoardId"
             :options="boardOptions"
@@ -255,7 +255,7 @@ onMounted(() => {
 
         <!-- 우선순위 필터 -->
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-700">우선순위:</span>
+          <span class="text-sm font-medium text-gray-700 whitespace-nowrap">우선순위:</span>
           <Select
             v-model="priorityFilter"
             :options="priorityOptions"

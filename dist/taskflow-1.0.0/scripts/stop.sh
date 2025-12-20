@@ -1,21 +1,12 @@
 #!/bin/bash
-# ============================================
-# TaskFlow 서비스 중지 스크립트
-# ============================================
+# TaskFlow 중지 스크립트
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-cd "$PROJECT_ROOT"
+cd "$PROJECT_DIR"
 
-echo "============================================"
-echo "TaskFlow 서비스 중지"
-echo "============================================"
+echo "TaskFlow 중지 중..."
+docker compose down
 
-docker-compose down
-
-echo ""
-echo "서비스가 중지되었습니다."
-echo ""
-echo "데이터를 포함하여 완전히 삭제하려면:"
-echo "  docker-compose down -v"
+echo "TaskFlow가 중지되었습니다."

@@ -1,0 +1,1 @@
+import{S as s,Q as u,O as a,P as t}from"./index-D8qsMxsh.js";const o={getUsers(e){return t("/users",e)},getUser(e){return t(`/users/${e}`)},createUser(e){return a("/users",e)},updateUser(e,r){return s(`/users/${e}`,r)},deleteUser(e){return u(`/users/${e}`)},changePassword(e,r){return s(`/users/${e}/password`,r)}};export{o as u};
