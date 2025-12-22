@@ -10,7 +10,8 @@ import type {
   BoardDeleteRequest,
   BoardOrderRequest,
   TransferPreviewResponse,
-  TransferResultResponse
+  TransferResultResponse,
+  BoardTransferRequest
 } from '@/types/board'
 
 export const boardApi = {
@@ -56,6 +57,15 @@ export const boardApi = {
 
   getTransferPreview(boardId: number) {
     return get<TransferPreviewResponse>(`/boards/${boardId}/transfer-preview`)
+  },
+
+  /**
+   * 보드 소유권 이전
+   * - 보드를 다른 사용자에게 이관
+   * - 보드명이 "보드이관"으로 자동 변경됨
+   */
+  transferBoardOwnership(boardId: number, data: BoardTransferRequest) {
+    return put<Board>(`/boards/${boardId}/transfer-ownership`, data)
   },
 
   // =============================================

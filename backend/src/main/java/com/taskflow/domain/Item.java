@@ -109,6 +109,16 @@ public class Item {
     private Long deletedBy;
 
     /**
+     * 이관 원본 보드 ID
+     */
+    private Long transferredFrom;
+
+    /**
+     * 이관 일시
+     */
+    private LocalDateTime transferredAt;
+
+    /**
      * 생성일시
      */
     private LocalDateTime createdAt;

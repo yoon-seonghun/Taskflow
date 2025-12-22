@@ -3,11 +3,11 @@
  * 업무 공유 모달
  * - 공유 사용자 목록 관리
  * - 공유 추가/권한 변경/제거
+ * - UserSearchSelector를 사용한 사용자 검색/선택
  */
 import { ref, computed, watch, onMounted } from 'vue'
-import { Modal, Button, Spinner } from '@/components/common'
+import { Modal, Button, Spinner, UserSearchSelector } from '@/components/common'
 import { useItemStore } from '@/stores/item'
-import { userApi } from '@/api/user'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import type { Item } from '@/types/item'
@@ -35,9 +35,9 @@ const confirm = useConfirm()
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const shares = ref<Share[]>([])
-const users = ref<User[]>([])
 const showAddForm = ref(false)
 const newUserId = ref<number | null>(null)
+const selectedUser = ref<User | null>(null)
 const newPermission = ref<SharePermission>('VIEW')
 
 // 권한 옵션
@@ -47,10 +47,9 @@ const permissionOptions: { value: SharePermission; label: string; description: s
   { value: 'FULL', label: '전체', description: '이관/공유/삭제 포함 전체 권한' }
 ]
 
-// 공유 가능한 사용자 (이미 공유된 사용자 제외)
-const availableUsers = computed(() => {
-  const sharedUserIds = shares.value.map(s => s.userId)
-  return users.value.filter(u => !sharedUserIds.includes(u.userId))
+// 이미 공유된 사용자 ID 목록
+const excludeUserIds = computed(() => {
+  return shares.value.map(s => s.userId)
 })
 
 // 공유 목록 로드
@@ -65,16 +64,9 @@ async function loadShares() {
   }
 }
 
-// 사용자 목록 로드
-async function loadUsers() {
-  try {
-    const response = await userApi.getUsers({ useYn: 'Y' })
-    if (response.success && response.data?.content) {
-      users.value = response.data.content
-    }
-  } catch (error) {
-    console.error('Failed to load users:', error)
-  }
+// 사용자 선택 핸들러
+function handleUserSelect(user: User | null) {
+  selectedUser.value = user
 }
 
 // 공유 추가
@@ -155,19 +147,13 @@ async function handleRemoveShare(share: Share) {
 function resetAddForm() {
   showAddForm.value = false
   newUserId.value = null
+  selectedUser.value = null
   newPermission.value = 'VIEW'
-}
-
-// 권한 라벨
-function getPermissionLabel(permission: SharePermission): string {
-  const option = permissionOptions.find(o => o.value === permission)
-  return option?.label || permission
 }
 
 watch(() => props.show, (newShow) => {
   if (newShow) {
     loadShares()
-    loadUsers()
     resetAddForm()
   }
 })
@@ -175,7 +161,6 @@ watch(() => props.show, (newShow) => {
 onMounted(() => {
   if (props.show) {
     loadShares()
-    loadUsers()
   }
 })
 </script>
@@ -184,13 +169,13 @@ onMounted(() => {
   <Modal
     :model-value="show"
     title="업무 공유"
-    size="md"
+    size="lg"
     @close="$emit('close')"
     @update:model-value="(val) => !val && $emit('close')"
   >
     <div class="space-y-4">
       <!-- 업무 정보 -->
-      <div class="p-3 bg-gray-50 rounded-lg">
+      <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
         <p class="text-[12px] text-gray-500 mb-1">공유할 업무</p>
         <p class="text-[14px] font-medium text-gray-900">{{ item.title }}</p>
       </div>
@@ -204,7 +189,10 @@ onMounted(() => {
         <!-- 공유 목록 -->
         <div>
           <div class="flex items-center justify-between mb-3">
-            <label class="text-[13px] font-medium text-gray-700">공유된 사용자</label>
+            <label class="text-[13px] font-medium text-gray-700">
+              공유된 사용자
+              <span v-if="shares.length > 0" class="text-gray-400 font-normal">({{ shares.length }}명)</span>
+            </label>
             <Button
               v-if="!showAddForm"
               variant="ghost"
@@ -219,43 +207,51 @@ onMounted(() => {
           </div>
 
           <!-- 공유 추가 폼 -->
-          <div v-if="showAddForm" class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <div class="space-y-3">
+          <div v-if="showAddForm" class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div class="space-y-4">
+              <!-- 사용자 선택 (UserSearchSelector) -->
+              <UserSearchSelector
+                v-model="newUserId"
+                :exclude-user-ids="excludeUserIds"
+                label="공유할 사용자"
+                placeholder="사용자를 선택하세요"
+                @select="handleUserSelect"
+              />
+
+              <!-- 권한 선택 -->
               <div>
-                <label class="block text-[12px] text-gray-600 mb-1">사용자</label>
-                <select
-                  v-model="newUserId"
-                  class="w-full px-3 py-2 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option :value="null">사용자를 선택하세요</option>
-                  <option v-for="user in availableUsers" :key="user.userId" :value="user.userId">
-                    {{ user.name }} ({{ user.departmentName || '소속없음' }})
-                  </option>
-                </select>
+                <label class="block text-[13px] font-medium text-gray-700 mb-2">권한</label>
+                <div class="space-y-2">
+                  <label
+                    v-for="opt in permissionOptions"
+                    :key="opt.value"
+                    class="flex items-center gap-3 p-3 bg-white border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                    :class="newPermission === opt.value ? 'border-primary-500 ring-1 ring-primary-500' : 'border-gray-200'"
+                  >
+                    <input
+                      type="radio"
+                      v-model="newPermission"
+                      :value="opt.value"
+                      class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                    />
+                    <div>
+                      <p class="text-[13px] font-medium text-gray-700">{{ opt.label }}</p>
+                      <p class="text-[12px] text-gray-500">{{ opt.description }}</p>
+                    </div>
+                  </label>
+                </div>
               </div>
 
-              <div>
-                <label class="block text-[12px] text-gray-600 mb-1">권한</label>
-                <select
-                  v-model="newPermission"
-                  class="w-full px-3 py-2 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }} - {{ opt.description }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" @click="resetAddForm">취소</Button>
+              <div class="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" @click="resetAddForm">취소</Button>
                 <Button
                   variant="primary"
                   size="sm"
-                  :disabled="isSubmitting"
+                  :disabled="isSubmitting || !newUserId"
                   @click="handleAddShare"
                 >
                   <Spinner v-if="isSubmitting" size="sm" class="mr-1" />
-                  추가
+                  공유 추가
                 </Button>
               </div>
             </div>
@@ -266,11 +262,11 @@ onMounted(() => {
             <div
               v-for="share in shares"
               :key="share.userId"
-              class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
+              class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
             >
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span class="text-[12px] font-medium text-gray-600">
+                <div class="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center">
+                  <span class="text-[13px] font-medium text-primary-700">
                     {{ (share.userName || share.loginId || '?').charAt(0).toUpperCase() }}
                   </span>
                 </div>
@@ -287,7 +283,7 @@ onMounted(() => {
               <div class="flex items-center gap-2">
                 <select
                   :value="share.permission"
-                  class="px-2 py-1 text-[12px] border border-gray-300 rounded focus:ring-1 focus:ring-primary-500"
+                  class="px-2 py-1.5 text-[12px] border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                   @change="handleUpdatePermission(share, ($event.target as HTMLSelectElement).value as SharePermission)"
                 >
                   <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
@@ -296,7 +292,7 @@ onMounted(() => {
                 </select>
 
                 <button
-                  class="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                  class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   title="공유 해제"
                   @click="handleRemoveShare(share)"
                 >
@@ -309,18 +305,20 @@ onMounted(() => {
           </div>
 
           <!-- 공유 없음 -->
-          <div v-else class="py-6 text-center">
-            <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div v-else class="py-8 text-center">
+            <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <p class="text-[13px] text-gray-500">공유된 사용자가 없습니다.</p>
+            <p class="text-[13px] text-gray-500 mb-3">공유된 사용자가 없습니다.</p>
             <Button
               v-if="!showAddForm"
-              variant="ghost"
+              variant="primary"
               size="sm"
-              class="mt-2"
               @click="showAddForm = true"
             >
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
               사용자 추가
             </Button>
           </div>

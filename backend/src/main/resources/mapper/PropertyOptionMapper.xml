@@ -179,4 +179,36 @@
         WHERE PROPERTY_ID = #{propertyId}
     </delete>
 
+    <!-- 카테고리 속성 기본 옵션 생성 -->
+    <insert id="insertCategoryOptions">
+        INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+        VALUES
+            (#{propertyId}, '개발', '#3B82F6', 1, 'Y', #{createdBy}),
+            (#{propertyId}, '기획', '#8B5CF6', 2, 'Y', #{createdBy}),
+            (#{propertyId}, '디자인', '#EC4899', 3, 'Y', #{createdBy}),
+            (#{propertyId}, '운영', '#10B981', 4, 'Y', #{createdBy}),
+            (#{propertyId}, '기타', '#6B7280', 5, 'Y', #{createdBy})
+    </insert>
+
+    <!-- 상태 속성 기본 옵션 생성 -->
+    <insert id="insertStatusOptions">
+        INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+        VALUES
+            (#{propertyId}, '시작전', '#9CA3AF', 1, 'Y', #{createdBy}),
+            (#{propertyId}, '진행중', '#3B82F6', 2, 'Y', #{createdBy}),
+            (#{propertyId}, '보류', '#F59E0B', 3, 'Y', #{createdBy}),
+            (#{propertyId}, '완료', '#10B981', 4, 'Y', #{createdBy}),
+            (#{propertyId}, '삭제', '#EF4444', 5, 'Y', #{createdBy})
+    </insert>
+
+    <!-- 우선순위 속성 기본 옵션 생성 -->
+    <insert id="insertPriorityOptions">
+        INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+        VALUES
+            (#{propertyId}, '긴급', '#DC2626', 1, 'Y', #{createdBy}),
+            (#{propertyId}, '높음', '#F97316', 2, 'Y', #{createdBy}),
+            (#{propertyId}, '보통', '#3B82F6', 3, 'Y', #{createdBy}),
+            (#{propertyId}, '낮음', '#6B7280', 4, 'Y', #{createdBy})
+    </insert>
+
 </mapper>

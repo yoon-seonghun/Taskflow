@@ -222,4 +222,16 @@ public interface BoardService {
      * @return 삭제 가능 여부
      */
     boolean canDelete(Long boardId, Long userId);
+
+    /**
+     * 보드 소유권 이전
+     * - 보드를 다른 사용자에게 이관
+     * - 보드명이 "보드이관"으로 자동 변경됨
+     *
+     * @param boardId   보드 ID
+     * @param request   이전 요청
+     * @param currentUserId 요청 사용자 ID
+     * @return 이전된 보드 응답
+     */
+    BoardResponse transferBoardOwnership(Long boardId, BoardTransferRequest request, Long currentUserId);
 }

@@ -25,6 +25,8 @@ export { default as EmptyState } from './EmptyState.vue'
 export { default as InlineEditor } from './InlineEditor.vue'
 export { default as Pagination } from './Pagination.vue'
 export { default as MarkdownEditor } from './MarkdownEditor.vue'
+export { default as DepartmentTree } from './DepartmentTree.vue'
+export { default as UserSearchSelector } from './UserSearchSelector.vue'
 
 // 타입 내보내기
 export type { ButtonVariant, ButtonSize } from './Button.vue'

@@ -12,6 +12,7 @@
         <result property="username" column="USERNAME"/>
         <result property="password" column="PASSWORD"/>
         <result property="name" column="NAME"/>
+        <result property="email" column="EMAIL"/>
         <result property="departmentId" column="DEPARTMENT_ID"/>
         <result property="useYn" column="USE_YN"/>
         <result property="createdAt" column="CREATED_AT"/>
@@ -34,6 +35,7 @@
             u.USERNAME,
             u.PASSWORD,
             u.NAME,
+            u.EMAIL,
             u.DEPARTMENT_ID,
             u.USE_YN,
             u.CREATED_AT,
@@ -145,6 +147,7 @@
             USERNAME,
             PASSWORD,
             NAME,
+            EMAIL,
             DEPARTMENT_ID,
             USE_YN,
             CREATED_BY
@@ -152,6 +155,7 @@
             #{username},
             #{password},
             #{name},
+            #{email},
             #{departmentId},
             #{useYn},
             #{createdBy}
@@ -163,6 +167,7 @@
         UPDATE TB_USER
         SET
             NAME = #{name},
+            EMAIL = #{email},
             DEPARTMENT_ID = #{departmentId},
             USE_YN = #{useYn},
             UPDATED_BY = #{updatedBy},

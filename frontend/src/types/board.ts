@@ -121,3 +121,11 @@ export interface TransferResultResponse {
   newBoardName: string
   message: string
 }
+
+/**
+ * 보드 소유권 이전 요청 DTO
+ */
+export interface BoardTransferRequest {
+  targetUserId: number  // 이관받을 사용자 ID
+  reason?: string  // 이관 사유 (선택)
+}

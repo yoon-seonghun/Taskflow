@@ -41,6 +41,11 @@ public class User {
     private String name;
 
     /**
+     * 이메일 주소
+     */
+    private String email;
+
+    /**
      * 소속 부서 ID (FK)
      */
     private Long departmentId;

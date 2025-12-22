@@ -208,6 +208,31 @@ public class BoardController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    /**
+     * 보드 소유권 이전
+     * - 보드를 다른 사용자에게 이관
+     * - 보드명이 "보드이관"으로 자동 변경됨
+     */
+    @PutMapping("/{id}/transfer-ownership")
+    public ResponseEntity<ApiResponse<BoardResponse>> transferBoardOwnership(
+            @PathVariable("id") Long boardId,
+            @Valid @RequestBody BoardTransferRequest request
+    ) {
+        log.info("Transfer board ownership: boardId={}, targetUserId={}", boardId, request.getTargetUserId());
+
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        // 소유자만 이관 가능
+        if (!boardService.isOwner(boardId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드 소유자만 이관할 수 있습니다"));
+        }
+
+        BoardResponse response = boardService.transferBoardOwnership(boardId, request, currentUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "보드가 이관되었습니다"));
+    }
+
     // =============================================
     // 보드 공유 관리
     // =============================================

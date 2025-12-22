@@ -176,4 +176,33 @@ public interface BoardMapper {
             @Param("boardId") Long boardId,
             @Param("userId") Long userId
     );
+
+    /**
+     * 소유자 ID와 보드명으로 보드 조회
+     * (업무 이관 시 "업무이관" 보드 자동 생성/조회용)
+     *
+     * @param ownerId   소유자 ID
+     * @param boardName 보드명
+     * @return 보드 (Optional)
+     */
+    Optional<Board> findByOwnerIdAndName(
+            @Param("ownerId") Long ownerId,
+            @Param("boardName") String boardName
+    );
+
+    /**
+     * 보드 소유권 이전
+     *
+     * @param boardId     보드 ID
+     * @param newOwnerId  새 소유자 ID
+     * @param newBoardName 새 보드명 (null이면 변경 안함)
+     * @param updatedBy   수정자 ID
+     * @return 영향받은 행 수
+     */
+    int transferOwnership(
+            @Param("boardId") Long boardId,
+            @Param("newOwnerId") Long newOwnerId,
+            @Param("newBoardName") String newBoardName,
+            @Param("updatedBy") Long updatedBy
+    );
 }

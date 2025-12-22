@@ -265,4 +265,25 @@
           AND (b.OWNER_ID = #{userId} OR bs.USER_ID = #{userId})
     </select>
 
+    <!-- 소유자 ID와 보드명으로 보드 조회 -->
+    <select id="findByOwnerIdAndName" resultMap="BoardResultMap">
+        <include refid="selectBoard"/>
+        WHERE b.OWNER_ID = #{ownerId}
+          AND b.BOARD_NAME = #{boardName}
+          AND b.USE_YN = 'Y'
+    </select>
+
+    <!-- 보드 소유권 이전 -->
+    <update id="transferOwnership">
+        UPDATE TB_BOARD
+        SET
+            OWNER_ID = #{newOwnerId},
+            <if test="newBoardName != null and newBoardName != ''">
+            BOARD_NAME = #{newBoardName},
+            </if>
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE BOARD_ID = #{boardId}
+    </update>
+
 </mapper>

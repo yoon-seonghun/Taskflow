@@ -125,4 +125,31 @@ public interface PropertyOptionMapper {
      * @return 영향받은 행 수
      */
     int deleteByPropertyId(@Param("propertyId") Long propertyId);
+
+    /**
+     * 카테고리 속성 기본 옵션 생성
+     *
+     * @param propertyId 속성 정의 ID
+     * @param createdBy  생성자 ID
+     * @return 영향받은 행 수
+     */
+    int insertCategoryOptions(@Param("propertyId") Long propertyId, @Param("createdBy") Long createdBy);
+
+    /**
+     * 상태 속성 기본 옵션 생성
+     *
+     * @param propertyId 속성 정의 ID
+     * @param createdBy  생성자 ID
+     * @return 영향받은 행 수
+     */
+    int insertStatusOptions(@Param("propertyId") Long propertyId, @Param("createdBy") Long createdBy);
+
+    /**
+     * 우선순위 속성 기본 옵션 생성
+     *
+     * @param propertyId 속성 정의 ID
+     * @param createdBy  생성자 ID
+     * @return 영향받은 행 수
+     */
+    int insertPriorityOptions(@Param("propertyId") Long propertyId, @Param("createdBy") Long createdBy);
 }

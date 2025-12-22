@@ -24,6 +24,8 @@
         <result property="completedBy" column="COMPLETED_BY"/>
         <result property="deletedAt" column="DELETED_AT"/>
         <result property="deletedBy" column="DELETED_BY"/>
+        <result property="transferredFrom" column="TRANSFERRED_FROM"/>
+        <result property="transferredAt" column="TRANSFERRED_AT"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
@@ -60,6 +62,8 @@
             i.COMPLETED_BY,
             i.DELETED_AT,
             i.DELETED_BY,
+            i.TRANSFERRED_FROM,
+            i.TRANSFERRED_AT,
             i.CREATED_AT,
             i.CREATED_BY,
             i.UPDATED_AT,

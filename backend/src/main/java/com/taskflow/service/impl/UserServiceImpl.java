@@ -112,6 +112,7 @@ public class UserServiceImpl implements UserService {
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .name(request.getName())
+                .email(request.getEmail())
                 .departmentId(request.getDepartmentId())
                 .useYn("Y")
                 .createdBy(createdBy)
@@ -139,6 +140,7 @@ public class UserServiceImpl implements UserService {
 
         // 수정 정보 설정
         user.setName(request.getName());
+        user.setEmail(request.getEmail());
         user.setDepartmentId(request.getDepartmentId());
         if (request.getUseYn() != null) {
             user.setUseYn(request.getUseYn());

@@ -34,6 +34,7 @@ const uiStore = useUiStore()
 
 // Form fields
 const userName = ref('')
+const email = ref('')
 const username = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
@@ -172,10 +173,26 @@ const usernameValidation = computed(() => {
   return { isValid: true, message: '' }
 })
 
+// 이메일 유효성
+const emailValidation = computed(() => {
+  const emailValue = email.value
+  if (!emailValue) return { isValid: true, message: '' }
+
+  const validFormat = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(emailValue)
+
+  if (!validFormat) {
+    return { isValid: false, message: '올바른 이메일 형식이 아닙니다.' }
+  }
+  return { isValid: true, message: '' }
+})
+
 // 폼 유효성
 const isValid = computed(() => {
   // 필수 필드 검증
   if (!userName.value.trim()) return false
+
+  // 이메일 형식 검증 (입력된 경우에만)
+  if (email.value && !emailValidation.value.isValid) return false
 
   if (isEditMode.value) {
     // 편집 모드: 비밀번호 입력시에만 검증
@@ -230,6 +247,7 @@ async function loadGroups() {
 // 폼 초기화
 function resetForm() {
   userName.value = ''
+  email.value = ''
   username.value = ''
   password.value = ''
   passwordConfirm.value = ''
@@ -243,7 +261,8 @@ function resetForm() {
 
 // 사용자 데이터로 폼 채우기
 function fillForm(user: User) {
-  userName.value = user.userName
+  userName.value = user.userName || user.name || ''
+  email.value = user.email || ''
   username.value = user.username
   departmentId.value = user.departmentId ?? null
   // groupIds 우선, 없으면 groups 배열에서 추출
@@ -298,6 +317,7 @@ function handleSubmit() {
   if (isEditMode.value) {
     const data: UserUpdateRequest = {
       userName: userName.value.trim(),
+      email: email.value.trim() || undefined,
       departmentId: departmentId.value ?? undefined,
       groupIds: selectedGroupIds.value.length > 0 ? selectedGroupIds.value : undefined
     }
@@ -312,6 +332,7 @@ function handleSubmit() {
       password: password.value,
       passwordConfirm: passwordConfirm.value,
       userName: userName.value.trim(),
+      email: email.value.trim() || undefined,
       departmentId: departmentId.value ?? undefined,
       groupIds: selectedGroupIds.value.length > 0 ? selectedGroupIds.value : undefined
     }
@@ -354,6 +375,18 @@ defineExpose({ resetForm })
         :required="true"
         :maxlength="50"
         :disabled="loading"
+      />
+
+      <!-- 이메일 -->
+      <Input
+        v-model="email"
+        label="이메일"
+        type="email"
+        placeholder="example@email.com"
+        :maxlength="100"
+        :disabled="loading"
+        :error="!emailValidation.isValid && email.length > 0"
+        :error-message="emailValidation.message"
       />
 
       <!-- 아이디 -->

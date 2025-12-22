@@ -32,6 +32,11 @@ public class UserResponse {
     private String name;
 
     /**
+     * 이메일 주소
+     */
+    private String email;
+
+    /**
      * 소속 부서 ID
      */
     private Long departmentId;
@@ -83,6 +88,7 @@ public class UserResponse {
                 .userId(user.getUserId())
                 .username(user.getUsername())
                 .name(user.getName())
+                .email(user.getEmail())
                 .departmentId(user.getDepartmentId())
                 .departmentName(user.getDepartmentName())
                 .departmentCode(user.getDepartmentCode())

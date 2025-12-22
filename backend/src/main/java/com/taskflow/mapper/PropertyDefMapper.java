@@ -124,4 +124,22 @@ public interface PropertyDefMapper {
      * @return 영향받은 행 수
      */
     int deleteByBoardId(@Param("boardId") Long boardId);
+
+    /**
+     * 신규 보드용 기본 속성 정의 일괄 생성
+     * (카테고리, 상태, 우선순위, 담당자, 시작일, 마감일)
+     *
+     * @param boardId   보드 ID
+     * @param createdBy 생성자 ID
+     * @return 영향받은 행 수
+     */
+    int insertDefaultProperties(@Param("boardId") Long boardId, @Param("createdBy") Long createdBy);
+
+    /**
+     * 보드의 속성 정의 목록 조회 (이름으로 조회용)
+     *
+     * @param boardId 보드 ID
+     * @return 속성 정의 목록
+     */
+    List<PropertyDef> findAllByBoardId(@Param("boardId") Long boardId);
 }

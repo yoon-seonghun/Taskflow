@@ -11,9 +11,12 @@ import com.taskflow.dto.transfer.TransferPreviewResponse;
 import com.taskflow.dto.transfer.TransferRequest;
 import com.taskflow.dto.transfer.TransferResultResponse;
 import com.taskflow.exception.BusinessException;
+import com.taskflow.domain.PropertyDef;
 import com.taskflow.mapper.BoardMapper;
 import com.taskflow.mapper.BoardShareMapper;
 import com.taskflow.mapper.GroupMapper;
+import com.taskflow.mapper.PropertyDefMapper;
+import com.taskflow.mapper.PropertyOptionMapper;
 import com.taskflow.mapper.UserMapper;
 import com.taskflow.service.AuditLogService;
 import com.taskflow.service.BoardService;
@@ -42,6 +45,8 @@ public class BoardServiceImpl implements BoardService {
     private final BoardShareMapper boardShareMapper;
     private final GroupMapper groupMapper;
     private final UserMapper userMapper;
+    private final PropertyDefMapper propertyDefMapper;
+    private final PropertyOptionMapper propertyOptionMapper;
     private final AuditLogService auditLogService;
     @Lazy
     private final TransferService transferService;
@@ -205,7 +210,48 @@ public class BoardServiceImpl implements BoardService {
         boardMapper.insert(board);
         log.info("Board created: id={}, name={}", board.getBoardId(), board.getBoardName());
 
+        // 기본 속성 정의 및 옵션 생성
+        createDefaultProperties(board.getBoardId(), createdBy);
+
         return getBoard(board.getBoardId());
+    }
+
+    /**
+     * 신규 보드에 기본 속성 정의 및 옵션 생성
+     *
+     * @param boardId   보드 ID
+     * @param createdBy 생성자 ID
+     */
+    private void createDefaultProperties(Long boardId, Long createdBy) {
+        log.info("Creating default properties for board: id={}", boardId);
+
+        // 1. 기본 속성 정의 생성 (카테고리, 상태, 우선순위, 담당자, 시작일, 마감일)
+        propertyDefMapper.insertDefaultProperties(boardId, createdBy);
+
+        // 2. 생성된 속성 조회하여 SELECT 타입 속성에 옵션 추가
+        java.util.List<PropertyDef> properties = propertyDefMapper.findAllByBoardId(boardId);
+
+        for (PropertyDef property : properties) {
+            switch (property.getPropertyName()) {
+                case "카테고리":
+                    propertyOptionMapper.insertCategoryOptions(property.getPropertyId(), createdBy);
+                    log.debug("Created category options for property: id={}", property.getPropertyId());
+                    break;
+                case "상태":
+                    propertyOptionMapper.insertStatusOptions(property.getPropertyId(), createdBy);
+                    log.debug("Created status options for property: id={}", property.getPropertyId());
+                    break;
+                case "우선순위":
+                    propertyOptionMapper.insertPriorityOptions(property.getPropertyId(), createdBy);
+                    log.debug("Created priority options for property: id={}", property.getPropertyId());
+                    break;
+                default:
+                    // 담당자, 시작일, 마감일은 옵션이 필요 없음
+                    break;
+            }
+        }
+
+        log.info("Default properties created for board: id={}, propertyCount={}", boardId, properties.size());
     }
 
     @Override
@@ -655,5 +701,71 @@ public class BoardServiceImpl implements BoardService {
             return false;
         }
         return "OWNER".equals(permission) || BoardShare.PERMISSION_FULL.equals(permission);
+    }
+
+    // =============================================
+    // 보드 소유권 이전
+    // =============================================
+
+    // 보드 이관 시 자동 변경되는 보드명
+    private static final String TRANSFERRED_BOARD_NAME = "보드이관";
+
+    @Override
+    @Transactional
+    public BoardResponse transferBoardOwnership(Long boardId, BoardTransferRequest request, Long currentUserId) {
+        log.info("Transferring board ownership: boardId={}, targetUserId={}", boardId, request.getTargetUserId());
+
+        // 보드 존재 확인
+        Board board = boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        // 소유자 확인
+        if (!board.isOwner(currentUserId)) {
+            throw BusinessException.accessDenied("보드 소유자만 이관할 수 있습니다.");
+        }
+
+        // 자기 자신에게 이관 불가
+        if (currentUserId.equals(request.getTargetUserId())) {
+            throw BusinessException.badRequest("자기 자신에게 이관할 수 없습니다.");
+        }
+
+        // 대상 사용자 존재 확인
+        User targetUser = userMapper.findById(request.getTargetUserId())
+                .orElseThrow(() -> BusinessException.userNotFound(request.getTargetUserId()));
+
+        String originalBoardName = board.getBoardName();
+        Long originalOwnerId = board.getOwnerId();
+
+        // 보드 소유권 이전 (보드명 -> "보드이관"으로 변경)
+        int updated = boardMapper.transferOwnership(
+                boardId,
+                request.getTargetUserId(),
+                TRANSFERRED_BOARD_NAME,
+                currentUserId
+        );
+
+        if (updated == 0) {
+            throw BusinessException.badRequest("보드 이관에 실패했습니다.");
+        }
+
+        // 기존 소유자를 공유 사용자에서 제거 (이미 공유되어 있었다면)
+        if (boardShareMapper.existsByBoardIdAndUserId(boardId, request.getTargetUserId())) {
+            boardShareMapper.deleteByBoardIdAndUserId(boardId, request.getTargetUserId());
+        }
+
+        // 감사 로그 기록
+        String description = String.format("보드 이관: %s → %s (보드명: %s → %s)",
+                originalOwnerId, request.getTargetUserId(),
+                originalBoardName, TRANSFERRED_BOARD_NAME);
+        auditLogService.log(
+                "BOARD", boardId, "TRANSFER",
+                currentUserId, description,
+                null, null, request.getTargetUserId()
+        );
+
+        log.info("Board ownership transferred: boardId={}, from userId={} to userId={}",
+                boardId, originalOwnerId, request.getTargetUserId());
+
+        return getBoard(boardId);
     }
 }

@@ -55,6 +55,13 @@ public class UserCreateRequest {
     private String name;
 
     /**
+     * 이메일 주소
+     */
+    @Size(max = 100, message = "이메일은 100자를 초과할 수 없습니다")
+    @Pattern(regexp = "^$|^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "올바른 이메일 형식이 아닙니다")
+    private String email;
+
+    /**
      * 소속 부서 ID
      */
     private Long departmentId;

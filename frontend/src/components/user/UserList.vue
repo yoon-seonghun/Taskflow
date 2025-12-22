@@ -84,12 +84,13 @@ function handleDelete(event: Event, user: User) {
     <table v-else class="user-table">
       <thead>
         <tr>
-          <th class="w-[120px]">사용자 이름</th>
-          <th class="w-[120px]">아이디</th>
-          <th class="w-[120px]">부서</th>
-          <th class="w-[80px]">상태</th>
-          <th class="w-[140px]">등록일시</th>
-          <th class="w-[100px]">관리</th>
+          <th class="w-[100px]">사용자 이름</th>
+          <th class="w-[100px]">아이디</th>
+          <th class="w-[150px]">이메일</th>
+          <th class="w-[100px]">부서</th>
+          <th class="w-[70px]">상태</th>
+          <th class="w-[130px]">등록일시</th>
+          <th class="w-[80px]">관리</th>
         </tr>
       </thead>
       <tbody>
@@ -101,10 +102,13 @@ function handleDelete(event: Event, user: User) {
           @click="handleRowClick(user)"
         >
           <td class="font-medium text-gray-900">
-            {{ user.userName }}
+            {{ user.userName || user.name }}
           </td>
           <td class="text-gray-600">
             {{ user.username }}
+          </td>
+          <td class="text-gray-600 truncate max-w-[150px]" :title="user.email">
+            {{ user.email || '-' }}
           </td>
           <td class="text-gray-600">
             {{ user.departmentName || '-' }}

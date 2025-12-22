@@ -203,10 +203,13 @@ public class ItemShareService {
     // 개별 업무 이관 기능
     // =============================================
 
+    // 업무 이관 시 자동 생성되는 보드명
+    private static final String TRANSFER_BOARD_NAME = "업무이관";
+
     /**
      * 개별 업무 이관
      * - 다른 보드로 이관: targetBoardId 사용
-     * - 다른 사용자에게 이관: targetUserId 사용 (사용자의 기본 보드로 이관)
+     * - 다른 사용자에게 이관: targetUserId 사용 (사용자의 "업무이관" 보드로 자동 이관)
      */
     @Transactional
     public ItemResponse transferItem(Long itemId, ItemTransferRequest request, Long currentUserId) {
@@ -222,15 +225,11 @@ public class ItemShareService {
         Long targetBoardId = request.getTargetBoardId();
         String targetBoardName = null;
 
-        // targetUserId가 지정된 경우, 해당 사용자의 기본 보드 찾기
+        // targetUserId가 지정된 경우, 해당 사용자의 "업무이관" 보드 찾기 또는 생성
         if (request.getTargetUserId() != null) {
-            List<Board> userBoards = boardMapper.findByOwnerId(request.getTargetUserId(), "Y");
-            if (userBoards.isEmpty()) {
-                throw new BusinessException("이관 대상 사용자의 보드가 없습니다.");
-            }
-            // 정렬 순서가 가장 낮은 보드 (기본 보드)
-            targetBoardId = userBoards.get(0).getBoardId();
-            targetBoardName = userBoards.get(0).getBoardName();
+            Board transferBoard = getOrCreateTransferBoard(request.getTargetUserId(), currentUserId);
+            targetBoardId = transferBoard.getBoardId();
+            targetBoardName = transferBoard.getBoardName();
         } else if (targetBoardId != null) {
             // 대상 보드 조회
             Board targetBoard = boardMapper.findById(targetBoardId)
@@ -274,6 +273,41 @@ public class ItemShareService {
                 .orElseThrow(() -> new BusinessException("이관된 업무를 찾을 수 없습니다."));
 
         return ItemResponse.from(transferredItem);
+    }
+
+    /**
+     * 사용자의 "업무이관" 보드 조회 또는 생성
+     * - 이미 존재하면 해당 보드 반환
+     * - 없으면 새로 생성하여 반환
+     */
+    private Board getOrCreateTransferBoard(Long targetUserId, Long currentUserId) {
+        // 사용자의 "업무이관" 보드 조회
+        return boardMapper.findByOwnerIdAndName(targetUserId, TRANSFER_BOARD_NAME)
+                .orElseGet(() -> {
+                    // 없으면 새로 생성
+                    log.info("Creating transfer board for user {}", targetUserId);
+
+                    // 최대 정렬 순서 조회
+                    Integer maxSortOrder = boardMapper.getMaxSortOrder(targetUserId);
+                    int newSortOrder = (maxSortOrder != null ? maxSortOrder : 0) + 1;
+
+                    Board newBoard = Board.builder()
+                            .boardName(TRANSFER_BOARD_NAME)
+                            .description("다른 사용자로부터 이관받은 업무가 저장되는 보드입니다.")
+                            .ownerId(targetUserId)
+                            .defaultView("TABLE")
+                            .sortOrder(newSortOrder)
+                            .useYn("Y")
+                            .createdBy(currentUserId)
+                            .build();
+
+                    boardMapper.insert(newBoard);
+
+                    log.info("Transfer board created: boardId={} for user {}",
+                            newBoard.getBoardId(), targetUserId);
+
+                    return newBoard;
+                });
     }
 
     /**

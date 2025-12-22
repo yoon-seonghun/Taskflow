@@ -25,10 +25,11 @@ export interface Item {
   endTime?: string
   dueDate?: string        // DB에 없음, endTime으로 대체 (null 반환)
   sortOrder?: number      // DB에 없음 (null 반환)
-  completedAt?: string
-  completedBy?: number    // DB에 없음 (null 반환)
+  completedBy?: number
   deletedAt?: string
-  deletedBy?: number      // DB에 없음 (null 반환)
+  deletedBy?: number
+  transferredFrom?: number  // 이관 원본 보드 ID
+  transferredAt?: string    // 이관 일시
   commentCount?: number
   createdAt: string
   createdBy?: number
