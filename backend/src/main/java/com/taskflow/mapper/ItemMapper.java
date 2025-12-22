@@ -230,4 +230,44 @@ public interface ItemMapper {
      */
     long countActiveItemsCrossBoard(@Param("userId") Long userId,
                                      @Param("request") CrossBoardSearchRequest request);
+
+    // =============================================
+    // 업무 이관 관련
+    // =============================================
+
+    /**
+     * 업무 보드 이동 (이관)
+     *
+     * @param itemId          아이템 ID
+     * @param newBoardId      새 보드 ID
+     * @param originalBoardId 원본 보드 ID
+     * @param updatedBy       수정자 ID
+     * @return 영향받은 행 수
+     */
+    int transferToBoard(@Param("itemId") Long itemId,
+                        @Param("newBoardId") Long newBoardId,
+                        @Param("originalBoardId") Long originalBoardId,
+                        @Param("updatedBy") Long updatedBy);
+
+    /**
+     * 다중 업무 보드 이동 (이관)
+     *
+     * @param itemIds         아이템 ID 목록
+     * @param newBoardId      새 보드 ID
+     * @param originalBoardId 원본 보드 ID
+     * @param updatedBy       수정자 ID
+     * @return 영향받은 행 수
+     */
+    int transferItemsToBoard(@Param("itemIds") List<Long> itemIds,
+                             @Param("newBoardId") Long newBoardId,
+                             @Param("originalBoardId") Long originalBoardId,
+                             @Param("updatedBy") Long updatedBy);
+
+    /**
+     * 이관된 업무 목록 조회
+     *
+     * @param boardId 보드 ID
+     * @return 이관된 업무 목록
+     */
+    List<Item> findTransferredItems(@Param("boardId") Long boardId);
 }

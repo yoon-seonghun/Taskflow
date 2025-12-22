@@ -5,6 +5,7 @@ import com.taskflow.dto.item.*;
 import com.taskflow.security.SecurityUtils;
 import com.taskflow.service.BoardService;
 import com.taskflow.service.ItemService;
+import com.taskflow.service.ItemShareService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class ItemController {
 
     private final ItemService itemService;
     private final BoardService boardService;
+    private final ItemShareService itemShareService;
 
     // =============================================
     // 아이템 CRUD
@@ -282,5 +284,80 @@ public class ItemController {
         List<ItemResponse> response = itemService.getActiveItemsByBoardId(boardId);
 
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // =============================================
+    // 업무 이관
+    // =============================================
+
+    /**
+     * 개별 업무 이관
+     * - targetBoardId: 다른 보드로 이관
+     * - targetUserId: 다른 사용자의 기본 보드로 이관
+     */
+    @PutMapping("/{id}/transfer")
+    public ResponseEntity<ApiResponse<ItemResponse>> transferItem(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId,
+            @Valid @RequestBody ItemTransferRequest request
+    ) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        log.info("Transfer item: itemId={}, targetBoardId={}, targetUserId={}",
+                itemId, request.getTargetBoardId(), request.getTargetUserId());
+
+        // 이관 권한 확인
+        if (!itemShareService.canTransfer(itemId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("업무를 이관할 권한이 없습니다"));
+        }
+
+        ItemResponse response = itemShareService.transferItem(itemId, request, currentUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "업무가 이관되었습니다"));
+    }
+
+    /**
+     * 업무 이관 가능 여부 확인
+     */
+    @GetMapping("/{id}/can-transfer")
+    public ResponseEntity<ApiResponse<Boolean>> canTransferItem(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId
+    ) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        boolean canTransfer = itemShareService.canTransfer(itemId, currentUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(canTransfer));
+    }
+
+    /**
+     * 업무 공유 가능 여부 확인
+     */
+    @GetMapping("/{id}/can-share")
+    public ResponseEntity<ApiResponse<Boolean>> canShareItem(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId
+    ) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        boolean canShare = itemShareService.canShareItem(itemId, currentUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(canShare));
+    }
+
+    /**
+     * 업무 권한 조회
+     */
+    @GetMapping("/{id}/permission")
+    public ResponseEntity<ApiResponse<String>> getItemPermission(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId
+    ) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        String permission = itemShareService.getItemPermission(itemId, currentUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(permission));
     }
 }

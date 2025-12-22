@@ -88,13 +88,25 @@ public interface BoardShareMapper {
     int insert(BoardShare boardShare);
 
     /**
-     * 보드 공유 권한 수정
+     * 보드 공유 권한 수정 (공유 ID 기준)
      *
      * @param boardShareId 공유 ID
      * @param permission   권한 레벨
      * @return 영향받은 행 수
      */
     int updatePermission(@Param("boardShareId") Long boardShareId, @Param("permission") String permission);
+
+    /**
+     * 보드 공유 권한 수정 (보드ID/사용자ID 기준)
+     *
+     * @param boardId    보드 ID
+     * @param userId     사용자 ID
+     * @param permission 권한 레벨
+     * @param updatedBy  수정자 ID
+     * @return 영향받은 행 수
+     */
+    int updatePermissionByBoardAndUser(@Param("boardId") Long boardId, @Param("userId") Long userId,
+                                        @Param("permission") String permission, @Param("updatedBy") Long updatedBy);
 
     /**
      * 보드 공유 제거 (특정 사용자)

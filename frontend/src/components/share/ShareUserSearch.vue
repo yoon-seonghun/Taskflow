@@ -39,12 +39,13 @@ const showResults = ref(false)
 const selectedUser = ref<User | null>(null)
 
 // 권한
-const selectedPermission = ref<BoardPermission>('MEMBER')
+const selectedPermission = ref<BoardPermission>('EDIT')
 
 // 권한 옵션
 const permissionOptions: SelectOption[] = [
-  { value: 'MEMBER', label: '멤버 (조회/수정)' },
-  { value: 'VIEWER', label: '뷰어 (조회만)' }
+  { value: 'VIEW', label: '조회 (보기만)' },
+  { value: 'EDIT', label: '편집 (조회/수정)' },
+  { value: 'FULL', label: '전체 (조회/수정/삭제)' }
 ]
 
 // 추가 버튼 활성화
@@ -107,7 +108,7 @@ function handleAdd() {
 
   // 초기화
   selectedUser.value = null
-  selectedPermission.value = 'MEMBER'
+  selectedPermission.value = 'EDIT'
 }
 
 // 외부 클릭 시 결과 닫기

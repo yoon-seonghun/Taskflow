@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.taskflow.mapper.ItemShareMapper">
+
+    <!-- 결과 매핑 -->
+    <resultMap id="ItemShareResultMap" type="com.taskflow.domain.ItemShare">
+        <id property="itemShareId" column="ITEM_SHARE_ID"/>
+        <result property="itemId" column="ITEM_ID"/>
+        <result property="userId" column="USER_ID"/>
+        <result property="permission" column="PERMISSION"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- JOIN 필드 -->
+        <result property="loginId" column="USERNAME"/>
+        <result property="userName" column="NAME"/>
+        <result property="departmentName" column="DEPARTMENT_NAME"/>
+        <result property="itemContent" column="CONTENT"/>
+    </resultMap>
+
+    <!-- 업무별 공유 목록 조회 -->
+    <select id="selectByItemId" resultMap="ItemShareResultMap">
+        SELECT
+            s.ITEM_SHARE_ID,
+            s.ITEM_ID,
+            s.USER_ID,
+            s.PERMISSION,
+            s.CREATED_AT,
+            s.CREATED_BY,
+            s.UPDATED_AT,
+            s.UPDATED_BY,
+            u.USERNAME,
+            u.NAME,
+            d.DEPARTMENT_NAME
+        FROM TB_ITEM_SHARE s
+        INNER JOIN TB_USER u ON s.USER_ID = u.USER_ID
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        WHERE s.ITEM_ID = #{itemId}
+        ORDER BY s.CREATED_AT DESC
+    </select>
+
+    <!-- 사용자가 공유받은 업무 목록 조회 -->
+    <select id="selectByUserId" resultMap="ItemShareResultMap">
+        SELECT
+            s.ITEM_SHARE_ID,
+            s.ITEM_ID,
+            s.USER_ID,
+            s.PERMISSION,
+            s.CREATED_AT,
+            s.CREATED_BY,
+            i.CONTENT
+        FROM TB_ITEM_SHARE s
+        INNER JOIN TB_ITEM i ON s.ITEM_ID = i.ITEM_ID
+        WHERE s.USER_ID = #{userId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY s.CREATED_AT DESC
+    </select>
+
+    <!-- 특정 업무-사용자 공유 조회 -->
+    <select id="selectByItemIdAndUserId" resultMap="ItemShareResultMap">
+        SELECT
+            s.ITEM_SHARE_ID,
+            s.ITEM_ID,
+            s.USER_ID,
+            s.PERMISSION,
+            s.CREATED_AT,
+            s.CREATED_BY,
+            s.UPDATED_AT,
+            s.UPDATED_BY,
+            u.USERNAME,
+            u.NAME,
+            d.DEPARTMENT_NAME
+        FROM TB_ITEM_SHARE s
+        INNER JOIN TB_USER u ON s.USER_ID = u.USER_ID
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        WHERE s.ITEM_ID = #{itemId}
+          AND s.USER_ID = #{userId}
+    </select>
+
+    <!-- 공유 추가 -->
+    <insert id="insert" parameterType="com.taskflow.domain.ItemShare" useGeneratedKeys="true" keyProperty="itemShareId">
+        INSERT INTO TB_ITEM_SHARE (
+            ITEM_ID,
+            USER_ID,
+            PERMISSION,
+            CREATED_AT,
+            CREATED_BY
+        ) VALUES (
+            #{itemId},
+            #{userId},
+            #{permission},
+            NOW(),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 권한 변경 -->
+    <update id="updatePermission">
+        UPDATE TB_ITEM_SHARE
+        SET PERMISSION = #{permission},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{updatedBy}
+        WHERE ITEM_ID = #{itemId}
+          AND USER_ID = #{userId}
+    </update>
+
+    <!-- 공유 제거 -->
+    <delete id="delete">
+        DELETE FROM TB_ITEM_SHARE
+        WHERE ITEM_ID = #{itemId}
+          AND USER_ID = #{userId}
+    </delete>
+
+    <!-- 업무의 모든 공유 제거 -->
+    <delete id="deleteByItemId">
+        DELETE FROM TB_ITEM_SHARE
+        WHERE ITEM_ID = #{itemId}
+    </delete>
+
+    <!-- 중복 체크 -->
+    <select id="existsByItemIdAndUserId" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM TB_ITEM_SHARE
+        WHERE ITEM_ID = #{itemId}
+          AND USER_ID = #{userId}
+    </select>
+
+    <!-- 사용자의 업무 접근 권한 확인 -->
+    <select id="getPermission" resultType="String">
+        SELECT PERMISSION
+        FROM TB_ITEM_SHARE
+        WHERE ITEM_ID = #{itemId}
+          AND USER_ID = #{userId}
+    </select>
+
+</mapper>

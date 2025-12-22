@@ -188,4 +188,81 @@
         WHERE BOARD_ID = #{boardId}
     </update>
 
+    <!-- ============================================= -->
+    <!-- 보드 관리 추가 쿼리 -->
+    <!-- ============================================= -->
+
+    <!-- 소유한 보드 목록 조회 (정렬 순서 포함) -->
+    <select id="findOwnedBoards" resultMap="BoardResultMap">
+        <include refid="selectBoard"/>
+        WHERE b.OWNER_ID = #{userId}
+          AND b.USE_YN = 'Y'
+        ORDER BY b.SORT_ORDER, b.CREATED_AT DESC
+    </select>
+
+    <!-- 공유받은 보드 목록 조회 (권한 정보 포함) -->
+    <select id="findSharedBoards" resultType="map">
+        SELECT
+            b.BOARD_ID,
+            b.BOARD_NAME,
+            b.DESCRIPTION AS BOARD_DESC,
+            b.OWNER_ID,
+            b.DEFAULT_VIEW,
+            b.COLOR,
+            bs.PERMISSION,
+            u.NAME AS OWNER_NAME,
+            (SELECT COUNT(*) FROM TB_ITEM i WHERE i.BOARD_ID = b.BOARD_ID) AS ITEM_COUNT
+        FROM TB_BOARD b
+        INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID
+        LEFT JOIN TB_USER u ON b.OWNER_ID = u.USER_ID
+        WHERE bs.USER_ID = #{userId}
+          AND b.USE_YN = 'Y'
+        ORDER BY b.BOARD_NAME
+    </select>
+
+    <!-- 미완료 업무 수 조회 -->
+    <select id="countPendingItems" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_ITEM
+        WHERE BOARD_ID = #{boardId}
+          AND STATUS NOT IN ('COMPLETED', 'DELETED')
+    </select>
+
+    <!-- 미완료 업무 목록 조회 -->
+    <select id="findPendingItems" resultType="map">
+        SELECT
+            i.ITEM_ID,
+            i.CONTENT AS TITLE,
+            i.STATUS,
+            i.PRIORITY,
+            u.NAME AS ASSIGNEE_NAME
+        FROM TB_ITEM i
+        LEFT JOIN TB_USER u ON i.ASSIGNEE_ID = u.USER_ID
+        WHERE i.BOARD_ID = #{boardId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY i.CREATED_AT
+    </select>
+
+    <!-- 보드 순서 변경 -->
+    <update id="updateSortOrder">
+        UPDATE TB_BOARD
+        SET SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE BOARD_ID = #{boardId}
+    </update>
+
+    <!-- 사용자의 보드 권한 조회 (OWNER 또는 공유 권한) -->
+    <select id="getUserPermission" resultType="String">
+        SELECT
+            CASE
+                WHEN b.OWNER_ID = #{userId} THEN 'OWNER'
+                ELSE bs.PERMISSION
+            END AS PERMISSION
+        FROM TB_BOARD b
+        LEFT JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USER_ID = #{userId}
+        WHERE b.BOARD_ID = #{boardId}
+          AND (b.OWNER_ID = #{userId} OR bs.USER_ID = #{userId})
+    </select>
+
 </mapper>

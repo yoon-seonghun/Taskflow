@@ -4,12 +4,26 @@ import type {
   BoardCreateRequest,
   BoardUpdateRequest,
   BoardShare,
-  BoardShareRequest
+  BoardShareRequest,
+  BoardShareUpdateRequest,
+  BoardListResponse,
+  BoardDeleteRequest,
+  BoardOrderRequest,
+  TransferPreviewResponse,
+  TransferResultResponse
 } from '@/types/board'
 
 export const boardApi = {
-  getBoards(params?: { useYn?: string }) {
+  // =============================================
+  // 보드 CRUD
+  // =============================================
+
+  getBoards(params?: { useYn?: string; owned?: boolean }) {
     return get<Board[]>('/boards', params)
+  },
+
+  getBoardList() {
+    return get<BoardListResponse>('/boards/list')
   },
 
   getBoard(boardId: number) {
@@ -28,13 +42,36 @@ export const boardApi = {
     return del<void>(`/boards/${boardId}`)
   },
 
-  // 공유 사용자 관련
+  // =============================================
+  // 보드 관리 (신규 기능)
+  // =============================================
+
+  updateBoardOrder(boardId: number, data: BoardOrderRequest) {
+    return put<void>(`/boards/${boardId}/order`, data)
+  },
+
+  deleteBoardWithTransfer(boardId: number, data: BoardDeleteRequest) {
+    return del<TransferResultResponse>(`/boards/${boardId}/with-transfer`, data)
+  },
+
+  getTransferPreview(boardId: number) {
+    return get<TransferPreviewResponse>(`/boards/${boardId}/transfer-preview`)
+  },
+
+  // =============================================
+  // 공유 관리
+  // =============================================
+
   getBoardShares(boardId: number) {
     return get<BoardShare[]>(`/boards/${boardId}/shares`)
   },
 
   addBoardShare(boardId: number, data: BoardShareRequest) {
     return post<BoardShare>(`/boards/${boardId}/shares`, data)
+  },
+
+  updateBoardSharePermission(boardId: number, userId: number, data: BoardShareUpdateRequest) {
+    return put<void>(`/boards/${boardId}/shares/${userId}`, data)
   },
 
   removeBoardShare(boardId: number, userId: number) {

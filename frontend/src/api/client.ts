@@ -251,10 +251,10 @@ export async function put<T>(url: string, data?: object): Promise<ApiResponse<T>
 }
 
 /**
- * DELETE 요청
+ * DELETE 요청 (옵션으로 body 데이터 지원)
  */
-export async function del<T>(url: string): Promise<ApiResponse<T>> {
-  const response = await client.delete<ApiResponse<T>>(url)
+export async function del<T>(url: string, data?: object): Promise<ApiResponse<T>> {
+  const response = await client.delete<ApiResponse<T>>(url, { data })
   return response.data
 }
 

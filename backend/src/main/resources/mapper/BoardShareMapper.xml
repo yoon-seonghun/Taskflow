@@ -149,11 +149,19 @@
         )
     </insert>
 
-    <!-- 보드 공유 권한 수정 -->
+    <!-- 보드 공유 권한 수정 (공유 ID 기준) -->
     <update id="updatePermission">
         UPDATE TB_BOARD_SHARE
         SET PERMISSION = #{permission}
         WHERE BOARD_SHARE_ID = #{boardShareId}
+    </update>
+
+    <!-- 보드 공유 권한 수정 (보드ID/사용자ID 기준) -->
+    <update id="updatePermissionByBoardAndUser">
+        UPDATE TB_BOARD_SHARE
+        SET PERMISSION = #{permission}
+        WHERE BOARD_ID = #{boardId}
+          AND USER_ID = #{userId}
     </update>
 
     <!-- 보드 공유 제거 (특정 사용자) -->

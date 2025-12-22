@@ -6,7 +6,12 @@ import type {
   BoardCreateRequest,
   BoardUpdateRequest,
   BoardShare,
-  BoardShareRequest
+  BoardShareRequest,
+  BoardShareUpdateRequest,
+  BoardListResponse,
+  BoardDeleteRequest,
+  TransferPreviewResponse,
+  TransferResultResponse
 } from '@/types/board'
 
 export type ViewType = 'table' | 'kanban' | 'list'
@@ -28,16 +33,21 @@ export const useBoardStore = defineStore('board', () => {
 
   // 내가 소유한 보드
   const ownedBoards = computed(() =>
-    boards.value.filter(b => b.ownerYn === 'Y')
+    boards.value.filter(b => b.isOwner === true)
   )
 
   // 공유받은 보드
   const sharedBoards = computed(() =>
-    boards.value.filter(b => b.ownerYn !== 'Y')
+    boards.value.filter(b => b.isOwner !== true)
   )
 
   // 현재 보드 ID
   const currentBoardId = computed(() => currentBoard.value?.boardId || null)
+
+  // 접근 가능한 모든 보드 (소유 + 공유)
+  const accessibleBoards = computed(() =>
+    boards.value.filter(b => b.useYn === 'Y')
+  )
 
   // ==================== Internal Mutations ====================
   function _setBoards(newBoards: Board[]) {
@@ -275,6 +285,157 @@ export const useBoardStore = defineStore('board', () => {
     }
   }
 
+  /**
+   * 공유 권한 변경
+   */
+  async function updateBoardSharePermission(
+    boardId: number,
+    userId: number,
+    data: BoardShareUpdateRequest
+  ): Promise<boolean> {
+    // 1. 원본 데이터 백업
+    const originalShares = [...boardShares.value]
+    const shareIndex = boardShares.value.findIndex(s => s.userId === userId)
+
+    // 2. Store 먼저 갱신 (Optimistic Update)
+    if (shareIndex !== -1) {
+      boardShares.value[shareIndex] = {
+        ...boardShares.value[shareIndex],
+        permission: data.permission
+      }
+    }
+
+    try {
+      const response = await boardApi.updateBoardSharePermission(boardId, userId, data)
+      if (response.success) {
+        return true
+      }
+
+      // 실패 시 롤백
+      boardShares.value = originalShares
+      error.value = response.message || '권한 변경에 실패했습니다.'
+      return false
+    } catch (e) {
+      // 실패 시 롤백
+      boardShares.value = originalShares
+      error.value = '권한 변경에 실패했습니다.'
+      return false
+    }
+  }
+
+  // ==================== 보드 관리 (신규 기능) ====================
+
+  /**
+   * 보드 목록 조회 (소유/공유 분리)
+   */
+  async function fetchBoardList(): Promise<BoardListResponse | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await boardApi.getBoardList()
+      if (response.success && response.data) {
+        // 모든 보드를 합쳐서 저장
+        const allBoards = [
+          ...response.data.ownedBoards,
+          ...response.data.sharedBoards
+        ]
+        _setBoards(allBoards)
+        return response.data
+      }
+      error.value = response.message || '보드 목록을 불러오는데 실패했습니다.'
+      return null
+    } catch (e) {
+      error.value = '보드 목록을 불러오는데 실패했습니다.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 보드 순서 변경
+   */
+  async function updateBoardOrder(boardId: number, sortOrder: number): Promise<boolean> {
+    // 1. 원본 데이터 백업
+    const originalBoard = boards.value.find(b => b.boardId === boardId)
+    if (!originalBoard) return false
+
+    const originalSortOrder = originalBoard.sortOrder
+
+    // 2. Store 먼저 갱신 (Optimistic Update)
+    _updateBoard(boardId, { sortOrder })
+
+    try {
+      const response = await boardApi.updateBoardOrder(boardId, { sortOrder })
+      if (response.success) {
+        return true
+      }
+
+      // 실패 시 롤백
+      _updateBoard(boardId, { sortOrder: originalSortOrder })
+      error.value = response.message || '순서 변경에 실패했습니다.'
+      return false
+    } catch (e) {
+      // 실패 시 롤백
+      _updateBoard(boardId, { sortOrder: originalSortOrder })
+      error.value = '순서 변경에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 보드 삭제 (이관 포함)
+   */
+  async function deleteBoardWithTransfer(
+    boardId: number,
+    data: BoardDeleteRequest
+  ): Promise<TransferResultResponse | null> {
+    loading.value = true
+    error.value = null
+
+    // 1. 원본 데이터 백업
+    const originalBoards = [...boards.value]
+    const originalCurrentBoard = currentBoard.value
+
+    try {
+      const response = await boardApi.deleteBoardWithTransfer(boardId, data)
+      if (response.success) {
+        // 성공 시 보드 제거
+        _removeBoard(boardId)
+        return response.data || null
+      }
+
+      error.value = response.message || '보드 삭제에 실패했습니다.'
+      return null
+    } catch (e) {
+      // 실패 시 롤백
+      boards.value = originalBoards
+      currentBoard.value = originalCurrentBoard
+      error.value = '보드 삭제에 실패했습니다.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 이관 대상 업무 미리보기
+   */
+  async function getTransferPreview(boardId: number): Promise<TransferPreviewResponse | null> {
+    try {
+      const response = await boardApi.getTransferPreview(boardId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      error.value = response.message || '미리보기를 불러오는데 실패했습니다.'
+      return null
+    } catch (e) {
+      error.value = '미리보기를 불러오는데 실패했습니다.'
+      return null
+    }
+  }
+
   // ==================== Utility Functions ====================
   function setCurrentBoard(board: Board | null) {
     currentBoard.value = board
@@ -321,14 +482,20 @@ export const useBoardStore = defineStore('board', () => {
     ownedBoards,
     sharedBoards,
     currentBoardId,
+    accessibleBoards,
     // Actions
     fetchBoards,
     fetchBoard,
+    fetchBoardList,
     createBoard,
     updateBoard,
+    updateBoardOrder,
     deleteBoard,
+    deleteBoardWithTransfer,
+    getTransferPreview,
     fetchBoardShares,
     addBoardShare,
+    updateBoardSharePermission,
     removeBoardShare,
     // Utility
     setCurrentBoard,

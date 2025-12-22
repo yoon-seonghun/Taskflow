@@ -12,6 +12,7 @@ export { groupApi } from './group'
 export { departmentApi } from './department'
 export { templateApi } from './template'
 export { historyApi } from './history'
+export { itemShareApi, auditLogApi } from './share'
 
 // HTTP 클라이언트도 내보내기
 export { get, post, put, del, client } from './client'

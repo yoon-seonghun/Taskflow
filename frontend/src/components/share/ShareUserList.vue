@@ -41,10 +41,12 @@ function formatDateTime(dateStr?: string): string {
 // 권한 뱃지 설정
 function getPermissionBadge(permission: BoardPermission) {
   switch (permission) {
-    case 'MEMBER':
-      return { label: '멤버', variant: 'primary' as const }
-    case 'VIEWER':
-      return { label: '뷰어', variant: 'default' as const }
+    case 'VIEW':
+      return { label: '조회', variant: 'default' as const }
+    case 'EDIT':
+      return { label: '편집', variant: 'primary' as const }
+    case 'FULL':
+      return { label: '전체', variant: 'success' as const }
     default:
       return { label: permission, variant: 'default' as const }
   }

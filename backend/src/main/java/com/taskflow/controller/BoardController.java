@@ -2,6 +2,9 @@ package com.taskflow.controller;
 
 import com.taskflow.common.ApiResponse;
 import com.taskflow.dto.board.*;
+import com.taskflow.dto.share.ShareUpdateRequest;
+import com.taskflow.dto.transfer.TransferPreviewResponse;
+import com.taskflow.dto.transfer.TransferResultResponse;
 import com.taskflow.security.SecurityUtils;
 import com.taskflow.service.BoardService;
 import jakarta.validation.Valid;
@@ -18,12 +21,17 @@ import java.util.List;
  *
  * API:
  * - GET /api/boards - 보드 목록 (접근 가능한 보드)
+ * - GET /api/boards/list - 보드 목록 (소유/공유 분리)
  * - POST /api/boards - 보드 생성
  * - GET /api/boards/{id} - 보드 조회
  * - PUT /api/boards/{id} - 보드 수정
  * - DELETE /api/boards/{id} - 보드 삭제
+ * - PUT /api/boards/{id}/order - 보드 순서 변경
+ * - DELETE /api/boards/{id}/with-transfer - 보드 삭제 (이관 포함)
+ * - GET /api/boards/{id}/transfer-preview - 이관 미리보기
  * - GET /api/boards/{id}/shares - 공유 사용자 목록
  * - POST /api/boards/{id}/shares - 공유 사용자 추가
+ * - PUT /api/boards/{id}/shares/{userId} - 공유 권한 변경
  * - DELETE /api/boards/{id}/shares/{userId} - 공유 사용자 제거
  */
 @Slf4j
@@ -57,6 +65,18 @@ public class BoardController {
             response = boardService.getAccessibleBoards(currentUserId, useYn);
         }
 
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 보드 목록 조회 (소유/공유 분리)
+     */
+    @GetMapping("/list")
+    public ResponseEntity<ApiResponse<BoardListResponse>> getBoardList() {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        log.debug("Get board list: userId={}", currentUserId);
+
+        BoardListResponse response = boardService.getBoardList(currentUserId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -128,6 +148,67 @@ public class BoardController {
     }
 
     // =============================================
+    // 보드 관리 (신규 기능)
+    // =============================================
+
+    /**
+     * 보드 순서 변경
+     */
+    @PutMapping("/{id}/order")
+    public ResponseEntity<ApiResponse<Void>> updateBoardOrder(
+            @PathVariable("id") Long boardId,
+            @Valid @RequestBody BoardOrderRequest request
+    ) {
+        log.info("Update board order: boardId={}, sortOrder={}", boardId, request.getSortOrder());
+
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        boardService.updateBoardOrder(boardId, request.getSortOrder(), currentUserId);
+
+        return ResponseEntity.ok(ApiResponse.successWithMessage("보드 순서가 변경되었습니다"));
+    }
+
+    /**
+     * 보드 삭제 (이관 포함)
+     */
+    @DeleteMapping("/{id}/with-transfer")
+    public ResponseEntity<ApiResponse<TransferResultResponse>> deleteBoardWithTransfer(
+            @PathVariable("id") Long boardId,
+            @Valid @RequestBody BoardDeleteRequest request
+    ) {
+        log.info("Delete board with transfer: boardId={}, targetUserId={}, forceDelete={}",
+                boardId, request.getTargetUserId(), request.isForceDelete());
+
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        TransferResultResponse result = boardService.deleteBoardWithTransfer(boardId, request, currentUserId);
+
+        if (result != null) {
+            return ResponseEntity.ok(ApiResponse.success(result, "보드가 삭제되고 업무가 이관되었습니다"));
+        } else {
+            return ResponseEntity.ok(ApiResponse.successWithMessage("보드가 삭제되었습니다"));
+        }
+    }
+
+    /**
+     * 이관 대상 업무 미리보기
+     */
+    @GetMapping("/{id}/transfer-preview")
+    public ResponseEntity<ApiResponse<TransferPreviewResponse>> getTransferPreview(
+            @PathVariable("id") Long boardId
+    ) {
+        log.debug("Get transfer preview: boardId={}", boardId);
+
+        // 접근 권한 확인
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        if (!boardService.isOwner(boardId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드 소유자만 이관 미리보기를 조회할 수 있습니다"));
+        }
+
+        TransferPreviewResponse response = boardService.getTransferPreview(boardId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // =============================================
     // 보드 공유 관리
     // =============================================
 
@@ -166,6 +247,24 @@ public class BoardController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "공유 사용자가 추가되었습니다"));
+    }
+
+    /**
+     * 공유 권한 변경
+     */
+    @PutMapping("/{id}/shares/{userId}")
+    public ResponseEntity<ApiResponse<Void>> updateBoardSharePermission(
+            @PathVariable("id") Long boardId,
+            @PathVariable("userId") Long userId,
+            @Valid @RequestBody ShareUpdateRequest request
+    ) {
+        log.info("Update board share permission: boardId={}, userId={}, permission={}",
+                boardId, userId, request.getPermission());
+
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        boardService.updateBoardSharePermission(boardId, userId, request, currentUserId);
+
+        return ResponseEntity.ok(ApiResponse.successWithMessage("권한이 변경되었습니다"));
     }
 
     /**

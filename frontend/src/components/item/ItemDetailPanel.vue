@@ -12,6 +12,8 @@ import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { Button, Spinner, MarkdownEditor } from '@/components/common'
 import ItemForm from './ItemForm.vue'
+import ItemTransferModal from './ItemTransferModal.vue'
+import ItemShareModal from './ItemShareModal.vue'
 import { CommentList } from '@/components/comment'
 import type { Item, ItemUpdateRequest } from '@/types/item'
 
@@ -43,6 +45,12 @@ const commentListRef = ref<InstanceType<typeof CommentList> | null>(null)
 
 // 에디터 content 상태
 const editorContent = ref('')
+
+// 모달 상태
+const showTransferModal = ref(false)
+const showShareModal = ref(false)
+const canTransfer = ref(false)
+const canShare = ref(false)
 
 // 컬럼 폭 상태 (리사이즈용)
 const PROP_WIDTH_KEY = 'taskflow_prop_width'
@@ -144,6 +152,9 @@ async function loadItem() {
       item.value = result
       editorContent.value = result.description || ''
       itemStore.startEditing(props.itemId, result)
+
+      // 권한 확인
+      checkPermissions()
     } else {
       toast.error('업무를 불러오는데 실패했습니다.')
       emit('close')
@@ -154,6 +165,28 @@ async function loadItem() {
   } finally {
     isLoading.value = false
   }
+}
+
+// 이관/공유 권한 확인
+async function checkPermissions() {
+  try {
+    canTransfer.value = await itemStore.canTransferItem(props.boardId, props.itemId)
+    canShare.value = await itemStore.canShareItem(props.boardId, props.itemId)
+  } catch {
+    canTransfer.value = false
+    canShare.value = false
+  }
+}
+
+// 이관 완료 핸들러
+function handleTransferred(transferredItem: Item) {
+  emit('deleted', props.itemId) // 현재 보드에서 제거
+  emit('close')
+}
+
+// 공유 업데이트 핸들러
+function handleShareUpdated() {
+  // 필요시 아이템 새로고침
 }
 
 // 아이템 업데이트 (속성 변경) - description은 별도 저장 (병합하지 않음)
@@ -320,6 +353,34 @@ onUnmounted(() => {
 
         <div class="flex items-center gap-1">
           <span v-if="isSaving" class="text-[12px] text-gray-400 mr-2">저장 중...</span>
+
+          <!-- 이관 버튼 -->
+          <Button
+            v-if="item && canTransfer && item.status !== 'DELETED'"
+            variant="ghost"
+            size="sm"
+            title="업무 이관"
+            @click="showTransferModal = true"
+          >
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            이관
+          </Button>
+
+          <!-- 공유 버튼 -->
+          <Button
+            v-if="item && canShare && item.status !== 'DELETED'"
+            variant="ghost"
+            size="sm"
+            title="업무 공유"
+            @click="showShareModal = true"
+          >
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            공유
+          </Button>
 
           <Button
             v-if="item && item.status !== 'COMPLETED' && item.status !== 'DELETED'"
@@ -490,5 +551,25 @@ onUnmounted(() => {
         <Button variant="outline" class="flex-1" @click="handleClose">닫기</Button>
       </div>
     </div>
+
+    <!-- 이관 모달 -->
+    <ItemTransferModal
+      v-if="item"
+      :show="showTransferModal"
+      :item="item"
+      :board-id="boardId"
+      @close="showTransferModal = false"
+      @transferred="handleTransferred"
+    />
+
+    <!-- 공유 모달 -->
+    <ItemShareModal
+      v-if="item"
+      :show="showShareModal"
+      :item="item"
+      :board-id="boardId"
+      @close="showShareModal = false"
+      @updated="handleShareUpdated"
+    />
   </div>
 </template>

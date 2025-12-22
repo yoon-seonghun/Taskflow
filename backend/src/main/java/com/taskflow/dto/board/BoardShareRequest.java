@@ -19,8 +19,8 @@ public class BoardShareRequest {
     private Long userId;
 
     /**
-     * 권한 레벨 (MEMBER: 편집, VIEWER: 조회만)
+     * 권한 레벨 (VIEW: 조회, EDIT: 편집, FULL: 전체)
      */
-    @Pattern(regexp = "^(MEMBER|VIEWER)$", message = "권한은 MEMBER 또는 VIEWER이어야 합니다")
-    private String permission = "MEMBER";  // 기본값: 편집 권한
+    @Pattern(regexp = "^(VIEW|EDIT|FULL)$", message = "권한은 VIEW, EDIT, FULL 중 하나여야 합니다")
+    private String permission = "EDIT";  // 기본값: 편집 권한
 }

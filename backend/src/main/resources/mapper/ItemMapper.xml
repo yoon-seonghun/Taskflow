@@ -420,4 +420,43 @@
         </if>
     </select>
 
+    <!-- ============================================= -->
+    <!-- 업무 이관 관련 -->
+    <!-- ============================================= -->
+
+    <!-- 업무 보드 이동 (이관) -->
+    <update id="transferToBoard">
+        UPDATE TB_ITEM
+        SET
+            BOARD_ID = #{newBoardId},
+            TRANSFERRED_FROM = #{originalBoardId},
+            TRANSFERRED_AT = CURRENT_TIMESTAMP,
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 다중 업무 보드 이동 (이관) -->
+    <update id="transferItemsToBoard">
+        UPDATE TB_ITEM
+        SET
+            BOARD_ID = #{newBoardId},
+            TRANSFERRED_FROM = #{originalBoardId},
+            TRANSFERRED_AT = CURRENT_TIMESTAMP,
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID IN
+        <foreach item="itemId" collection="itemIds" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+    </update>
+
+    <!-- 이관된 업무 목록 조회 -->
+    <select id="findTransferredItems" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.TRANSFERRED_FROM IS NOT NULL
+          AND i.BOARD_ID = #{boardId}
+        ORDER BY i.TRANSFERRED_AT DESC
+    </select>
+
 </mapper>

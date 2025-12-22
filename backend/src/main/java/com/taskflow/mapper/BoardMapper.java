@@ -114,4 +114,66 @@ public interface BoardMapper {
      * @return 아이템 존재 여부
      */
     boolean hasItems(@Param("boardId") Long boardId);
+
+    // =============================================
+    // 보드 관리 추가 메서드
+    // =============================================
+
+    /**
+     * 소유한 보드 목록 조회 (정렬 순서 포함)
+     *
+     * @param userId 사용자 ID
+     * @return 보드 목록
+     */
+    List<Board> findOwnedBoards(@Param("userId") Long userId);
+
+    /**
+     * 공유받은 보드 목록 조회 (권한 정보 포함)
+     *
+     * @param userId 사용자 ID
+     * @return 보드 목록 (Map 형태)
+     */
+    List<java.util.Map<String, Object>> findSharedBoards(@Param("userId") Long userId);
+
+    /**
+     * 미완료 업무 수 조회
+     *
+     * @param boardId 보드 ID
+     * @return 미완료 업무 수
+     */
+    int countPendingItems(@Param("boardId") Long boardId);
+
+    /**
+     * 미완료 업무 목록 조회
+     *
+     * @param boardId 보드 ID
+     * @return 미완료 업무 목록
+     */
+    List<java.util.Map<String, Object>> findPendingItems(@Param("boardId") Long boardId);
+
+    /**
+     * 보드 순서 변경
+     *
+     * @param boardId   보드 ID
+     * @param sortOrder 정렬 순서
+     * @param updatedBy 수정자 ID
+     * @return 영향받은 행 수
+     */
+    int updateSortOrder(
+            @Param("boardId") Long boardId,
+            @Param("sortOrder") Integer sortOrder,
+            @Param("updatedBy") Long updatedBy
+    );
+
+    /**
+     * 사용자의 보드 권한 조회
+     *
+     * @param boardId 보드 ID
+     * @param userId  사용자 ID
+     * @return 권한 (OWNER/VIEW/EDIT/FULL)
+     */
+    String getUserPermission(
+            @Param("boardId") Long boardId,
+            @Param("userId") Long userId
+    );
 }

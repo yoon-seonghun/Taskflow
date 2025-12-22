@@ -72,6 +72,21 @@ public class BoardResponse {
     private Integer shareCount;
 
     /**
+     * 미완료 업무 수 (이관 대상)
+     */
+    private Integer pendingItemCount;
+
+    /**
+     * 현재 사용자의 권한 (OWNER/VIEW/EDIT/FULL)
+     */
+    private String currentUserPermission;
+
+    /**
+     * 현재 사용자가 소유자인지 여부
+     */
+    private Boolean isOwner;
+
+    /**
      * 사용 가능한 그룹 목록
      */
     private List<GroupResponse> groups;

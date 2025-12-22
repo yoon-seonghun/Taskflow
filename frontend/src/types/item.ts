@@ -134,3 +134,30 @@ export interface CrossBoardStats {
   urgentOverdueCount: number
   highOverdueCount: number
 }
+
+/**
+ * 업무 이관 요청 DTO
+ */
+export interface ItemTransferRequest {
+  targetBoardId?: number
+  targetUserId?: number
+  reason?: string
+}
+
+/**
+ * 업무 공유 정보 DTO
+ */
+export interface ItemShare {
+  itemShareId: number
+  itemId: number
+  userId: number
+  loginId?: string
+  userName?: string
+  departmentName?: string
+  permission: 'VIEW' | 'EDIT' | 'FULL'
+  canView: boolean
+  canEdit: boolean
+  canDelete: boolean
+  createdAt?: string
+  updatedAt?: string
+}

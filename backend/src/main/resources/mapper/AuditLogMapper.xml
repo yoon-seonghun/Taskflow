@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.taskflow.mapper.AuditLogMapper">
+
+    <!-- 결과 매핑 -->
+    <resultMap id="AuditLogResultMap" type="com.taskflow.domain.AuditLog">
+        <id property="logId" column="LOG_ID"/>
+        <result property="targetType" column="TARGET_TYPE"/>
+        <result property="targetId" column="TARGET_ID"/>
+        <result property="action" column="ACTION"/>
+        <result property="actorId" column="ACTOR_ID"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="beforeData" column="BEFORE_DATA"/>
+        <result property="afterData" column="AFTER_DATA"/>
+        <result property="relatedUserId" column="RELATED_USER_ID"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <!-- JOIN 필드 -->
+        <result property="targetName" column="TARGET_NAME"/>
+        <result property="actorName" column="ACTOR_NAME"/>
+        <result property="relatedUserName" column="RELATED_USER_NAME"/>
+    </resultMap>
+
+    <!-- 로그 기록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.AuditLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO TB_AUDIT_LOG (
+            TARGET_TYPE,
+            TARGET_ID,
+            ACTION,
+            ACTOR_ID,
+            DESCRIPTION,
+            BEFORE_DATA,
+            AFTER_DATA,
+            RELATED_USER_ID,
+            CREATED_AT
+        ) VALUES (
+            #{targetType},
+            #{targetId},
+            #{action},
+            #{actorId},
+            #{description},
+            #{beforeData},
+            #{afterData},
+            #{relatedUserId},
+            NOW()
+        )
+    </insert>
+
+    <!-- 검색 조건에 따른 로그 조회 -->
+    <select id="selectBySearchRequest" parameterType="com.taskflow.dto.audit.AuditLogSearchRequest" resultMap="AuditLogResultMap">
+        SELECT
+            l.LOG_ID,
+            l.TARGET_TYPE,
+            l.TARGET_ID,
+            l.ACTION,
+            l.ACTOR_ID,
+            l.DESCRIPTION,
+            l.RELATED_USER_ID,
+            l.CREATED_AT,
+            u.NAME AS ACTOR_NAME,
+            ru.NAME AS RELATED_USER_NAME,
+            CASE
+                WHEN l.TARGET_TYPE = 'BOARD' THEN (SELECT BOARD_NAME FROM TB_BOARD WHERE BOARD_ID = l.TARGET_ID)
+                WHEN l.TARGET_TYPE = 'ITEM' THEN (SELECT CONTENT FROM TB_ITEM WHERE ITEM_ID = l.TARGET_ID)
+                ELSE NULL
+            END AS TARGET_NAME
+        FROM TB_AUDIT_LOG l
+        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
+        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        <where>
+            <if test="targetType != null and targetType != ''">
+                AND l.TARGET_TYPE = #{targetType}
+            </if>
+            <if test="action != null and action != ''">
+                AND l.ACTION = #{action}
+            </if>
+            <if test="actorId != null">
+                AND l.ACTOR_ID = #{actorId}
+            </if>
+            <if test="startDate != null">
+                AND DATE(l.CREATED_AT) &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND DATE(l.CREATED_AT) &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY l.CREATED_AT DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 검색 조건에 따른 총 건수 -->
+    <select id="countBySearchRequest" parameterType="com.taskflow.dto.audit.AuditLogSearchRequest" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_AUDIT_LOG l
+        <where>
+            <if test="targetType != null and targetType != ''">
+                AND l.TARGET_TYPE = #{targetType}
+            </if>
+            <if test="action != null and action != ''">
+                AND l.ACTION = #{action}
+            </if>
+            <if test="actorId != null">
+                AND l.ACTOR_ID = #{actorId}
+            </if>
+            <if test="startDate != null">
+                AND DATE(l.CREATED_AT) &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND DATE(l.CREATED_AT) &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 대상별 로그 조회 -->
+    <select id="selectByTarget" resultMap="AuditLogResultMap">
+        SELECT
+            l.LOG_ID,
+            l.TARGET_TYPE,
+            l.TARGET_ID,
+            l.ACTION,
+            l.ACTOR_ID,
+            l.DESCRIPTION,
+            l.BEFORE_DATA,
+            l.AFTER_DATA,
+            l.RELATED_USER_ID,
+            l.CREATED_AT,
+            u.NAME AS ACTOR_NAME,
+            ru.NAME AS RELATED_USER_NAME
+        FROM TB_AUDIT_LOG l
+        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
+        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        WHERE l.TARGET_TYPE = #{targetType}
+          AND l.TARGET_ID = #{targetId}
+        ORDER BY l.CREATED_AT DESC
+    </select>
+
+    <!-- 보드별 로그 조회 (보드 + 관련 업무 + 공유) -->
+    <select id="selectByBoardId" resultMap="AuditLogResultMap">
+        SELECT
+            l.LOG_ID,
+            l.TARGET_TYPE,
+            l.TARGET_ID,
+            l.ACTION,
+            l.ACTOR_ID,
+            l.DESCRIPTION,
+            l.RELATED_USER_ID,
+            l.CREATED_AT,
+            u.NAME AS ACTOR_NAME,
+            ru.NAME AS RELATED_USER_NAME,
+            CASE
+                WHEN l.TARGET_TYPE = 'BOARD' THEN (SELECT BOARD_NAME FROM TB_BOARD WHERE BOARD_ID = l.TARGET_ID)
+                WHEN l.TARGET_TYPE = 'ITEM' THEN (SELECT CONTENT FROM TB_ITEM WHERE ITEM_ID = l.TARGET_ID)
+                ELSE NULL
+            END AS TARGET_NAME
+        FROM TB_AUDIT_LOG l
+        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
+        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        WHERE (l.TARGET_TYPE = 'BOARD' AND l.TARGET_ID = #{boardId})
+           OR (l.TARGET_TYPE = 'BOARD_SHARE' AND l.TARGET_ID = #{boardId})
+           OR (l.TARGET_TYPE = 'ITEM' AND l.TARGET_ID IN (SELECT ITEM_ID FROM TB_ITEM WHERE BOARD_ID = #{boardId}))
+        ORDER BY l.CREATED_AT DESC
+        LIMIT 100
+    </select>
+
+    <!-- 업무별 로그 조회 (업무 + 공유) -->
+    <select id="selectByItemId" resultMap="AuditLogResultMap">
+        SELECT
+            l.LOG_ID,
+            l.TARGET_TYPE,
+            l.TARGET_ID,
+            l.ACTION,
+            l.ACTOR_ID,
+            l.DESCRIPTION,
+            l.RELATED_USER_ID,
+            l.CREATED_AT,
+            u.NAME AS ACTOR_NAME,
+            ru.NAME AS RELATED_USER_NAME
+        FROM TB_AUDIT_LOG l
+        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
+        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        WHERE (l.TARGET_TYPE = 'ITEM' AND l.TARGET_ID = #{itemId})
+           OR (l.TARGET_TYPE = 'ITEM_SHARE' AND l.TARGET_ID = #{itemId})
+        ORDER BY l.CREATED_AT DESC
+    </select>
+
+    <!-- 수행자별 로그 조회 -->
+    <select id="selectByActorId" resultMap="AuditLogResultMap">
+        SELECT
+            l.LOG_ID,
+            l.TARGET_TYPE,
+            l.TARGET_ID,
+            l.ACTION,
+            l.ACTOR_ID,
+            l.DESCRIPTION,
+            l.RELATED_USER_ID,
+            l.CREATED_AT,
+            u.NAME AS ACTOR_NAME,
+            ru.NAME AS RELATED_USER_NAME,
+            CASE
+                WHEN l.TARGET_TYPE = 'BOARD' THEN (SELECT BOARD_NAME FROM TB_BOARD WHERE BOARD_ID = l.TARGET_ID)
+                WHEN l.TARGET_TYPE = 'ITEM' THEN (SELECT CONTENT FROM TB_ITEM WHERE ITEM_ID = l.TARGET_ID)
+                ELSE NULL
+            END AS TARGET_NAME
+        FROM TB_AUDIT_LOG l
+        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
+        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        WHERE l.ACTOR_ID = #{actorId}
+        ORDER BY l.CREATED_AT DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 최근 로그 조회 -->
+    <select id="selectRecent" resultMap="AuditLogResultMap">
+        SELECT
+            l.LOG_ID,
+            l.TARGET_TYPE,
+            l.TARGET_ID,
+            l.ACTION,
+            l.ACTOR_ID,
+            l.DESCRIPTION,
+            l.RELATED_USER_ID,
+            l.CREATED_AT,
+            u.NAME AS ACTOR_NAME,
+            ru.NAME AS RELATED_USER_NAME,
+            CASE
+                WHEN l.TARGET_TYPE = 'BOARD' THEN (SELECT BOARD_NAME FROM TB_BOARD WHERE BOARD_ID = l.TARGET_ID)
+                WHEN l.TARGET_TYPE = 'ITEM' THEN (SELECT CONTENT FROM TB_ITEM WHERE ITEM_ID = l.TARGET_ID)
+                ELSE NULL
+            END AS TARGET_NAME
+        FROM TB_AUDIT_LOG l
+        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
+        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        ORDER BY l.CREATED_AT DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

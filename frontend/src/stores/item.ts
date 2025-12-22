@@ -6,8 +6,10 @@ import type {
   Item,
   ItemCreateRequest,
   ItemUpdateRequest,
-  ItemSearchRequest
+  ItemSearchRequest,
+  ItemTransferRequest
 } from '@/types/item'
+import type { Share, ShareRequest, ShareUpdateRequest } from '@/types/share'
 
 export const useItemStore = defineStore('item', () => {
   // ==================== State ====================
@@ -519,6 +521,130 @@ export const useItemStore = defineStore('item', () => {
     return editingItemData.value
   }
 
+  // ==================== 업무 이관 ====================
+
+  /**
+   * 업무 이관 (다른 보드 또는 다른 사용자에게)
+   */
+  async function transferItem(
+    boardId: number,
+    itemId: number,
+    request: ItemTransferRequest
+  ): Promise<Item | null> {
+    try {
+      const response = await itemApi.transferItem(boardId, itemId, request)
+      if (response.success && response.data) {
+        // 이관된 업무는 현재 보드에서 제거
+        _removeItem(itemId)
+        return response.data
+      }
+      error.value = response.message || '업무 이관에 실패했습니다.'
+      return null
+    } catch (e) {
+      error.value = '업무 이관에 실패했습니다.'
+      return null
+    }
+  }
+
+  /**
+   * 이관 가능 여부 확인
+   */
+  async function canTransferItem(boardId: number, itemId: number): Promise<boolean> {
+    try {
+      const response = await itemApi.canTransfer(boardId, itemId)
+      return response.success && response.data === true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * 공유 가능 여부 확인
+   */
+  async function canShareItem(boardId: number, itemId: number): Promise<boolean> {
+    try {
+      const response = await itemApi.canShare(boardId, itemId)
+      return response.success && response.data === true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * 업무 권한 조회
+   */
+  async function getItemPermission(boardId: number, itemId: number): Promise<string | null> {
+    try {
+      const response = await itemApi.getItemPermission(boardId, itemId)
+      if (response.success) {
+        return response.data
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  // ==================== 업무 공유 ====================
+
+  /**
+   * 업무 공유 목록 조회
+   */
+  async function fetchItemShares(itemId: number): Promise<Share[]> {
+    try {
+      const response = await itemApi.getItemShares(itemId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * 업무 공유 추가
+   */
+  async function addItemShare(itemId: number, request: ShareRequest): Promise<boolean> {
+    try {
+      const response = await itemApi.addItemShare(itemId, request)
+      return response.success
+    } catch {
+      error.value = '공유 추가에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 업무 공유 권한 변경
+   */
+  async function updateItemShare(
+    itemId: number,
+    userId: number,
+    request: ShareUpdateRequest
+  ): Promise<boolean> {
+    try {
+      const response = await itemApi.updateItemShare(itemId, userId, request)
+      return response.success
+    } catch {
+      error.value = '권한 변경에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 업무 공유 제거
+   */
+  async function removeItemShare(itemId: number, userId: number): Promise<boolean> {
+    try {
+      const response = await itemApi.removeItemShare(itemId, userId)
+      return response.success
+    } catch {
+      error.value = '공유 제거에 실패했습니다.'
+      return false
+    }
+  }
+
   return {
     // State
     items,
@@ -569,6 +695,16 @@ export const useItemStore = defineStore('item', () => {
     updateEditingData,
     stopEditing,
     isEditing,
-    getEditingData
+    getEditingData,
+    // 업무 이관
+    transferItem,
+    canTransferItem,
+    canShareItem,
+    getItemPermission,
+    // 업무 공유
+    fetchItemShares,
+    addItemShare,
+    updateItemShare,
+    removeItemShare
   }
 })

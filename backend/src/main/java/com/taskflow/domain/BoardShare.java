@@ -79,27 +79,47 @@ public class BoardShare {
     private String departmentName;
 
     // =============================================
-    // 상수
+    // 상수 (VIEW/EDIT/FULL 권한 체계)
     // =============================================
 
-    public static final String PERMISSION_MEMBER = "MEMBER";
-    public static final String PERMISSION_VIEWER = "VIEWER";
+    public static final String PERMISSION_VIEW = "VIEW";
+    public static final String PERMISSION_EDIT = "EDIT";
+    public static final String PERMISSION_FULL = "FULL";
+    /** @deprecated Use PERMISSION_EDIT instead. 하위 호환성을 위해 유지 */
+    public static final String PERMISSION_MEMBER = PERMISSION_EDIT;
 
     // =============================================
     // 편의 메서드
     // =============================================
 
     /**
-     * 편집 권한 여부
+     * 조회 권한 여부
      */
-    public boolean canEdit() {
-        return PERMISSION_MEMBER.equals(permission);
+    public boolean canView() {
+        return permission != null;
     }
 
     /**
-     * 조회만 가능 여부
+     * 수정 권한 여부
      */
-    public boolean isViewOnly() {
-        return PERMISSION_VIEWER.equals(permission);
+    public boolean canEdit() {
+        return PERMISSION_EDIT.equals(permission) || PERMISSION_FULL.equals(permission);
+    }
+
+    /**
+     * 삭제 권한 여부
+     */
+    public boolean canDelete() {
+        return PERMISSION_FULL.equals(permission);
+    }
+
+    /**
+     * 권한 레벨 비교 (FULL > EDIT > VIEW)
+     */
+    public int getPermissionLevel() {
+        if (PERMISSION_FULL.equals(permission)) return 3;
+        if (PERMISSION_EDIT.equals(permission)) return 2;
+        if (PERMISSION_VIEW.equals(permission)) return 1;
+        return 0;
     }
 }

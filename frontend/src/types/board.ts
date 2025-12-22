@@ -33,9 +33,12 @@ export interface Board {
   color?: string  // API 응답 호환
   shareCount: number
   itemCount?: number
+  pendingItemCount?: number
   sortOrder?: number
   useYn?: string
   ownerYn?: string
+  currentUserPermission?: BoardPermission
+  isOwner?: boolean
   groups?: BoardGroup[]
   sharedUsers?: BoardSharedUser[]
   createdAt: string
@@ -58,13 +61,15 @@ export interface BoardUpdateRequest {
   boardColor?: string
 }
 
-export type BoardPermission = 'MEMBER' | 'VIEWER'
+export type BoardPermission = 'VIEW' | 'EDIT' | 'FULL' | 'OWNER'
 
 export interface BoardShare {
   boardShareId: number
   boardId: number
   userId: number
   userName?: string
+  loginId?: string
+  departmentName?: string
   permission: BoardPermission
   createdAt: string
   createdBy: number
@@ -73,4 +78,46 @@ export interface BoardShare {
 export interface BoardShareRequest {
   userId: number
   permission: BoardPermission
+}
+
+export interface BoardShareUpdateRequest {
+  permission: BoardPermission
+}
+
+export interface BoardListResponse {
+  ownedBoards: Board[]
+  sharedBoards: Board[]
+  totalOwnedCount: number
+  totalSharedCount: number
+}
+
+export interface BoardDeleteRequest {
+  targetUserId?: number
+  forceDelete?: boolean
+}
+
+export interface BoardOrderRequest {
+  sortOrder: number
+}
+
+export interface TransferPreviewResponse {
+  boardId: number
+  boardName: string
+  pendingItems: PendingItem[]
+  totalCount: number
+}
+
+export interface PendingItem {
+  itemId: number
+  title: string
+  status: string
+  priority?: string
+  assigneeName?: string
+}
+
+export interface TransferResultResponse {
+  transferredCount: number
+  newBoardId: number
+  newBoardName: string
+  message: string
 }

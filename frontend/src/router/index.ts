@@ -84,6 +84,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '그룹 관리' }
       },
       {
+        path: 'boards',
+        name: 'Boards',
+        component: () => import('@/views/BoardsView.vue'),
+        meta: { title: '보드 관리' }
+      },
+      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/SettingsView.vue'),
