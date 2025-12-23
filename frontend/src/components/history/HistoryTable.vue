@@ -1,23 +1,25 @@
 <script setup lang="ts">
 /**
  * 이력 테이블 컴포넌트
- * - 작업 처리 이력 / 작업 등록 이력 표시
+ * - 작업 처리 이력 / 작업 등록 이력 / 관리 이력 표시
  */
 import { computed } from 'vue'
 import Badge from '@/components/common/Badge.vue'
-import type { ItemHistory, TemplateHistory } from '@/types/history'
+import type { ItemHistory, TemplateHistory, AuditLog, AuditAction, AuditTargetType } from '@/types/history'
 import type { HistoryType } from './HistorySwitch.vue'
 
 interface Props {
   type: HistoryType
   itemHistories?: ItemHistory[]
   templateHistories?: TemplateHistory[]
+  managementHistories?: AuditLog[]
   loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   itemHistories: () => [],
   templateHistories: () => [],
+  managementHistories: () => [],
   loading: false
 })
 
@@ -64,12 +66,66 @@ function getStatusBadge(status: string) {
   }
 }
 
+// 관리 이력 - 액션 뱃지 설정
+function getActionBadge(action: AuditAction) {
+  switch (action) {
+    case 'CREATE':
+      return { label: '생성', variant: 'success' as const }
+    case 'UPDATE':
+      return { label: '수정', variant: 'info' as const }
+    case 'DELETE':
+      return { label: '삭제', variant: 'danger' as const }
+    case 'TRANSFER':
+      return { label: '이관', variant: 'warning' as const }
+    case 'SHARE':
+      return { label: '공유', variant: 'primary' as const }
+    case 'UNSHARE':
+      return { label: '공유해제', variant: 'default' as const }
+    default:
+      return { label: action, variant: 'default' as const }
+  }
+}
+
+// 관리 이력 - 대상 타입 라벨
+function getTargetTypeLabel(targetType: AuditTargetType) {
+  switch (targetType) {
+    case 'BOARD':
+      return '보드'
+    case 'ITEM':
+      return '업무'
+    case 'BOARD_SHARE':
+      return '보드 공유'
+    case 'ITEM_SHARE':
+      return '업무 공유'
+    default:
+      return targetType
+  }
+}
+
 // 빈 데이터 여부
 const isEmpty = computed(() => {
   if (props.type === 'item') {
     return props.itemHistories.length === 0
+  } else if (props.type === 'template') {
+    return props.templateHistories.length === 0
+  } else if (props.type === 'management') {
+    return props.managementHistories.length === 0
   }
   return props.templateHistories.length === 0
+})
+
+// 빈 데이터 메시지
+const emptyMessage = computed(() => {
+  switch (props.type) {
+    case 'item':
+      return '작업 처리 이력이 없습니다.'
+    case 'template':
+      return '작업 등록 이력이 없습니다.'
+    case 'management':
+      return '관리 이력이 없습니다.'
+    default:
+      return '이력이 없습니다.'
+  }
 })
 </script>
 
@@ -91,7 +147,7 @@ const isEmpty = computed(() => {
           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <p class="mt-2 text-sm text-gray-500">
-        {{ type === 'item' ? '작업 처리 이력이 없습니다.' : '작업 등록 이력이 없습니다.' }}
+        {{ emptyMessage }}
       </p>
     </div>
 
@@ -142,7 +198,7 @@ const isEmpty = computed(() => {
     </table>
 
     <!-- 작업 등록 이력 테이블 -->
-    <table v-else class="history-table">
+    <table v-else-if="type === 'template'" class="history-table">
       <thead>
         <tr>
           <th class="w-[400px]">작업내용</th>
@@ -167,6 +223,48 @@ const isEmpty = computed(() => {
               {{ getStatusBadge(template.status).label }}
             </Badge>
           </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 관리 이력 테이블 -->
+    <table v-else-if="type === 'management'" class="history-table">
+      <thead>
+        <tr>
+          <th class="w-[100px]">대상유형</th>
+          <th class="w-[80px]">액션</th>
+          <th class="w-[200px]">대상</th>
+          <th class="w-[250px]">내용</th>
+          <th class="w-[100px]">수행자</th>
+          <th class="w-[120px]">관련사용자</th>
+          <th class="w-[160px]">일시</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="log in managementHistories" :key="log.logId">
+          <td>
+            <span class="text-xs px-2 py-1 bg-gray-100 rounded text-gray-600">
+              {{ getTargetTypeLabel(log.targetType) }}
+            </span>
+          </td>
+          <td>
+            <Badge :variant="getActionBadge(log.action).variant" size="sm">
+              {{ getActionBadge(log.action).label }}
+            </Badge>
+          </td>
+          <td class="font-medium text-gray-900">
+            <div class="truncate max-w-[200px]" :title="log.targetName || String(log.targetId)">
+              {{ log.targetName || `#${log.targetId}` }}
+            </div>
+          </td>
+          <td>
+            <div class="truncate max-w-[250px] text-gray-600" :title="log.description || ''">
+              {{ log.description || '-' }}
+            </div>
+          </td>
+          <td>{{ log.actorName || '-' }}</td>
+          <td>{{ log.relatedUserName || '-' }}</td>
+          <td>{{ formatDateTime(log.createdAt) }}</td>
         </tr>
       </tbody>
     </table>

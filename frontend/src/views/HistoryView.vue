@@ -12,7 +12,7 @@ import Input from '@/components/common/Input.vue'
 import Select from '@/components/common/Select.vue'
 import type { SelectOption } from '@/components/common/Select.vue'
 import type { HistoryType } from '@/components/history/HistorySwitch.vue'
-import type { ItemHistory, TemplateHistory, ItemHistorySearchRequest, TemplateHistorySearchRequest } from '@/types/history'
+import type { ItemHistory, TemplateHistory, AuditLog, ItemHistorySearchRequest, TemplateHistorySearchRequest, AuditLogSearchRequest, AuditTargetType, AuditAction } from '@/types/history'
 import { historyApi } from '@/api/history'
 import { useUiStore } from '@/stores/ui'
 import { useSlideOver } from '@/composables/useSlideOver'
@@ -32,6 +32,7 @@ const historyType = ref<HistoryType>('all')
 const loading = ref(false)
 const itemLoading = ref(false)
 const templateLoading = ref(false)
+const managementLoading = ref(false)
 
 // 작업 처리 이력 데이터
 const itemHistories = ref<ItemHistory[]>([])
@@ -42,6 +43,11 @@ const itemTotalElements = ref(0)
 const templateHistories = ref<TemplateHistory[]>([])
 const templateTotalPages = ref(0)
 const templateTotalElements = ref(0)
+
+// 관리 이력 데이터
+const managementHistories = ref<AuditLog[]>([])
+const managementTotalPages = ref(0)
+const managementTotalElements = ref(0)
 
 // 공통 검색 키워드
 const searchKeyword = ref('')
@@ -66,6 +72,16 @@ const templateSearchParams = ref<TemplateHistorySearchRequest>({
   endDate: ''
 })
 
+// 검색 조건 - 관리 이력
+const managementSearchParams = ref<AuditLogSearchRequest>({
+  page: 0,
+  size: 20,
+  targetType: undefined,
+  action: undefined,
+  startDate: '',
+  endDate: ''
+})
+
 // 작업 결과 옵션
 const resultOptions: SelectOption[] = [
   { value: '', label: '전체' },
@@ -78,6 +94,26 @@ const statusOptions: SelectOption[] = [
   { value: '', label: '전체' },
   { value: 'ACTIVE', label: '활성', color: '#10B981' },
   { value: 'INACTIVE', label: '비활성', color: '#6B7280' }
+]
+
+// 관리 이력 - 대상 유형 옵션
+const targetTypeOptions: SelectOption[] = [
+  { value: '', label: '전체' },
+  { value: 'BOARD', label: '보드', color: '#3B82F6' },
+  { value: 'ITEM', label: '업무', color: '#10B981' },
+  { value: 'BOARD_SHARE', label: '보드 공유', color: '#8B5CF6' },
+  { value: 'ITEM_SHARE', label: '업무 공유', color: '#EC4899' }
+]
+
+// 관리 이력 - 액션 옵션
+const actionOptions: SelectOption[] = [
+  { value: '', label: '전체' },
+  { value: 'CREATE', label: '생성', color: '#10B981' },
+  { value: 'UPDATE', label: '수정', color: '#3B82F6' },
+  { value: 'DELETE', label: '삭제', color: '#EF4444' },
+  { value: 'TRANSFER', label: '이관', color: '#F59E0B' },
+  { value: 'SHARE', label: '공유', color: '#8B5CF6' },
+  { value: 'UNSHARE', label: '공유해제', color: '#6B7280' }
 ]
 
 // 기간 필터 옵션
@@ -144,6 +180,8 @@ function handlePeriodChange(period: string | number | null) {
   itemSearchParams.value.endDate = endDate
   templateSearchParams.value.startDate = startDate
   templateSearchParams.value.endDate = endDate
+  managementSearchParams.value.startDate = startDate
+  managementSearchParams.value.endDate = endDate
 }
 
 // 날짜 포맷팅 (YYYY-MM-DD)
@@ -166,6 +204,8 @@ function handleCustomDateChange() {
   itemSearchParams.value.endDate = customEndDate.value
   templateSearchParams.value.startDate = customStartDate.value
   templateSearchParams.value.endDate = customEndDate.value
+  managementSearchParams.value.startDate = customStartDate.value
+  managementSearchParams.value.endDate = customEndDate.value
 }
 
 // 작업 처리 이력 조회
@@ -218,6 +258,30 @@ async function loadTemplateHistory() {
   }
 }
 
+// 관리 이력 조회
+async function loadManagementHistory() {
+  managementLoading.value = true
+  try {
+    const params: AuditLogSearchRequest = {
+      ...managementSearchParams.value,
+      targetType: managementSearchParams.value.targetType || undefined,
+      action: managementSearchParams.value.action || undefined,
+      startDate: managementSearchParams.value.startDate || undefined,
+      endDate: managementSearchParams.value.endDate || undefined
+    }
+
+    const response = await historyApi.getManagementHistory(params)
+    managementHistories.value = response.data.content
+    managementTotalPages.value = response.data.totalPages
+    managementTotalElements.value = response.data.totalElements
+  } catch (error) {
+    console.error('Failed to load management history:', error)
+    uiStore.showError('관리 이력을 불러오는데 실패했습니다.')
+  } finally {
+    managementLoading.value = false
+  }
+}
+
 // 전체 이력 조회 (병렬 로드)
 async function loadAllHistory() {
   loading.value = true
@@ -238,9 +302,12 @@ function handleSearch() {
   } else if (historyType.value === 'item') {
     itemSearchParams.value.page = 0
     loadItemHistory()
-  } else {
+  } else if (historyType.value === 'template') {
     templateSearchParams.value.page = 0
     loadTemplateHistory()
+  } else if (historyType.value === 'management') {
+    managementSearchParams.value.page = 0
+    loadManagementHistory()
   }
 }
 
@@ -256,12 +323,20 @@ function handleTemplatePageChange(page: number) {
   loadTemplateHistory()
 }
 
+// 페이지 변경 - 관리 이력
+function handleManagementPageChange(page: number) {
+  managementSearchParams.value.page = page
+  loadManagementHistory()
+}
+
 // 페이지 변경 (단일 뷰용)
 function handlePageChange(page: number) {
   if (historyType.value === 'item') {
     handleItemPageChange(page)
   } else if (historyType.value === 'template') {
     handleTemplatePageChange(page)
+  } else if (historyType.value === 'management') {
+    handleManagementPageChange(page)
   }
 }
 
@@ -279,16 +354,49 @@ watch(historyType, (newType) => {
   templateSearchParams.value.page = 0
   templateSearchParams.value.startDate = ''
   templateSearchParams.value.endDate = ''
+  managementSearchParams.value.page = 0
+  managementSearchParams.value.startDate = ''
+  managementSearchParams.value.endDate = ''
   searchKeyword.value = ''
 
   if (newType === 'all') {
     loadAllHistory()
   } else if (newType === 'item') {
     loadItemHistory()
-  } else {
+  } else if (newType === 'template') {
     loadTemplateHistory()
+  } else if (newType === 'management') {
+    loadManagementHistory()
   }
 })
+
+// 현재 페이지 계산
+function getCurrentPage(): number {
+  switch (historyType.value) {
+    case 'item':
+      return itemSearchParams.value.page ?? 0
+    case 'template':
+      return templateSearchParams.value.page ?? 0
+    case 'management':
+      return managementSearchParams.value.page ?? 0
+    default:
+      return 0
+  }
+}
+
+// 전체 페이지 수 계산
+function getCurrentTotalPages(): number {
+  switch (historyType.value) {
+    case 'item':
+      return itemTotalPages.value
+    case 'template':
+      return templateTotalPages.value
+    case 'management':
+      return managementTotalPages.value
+    default:
+      return 0
+  }
+}
 
 // 초기 로드
 onMounted(() => {
@@ -334,11 +442,31 @@ onMounted(() => {
 
         <!-- 키워드 검색 (작업 등록 이력) -->
         <Input
-          v-else
+          v-else-if="historyType === 'template'"
           v-model="templateSearchParams.keyword"
           placeholder="작업 내용 검색..."
           :clearable="true"
           @enter="handleSearch"
+        />
+
+        <!-- 관리 이력 - 대상 유형 필터 -->
+        <Select
+          v-if="historyType === 'management'"
+          v-model="managementSearchParams.targetType"
+          :options="targetTypeOptions"
+          placeholder="대상 유형"
+          :clearable="true"
+          @change="handleSearch"
+        />
+
+        <!-- 관리 이력 - 액션 필터 -->
+        <Select
+          v-if="historyType === 'management'"
+          v-model="managementSearchParams.action"
+          :options="actionOptions"
+          placeholder="액션"
+          :clearable="true"
+          @change="handleSearch"
         />
 
         <!-- 작업 결과 필터 (전체 또는 작업 처리 이력) -->
@@ -491,14 +619,14 @@ onMounted(() => {
       </div>
     </template>
 
-    <!-- 단일 보기 모드 (작업 처리 이력 또는 작업 등록 이력) -->
+    <!-- 단일 보기 모드 (작업 처리 이력, 작업 등록 이력, 관리 이력) -->
     <template v-else>
       <!-- 결과 정보 -->
       <div class="flex items-center justify-between mb-4">
         <p class="text-sm text-gray-600">
           총
           <span class="font-medium text-gray-900">
-            {{ historyType === 'item' ? itemTotalElements : templateTotalElements }}
+            {{ historyType === 'item' ? itemTotalElements : historyType === 'template' ? templateTotalElements : managementTotalElements }}
           </span>
           건
         </p>
@@ -510,19 +638,20 @@ onMounted(() => {
           :type="historyType"
           :item-histories="itemHistories"
           :template-histories="templateHistories"
-          :loading="historyType === 'item' ? itemLoading : templateLoading"
+          :management-histories="managementHistories"
+          :loading="historyType === 'item' ? itemLoading : historyType === 'template' ? templateLoading : managementLoading"
           @open-item="handleOpenItem"
         />
       </div>
 
       <!-- 페이지네이션 -->
       <div
-        v-if="(historyType === 'item' ? itemTotalPages : templateTotalPages) > 1"
+        v-if="getCurrentTotalPages() > 1"
         class="mt-6 flex justify-center"
       >
         <Pagination
-          :current-page="historyType === 'item' ? (itemSearchParams.page ?? 0) : (templateSearchParams.page ?? 0)"
-          :total-pages="historyType === 'item' ? itemTotalPages : templateTotalPages"
+          :current-page="getCurrentPage()"
+          :total-pages="getCurrentTotalPages()"
           @change="handlePageChange"
         />
       </div>

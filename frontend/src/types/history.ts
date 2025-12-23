@@ -56,3 +56,31 @@ export interface TemplateHistorySearchRequest {
   size?: number
   sort?: string
 }
+
+// 관리 이력 (감사 로그)
+export type AuditTargetType = 'BOARD' | 'ITEM' | 'BOARD_SHARE' | 'ITEM_SHARE'
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'TRANSFER' | 'SHARE' | 'UNSHARE'
+
+export interface AuditLog {
+  logId: number
+  targetType: AuditTargetType
+  targetId: number
+  targetName?: string
+  action: AuditAction
+  actorId: number
+  actorName?: string
+  description?: string
+  relatedUserId?: number
+  relatedUserName?: string
+  createdAt: string
+}
+
+export interface AuditLogSearchRequest {
+  targetType?: AuditTargetType
+  action?: AuditAction
+  actorId?: number
+  startDate?: string
+  endDate?: string
+  page?: number
+  size?: number
+}

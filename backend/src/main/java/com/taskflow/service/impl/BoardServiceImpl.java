@@ -213,6 +213,9 @@ public class BoardServiceImpl implements BoardService {
         // 기본 속성 정의 및 옵션 생성
         createDefaultProperties(board.getBoardId(), createdBy);
 
+        // 감사 로그 기록
+        auditLogService.logBoardCreated(board.getBoardId(), createdBy, board.getBoardName());
+
         return getBoard(board.getBoardId());
     }
 
@@ -268,6 +271,9 @@ public class BoardServiceImpl implements BoardService {
             throw BusinessException.accessDenied("보드 소유자만 수정할 수 있습니다.");
         }
 
+        // 변경 전 데이터 저장
+        BoardResponse beforeData = BoardResponse.from(board);
+
         // 수정
         board.setBoardName(request.getBoardName());
         board.setDescription(request.getDescription());
@@ -286,7 +292,11 @@ public class BoardServiceImpl implements BoardService {
         boardMapper.update(board);
         log.info("Board updated: id={}", boardId);
 
-        return getBoard(boardId);
+        // 감사 로그 기록 (변경 후 데이터)
+        BoardResponse afterData = getBoard(boardId);
+        auditLogService.logBoardUpdated(boardId, updatedBy, beforeData, afterData);
+
+        return afterData;
     }
 
     @Override
@@ -375,6 +385,9 @@ public class BoardServiceImpl implements BoardService {
         boardShareMapper.insert(boardShare);
         log.info("Board share added: boardShareId={}", boardShare.getBoardShareId());
 
+        // 감사 로그 기록
+        auditLogService.logBoardShared(boardId, createdBy, request.getUserId(), permission);
+
         // 저장된 정보 조회하여 반환
         return BoardShareResponse.from(
                 boardShareMapper.findById(boardShare.getBoardShareId()).orElse(null)
@@ -403,6 +416,9 @@ public class BoardServiceImpl implements BoardService {
         // 공유 제거
         boardShareMapper.deleteByBoardIdAndUserId(boardId, userId);
         log.info("Board share removed: boardId={}, userId={}", boardId, userId);
+
+        // 감사 로그 기록
+        auditLogService.logBoardUnshared(boardId, requestUserId, userId);
     }
 
     // =============================================
@@ -660,10 +676,21 @@ public class BoardServiceImpl implements BoardService {
             throw BusinessException.notFound("해당 사용자에게 공유되어 있지 않습니다.");
         }
 
+        // 기존 권한 조회
+        String oldPermission = boardMapper.getUserPermission(boardId, userId);
+
         // 권한 변경
         boardShareMapper.updatePermissionByBoardAndUser(boardId, userId, request.getPermission(), requestUserId);
         log.info("Board share permission updated: boardId={}, userId={}, permission={}",
                 boardId, userId, request.getPermission());
+
+        // 감사 로그 기록
+        auditLogService.log(
+                "BOARD_SHARE", boardId, "UPDATE",
+                requestUserId,
+                String.format("보드 공유 권한 변경: %s → %s", oldPermission, request.getPermission()),
+                null, null, userId
+        );
     }
 
     @Override
