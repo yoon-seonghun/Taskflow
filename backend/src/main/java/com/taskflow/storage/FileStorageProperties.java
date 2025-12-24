@@ -37,6 +37,11 @@ public class FileStorageProperties {
     private LocalStorage local = new LocalStorage();
 
     /**
+     * SFTP 스토리지 설정
+     */
+    private SftpStorage sftp = new SftpStorage();
+
+    /**
      * NAS 스토리지 설정 (추후 구현)
      */
     private NasStorage nas = new NasStorage();
@@ -77,6 +82,80 @@ public class FileStorageProperties {
          * 파일 접근 URL prefix
          */
         private String urlPrefix = "/api/files";
+    }
+
+    @Getter
+    @Setter
+    public static class SftpStorage {
+        /**
+         * SFTP 서버 호스트
+         */
+        private String host;
+
+        /**
+         * SFTP 서버 포트 (기본값: 22)
+         */
+        private int port = 22;
+
+        /**
+         * SFTP 사용자명
+         */
+        private String username;
+
+        /**
+         * SFTP 비밀번호 (비밀번호 인증 시)
+         */
+        private String password;
+
+        /**
+         * SSH 개인키 파일 경로 (키 인증 시)
+         */
+        private String privateKeyPath;
+
+        /**
+         * SSH 개인키 패스프레이즈 (선택)
+         */
+        private String privateKeyPassphrase;
+
+        /**
+         * 원격 서버 기본 경로 (업로드 디렉토리)
+         */
+        private String basePath = "/data/uploads";
+
+        /**
+         * 연결 타임아웃 (밀리초)
+         */
+        private int connectionTimeout = 30000;
+
+        /**
+         * 채널 타임아웃 (밀리초)
+         */
+        private int channelTimeout = 60000;
+
+        /**
+         * Strict Host Key Checking 여부
+         */
+        private boolean strictHostKeyChecking = false;
+
+        /**
+         * Known Hosts 파일 경로
+         */
+        private String knownHostsPath;
+
+        /**
+         * 파일 접근 URL prefix (웹 서버를 통한 접근 시)
+         */
+        private String urlPrefix = "/api/files";
+
+        /**
+         * 연결 풀 크기
+         */
+        private int poolSize = 5;
+
+        /**
+         * 연결 유지 시간 (밀리초)
+         */
+        private long keepAliveInterval = 30000;
     }
 
     @Getter

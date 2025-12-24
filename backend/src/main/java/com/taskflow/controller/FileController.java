@@ -6,6 +6,8 @@ import com.taskflow.dto.file.FileInfoResponse;
 import com.taskflow.dto.file.FileUploadResponse;
 import com.taskflow.security.UserPrincipal;
 import com.taskflow.service.FileService;
+import com.taskflow.storage.FileStorageService;
+import com.taskflow.storage.FileStorageService.StorageHealthStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -31,6 +33,7 @@ import java.util.List;
 public class FileController {
 
     private final FileService fileService;
+    private final FileStorageService fileStorageService;
 
     /**
      * 파일 업로드
@@ -188,5 +191,34 @@ public class FileController {
     public ResponseEntity<ApiResponse<Boolean>> isImage(@PathVariable Long fileId) {
         boolean isImage = fileService.isImageFile(fileId);
         return ResponseEntity.ok(ApiResponse.success(isImage));
+    }
+
+    /**
+     * 스토리지 상태 확인
+     * 현재 활성화된 스토리지(LOCAL/SFTP)의 연결 상태를 확인합니다.
+     *
+     * @return 스토리지 상태 정보
+     */
+    @GetMapping("/storage/health")
+    public ResponseEntity<ApiResponse<StorageHealthStatus>> checkStorageHealth() {
+        StorageHealthStatus status = fileStorageService.checkHealth();
+
+        if (status.healthy()) {
+            return ResponseEntity.ok(ApiResponse.success(status));
+        } else {
+            return ResponseEntity.status(503)
+                    .body(ApiResponse.error(status.message()));
+        }
+    }
+
+    /**
+     * 현재 스토리지 타입 조회
+     *
+     * @return 스토리지 타입 (LOCAL, SFTP, NAS, S3)
+     */
+    @GetMapping("/storage/type")
+    public ResponseEntity<ApiResponse<String>> getStorageType() {
+        String storageType = fileStorageService.getStorageType().getCode();
+        return ResponseEntity.ok(ApiResponse.success(storageType));
     }
 }

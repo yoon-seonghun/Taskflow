@@ -141,6 +141,52 @@ public class LocalFileStorage implements FileStorageService {
         return StorageType.LOCAL;
     }
 
+    @Override
+    public StorageHealthStatus checkHealth() {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // 디렉토리 존재 및 쓰기 권한 확인
+            if (!Files.exists(basePath)) {
+                return new StorageHealthStatus(
+                        false,
+                        StorageType.LOCAL,
+                        "Base directory does not exist: " + basePath,
+                        System.currentTimeMillis() - startTime
+                );
+            }
+
+            if (!Files.isWritable(basePath)) {
+                return new StorageHealthStatus(
+                        false,
+                        StorageType.LOCAL,
+                        "Base directory is not writable: " + basePath,
+                        System.currentTimeMillis() - startTime
+                );
+            }
+
+            // 테스트 파일 쓰기/삭제
+            Path testFile = basePath.resolve(".health-check-" + System.currentTimeMillis());
+            Files.createFile(testFile);
+            Files.delete(testFile);
+
+            return new StorageHealthStatus(
+                    true,
+                    StorageType.LOCAL,
+                    "Local storage is healthy. Base path: " + basePath,
+                    System.currentTimeMillis() - startTime
+            );
+
+        } catch (IOException e) {
+            return new StorageHealthStatus(
+                    false,
+                    StorageType.LOCAL,
+                    "Health check failed: " + e.getMessage(),
+                    System.currentTimeMillis() - startTime
+            );
+        }
+    }
+
     /**
      * 파일 확장자 추출
      */

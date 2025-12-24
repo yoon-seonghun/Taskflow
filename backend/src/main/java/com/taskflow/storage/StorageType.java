@@ -3,11 +3,13 @@ package com.taskflow.storage;
 /**
  * 스토리지 타입 열거형
  * - LOCAL: Docker 볼륨 또는 로컬 디스크
- * - NAS: 네트워크 스토리지 (SMB/NFS)
- * - S3: AWS S3 또는 호환 스토리지 (MinIO)
+ * - SFTP: SFTP 프로토콜 기반 외부 스토리지
+ * - NAS: 네트워크 스토리지 (SMB/NFS) - 추후 구현
+ * - S3: AWS S3 또는 호환 스토리지 (MinIO) - 추후 구현
  */
 public enum StorageType {
     LOCAL("LOCAL", "로컬 스토리지"),
+    SFTP("SFTP", "SFTP 외부 스토리지"),
     NAS("NAS", "네트워크 스토리지"),
     S3("S3", "AWS S3 또는 호환 스토리지");
 

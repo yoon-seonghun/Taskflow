@@ -63,4 +63,21 @@ public interface FileStorageService {
      * @return 현재 스토리지 타입
      */
     StorageType getStorageType();
+
+    /**
+     * 스토리지 연결 상태 확인
+     *
+     * @return 연결 상태 정보
+     */
+    StorageHealthStatus checkHealth();
+
+    /**
+     * 스토리지 상태 정보
+     */
+    record StorageHealthStatus(
+            boolean healthy,
+            StorageType storageType,
+            String message,
+            long responseTimeMs
+    ) {}
 }
