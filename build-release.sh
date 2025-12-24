@@ -73,6 +73,10 @@ cp "${PROJECT_ROOT}/frontend/tsconfig.node.json" "${DIST_DIR}/frontend/" 2>/dev/
 cp "${PROJECT_ROOT}/frontend/index.html" "${DIST_DIR}/frontend/"
 cp "${PROJECT_ROOT}/frontend/nginx.conf" "${DIST_DIR}/frontend/"
 cp "${PROJECT_ROOT}/frontend/Dockerfile" "${DIST_DIR}/frontend/"
+# Tailwind/PostCSS 설정 파일 (Docker 빌드 시 필요)
+cp "${PROJECT_ROOT}/frontend/tailwind.config.js" "${DIST_DIR}/frontend/" 2>/dev/null || true
+cp "${PROJECT_ROOT}/frontend/postcss.config.js" "${DIST_DIR}/frontend/" 2>/dev/null || true
+cp "${PROJECT_ROOT}/frontend/env.d.ts" "${DIST_DIR}/frontend/" 2>/dev/null || true
 
 # Docker 관련 파일 복사
 echo -e "  - Docker 설정 복사..."

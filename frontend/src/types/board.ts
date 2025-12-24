@@ -51,14 +51,14 @@ export interface BoardCreateRequest {
   boardName: string
   boardDescription?: string
   defaultView?: ViewType
-  boardColor?: string
+  color?: string
 }
 
 export interface BoardUpdateRequest {
   boardName?: string
   boardDescription?: string
   defaultView?: ViewType
-  boardColor?: string
+  color?: string
 }
 
 export type BoardPermission = 'VIEW' | 'EDIT' | 'FULL' | 'OWNER'

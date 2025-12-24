@@ -80,6 +80,16 @@ if (Test-Path "$ProjectRoot\frontend\tsconfig.node.json") {
 Copy-Item "$ProjectRoot\frontend\index.html" "$DistDir\frontend\"
 Copy-Item "$ProjectRoot\frontend\nginx.conf" "$DistDir\frontend\"
 Copy-Item "$ProjectRoot\frontend\Dockerfile" "$DistDir\frontend\"
+# Tailwind/PostCSS 설정 파일 (Docker 빌드 시 필요)
+if (Test-Path "$ProjectRoot\frontend\tailwind.config.js") {
+    Copy-Item "$ProjectRoot\frontend\tailwind.config.js" "$DistDir\frontend\"
+}
+if (Test-Path "$ProjectRoot\frontend\postcss.config.js") {
+    Copy-Item "$ProjectRoot\frontend\postcss.config.js" "$DistDir\frontend\"
+}
+if (Test-Path "$ProjectRoot\frontend\env.d.ts") {
+    Copy-Item "$ProjectRoot\frontend\env.d.ts" "$DistDir\frontend\"
+}
 
 # Docker 관련 파일 복사
 Write-Host "  - Docker 설정 복사..."

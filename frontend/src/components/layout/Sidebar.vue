@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useBoardStore } from '@/stores/board'
+import type { Board } from '@/types/board'
 
 defineProps<{
   open: boolean
@@ -11,10 +14,55 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const router = useRouter()
+const boardStore = useBoardStore()
+
+// 보드 목록 로드
+onMounted(() => {
+  if (boardStore.boards.length === 0) {
+    boardStore.fetchBoards()
+  }
+})
+
+// 보드 분류
+// 내 보드 (공유하지 않은)
+const myPrivateBoards = computed(() =>
+  boardStore.boards.filter(b => b.isOwner === true && (b.shareCount || 0) === 0)
+)
+
+// 공유해준 보드 (내 보드인데 다른 사람에게 공유)
+const mySharedBoards = computed(() =>
+  boardStore.boards.filter(b => b.isOwner === true && (b.shareCount || 0) > 0)
+)
+
+// 공유받은 보드 (다른 사람이 나에게 공유)
+const receivedBoards = computed(() =>
+  boardStore.boards.filter(b => b.isOwner !== true)
+)
+
+// 현재 선택된 보드 ID
+const currentBoardId = computed(() => boardStore.currentBoard?.boardId)
+
+// 섹션 접기/펼치기 상태
+const showMyBoards = ref(true)
+const showMySharedBoards = ref(true)
+const showReceivedBoards = ref(true)
 
 // 메뉴 항목 클릭 시 모바일에서 사이드바 닫기
 function handleMenuClick() {
   emit('close')
+}
+
+// 보드 선택 및 페이지 이동
+function selectBoard(board: Board) {
+  boardStore.setCurrentBoard(board)
+  router.push({ name: 'Tasks' })
+  emit('close')
+}
+
+// 보드 색상 가져오기
+function getBoardColor(board: Board): string {
+  return board.boardColor || board.color || '#9CA3AF'
 }
 
 const menuItems = [
@@ -128,6 +176,126 @@ const menuItems = [
           <span>{{ item.label }}</span>
         </RouterLink>
       </template>
+
+      <!-- 보드 목록 섹션 -->
+      <div v-if="boardStore.boards.length > 0" class="mt-1">
+        <div class="my-2 border-t border-gray-100" />
+
+        <!-- 내 보드 섹션 -->
+        <template v-if="myPrivateBoards.length > 0">
+          <div
+            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded"
+            @click="showMyBoards = !showMyBoards"
+          >
+            <svg
+              class="w-3 h-3 text-gray-400 transition-transform duration-200"
+              :class="{ '-rotate-90': !showMyBoards }"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+            <span class="text-xs font-medium text-gray-500">내 보드 ({{ myPrivateBoards.length }})</span>
+          </div>
+          <div v-show="showMyBoards" class="space-y-0.5">
+            <div
+              v-for="board in myPrivateBoards"
+              :key="board.boardId"
+              class="flex items-center gap-2 px-3 pl-6 py-1.5 cursor-pointer rounded-md mx-1 transition-colors"
+              :class="currentBoardId === board.boardId
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-700 hover:bg-gray-100'"
+              @click="selectBoard(board)"
+            >
+              <span
+                class="w-2 h-2 rounded-full flex-shrink-0"
+                :style="{ backgroundColor: getBoardColor(board) }"
+              />
+              <span class="text-sm truncate">{{ board.boardName }}</span>
+            </div>
+          </div>
+        </template>
+
+        <!-- 공유해준 보드 섹션 -->
+        <template v-if="mySharedBoards.length > 0">
+          <div
+            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded mt-1"
+            @click="showMySharedBoards = !showMySharedBoards"
+          >
+            <svg
+              class="w-3 h-3 text-gray-400 transition-transform duration-200"
+              :class="{ '-rotate-90': !showMySharedBoards }"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+            <span class="text-xs font-medium text-gray-500">공유해준 보드 ({{ mySharedBoards.length }})</span>
+          </div>
+          <div v-show="showMySharedBoards" class="space-y-0.5">
+            <div
+              v-for="board in mySharedBoards"
+              :key="board.boardId"
+              class="flex items-center gap-2 px-3 pl-6 py-1.5 cursor-pointer rounded-md mx-1 transition-colors"
+              :class="currentBoardId === board.boardId
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-700 hover:bg-gray-100'"
+              @click="selectBoard(board)"
+            >
+              <span
+                class="w-2 h-2 rounded-full flex-shrink-0"
+                :style="{ backgroundColor: getBoardColor(board) }"
+              />
+              <span class="text-sm truncate flex-1">{{ board.boardName }}</span>
+              <span class="flex items-center gap-0.5 text-xs text-gray-400">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                {{ board.shareCount }}
+              </span>
+            </div>
+          </div>
+        </template>
+
+        <!-- 공유받은 보드 섹션 -->
+        <template v-if="receivedBoards.length > 0">
+          <div
+            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded mt-1"
+            @click="showReceivedBoards = !showReceivedBoards"
+          >
+            <svg
+              class="w-3 h-3 text-gray-400 transition-transform duration-200"
+              :class="{ '-rotate-90': !showReceivedBoards }"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+            <span class="text-xs font-medium text-gray-500">공유받은 보드 ({{ receivedBoards.length }})</span>
+          </div>
+          <div v-show="showReceivedBoards" class="space-y-0.5">
+            <div
+              v-for="board in receivedBoards"
+              :key="board.boardId"
+              class="flex items-center gap-2 px-3 pl-6 py-1.5 cursor-pointer rounded-md mx-1 transition-colors"
+              :class="currentBoardId === board.boardId
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-700 hover:bg-gray-100'"
+              @click="selectBoard(board)"
+            >
+              <span
+                class="w-2 h-2 rounded-full flex-shrink-0"
+                :style="{ backgroundColor: getBoardColor(board) }"
+              />
+              <span class="text-sm truncate flex-1">{{ board.boardName }}</span>
+              <span class="text-xs text-gray-400 truncate max-w-[60px]">@{{ board.ownerName }}</span>
+            </div>
+          </div>
+        </template>
+      </div>
     </nav>
   </aside>
 </template>

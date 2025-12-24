@@ -144,7 +144,7 @@ async function handleCreate() {
     const request: BoardCreateRequest = {
       boardName: formData.value.boardName,
       boardDescription: formData.value.description,
-      boardColor: formData.value.color
+      color: formData.value.color
     }
 
     const result = await boardStore.createBoard(request)
@@ -173,7 +173,7 @@ async function handleUpdate() {
     const success = await boardStore.updateBoard(selectedBoard.value.boardId, {
       boardName: formData.value.boardName,
       boardDescription: formData.value.description,
-      boardColor: formData.value.color
+      color: formData.value.color
     })
 
     if (success) {
