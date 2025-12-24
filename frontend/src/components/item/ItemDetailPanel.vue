@@ -11,6 +11,7 @@ import { useBoardStore } from '@/stores/board'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { Button, Spinner, MarkdownEditor } from '@/components/common'
+import { FileAttachment } from '@/components/file'
 import ItemForm from './ItemForm.vue'
 import ItemTransferModal from './ItemTransferModal.vue'
 import ItemShareModal from './ItemShareModal.vue'
@@ -487,15 +488,29 @@ onUnmounted(() => {
           </div>
 
           <!-- 에디터 패널 -->
-          <div class="flex-1 min-w-0 overflow-hidden p-4 flex flex-col">
-            <label class="text-[12px] font-medium text-gray-600 mb-2 flex-shrink-0">내용</label>
-            <div class="flex-1 min-h-0">
-              <MarkdownEditor
-                v-model="editorContent"
+          <div class="flex-1 min-w-0 overflow-hidden flex flex-col">
+            <!-- 마크다운 에디터 영역 -->
+            <div class="flex-1 min-h-[200px] p-4 pb-0 flex flex-col">
+              <label class="text-[12px] font-medium text-gray-600 mb-2 flex-shrink-0">내용</label>
+              <div class="flex-1 min-h-0">
+                <MarkdownEditor
+                  v-model="editorContent"
+                  :disabled="item.status === 'DELETED'"
+                  :related-type="'ITEM'"
+                  :related-id="item.itemId"
+                  placeholder="마크다운 형식으로 상세 내용을 입력하세요..."
+                  min-height="100%"
+                  @save="handleContentSave"
+                />
+              </div>
+            </div>
+
+            <!-- 파일 첨부 영역 -->
+            <div class="flex-shrink-0">
+              <FileAttachment
+                related-type="ITEM"
+                :related-id="item.itemId"
                 :disabled="item.status === 'DELETED'"
-                placeholder="마크다운 형식으로 상세 내용을 입력하세요..."
-                min-height="100%"
-                @save="handleContentSave"
               />
             </div>
           </div>
@@ -526,14 +541,25 @@ onUnmounted(() => {
         <div v-show="activeTab === 'detail'" class="h-full overflow-y-auto p-4">
           <ItemForm :item="item" :disabled="item.status === 'DELETED'" @update="handleUpdate" />
         </div>
-        <div v-show="activeTab === 'content'" class="h-full overflow-y-auto p-4">
-          <MarkdownEditor
-            v-model="editorContent"
-            :disabled="item.status === 'DELETED'"
-            placeholder="마크다운 형식으로 상세 내용을 입력하세요..."
-            min-height="calc(100vh - 250px)"
-            @save="handleContentSave"
-          />
+        <div v-show="activeTab === 'content'" class="h-full overflow-y-auto flex flex-col">
+          <div class="flex-1 p-4">
+            <MarkdownEditor
+              v-model="editorContent"
+              :disabled="item.status === 'DELETED'"
+              :related-type="'ITEM'"
+              :related-id="item.itemId"
+              placeholder="마크다운 형식으로 상세 내용을 입력하세요..."
+              min-height="calc(100vh - 350px)"
+              @save="handleContentSave"
+            />
+          </div>
+          <div class="flex-shrink-0">
+            <FileAttachment
+              related-type="ITEM"
+              :related-id="item.itemId"
+              :disabled="item.status === 'DELETED'"
+            />
+          </div>
         </div>
         <div v-show="activeTab === 'comments'" class="h-full overflow-y-auto p-4">
           <CommentList ref="commentListRef" :item-id="itemId" />

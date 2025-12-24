@@ -44,6 +44,12 @@ logging:
     com.taskflow: DEBUG
     org.springframework.security: DEBUG
 
+# File Upload Configuration
+spring.servlet.multipart:
+  enabled: true
+  max-file-size: 10MB
+  max-request-size: 50MB
+
 ---
 # Local Profile
 spring:
@@ -81,6 +87,30 @@ logging:
   level:
     com.taskflow.mapper: DEBUG
 
+# File Storage Configuration (Local)
+file:
+  storage:
+    type: LOCAL
+    max-file-size: 10MB
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - webp
+      - svg
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - ppt
+      - pptx
+      - txt
+      - zip
+    local:
+      base-path: ./uploads
+
 ---
 # Docker Profile
 spring:
@@ -117,6 +147,30 @@ logging:
     com.taskflow: INFO
     com.taskflow.mapper: INFO
 
+# File Storage Configuration (Docker)
+file:
+  storage:
+    type: LOCAL
+    max-file-size: 10MB
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - webp
+      - svg
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - ppt
+      - pptx
+      - txt
+      - zip
+    local:
+      base-path: /app/uploads
+
 ---
 # Production Profile
 spring:
@@ -152,3 +206,35 @@ logging:
   level:
     root: WARN
     com.taskflow: INFO
+
+# File Storage Configuration (Production - 환경변수로 유연하게 설정)
+file:
+  storage:
+    type: ${FILE_STORAGE_TYPE:LOCAL}
+    max-file-size: ${FILE_MAX_SIZE:10MB}
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - webp
+      - svg
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - ppt
+      - pptx
+      - txt
+      - zip
+    local:
+      base-path: ${FILE_LOCAL_PATH:/app/uploads}
+    nas:
+      base-path: ${FILE_NAS_PATH:}
+      mount-path: ${FILE_NAS_MOUNT:}
+    s3:
+      bucket: ${AWS_S3_BUCKET:}
+      region: ${AWS_REGION:}
+      access-key: ${AWS_ACCESS_KEY:}
+      secret-key: ${AWS_SECRET_KEY:}

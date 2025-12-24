@@ -7,13 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.util.Collections;
 import java.util.Date;
 
 /**
@@ -80,17 +76,18 @@ public class JwtTokenProvider {
         String username = claims.getSubject();
         Long userId = claims.get("userId", Long.class);
 
-        UserDetails userDetails = new User(
+        // UserPrincipal 생성 (JWT에서 추출 가능한 정보만 사용)
+        UserPrincipal userPrincipal = new UserPrincipal(
+                userId,
                 username,
-                "",
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                "",           // password는 인증에 필요없음
+                username,     // name은 username으로 대체
+                null,         // departmentId
+                true          // enabled
         );
 
         UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userDetails, token, userDetails.getAuthorities());
-
-        // userId를 details에 저장
-        authentication.setDetails(userId);
+                new UsernamePasswordAuthenticationToken(userPrincipal, token, userPrincipal.getAuthorities());
 
         return authentication;
     }

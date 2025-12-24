@@ -48,6 +48,7 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/refresh",
             "/api/health",
+            "/api/files/*",        // 파일 다운로드 (이미지 표시용)
             "/actuator/**",
             "/swagger-ui/**",
             "/swagger-ui.html",

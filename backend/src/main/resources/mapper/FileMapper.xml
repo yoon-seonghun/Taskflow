@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.FileMapper">
+
+    <!-- 결과 매핑 -->
+    <resultMap id="FileResultMap" type="com.taskflow.domain.FileEntity">
+        <id property="fileId" column="FILE_ID"/>
+        <result property="originalName" column="ORIGINAL_NAME"/>
+        <result property="storedName" column="STORED_NAME"/>
+        <result property="extension" column="EXTENSION"/>
+        <result property="mimeType" column="MIME_TYPE"/>
+        <result property="fileSize" column="FILE_SIZE"/>
+        <result property="storageType" column="STORAGE_TYPE"/>
+        <result property="storagePath" column="STORAGE_PATH"/>
+        <result property="storageBucket" column="STORAGE_BUCKET"/>
+        <result property="relatedType" column="RELATED_TYPE"/>
+        <result property="relatedId" column="RELATED_ID"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="createdByName" column="CREATED_BY_NAME"/>
+    </resultMap>
+
+    <!-- 파일 저장 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="fileId" keyColumn="FILE_ID">
+        INSERT INTO TB_FILE (
+            ORIGINAL_NAME,
+            STORED_NAME,
+            EXTENSION,
+            MIME_TYPE,
+            FILE_SIZE,
+            STORAGE_TYPE,
+            STORAGE_PATH,
+            STORAGE_BUCKET,
+            RELATED_TYPE,
+            RELATED_ID,
+            USE_YN,
+            CREATED_BY
+        ) VALUES (
+            #{originalName},
+            #{storedName},
+            #{extension},
+            #{mimeType},
+            #{fileSize},
+            #{storageType},
+            #{storagePath},
+            #{storageBucket},
+            #{relatedType},
+            #{relatedId},
+            'Y',
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- ID로 조회 -->
+    <select id="findById" resultMap="FileResultMap">
+        SELECT
+            f.*,
+            u.NAME AS CREATED_BY_NAME
+        FROM TB_FILE f
+        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USER_ID
+        WHERE f.FILE_ID = #{fileId}
+          AND f.USE_YN = 'Y'
+    </select>
+
+    <!-- 연관 엔티티로 조회 -->
+    <select id="findByRelated" resultMap="FileResultMap">
+        SELECT
+            f.*,
+            u.NAME AS CREATED_BY_NAME
+        FROM TB_FILE f
+        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USER_ID
+        WHERE f.RELATED_TYPE = #{relatedType}
+          AND f.RELATED_ID = #{relatedId}
+          AND f.USE_YN = 'Y'
+        ORDER BY f.CREATED_AT DESC
+    </select>
+
+    <!-- 사용자가 업로드한 파일 조회 -->
+    <select id="findByCreatedBy" resultMap="FileResultMap">
+        SELECT
+            f.*,
+            u.NAME AS CREATED_BY_NAME
+        FROM TB_FILE f
+        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USER_ID
+        WHERE f.CREATED_BY = #{createdBy}
+          AND f.USE_YN = 'Y'
+        ORDER BY f.CREATED_AT DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 사용 여부 업데이트 -->
+    <update id="updateUseYn">
+        UPDATE TB_FILE
+        SET USE_YN = #{useYn},
+            UPDATED_BY = #{updatedBy}
+        WHERE FILE_ID = #{fileId}
+    </update>
+
+    <!-- 연관 정보 업데이트 -->
+    <update id="updateRelated">
+        UPDATE TB_FILE
+        SET RELATED_TYPE = #{relatedType},
+            RELATED_ID = #{relatedId},
+            UPDATED_BY = #{updatedBy}
+        WHERE FILE_ID = #{fileId}
+    </update>
+
+    <!-- 스토리지 정보 업데이트 (마이그레이션용) -->
+    <update id="updateStorage">
+        UPDATE TB_FILE
+        SET STORAGE_TYPE = #{storageType},
+            STORAGE_PATH = #{storagePath},
+            STORAGE_BUCKET = #{storageBucket},
+            UPDATED_BY = #{updatedBy}
+        WHERE FILE_ID = #{fileId}
+    </update>
+
+    <!-- 물리적 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_FILE
+        WHERE FILE_ID = #{fileId}
+    </delete>
+
+    <!-- 스토리지 타입별 파일 수 -->
+    <select id="countByStorageType" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_FILE
+        WHERE STORAGE_TYPE = #{storageType}
+          AND USE_YN = 'Y'
+    </select>
+
+    <!-- 미사용 파일 조회 (연관 없음 + 오래된 파일) -->
+    <select id="findUnusedFiles" resultMap="FileResultMap">
+        SELECT f.*
+        FROM TB_FILE f
+        WHERE f.USE_YN = 'N'
+           OR (f.RELATED_TYPE IS NULL
+               AND f.CREATED_AT &lt; DATE_SUB(NOW(), INTERVAL 1 DAY))
+        ORDER BY f.CREATED_AT ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

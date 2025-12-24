@@ -132,8 +132,12 @@ client.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // 요청 데이터 키를 snake_case로 변환
-    if (config.data && typeof config.data === 'object') {
+    // FormData인 경우 Content-Type 헤더 제거 (Axios가 자동 설정하도록)
+    // 그렇지 않으면 기본 application/json이 적용되어 multipart 요청이 실패
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    } else if (config.data && typeof config.data === 'object') {
+      // 요청 데이터 키를 snake_case로 변환 (FormData 제외)
       config.data = convertKeysToSnakeCase(config.data)
     }
 

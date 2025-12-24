@@ -147,7 +147,7 @@ CLAUDE.md의 DB 컨벤션을 따라줘:
 ```
   기본 계정
   ID: admin
-  PW: admin123!
+  PW: admin1234
 
   실행 순서
   # Docker Compose 실행 시 자동 실행
