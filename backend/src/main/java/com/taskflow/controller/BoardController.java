@@ -55,14 +55,14 @@ public class BoardController {
             @RequestParam(value = "useYn", required = false) String useYn,
             @RequestParam(value = "owned", required = false, defaultValue = "false") boolean ownedOnly
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        log.debug("Get boards: userId={}, useYn={}, ownedOnly={}", currentUserId, useYn, ownedOnly);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        log.debug("Get boards: username={}, useYn={}, ownedOnly={}", currentUsername, useYn, ownedOnly);
 
         List<BoardResponse> response;
         if (ownedOnly) {
-            response = boardService.getOwnedBoards(currentUserId, useYn);
+            response = boardService.getOwnedBoards(currentUsername, useYn);
         } else {
-            response = boardService.getAccessibleBoards(currentUserId, useYn);
+            response = boardService.getAccessibleBoards(currentUsername, useYn);
         }
 
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -73,10 +73,10 @@ public class BoardController {
      */
     @GetMapping("/list")
     public ResponseEntity<ApiResponse<BoardListResponse>> getBoardList() {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        log.debug("Get board list: userId={}", currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        log.debug("Get board list: username={}", currentUsername);
 
-        BoardListResponse response = boardService.getBoardList(currentUserId);
+        BoardListResponse response = boardService.getBoardList(currentUsername);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -89,15 +89,15 @@ public class BoardController {
     ) {
         log.info("Create board: name={}", request.getBoardName());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        BoardResponse response = boardService.createBoard(request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        BoardResponse response = boardService.createBoard(request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "보드가 생성되었습니다"));
     }
 
     /**
-     * 보드 조회
+     * 보드 조회 (권한 정보 포함)
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BoardResponse>> getBoard(
@@ -105,14 +105,10 @@ public class BoardController {
     ) {
         log.debug("Get board: id={}", boardId);
 
-        // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
-        }
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        BoardResponse response = boardService.getBoard(boardId);
+        // getBoardWithPermission은 내부에서 접근 권한도 확인하고 isOwner도 설정
+        BoardResponse response = boardService.getBoardWithPermission(boardId, currentUsername);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -126,8 +122,8 @@ public class BoardController {
     ) {
         log.info("Update board: id={}", boardId);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        BoardResponse response = boardService.updateBoard(boardId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        BoardResponse response = boardService.updateBoard(boardId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "보드가 수정되었습니다"));
     }
@@ -141,8 +137,8 @@ public class BoardController {
     ) {
         log.info("Delete board: id={}", boardId);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        boardService.deleteBoard(boardId, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boardService.deleteBoard(boardId, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.successWithMessage("보드가 삭제되었습니다"));
     }
@@ -152,7 +148,7 @@ public class BoardController {
     // =============================================
 
     /**
-     * 보드 순서 변경
+     * 보드 순서 변경 (소유 보드)
      */
     @PutMapping("/{id}/order")
     public ResponseEntity<ApiResponse<Void>> updateBoardOrder(
@@ -161,10 +157,26 @@ public class BoardController {
     ) {
         log.info("Update board order: boardId={}, sortOrder={}", boardId, request.getSortOrder());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        boardService.updateBoardOrder(boardId, request.getSortOrder(), currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boardService.updateBoardOrder(boardId, request.getSortOrder(), currentUsername);
 
         return ResponseEntity.ok(ApiResponse.successWithMessage("보드 순서가 변경되었습니다"));
+    }
+
+    /**
+     * 공유받은 보드 순서 변경
+     */
+    @PutMapping("/{id}/shares/order")
+    public ResponseEntity<ApiResponse<Void>> updateSharedBoardOrder(
+            @PathVariable("id") Long boardId,
+            @Valid @RequestBody BoardOrderRequest request
+    ) {
+        log.info("Update shared board order: boardId={}, sortOrder={}", boardId, request.getSortOrder());
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boardService.updateSharedBoardOrder(boardId, request.getSortOrder(), currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.successWithMessage("공유 보드 순서가 변경되었습니다"));
     }
 
     /**
@@ -175,11 +187,11 @@ public class BoardController {
             @PathVariable("id") Long boardId,
             @Valid @RequestBody BoardDeleteRequest request
     ) {
-        log.info("Delete board with transfer: boardId={}, targetUserId={}, forceDelete={}",
-                boardId, request.getTargetUserId(), request.isForceDelete());
+        log.info("Delete board with transfer: boardId={}, targetUsername={}, forceDelete={}",
+                boardId, request.getTargetUsername(), request.isForceDelete());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        TransferResultResponse result = boardService.deleteBoardWithTransfer(boardId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        TransferResultResponse result = boardService.deleteBoardWithTransfer(boardId, request, currentUsername);
 
         if (result != null) {
             return ResponseEntity.ok(ApiResponse.success(result, "보드가 삭제되고 업무가 이관되었습니다"));
@@ -198,8 +210,8 @@ public class BoardController {
         log.debug("Get transfer preview: boardId={}", boardId);
 
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.isOwner(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.isOwner(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드 소유자만 이관 미리보기를 조회할 수 있습니다"));
         }
@@ -218,17 +230,17 @@ public class BoardController {
             @PathVariable("id") Long boardId,
             @Valid @RequestBody BoardTransferRequest request
     ) {
-        log.info("Transfer board ownership: boardId={}, targetUserId={}", boardId, request.getTargetUserId());
+        log.info("Transfer board ownership: boardId={}, targetUsername={}", boardId, request.getTargetUsername());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
         // 소유자만 이관 가능
-        if (!boardService.isOwner(boardId, currentUserId)) {
+        if (!boardService.isOwner(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드 소유자만 이관할 수 있습니다"));
         }
 
-        BoardResponse response = boardService.transferBoardOwnership(boardId, request, currentUserId);
+        BoardResponse response = boardService.transferBoardOwnership(boardId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "보드가 이관되었습니다"));
     }
@@ -247,8 +259,8 @@ public class BoardController {
         log.debug("Get board shares: boardId={}", boardId);
 
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
@@ -265,10 +277,10 @@ public class BoardController {
             @PathVariable("id") Long boardId,
             @Valid @RequestBody BoardShareRequest request
     ) {
-        log.info("Add board share: boardId={}, userId={}", boardId, request.getUserId());
+        log.info("Add board share: boardId={}, username={}", boardId, request.getUsername());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        BoardShareResponse response = boardService.addBoardShare(boardId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        BoardShareResponse response = boardService.addBoardShare(boardId, request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "공유 사용자가 추가되었습니다"));
@@ -277,17 +289,17 @@ public class BoardController {
     /**
      * 공유 권한 변경
      */
-    @PutMapping("/{id}/shares/{userId}")
+    @PutMapping("/{id}/shares/{username}")
     public ResponseEntity<ApiResponse<Void>> updateBoardSharePermission(
             @PathVariable("id") Long boardId,
-            @PathVariable("userId") Long userId,
+            @PathVariable("username") String username,
             @Valid @RequestBody ShareUpdateRequest request
     ) {
-        log.info("Update board share permission: boardId={}, userId={}, permission={}",
-                boardId, userId, request.getPermission());
+        log.info("Update board share permission: boardId={}, username={}, permission={}",
+                boardId, username, request.getPermission());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        boardService.updateBoardSharePermission(boardId, userId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boardService.updateBoardSharePermission(boardId, username, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.successWithMessage("권한이 변경되었습니다"));
     }
@@ -295,15 +307,15 @@ public class BoardController {
     /**
      * 공유 사용자 제거
      */
-    @DeleteMapping("/{id}/shares/{userId}")
+    @DeleteMapping("/{id}/shares/{username}")
     public ResponseEntity<ApiResponse<Void>> removeBoardShare(
             @PathVariable("id") Long boardId,
-            @PathVariable("userId") Long userId
+            @PathVariable("username") String username
     ) {
-        log.info("Remove board share: boardId={}, userId={}", boardId, userId);
+        log.info("Remove board share: boardId={}, username={}", boardId, username);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        boardService.removeBoardShare(boardId, userId, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boardService.removeBoardShare(boardId, username, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.successWithMessage("공유가 해제되었습니다"));
     }

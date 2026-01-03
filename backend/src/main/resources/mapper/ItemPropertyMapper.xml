@@ -14,7 +14,7 @@
         <result property="valueText" column="VALUE_TEXT"/>
         <result property="valueNumber" column="VALUE_NUMBER"/>
         <result property="valueDate" column="VALUE_DATE"/>
-        <result property="valueUserId" column="VALUE_USER_ID"/>
+        <result property="valueUsername" column="VALUE_USERNAME"/>
         <result property="valueOptionId" column="VALUE_OPTION_ID"/>
         <result property="valueCheckbox" column="VALUE_CHECKBOX"/>
         <result property="createdAt" column="CREATED_AT"/>
@@ -55,7 +55,7 @@
             v.VALUE_TEXT,
             v.VALUE_NUMBER,
             v.VALUE_DATE,
-            v.VALUE_USER_ID,
+            v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
             v.CREATED_AT,
@@ -69,7 +69,7 @@
             o.COLOR AS OPTION_COLOR
         FROM TB_ITEM_PROPERTY v
         INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
-        LEFT JOIN TB_USER u ON v.VALUE_USER_ID = u.USER_ID
+        LEFT JOIN TB_USER u ON v.VALUE_USERNAME = u.USERNAME
         LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
             AND v.VALUE_OPTION_ID = o.OPTION_ID
         WHERE v.ITEM_PROPERTY_ID = #{itemPropertyId}
@@ -84,7 +84,7 @@
             v.VALUE_TEXT,
             v.VALUE_NUMBER,
             v.VALUE_DATE,
-            v.VALUE_USER_ID,
+            v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
             v.CREATED_AT,
@@ -98,7 +98,7 @@
             o.COLOR AS OPTION_COLOR
         FROM TB_ITEM_PROPERTY v
         INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
-        LEFT JOIN TB_USER u ON v.VALUE_USER_ID = u.USER_ID
+        LEFT JOIN TB_USER u ON v.VALUE_USERNAME = u.USERNAME
         LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
             AND v.VALUE_OPTION_ID = o.OPTION_ID
         WHERE v.ITEM_ID = #{itemId}
@@ -114,7 +114,7 @@
             v.VALUE_TEXT,
             v.VALUE_NUMBER,
             v.VALUE_DATE,
-            v.VALUE_USER_ID,
+            v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
             v.CREATED_AT,
@@ -128,7 +128,7 @@
             o.COLOR AS OPTION_COLOR
         FROM TB_ITEM_PROPERTY v
         INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
-        LEFT JOIN TB_USER u ON v.VALUE_USER_ID = u.USER_ID
+        LEFT JOIN TB_USER u ON v.VALUE_USERNAME = u.USERNAME
         LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
             AND v.VALUE_OPTION_ID = o.OPTION_ID
         WHERE v.ITEM_ID IN
@@ -147,7 +147,7 @@
             v.VALUE_TEXT,
             v.VALUE_NUMBER,
             v.VALUE_DATE,
-            v.VALUE_USER_ID,
+            v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
             v.CREATED_AT,
@@ -161,7 +161,7 @@
             o.COLOR AS OPTION_COLOR
         FROM TB_ITEM_PROPERTY v
         INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
-        LEFT JOIN TB_USER u ON v.VALUE_USER_ID = u.USER_ID
+        LEFT JOIN TB_USER u ON v.VALUE_USERNAME = u.USERNAME
         LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
             AND v.VALUE_OPTION_ID = o.OPTION_ID
         WHERE v.ITEM_ID = #{itemId}
@@ -197,7 +197,7 @@
             v.VALUE_TEXT,
             v.VALUE_NUMBER,
             v.VALUE_DATE,
-            v.VALUE_USER_ID,
+            v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
             v.CREATED_AT,
@@ -223,7 +223,7 @@
             VALUE_TEXT,
             VALUE_NUMBER,
             VALUE_DATE,
-            VALUE_USER_ID,
+            VALUE_USERNAME,
             VALUE_OPTION_ID,
             VALUE_CHECKBOX,
             CREATED_BY
@@ -233,7 +233,7 @@
             #{valueText},
             #{valueNumber},
             #{valueDate},
-            #{valueUserId},
+            #{valueUsername},
             #{valueOptionId},
             #{valueCheckbox},
             #{createdBy}
@@ -247,7 +247,7 @@
             VALUE_TEXT = #{valueText},
             VALUE_NUMBER = #{valueNumber},
             VALUE_DATE = #{valueDate},
-            VALUE_USER_ID = #{valueUserId},
+            VALUE_USERNAME = #{valueUsername},
             VALUE_OPTION_ID = #{valueOptionId},
             VALUE_CHECKBOX = #{valueCheckbox},
             UPDATED_BY = #{updatedBy},
@@ -263,7 +263,7 @@
             VALUE_TEXT,
             VALUE_NUMBER,
             VALUE_DATE,
-            VALUE_USER_ID,
+            VALUE_USERNAME,
             VALUE_OPTION_ID,
             VALUE_CHECKBOX,
             CREATED_BY
@@ -273,7 +273,7 @@
             #{valueText},
             #{valueNumber},
             #{valueDate},
-            #{valueUserId},
+            #{valueUsername},
             #{valueOptionId},
             #{valueCheckbox},
             #{createdBy}
@@ -282,7 +282,7 @@
             VALUE_TEXT = #{valueText},
             VALUE_NUMBER = #{valueNumber},
             VALUE_DATE = #{valueDate},
-            VALUE_USER_ID = #{valueUserId},
+            VALUE_USERNAME = #{valueUsername},
             VALUE_OPTION_ID = #{valueOptionId},
             VALUE_CHECKBOX = #{valueCheckbox},
             UPDATED_BY = #{updatedBy},

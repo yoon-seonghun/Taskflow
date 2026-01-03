@@ -31,9 +31,9 @@ public class TemplateHistoryResponse {
     private String status;
 
     /**
-     * 등록자 ID
+     * 등록자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 등록자 이름

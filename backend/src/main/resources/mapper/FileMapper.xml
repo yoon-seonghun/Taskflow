@@ -62,7 +62,7 @@
             f.*,
             u.NAME AS CREATED_BY_NAME
         FROM TB_FILE f
-        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USER_ID
+        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USERNAME
         WHERE f.FILE_ID = #{fileId}
           AND f.USE_YN = 'Y'
     </select>
@@ -73,7 +73,7 @@
             f.*,
             u.NAME AS CREATED_BY_NAME
         FROM TB_FILE f
-        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USER_ID
+        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USERNAME
         WHERE f.RELATED_TYPE = #{relatedType}
           AND f.RELATED_ID = #{relatedId}
           AND f.USE_YN = 'Y'
@@ -86,7 +86,7 @@
             f.*,
             u.NAME AS CREATED_BY_NAME
         FROM TB_FILE f
-        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USER_ID
+        LEFT JOIN TB_USER u ON f.CREATED_BY = u.USERNAME
         WHERE f.CREATED_BY = #{createdBy}
           AND f.USE_YN = 'Y'
         ORDER BY f.CREATED_AT DESC

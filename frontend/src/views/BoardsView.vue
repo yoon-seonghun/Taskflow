@@ -22,6 +22,11 @@ const loading = ref(false)
 const boardList = ref<BoardListResponse | null>(null)
 const users = ref<User[]>([])
 
+// 드래그 앤 드롭 상태
+const draggedBoard = ref<Board | null>(null)
+const draggedBoardType = ref<'owned' | 'shared' | null>(null)
+const dragOverBoardId = ref<number | null>(null)
+
 // 모달 상태
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
@@ -30,8 +35,7 @@ const showShareModal = ref(false)
 const selectedBoard = ref<Board | null>(null)
 const transferPreview = ref<TransferPreviewResponse | null>(null)
 
-// 공유 관련
-const boardShares = ref<BoardShare[]>([])
+// 공유 관련 (store의 boardShares 사용)
 const sharesLoading = ref(false)
 const shareAdding = ref(false)
 
@@ -238,7 +242,6 @@ function getPermissionLabel(permission: string): string {
 // 공유 모달 열기
 async function openShareModal(board: Board) {
   selectedBoard.value = board
-  boardShares.value = []
   showShareModal.value = true
   await loadBoardShares(board.boardId)
 }
@@ -247,7 +250,10 @@ async function openShareModal(board: Board) {
 async function loadBoardShares(boardId: number) {
   sharesLoading.value = true
   try {
-    boardShares.value = await boardStore.fetchBoardShares(boardId)
+    const success = await boardStore.fetchBoardShares(boardId)
+    if (!success) {
+      uiStore.showError('공유 사용자 목록을 불러오는데 실패했습니다.')
+    }
   } catch (error) {
     console.error('Failed to load board shares:', error)
     uiStore.showError('공유 사용자 목록을 불러오는데 실패했습니다.')
@@ -256,9 +262,9 @@ async function loadBoardShares(boardId: number) {
   }
 }
 
-// 공유된 사용자 ID 목록 (검색 시 제외용)
-const existingShareUserIds = computed(() => {
-  return boardShares.value.map(share => share.userId)
+// 공유된 사용자 username 목록 (검색 시 제외용)
+const existingShareUsernames = computed(() => {
+  return boardStore.boardShares.map(share => share.username).filter(Boolean) as string[]
 })
 
 // 공유 사용자 추가
@@ -292,7 +298,8 @@ async function handleRemoveShare(share: BoardShare) {
   }
 
   try {
-    const success = await boardStore.removeBoardShare(selectedBoard.value.boardId, share.userId)
+    // username 기반으로 공유 해제
+    const success = await boardStore.removeBoardShare(selectedBoard.value.boardId, share.username)
     if (success) {
       uiStore.showSuccess('공유가 해제되었습니다.')
       await loadBoardShares(selectedBoard.value.boardId)
@@ -303,6 +310,92 @@ async function handleRemoveShare(share: BoardShare) {
   } catch (error) {
     console.error('Failed to remove share:', error)
     uiStore.showError('공유 해제에 실패했습니다.')
+  }
+}
+
+// =============================================
+// 드래그 앤 드롭 핸들러
+// =============================================
+
+function handleDragStart(event: DragEvent, board: Board, type: 'owned' | 'shared') {
+  draggedBoard.value = board
+  draggedBoardType.value = type
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(board.boardId))
+  }
+  // 드래그 시작 시 약간의 투명도 적용
+  const target = event.target as HTMLElement
+  setTimeout(() => {
+    target.classList.add('opacity-50')
+  }, 0)
+}
+
+function handleDragEnd(event: DragEvent) {
+  const target = event.target as HTMLElement
+  target.classList.remove('opacity-50')
+  draggedBoard.value = null
+  draggedBoardType.value = null
+  dragOverBoardId.value = null
+}
+
+function handleDragOver(event: DragEvent, boardId: number) {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dragOverBoardId.value = boardId
+}
+
+function handleDragLeave() {
+  dragOverBoardId.value = null
+}
+
+async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 'shared') {
+  event.preventDefault()
+  dragOverBoardId.value = null
+
+  if (!draggedBoard.value || draggedBoardType.value !== type) {
+    return
+  }
+
+  if (draggedBoard.value.boardId === targetBoard.boardId) {
+    return
+  }
+
+  // 현재 보드 목록에서 해당 타입의 보드들만 추출
+  const boardsList = type === 'owned'
+    ? boardList.value?.ownedBoards || []
+    : boardList.value?.sharedBoards || []
+
+  const draggedIndex = boardsList.findIndex(b => b.boardId === draggedBoard.value!.boardId)
+  const targetIndex = boardsList.findIndex(b => b.boardId === targetBoard.boardId)
+
+  if (draggedIndex === -1 || targetIndex === -1) {
+    return
+  }
+
+  // 새로운 순서 계산 (0부터 시작)
+  const newSortOrder = targetIndex
+
+  try {
+    let success: boolean
+    if (type === 'owned') {
+      success = await boardStore.updateBoardOrder(draggedBoard.value.boardId, newSortOrder)
+    } else {
+      success = await boardStore.updateSharedBoardOrder(draggedBoard.value.boardId, newSortOrder)
+    }
+
+    if (success) {
+      // 목록 새로고침
+      await loadBoards()
+      uiStore.showSuccess('보드 순서가 변경되었습니다.')
+    } else {
+      uiStore.showError(boardStore.error || '순서 변경에 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('Failed to update board order:', error)
+    uiStore.showError('순서 변경에 실패했습니다.')
   }
 }
 </script>
@@ -354,12 +447,26 @@ async function handleRemoveShare(share: BoardShare) {
           <div
             v-for="board in boardList.ownedBoards"
             :key="board.boardId"
-            class="board-card bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+            class="board-card bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all cursor-move"
+            :class="{
+              'border-blue-500 border-2': dragOverBoardId === board.boardId && draggedBoardType === 'owned',
+              'ring-2 ring-blue-300': draggedBoard?.boardId === board.boardId
+            }"
+            draggable="true"
+            @dragstart="handleDragStart($event, board, 'owned')"
+            @dragend="handleDragEnd"
+            @dragover="handleDragOver($event, board.boardId)"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop($event, board, 'owned')"
           >
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-3">
+                <!-- 드래그 핸들 아이콘 -->
+                <svg class="w-4 h-4 text-gray-400 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                </svg>
                 <div
-                  class="w-3 h-3 rounded-full"
+                  class="w-3 h-3 rounded-full flex-shrink-0"
                   :style="{ backgroundColor: board.color || '#3B82F6' }"
                 />
                 <h3 class="font-medium text-gray-900">{{ board.boardName }}</h3>
@@ -443,12 +550,26 @@ async function handleRemoveShare(share: BoardShare) {
           <div
             v-for="board in boardList.sharedBoards"
             :key="board.boardId"
-            class="board-card bg-white rounded-lg border border-gray-200 p-4"
+            class="board-card bg-white rounded-lg border border-gray-200 p-4 transition-all cursor-move"
+            :class="{
+              'border-blue-500 border-2': dragOverBoardId === board.boardId && draggedBoardType === 'shared',
+              'ring-2 ring-blue-300': draggedBoard?.boardId === board.boardId
+            }"
+            draggable="true"
+            @dragstart="handleDragStart($event, board, 'shared')"
+            @dragend="handleDragEnd"
+            @dragover="handleDragOver($event, board.boardId)"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop($event, board, 'shared')"
           >
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-3">
+                <!-- 드래그 핸들 아이콘 -->
+                <svg class="w-4 h-4 text-gray-400 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                </svg>
                 <div
-                  class="w-3 h-3 rounded-full"
+                  class="w-3 h-3 rounded-full flex-shrink-0"
                   :style="{ backgroundColor: board.color || '#3B82F6' }"
                 />
                 <h3 class="font-medium text-gray-900">{{ board.boardName }}</h3>
@@ -711,7 +832,7 @@ async function handleRemoveShare(share: BoardShare) {
           <div class="flex-1 overflow-y-auto p-6 space-y-6">
             <!-- 사용자 추가 -->
             <ShareUserSearch
-              :existing-user-ids="existingShareUserIds"
+              :existing-usernames="existingShareUsernames"
               :loading="shareAdding"
               @add="handleAddShare"
             />
@@ -719,10 +840,10 @@ async function handleRemoveShare(share: BoardShare) {
             <!-- 공유 사용자 목록 -->
             <div>
               <h4 class="text-sm font-medium text-gray-700 mb-3">
-                공유된 사용자 ({{ boardShares.length }}명)
+                공유된 사용자 ({{ boardStore.boardShares.length }}명)
               </h4>
               <ShareUserList
-                :shares="boardShares"
+                :shares="boardStore.boardShares"
                 :loading="sharesLoading"
                 @remove="handleRemoveShare"
               />

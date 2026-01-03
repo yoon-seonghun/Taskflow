@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
  *
  * 테이블: TB_AUDIT_LOG
  *
- * 보드, 업무, 공유 등 모든 변경 이력 기록
- * - 생성, 수정, 삭제, 이관, 공유/해제 작업 추적
- * - 변경 전/후 데이터 JSON으로 저장
+ * USERNAME 기반 FK 참조 시스템:
+ * - ACTOR_USERNAME: 수행자 USERNAME 참조
+ * - RELATED_USERNAME: 관련 사용자 USERNAME 참조
  */
 @Getter
 @Setter
@@ -40,14 +40,19 @@ public class AuditLog {
     private Long targetId;
 
     /**
+     * 대상 이름 (보드명, 업무명 등)
+     */
+    private String targetName;
+
+    /**
      * 작업 유형 (CREATE/UPDATE/DELETE/TRANSFER/SHARE/UNSHARE)
      */
     private String action;
 
     /**
-     * 수행자 ID (FK)
+     * 수행자 USERNAME (FK → TB_USER.USERNAME)
      */
-    private Long actorId;
+    private String actorUsername;
 
     /**
      * 변경 내용 설명
@@ -65,9 +70,9 @@ public class AuditLog {
     private String afterData;
 
     /**
-     * 관련 사용자 ID (이관/공유 대상)
+     * 관련 사용자 USERNAME (이관/공유 대상)
      */
-    private Long relatedUserId;
+    private String relatedUsername;
 
     /**
      * 생성일시
@@ -79,11 +84,6 @@ public class AuditLog {
     // =============================================
 
     /**
-     * 대상 이름 (보드명/업무 제목 등)
-     */
-    private String targetName;
-
-    /**
      * 수행자명
      */
     private String actorName;
@@ -92,6 +92,83 @@ public class AuditLog {
      * 관련 사용자명
      */
     private String relatedUserName;
+
+    /**
+     * 관련 사용자명 getter (Lombok 호환성)
+     */
+    public String getRelatedUserName() {
+        return relatedUserName;
+    }
+
+    /**
+     * 관련 사용자 USERNAME getter (Lombok 호환성)
+     */
+    public String getRelatedUsername() {
+        return relatedUsername;
+    }
+
+    /**
+     * 수행자 USERNAME getter (Lombok 호환성)
+     */
+    public String getActorUsername() {
+        return actorUsername;
+    }
+
+    /**
+     * 수행자명 getter (Lombok 호환성)
+     */
+    public String getActorName() {
+        return actorName;
+    }
+
+    /**
+     * 로그ID getter (Lombok 호환성)
+     */
+    public Long getLogId() {
+        return logId;
+    }
+
+    /**
+     * 대상유형 getter (Lombok 호환성)
+     */
+    public String getTargetType() {
+        return targetType;
+    }
+
+    /**
+     * 대상ID getter (Lombok 호환성)
+     */
+    public Long getTargetId() {
+        return targetId;
+    }
+
+    /**
+     * 대상명 getter (Lombok 호환성)
+     */
+    public String getTargetName() {
+        return targetName;
+    }
+
+    /**
+     * 액션 getter (Lombok 호환성)
+     */
+    public String getAction() {
+        return action;
+    }
+
+    /**
+     * 설명 getter (Lombok 호환성)
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * 생성일시 getter (Lombok 호환성)
+     */
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
     // =============================================
     // 대상 유형 상수
@@ -120,12 +197,12 @@ public class AuditLog {
     /**
      * 보드 생성 로그
      */
-    public static AuditLog boardCreated(Long boardId, Long actorId, String description) {
+    public static AuditLog boardCreated(Long boardId, String actorUsername, String description) {
         return AuditLog.builder()
                 .targetType(TARGET_BOARD)
                 .targetId(boardId)
                 .action(ACTION_CREATE)
-                .actorId(actorId)
+                .actorUsername(actorUsername)
                 .description(description)
                 .build();
     }
@@ -133,13 +210,13 @@ public class AuditLog {
     /**
      * 보드 수정 로그
      */
-    public static AuditLog boardUpdated(Long boardId, Long actorId, String description,
+    public static AuditLog boardUpdated(Long boardId, String actorUsername, String description,
                                          String beforeData, String afterData) {
         return AuditLog.builder()
                 .targetType(TARGET_BOARD)
                 .targetId(boardId)
                 .action(ACTION_UPDATE)
-                .actorId(actorId)
+                .actorUsername(actorUsername)
                 .description(description)
                 .beforeData(beforeData)
                 .afterData(afterData)
@@ -149,13 +226,13 @@ public class AuditLog {
     /**
      * 보드 삭제 로그
      */
-    public static AuditLog boardDeleted(Long boardId, Long actorId, String description,
+    public static AuditLog boardDeleted(Long boardId, String actorUsername, String description,
                                          String beforeData) {
         return AuditLog.builder()
                 .targetType(TARGET_BOARD)
                 .targetId(boardId)
                 .action(ACTION_DELETE)
-                .actorId(actorId)
+                .actorUsername(actorUsername)
                 .description(description)
                 .beforeData(beforeData)
                 .build();
@@ -164,14 +241,14 @@ public class AuditLog {
     /**
      * 업무 이관 로그
      */
-    public static AuditLog itemTransferred(Long itemId, Long actorId, Long relatedUserId,
+    public static AuditLog itemTransferred(Long itemId, String actorUsername, String relatedUsername,
                                             String description, String beforeData, String afterData) {
         return AuditLog.builder()
                 .targetType(TARGET_ITEM)
                 .targetId(itemId)
                 .action(ACTION_TRANSFER)
-                .actorId(actorId)
-                .relatedUserId(relatedUserId)
+                .actorUsername(actorUsername)
+                .relatedUsername(relatedUsername)
                 .description(description)
                 .beforeData(beforeData)
                 .afterData(afterData)
@@ -181,14 +258,14 @@ public class AuditLog {
     /**
      * 공유 추가 로그
      */
-    public static AuditLog shareAdded(String targetType, Long targetId, Long actorId,
-                                       Long relatedUserId, String description) {
+    public static AuditLog shareAdded(String targetType, Long targetId, String actorUsername,
+                                       String relatedUsername, String description) {
         return AuditLog.builder()
                 .targetType(targetType)
                 .targetId(targetId)
                 .action(ACTION_SHARE)
-                .actorId(actorId)
-                .relatedUserId(relatedUserId)
+                .actorUsername(actorUsername)
+                .relatedUsername(relatedUsername)
                 .description(description)
                 .build();
     }
@@ -196,14 +273,14 @@ public class AuditLog {
     /**
      * 공유 제거 로그
      */
-    public static AuditLog shareRemoved(String targetType, Long targetId, Long actorId,
-                                         Long relatedUserId, String description) {
+    public static AuditLog shareRemoved(String targetType, Long targetId, String actorUsername,
+                                         String relatedUsername, String description) {
         return AuditLog.builder()
                 .targetType(targetType)
                 .targetId(targetId)
                 .action(ACTION_UNSHARE)
-                .actorId(actorId)
-                .relatedUserId(relatedUserId)
+                .actorUsername(actorUsername)
+                .relatedUsername(relatedUsername)
                 .description(description)
                 .build();
     }

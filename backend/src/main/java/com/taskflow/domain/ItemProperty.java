@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
  *
  * 테이블: TB_ITEM_PROPERTY
  *
- * 아이템별 동적 속성의 값을 저장 (EAV 패턴)
- * - 속성 타입에 따라 적절한 컬럼에 값 저장
+ * USERNAME 기반 FK 참조 시스템:
+ * - VALUE_USERNAME: 사용자 타입 속성값 (USERNAME 참조)
  */
 @Getter
 @Setter
@@ -56,9 +56,9 @@ public class ItemProperty {
     private LocalDate valueDate;
 
     /**
-     * 사용자 ID 값 (USER)
+     * 사용자 USERNAME 값 (USER 타입)
      */
-    private Long valueUserId;
+    private String valueUsername;
 
     /**
      * 선택 옵션 ID 값 (SELECT)
@@ -76,9 +76,9 @@ public class ItemProperty {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -86,9 +86,9 @@ public class ItemProperty {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 JOIN으로 설정)
@@ -136,7 +136,7 @@ public class ItemProperty {
             case PropertyDef.TYPE_CHECKBOX -> valueCheckbox != null ? valueCheckbox : valueText;
             case PropertyDef.TYPE_NUMBER -> valueNumber;
             case PropertyDef.TYPE_DATE -> valueDate;
-            case PropertyDef.TYPE_USER -> valueUserId;
+            case PropertyDef.TYPE_USER -> valueUsername;
             case PropertyDef.TYPE_SELECT -> valueOptionId != null ? valueOptionId : valueText;
             case PropertyDef.TYPE_MULTI_SELECT -> valueText; // 다중선택은 별도 테이블 사용
             default -> valueText;
@@ -190,11 +190,8 @@ public class ItemProperty {
                 }
             }
             case PropertyDef.TYPE_USER -> {
-                if (value instanceof Long) {
-                    this.valueUserId = (Long) value;
-                } else {
-                    this.valueUserId = Long.parseLong(value.toString());
-                }
+                // USERNAME (String)
+                this.valueUsername = value.toString();
             }
         }
     }
@@ -206,7 +203,7 @@ public class ItemProperty {
         this.valueText = null;
         this.valueNumber = null;
         this.valueDate = null;
-        this.valueUserId = null;
+        this.valueUsername = null;
         this.valueOptionId = null;
         this.valueCheckbox = null;
     }

@@ -39,9 +39,9 @@ public class DepartmentFlatResponse {
     private String displayName;
 
     /**
-     * 상위 부서 ID
+     * 상위 부서 코드
      */
-    private Long parentId;
+    private String parentCode;
 
     /**
      * 계층 레벨 (0 = 최상위)
@@ -73,7 +73,7 @@ public class DepartmentFlatResponse {
                 .departmentCode(department.getDepartmentCode())
                 .departmentName(department.getDepartmentName())
                 .displayName(displayName)
-                .parentId(department.getParentId())
+                .parentCode(department.getParentCode())
                 .level(department.getLevel())
                 .path(department.getPath())
                 .useYn(department.getUseYn())

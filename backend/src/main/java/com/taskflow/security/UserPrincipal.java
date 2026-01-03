@@ -20,7 +20,7 @@ public class UserPrincipal implements UserDetails {
     private final String username;
     private final String password;
     private final String name;
-    private final Long departmentId;
+    private final String departmentCode;
     private final boolean enabled;
     private final Collection<? extends GrantedAuthority> authorities;
 
@@ -29,14 +29,14 @@ public class UserPrincipal implements UserDetails {
             String username,
             String password,
             String name,
-            Long departmentId,
+            String departmentCode,
             boolean enabled
     ) {
         this.userId = userId;
         this.username = username;
         this.password = password;
         this.name = name;
-        this.departmentId = departmentId;
+        this.departmentCode = departmentCode;
         this.enabled = enabled;
         this.authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
     }
@@ -46,7 +46,7 @@ public class UserPrincipal implements UserDetails {
             String username,
             String password,
             String name,
-            Long departmentId,
+            String departmentCode,
             String useYn
     ) {
         return new UserPrincipal(
@@ -54,7 +54,7 @@ public class UserPrincipal implements UserDetails {
                 username,
                 password,
                 name,
-                departmentId,
+                departmentCode,
                 "Y".equals(useYn)
         );
     }

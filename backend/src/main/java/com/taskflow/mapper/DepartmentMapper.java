@@ -41,17 +41,17 @@ public interface DepartmentMapper {
     /**
      * 특정 부서의 하위 부서 목록 조회 (직계 자식만)
      */
-    List<Department> findChildren(@Param("parentId") Long parentId);
+    List<Department> findChildren(@Param("parentCode") String parentCode);
 
     /**
      * 특정 부서의 모든 하위 부서 조회 (재귀)
      */
-    List<Department> findAllDescendants(@Param("departmentId") Long departmentId);
+    List<Department> findAllDescendants(@Param("departmentCode") String departmentCode);
 
     /**
      * 특정 부서의 상위 부서 경로 조회 (루트까지)
      */
-    List<Department> findAncestors(@Param("departmentId") Long departmentId);
+    List<Department> findAncestors(@Param("departmentCode") String departmentCode);
 
     /**
      * 부서 코드 중복 확인
@@ -69,17 +69,17 @@ public interface DepartmentMapper {
     /**
      * 특정 부서에 하위 부서가 있는지 확인
      */
-    boolean hasChildren(@Param("departmentId") Long departmentId);
+    boolean hasChildren(@Param("departmentCode") String departmentCode);
 
     /**
      * 특정 부서에 소속된 사용자가 있는지 확인
      */
-    boolean hasUsers(@Param("departmentId") Long departmentId);
+    boolean hasUsers(@Param("departmentCode") String departmentCode);
 
     /**
      * 특정 부서의 최대 정렬 순서 조회
      */
-    Integer getMaxSortOrder(@Param("parentId") Long parentId);
+    Integer getMaxSortOrder(@Param("parentCode") String parentCode);
 
     // =============================================
     // 등록/수정/삭제
@@ -96,26 +96,26 @@ public interface DepartmentMapper {
     int update(Department department);
 
     /**
-     * 부서 순서 변경
+     * 부서 순서 변경 (코드 기준)
      */
     int updateOrder(
-            @Param("departmentId") Long departmentId,
-            @Param("parentId") Long parentId,
+            @Param("departmentCode") String departmentCode,
+            @Param("parentCode") String parentCode,
             @Param("sortOrder") Integer sortOrder,
-            @Param("updatedBy") Long updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     /**
-     * 부서 삭제 (물리 삭제)
+     * 부서 삭제 (물리 삭제) - 코드 기준
      */
-    int delete(@Param("departmentId") Long departmentId);
+    int delete(@Param("departmentCode") String departmentCode);
 
     /**
-     * 부서 비활성화 (논리 삭제)
+     * 부서 비활성화 (논리 삭제) - 코드 기준
      */
     int deactivate(
-            @Param("departmentId") Long departmentId,
-            @Param("updatedBy") Long updatedBy
+            @Param("departmentCode") String departmentCode,
+            @Param("updatedBy") String updatedBy
     );
 
     /**
@@ -123,7 +123,23 @@ public interface DepartmentMapper {
      * (특정 순서 이상의 부서들의 순서를 +1)
      */
     int incrementSortOrder(
-            @Param("parentId") Long parentId,
+            @Param("parentCode") String parentCode,
             @Param("fromOrder") Integer fromOrder
     );
+
+    // =============================================
+    // 부서 동기화 (UPSERT)
+    // =============================================
+
+    /**
+     * 부서 정보 UPSERT (departmentCode 기준)
+     * 존재하면 UPDATE, 없으면 INSERT
+     */
+    int upsertByCode(Department department);
+
+    /**
+     * 지정된 departmentCode 목록에 없는 부서 비활성화
+     * (외부 시스템과 동기화 시 사용)
+     */
+    int deactivateDepartmentsNotIn(@Param("activeCodes") List<String> activeCodes);
 }

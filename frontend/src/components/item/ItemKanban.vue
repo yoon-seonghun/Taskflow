@@ -86,10 +86,10 @@ const items = computed(() => {
 
 // 담당자 목록 (아이템에서 추출)
 const assignees = computed(() => {
-  const assigneeMap = new Map<number, { id: number; name: string }>()
+  const assigneeMap = new Map<string, { username: string; name: string }>()
   items.value.forEach(item => {
-    if (item.assigneeId && item.assigneeName) {
-      assigneeMap.set(item.assigneeId, { id: item.assigneeId, name: item.assigneeName })
+    if (item.assigneeUsername && item.assigneeName) {
+      assigneeMap.set(item.assigneeUsername, { username: item.assigneeUsername, name: item.assigneeName })
     }
   })
   return Array.from(assigneeMap.values())
@@ -131,13 +131,13 @@ const columns = computed(() => {
           id: 'unassigned',
           title: '미지정',
           color: '#9CA3AF',
-          items: items.value.filter(item => !item.assigneeId)
+          items: items.value.filter(item => !item.assigneeUsername)
         },
         ...assignees.value.map(a => ({
-          id: a.id,
+          id: a.username,
           title: a.name,
           color: '#6366F1',
-          items: items.value.filter(item => item.assigneeId === a.id)
+          items: items.value.filter(item => item.assigneeUsername === a.username)
         }))
       ]
       return assigneeColumns
@@ -206,9 +206,9 @@ async function handleDrop(columnId: string | number, item: Item) {
       break
 
     case 'assignee':
-      const newAssigneeId = columnId === 'unassigned' ? undefined : Number(columnId)
-      if (item.assigneeId === newAssigneeId) return
-      updateData = { assigneeId: newAssigneeId }
+      const newAssigneeUsername = columnId === 'unassigned' ? undefined : String(columnId)
+      if (item.assigneeUsername === newAssigneeUsername) return
+      updateData = { assigneeUsername: newAssigneeUsername }
       break
 
     case 'group':
@@ -248,7 +248,7 @@ function handleAddItem(columnId: string | number) {
       break
     case 'assignee':
       if (columnId !== 'unassigned') {
-        defaultValues.assigneeId = Number(columnId)
+        defaultValues.assigneeUsername = String(columnId)
       }
       break
     case 'group':

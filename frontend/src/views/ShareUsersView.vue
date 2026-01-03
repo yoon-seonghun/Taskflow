@@ -35,9 +35,9 @@ const boardOptions = computed<SelectOption[]>(() => {
 // 현재 공유 사용자 목록
 const shareUsers = computed(() => boardStore.boardShares)
 
-// 이미 공유된 사용자 ID 목록
-const existingUserIds = computed(() => {
-  return shareUsers.value.map(share => share.userId)
+// 이미 공유된 사용자 username 목록
+const existingUsernames = computed(() => {
+  return shareUsers.value.map(share => share.username).filter(Boolean) as string[]
 })
 
 // 보드 목록 로드
@@ -109,7 +109,8 @@ async function handleRemoveShare(share: BoardShare) {
   if (!confirmed) return
 
   try {
-    const success = await boardStore.removeBoardShare(selectedBoardId.value, share.userId)
+    // username 기반으로 공유 해제
+    const success = await boardStore.removeBoardShare(selectedBoardId.value, share.username)
     if (success) {
       uiStore.showSuccess('공유가 해제되었습니다.')
     } else {
@@ -191,7 +192,7 @@ onMounted(() => {
         <div class="lg:col-span-1">
           <div class="sticky top-4">
             <ShareUserSearch
-              :existing-user-ids="existingUserIds"
+              :existing-usernames="existingUsernames"
               :loading="addingShare"
               @add="handleAddShare"
             />

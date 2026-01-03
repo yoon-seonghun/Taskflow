@@ -22,4 +22,32 @@ public class LoginRequest {
      */
     @NotBlank(message = "비밀번호를 입력해주세요")
     private String password;
+
+    /**
+     * username getter (Lombok 호환성)
+     */
+    public String getUsername() {
+        return username;
+    }
+
+    /**
+     * username setter (Lombok 호환성)
+     */
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    /**
+     * password getter (Lombok 호환성)
+     */
+    public String getPassword() {
+        return password;
+    }
+
+    /**
+     * password setter (Lombok 호환성)
+     */
+    public void setPassword(String password) {
+        this.password = password;
+    }
 }

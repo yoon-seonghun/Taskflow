@@ -46,9 +46,9 @@ public class TaskTemplateResponse {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 생성자 이름
@@ -61,9 +61,9 @@ public class TaskTemplateResponse {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     /**
      * 수정자 이름

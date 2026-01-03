@@ -13,18 +13,16 @@ export type DefaultItemStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'D
 export interface TaskTemplate {
   templateId: number
   content: string
-  defaultAssigneeId?: number
-  defaultAssigneeName?: string
   defaultItemStatus?: DefaultItemStatus
   status: TemplateStatus
   sortOrder: number
   useCount: number
   createdAt: string
-  createdBy: number
-  createdByName?: string
+  createdBy: string          // 생성자 USERNAME
+  createdByName?: string     // 생성자 표시명
   updatedAt?: string
-  updatedBy?: number
-  updatedByName?: string
+  updatedBy?: string         // 수정자 USERNAME
+  updatedByName?: string     // 수정자 표시명
 }
 
 /**
@@ -32,7 +30,7 @@ export interface TaskTemplate {
  */
 export interface TaskTemplateCreateRequest {
   content: string
-  defaultAssigneeId?: number
+  defaultAssigneeUsername?: string   // 기본 담당자 USERNAME
   defaultItemStatus?: DefaultItemStatus
   sortOrder?: number
 }
@@ -42,7 +40,7 @@ export interface TaskTemplateCreateRequest {
  */
 export interface TaskTemplateUpdateRequest {
   content?: string
-  defaultAssigneeId?: number
+  defaultAssigneeUsername?: string   // 기본 담당자 USERNAME
   defaultItemStatus?: DefaultItemStatus
   status?: TemplateStatus
   sortOrder?: number

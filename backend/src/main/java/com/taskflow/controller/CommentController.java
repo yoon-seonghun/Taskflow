@@ -57,11 +57,11 @@ public class CommentController {
             @PathVariable("itemId") Long itemId,
             @Valid @RequestBody CommentCreateRequest request
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("Create comment: itemId={}, userId={}", itemId, currentUserId);
+        log.info("Create comment: itemId={}, username={}", itemId, currentUsername);
 
-        CommentResponse response = commentService.createComment(itemId, request, currentUserId);
+        CommentResponse response = commentService.createComment(itemId, request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "댓글이 등록되었습니다"));
@@ -79,11 +79,11 @@ public class CommentController {
             @PathVariable("id") Long commentId,
             @Valid @RequestBody CommentUpdateRequest request
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("Update comment: id={}, userId={}", commentId, currentUserId);
+        log.info("Update comment: id={}, username={}", commentId, currentUsername);
 
-        CommentResponse response = commentService.updateComment(commentId, request, currentUserId);
+        CommentResponse response = commentService.updateComment(commentId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "댓글이 수정되었습니다"));
     }
@@ -95,11 +95,11 @@ public class CommentController {
     public ResponseEntity<ApiResponse<Void>> deleteComment(
             @PathVariable("id") Long commentId
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("Delete comment: id={}, userId={}", commentId, currentUserId);
+        log.info("Delete comment: id={}, username={}", commentId, currentUsername);
 
-        commentService.deleteComment(commentId, currentUserId);
+        commentService.deleteComment(commentId, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(null, "댓글이 삭제되었습니다"));
     }

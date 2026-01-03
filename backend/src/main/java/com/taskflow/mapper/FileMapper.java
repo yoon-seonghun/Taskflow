@@ -35,7 +35,7 @@ public interface FileMapper {
      * 사용자가 업로드한 파일 목록 조회
      */
     List<FileEntity> findByCreatedBy(
-            @Param("createdBy") Long createdBy,
+            @Param("createdBy") String createdBy,
             @Param("limit") int limit
     );
 
@@ -45,7 +45,7 @@ public interface FileMapper {
     void updateUseYn(
             @Param("fileId") Long fileId,
             @Param("useYn") String useYn,
-            @Param("updatedBy") Long updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     /**
@@ -55,7 +55,7 @@ public interface FileMapper {
             @Param("fileId") Long fileId,
             @Param("relatedType") String relatedType,
             @Param("relatedId") Long relatedId,
-            @Param("updatedBy") Long updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     /**
@@ -66,7 +66,7 @@ public interface FileMapper {
             @Param("storageType") String storageType,
             @Param("storagePath") String storagePath,
             @Param("storageBucket") String storageBucket,
-            @Param("updatedBy") Long updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     /**

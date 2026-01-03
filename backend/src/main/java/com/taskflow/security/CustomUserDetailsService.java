@@ -39,7 +39,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 user.getUsername(),
                 user.getPassword(),
                 user.getName(),
-                user.getDepartmentId(),
+                user.getDepartmentCode(),
                 user.getUseYn()
         );
     }
@@ -62,7 +62,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 user.getUsername(),
                 user.getPassword(),
                 user.getName(),
-                user.getDepartmentId(),
+                user.getDepartmentCode(),
                 user.getUseYn()
         );
     }

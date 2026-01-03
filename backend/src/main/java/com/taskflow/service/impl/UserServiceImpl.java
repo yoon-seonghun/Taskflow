@@ -2,6 +2,7 @@ package com.taskflow.service.impl;
 
 import com.taskflow.common.LogMaskUtils;
 import com.taskflow.common.PageResponse;
+import com.taskflow.config.UserManagementProperties;
 import com.taskflow.domain.User;
 import com.taskflow.domain.UserGroup;
 import com.taskflow.dto.user.*;
@@ -11,6 +12,7 @@ import com.taskflow.mapper.UserMapper;
 import com.taskflow.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,17 +21,36 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 사용자 서비스 구현
+ * 사용자 서비스 구현 (Internal 모드)
+ *
+ * 기본 관리 모드로 TaskFlow DB에서 사용자 데이터를 직접 관리
+ * - 사용자 CRUD 가능
+ * - BCrypt 비밀번호 인코딩
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@ConditionalOnProperty(
+    name = "taskflow.user-management.mode",
+    havingValue = "internal",
+    matchIfMissing = true
+)
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final UserGroupMapper userGroupMapper;
     private final PasswordEncoder passwordEncoder;
+    private final UserManagementProperties userManagementProperties;
+
+    // =============================================
+    // 모드 확인
+    // =============================================
+
+    @Override
+    public boolean isCrudEnabled() {
+        return userManagementProperties.isUserCrudEnabled();
+    }
 
     // =============================================
     // 조회
@@ -42,8 +63,8 @@ public class UserServiceImpl implements UserService {
 
         UserResponse response = UserResponse.from(user);
 
-        // 그룹 정보 조회 및 설정
-        List<UserGroup> userGroups = userGroupMapper.findByUserId(userId);
+        // 그룹 정보 조회 및 설정 (username 기준)
+        List<UserGroup> userGroups = userGroupMapper.findByUsername(user.getUsername());
         if (!userGroups.isEmpty()) {
             List<Long> groupIds = userGroups.stream()
                     .map(UserGroup::getGroupId)
@@ -82,8 +103,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponse> getUsersByDepartment(Long departmentId) {
-        return userMapper.findByDepartmentId(departmentId).stream()
+    public List<UserResponse> getUsersByDepartment(String departmentCode) {
+        return userMapper.findByDepartmentCode(departmentCode).stream()
                 .map(UserResponse::from)
                 .collect(Collectors.toList());
     }
@@ -94,7 +115,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse createUser(UserCreateRequest request, Long createdBy) {
+    public UserResponse createUser(UserCreateRequest request, String createdBy) {
         log.info("Creating user: {}", LogMaskUtils.maskUsername(request.getUsername()));
 
         // 비밀번호 일치 확인
@@ -113,7 +134,10 @@ public class UserServiceImpl implements UserService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .name(request.getName())
                 .email(request.getEmail())
-                .departmentId(request.getDepartmentId())
+                .departmentCode(request.getDepartmentCode())
+                .positionCode(request.getPositionCode())
+                .role(User.normalizeRole(request.getRole()))
+                .headYn("N")
                 .useYn("Y")
                 .createdBy(createdBy)
                 .build();
@@ -131,7 +155,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse updateUser(Long userId, UserUpdateRequest request, Long updatedBy) {
+    public UserResponse updateUser(Long userId, UserUpdateRequest request, String updatedBy) {
         log.info("Updating user: userId={}", userId);
 
         // 사용자 존재 확인
@@ -141,7 +165,14 @@ public class UserServiceImpl implements UserService {
         // 수정 정보 설정
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setDepartmentId(request.getDepartmentId());
+        user.setDepartmentCode(request.getDepartmentCode());
+        user.setPositionCode(request.getPositionCode());
+        if (request.getRole() != null) {
+            user.setRole(User.normalizeRole(request.getRole()));
+        }
+        if (request.getHeadYn() != null) {
+            user.setHeadYn(request.getHeadYn());
+        }
         if (request.getUseYn() != null) {
             user.setUseYn(request.getUseYn());
         }
@@ -160,7 +191,7 @@ public class UserServiceImpl implements UserService {
 
         // 그룹 매핑 갱신 (기존 그룹 삭제 후 새 그룹 추가)
         if (request.getGroupIds() != null) {
-            userGroupMapper.deleteByUserId(userId);
+            userGroupMapper.deleteByUsername(user.getUsername());
             saveUserGroups(userId, request.getGroupIds(), updatedBy);
         }
 
@@ -170,7 +201,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void changePassword(Long userId, PasswordChangeRequest request, Long updatedBy) {
+    public void changePassword(Long userId, PasswordChangeRequest request, String updatedBy) {
         log.info("Changing password for user: userId={}", userId);
 
         // 새 비밀번호 일치 확인
@@ -200,16 +231,70 @@ public class UserServiceImpl implements UserService {
         log.info("Deleting user: userId={}", userId);
 
         // 사용자 존재 확인
-        if (userMapper.findById(userId).isEmpty()) {
-            throw BusinessException.userNotFound(userId);
-        }
+        User user = userMapper.findById(userId)
+                .orElseThrow(() -> BusinessException.userNotFound(userId));
 
-        // 그룹 매핑 삭제
-        userGroupMapper.deleteByUserId(userId);
+        // 그룹 매핑 삭제 (username 기준)
+        userGroupMapper.deleteByUsername(user.getUsername());
 
         // 삭제 (논리 삭제로 변경하려면 deactivate 사용)
         userMapper.delete(userId);
         log.info("User deleted: userId={}", userId);
+    }
+
+    // =============================================
+    // 팀장 관리
+    // =============================================
+
+    @Override
+    @Transactional
+    public UserResponse setHead(String username, String updatedBy) {
+        log.info("Setting user as head: username={}", LogMaskUtils.maskUsername(username));
+
+        // CRUD 활성화 확인
+        if (!isCrudEnabled()) {
+            throw BusinessException.forbidden("External 모드에서는 팀장 지정이 불가합니다.");
+        }
+
+        // 사용자 존재 확인
+        User user = userMapper.findByUsername(username)
+                .orElseThrow(() -> BusinessException.userNotFound(username));
+
+        // 부서 확인
+        if (user.getDepartmentCode() == null) {
+            throw BusinessException.badRequest("부서가 지정되지 않은 사용자는 팀장으로 지정할 수 없습니다.");
+        }
+
+        // 해당 부서의 기존 팀장 해제
+        userMapper.clearDepartmentHead(user.getDepartmentCode(), updatedBy);
+
+        // 팀장 지정
+        userMapper.updateHeadYn(username, "Y", updatedBy);
+        log.info("User set as head: username={}, departmentCode={}",
+                LogMaskUtils.maskUsername(username), user.getDepartmentCode());
+
+        return getUserByUsername(username);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse unsetHead(String username, String updatedBy) {
+        log.info("Unsetting user as head: username={}", LogMaskUtils.maskUsername(username));
+
+        // CRUD 활성화 확인
+        if (!isCrudEnabled()) {
+            throw BusinessException.forbidden("External 모드에서는 팀장 해제가 불가합니다.");
+        }
+
+        // 사용자 존재 확인
+        userMapper.findByUsername(username)
+                .orElseThrow(() -> BusinessException.userNotFound(username));
+
+        // 팀장 해제
+        userMapper.updateHeadYn(username, "N", updatedBy);
+        log.info("User unset as head: username={}", LogMaskUtils.maskUsername(username));
+
+        return getUserByUsername(username);
     }
 
     // =============================================
@@ -222,6 +307,20 @@ public class UserServiceImpl implements UserService {
     }
 
     // =============================================
+    // 인증용 메서드
+    // =============================================
+
+    @Override
+    public java.util.Optional<User> findByUsernameForAuth(String username) {
+        return userMapper.findByUsername(username);
+    }
+
+    @Override
+    public java.util.Optional<User> findByIdForAuth(Long userId) {
+        return userMapper.findById(userId);
+    }
+
+    // =============================================
     // 내부 헬퍼 메서드
     // =============================================
 
@@ -230,16 +329,20 @@ public class UserServiceImpl implements UserService {
      *
      * @param userId    사용자 ID
      * @param groupIds  그룹 ID 목록
-     * @param createdBy 생성자 ID
+     * @param createdBy 생성자 Username
      */
-    private void saveUserGroups(Long userId, List<Long> groupIds, Long createdBy) {
+    private void saveUserGroups(Long userId, List<Long> groupIds, String createdBy) {
         if (groupIds == null || groupIds.isEmpty()) {
             return;
         }
 
+        // userId로 username 조회
+        User user = userMapper.findById(userId)
+                .orElseThrow(() -> BusinessException.userNotFound(userId));
+
         for (Long groupId : groupIds) {
             UserGroup userGroup = UserGroup.builder()
-                    .userId(userId)
+                    .username(user.getUsername())
                     .groupId(groupId)
                     .createdBy(createdBy)
                     .build();

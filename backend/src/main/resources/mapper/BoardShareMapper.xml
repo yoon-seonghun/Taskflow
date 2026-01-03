@@ -10,8 +10,9 @@
     <resultMap id="BoardShareResultMap" type="com.taskflow.domain.BoardShare">
         <id property="boardShareId" column="BOARD_SHARE_ID"/>
         <result property="boardId" column="BOARD_ID"/>
-        <result property="userId" column="USER_ID"/>
+        <result property="username" column="USERNAME"/>
         <result property="permission" column="PERMISSION"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
         <!-- 조인 필드 -->
@@ -30,7 +31,7 @@
         SELECT
             bs.BOARD_SHARE_ID,
             bs.BOARD_ID,
-            bs.USER_ID,
+            bs.USERNAME,
             bs.PERMISSION,
             bs.CREATED_AT,
             bs.CREATED_BY,
@@ -40,8 +41,8 @@
             d.DEPARTMENT_NAME
         FROM TB_BOARD_SHARE bs
         INNER JOIN TB_BOARD b ON bs.BOARD_ID = b.BOARD_ID
-        INNER JOIN TB_USER u ON bs.USER_ID = u.USER_ID
-        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        INNER JOIN TB_USER u ON bs.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
         WHERE bs.BOARD_SHARE_ID = #{boardShareId}
     </select>
 
@@ -50,7 +51,7 @@
         SELECT
             bs.BOARD_SHARE_ID,
             bs.BOARD_ID,
-            bs.USER_ID,
+            bs.USERNAME,
             bs.PERMISSION,
             bs.CREATED_AT,
             bs.CREATED_BY,
@@ -60,18 +61,18 @@
             d.DEPARTMENT_NAME
         FROM TB_BOARD_SHARE bs
         INNER JOIN TB_BOARD b ON bs.BOARD_ID = b.BOARD_ID
-        INNER JOIN TB_USER u ON bs.USER_ID = u.USER_ID
-        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        INNER JOIN TB_USER u ON bs.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
         WHERE bs.BOARD_ID = #{boardId}
         ORDER BY u.NAME
     </select>
 
     <!-- 사용자별 공유받은 보드 목록 조회 -->
-    <select id="findByUserId" resultMap="BoardShareResultMap">
+    <select id="findByUsername" resultMap="BoardShareResultMap">
         SELECT
             bs.BOARD_SHARE_ID,
             bs.BOARD_ID,
-            bs.USER_ID,
+            bs.USERNAME,
             bs.PERMISSION,
             bs.CREATED_AT,
             bs.CREATED_BY,
@@ -81,28 +82,28 @@
             d.DEPARTMENT_NAME
         FROM TB_BOARD_SHARE bs
         INNER JOIN TB_BOARD b ON bs.BOARD_ID = b.BOARD_ID
-        INNER JOIN TB_USER u ON bs.USER_ID = u.USER_ID
-        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
-        WHERE bs.USER_ID = #{userId}
+        INNER JOIN TB_USER u ON bs.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
+        WHERE bs.USERNAME = #{username}
           AND b.USE_YN = 'Y'
         ORDER BY b.BOARD_NAME
     </select>
 
     <!-- 특정 사용자가 특정 보드에 공유되어 있는지 확인 -->
-    <select id="existsByBoardIdAndUserId" resultType="boolean">
+    <select id="existsByBoardIdAndUsername" resultType="boolean">
         SELECT EXISTS (
             SELECT 1 FROM TB_BOARD_SHARE
             WHERE BOARD_ID = #{boardId}
-              AND USER_ID = #{userId}
+              AND USERNAME = #{username}
         )
     </select>
 
     <!-- 특정 사용자의 특정 보드에 대한 공유 정보 조회 -->
-    <select id="findByBoardIdAndUserId" resultMap="BoardShareResultMap">
+    <select id="findByBoardIdAndUsername" resultMap="BoardShareResultMap">
         SELECT
             bs.BOARD_SHARE_ID,
             bs.BOARD_ID,
-            bs.USER_ID,
+            bs.USERNAME,
             bs.PERMISSION,
             bs.CREATED_AT,
             bs.CREATED_BY,
@@ -112,10 +113,10 @@
             d.DEPARTMENT_NAME
         FROM TB_BOARD_SHARE bs
         INNER JOIN TB_BOARD b ON bs.BOARD_ID = b.BOARD_ID
-        INNER JOIN TB_USER u ON bs.USER_ID = u.USER_ID
-        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_ID = d.DEPARTMENT_ID
+        INNER JOIN TB_USER u ON bs.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
         WHERE bs.BOARD_ID = #{boardId}
-          AND bs.USER_ID = #{userId}
+          AND bs.USERNAME = #{username}
     </select>
 
     <!-- 보드에 공유된 사용자가 있는지 확인 -->
@@ -138,12 +139,12 @@
     <insert id="insert" parameterType="com.taskflow.domain.BoardShare" useGeneratedKeys="true" keyProperty="boardShareId">
         INSERT INTO TB_BOARD_SHARE (
             BOARD_ID,
-            USER_ID,
+            USERNAME,
             PERMISSION,
             CREATED_BY
         ) VALUES (
             #{boardId},
-            #{userId},
+            #{username},
             #{permission},
             #{createdBy}
         )
@@ -161,14 +162,22 @@
         UPDATE TB_BOARD_SHARE
         SET PERMISSION = #{permission}
         WHERE BOARD_ID = #{boardId}
-          AND USER_ID = #{userId}
+          AND USERNAME = #{username}
+    </update>
+
+    <!-- 공유 보드 정렬 순서 변경 -->
+    <update id="updateSortOrder">
+        UPDATE TB_BOARD_SHARE
+        SET SORT_ORDER = #{sortOrder}
+        WHERE BOARD_ID = #{boardId}
+          AND USERNAME = #{username}
     </update>
 
     <!-- 보드 공유 제거 (특정 사용자) -->
-    <delete id="deleteByBoardIdAndUserId">
+    <delete id="deleteByBoardIdAndUsername">
         DELETE FROM TB_BOARD_SHARE
         WHERE BOARD_ID = #{boardId}
-          AND USER_ID = #{userId}
+          AND USERNAME = #{username}
     </delete>
 
     <!-- 보드의 모든 공유 제거 -->
@@ -178,9 +187,9 @@
     </delete>
 
     <!-- 사용자의 모든 공유 제거 -->
-    <delete id="deleteByUserId">
+    <delete id="deleteByUsername">
         DELETE FROM TB_BOARD_SHARE
-        WHERE USER_ID = #{userId}
+        WHERE USERNAME = #{username}
     </delete>
 
 </mapper>

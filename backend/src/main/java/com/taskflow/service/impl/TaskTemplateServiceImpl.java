@@ -72,7 +72,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
     @Override
     @Transactional
-    public TaskTemplateResponse createTemplate(TaskTemplateCreateRequest request, Long createdBy) {
+    public TaskTemplateResponse createTemplate(TaskTemplateCreateRequest request, String createdBy) {
         log.info("Creating task template: content={}", request.getContent());
 
         // 중복 체크
@@ -94,15 +94,15 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
         }
 
         // 기본 담당자 (미지정 시 생성자)
-        Long defaultAssigneeId = request.getDefaultAssigneeId();
-        if (defaultAssigneeId == null) {
-            defaultAssigneeId = createdBy;
+        String defaultAssigneeUsername = request.getDefaultAssigneeUsername();
+        if (defaultAssigneeUsername == null) {
+            defaultAssigneeUsername = createdBy;
         }
 
         // 템플릿 엔티티 생성
         TaskTemplate template = TaskTemplate.builder()
                 .content(request.getContent())
-                .defaultAssigneeId(defaultAssigneeId)
+                .defaultAssigneeUsername(defaultAssigneeUsername)
                 .defaultItemStatus(defaultItemStatus)
                 .status(TaskTemplate.STATUS_ACTIVE)
                 .sortOrder(sortOrder)
@@ -119,7 +119,7 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
     @Override
     @Transactional
-    public TaskTemplateResponse updateTemplate(Long templateId, TaskTemplateUpdateRequest request, Long updatedBy) {
+    public TaskTemplateResponse updateTemplate(Long templateId, TaskTemplateUpdateRequest request, String updatedBy) {
         log.info("Updating task template: id={}", templateId);
 
         // 템플릿 존재 확인
@@ -136,8 +136,8 @@ public class TaskTemplateServiceImpl implements TaskTemplateService {
 
         // 수정
         template.setContent(request.getContent());
-        if (request.getDefaultAssigneeId() != null) {
-            template.setDefaultAssigneeId(request.getDefaultAssigneeId());
+        if (request.getDefaultAssigneeUsername() != null) {
+            template.setDefaultAssigneeUsername(request.getDefaultAssigneeUsername());
         }
         if (request.getDefaultItemStatus() != null) {
             template.setDefaultItemStatus(request.getDefaultItemStatus());

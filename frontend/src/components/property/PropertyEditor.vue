@@ -16,7 +16,7 @@ interface Props {
   modelValue?: unknown
   disabled?: boolean
   compact?: boolean
-  users?: Array<{ userId: number; userName: string }>
+  users?: Array<{ username: string; userName: string }>  // username 기반
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -54,7 +54,7 @@ const options = computed((): SelectOption[] => {
 // 사용자 옵션 (USER 타입용)
 const userOptions = computed((): SelectOption[] => {
   return props.users.map(user => ({
-    value: user.userId,
+    value: user.username,    // USERNAME (string)
     label: user.userName
   }))
 })
@@ -248,7 +248,7 @@ async function handleCreateOption(optionName: string) {
     <!-- USER 타입 -->
     <template v-else-if="property.propertyType === 'USER'">
       <Select
-        :model-value="internalValue as number"
+        :model-value="internalValue as string"
         :options="userOptions"
         :disabled="disabled"
         :size="compact ? 'sm' : 'md'"

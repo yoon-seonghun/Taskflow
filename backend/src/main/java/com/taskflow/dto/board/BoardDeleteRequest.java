@@ -20,10 +20,9 @@ import java.util.List;
 public class BoardDeleteRequest {
 
     /**
-     * 이관받을 사용자 ID (미완료 업무 존재 시 필수)
-     * - 컨트롤러에서는 targetUserId로, 서비스에서는 transferToUserId로도 사용
+     * 이관받을 사용자 USERNAME (미완료 업무 존재 시 필수)
      */
-    private Long targetUserId;
+    private String targetUsername;
 
     /**
      * 이관 사유 (선택)
@@ -40,12 +39,12 @@ public class BoardDeleteRequest {
      */
     private boolean forceDelete;
 
-    // Alias getter for transferToUserId
-    public Long getTransferToUserId() {
-        return targetUserId;
+    // Alias getter for transferToUsername
+    public String getTransferToUsername() {
+        return targetUsername;
     }
 
-    public void setTransferToUserId(Long userId) {
-        this.targetUserId = userId;
+    public void setTransferToUsername(String username) {
+        this.targetUsername = username;
     }
 }

@@ -8,21 +8,25 @@
  */
 import { ref, computed, watch, onMounted } from 'vue'
 import Input from '@/components/common/Input.vue'
-import type { User, UserCreateRequest, UserUpdateRequest } from '@/types/user'
+import type { User, UserCreateRequest, UserUpdateRequest, UserRole } from '@/types/user'
 import type { Department } from '@/types/department'
 import type { Group } from '@/types/group'
+import type { Position } from '@/types/position'
 import { departmentApi } from '@/api/department'
 import { groupApi } from '@/api/group'
 import { useUiStore } from '@/stores/ui'
+import { usePositionStore } from '@/stores/position'
 
 interface Props {
   user?: User | null
   loading?: boolean
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   user: null,
-  loading: false
+  loading: false,
+  readonly: false
 })
 
 const emit = defineEmits<{
@@ -31,6 +35,7 @@ const emit = defineEmits<{
 }>()
 
 const uiStore = useUiStore()
+const positionStore = usePositionStore()
 
 // Form fields
 const userName = ref('')
@@ -38,7 +43,9 @@ const email = ref('')
 const username = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
-const departmentId = ref<number | null>(null)
+const selectedDepartmentCode = ref<string | null>(null)
+const selectedPositionCode = ref<string | null>(null)
+const selectedRole = ref<UserRole>('USER')
 const selectedGroupIds = ref<number[]>([])
 
 // Data
@@ -49,9 +56,22 @@ const loadingGroups = ref(false)
 
 // Dropdown states
 const showDepartmentDropdown = ref(false)
+const showPositionDropdown = ref(false)
 const showGroupDropdown = ref(false)
 const departmentSearch = ref('')
+const positionSearch = ref('')
 const groupSearch = ref('')
+
+// 직급 목록 (store에서 가져옴)
+const positions = computed(() => positionStore.activePositions)
+
+// 권한 옵션
+const roleOptions: { value: UserRole; label: string }[] = [
+  { value: 'ADMIN', label: '관리자' },
+  { value: 'MANAGER', label: '매니저' },
+  { value: 'USER', label: '사용자' },
+  { value: 'GUEST', label: '게스트' }
+]
 
 // Password visibility
 const showPassword = ref(false)
@@ -63,15 +83,15 @@ const isEditMode = computed(() => !!props.user)
 // 버튼 텍스트
 const submitButtonText = computed(() => isEditMode.value ? '변경' : '등록')
 
-// 부서 옵션 (트리 구조 평면화 + 들여쓰기)
+// 부서 옵션 (트리 구조 평면화 + 들여쓰기) - departmentCode 기반
 const departmentOptions = computed(() => {
-  const options: { id: number; name: string; depth: number }[] = []
+  const options: { code: string; name: string; depth: number }[] = []
 
   const flatten = (depts: Department[], depth = 0) => {
     for (const dept of depts) {
       if (dept.useYn === 'Y') {
         options.push({
-          id: dept.departmentId,
+          code: dept.departmentCode,
           name: dept.departmentName,
           depth
         })
@@ -97,9 +117,26 @@ const filteredDepartmentOptions = computed(() => {
 
 // 선택된 부서 이름
 const selectedDepartmentName = computed(() => {
-  if (!departmentId.value) return ''
-  const dept = departmentOptions.value.find(d => d.id === departmentId.value)
+  if (!selectedDepartmentCode.value) return ''
+  const dept = departmentOptions.value.find(d => d.code === selectedDepartmentCode.value)
   return dept?.name || ''
+})
+
+// 필터링된 직급 옵션
+const filteredPositionOptions = computed(() => {
+  if (!positionSearch.value) return positions.value
+  const search = positionSearch.value.toLowerCase()
+  return positions.value.filter(pos =>
+    pos.positionName.toLowerCase().includes(search) ||
+    pos.positionCode.toLowerCase().includes(search)
+  )
+})
+
+// 선택된 직급 이름
+const selectedPositionName = computed(() => {
+  if (!selectedPositionCode.value) return ''
+  const pos = positions.value.find(p => p.positionCode === selectedPositionCode.value)
+  return pos?.positionName || ''
 })
 
 // 선택된 그룹 목록
@@ -251,11 +288,14 @@ function resetForm() {
   username.value = ''
   password.value = ''
   passwordConfirm.value = ''
-  departmentId.value = null
+  selectedDepartmentCode.value = null
+  selectedPositionCode.value = null
+  selectedRole.value = 'USER'
   selectedGroupIds.value = []
   showPassword.value = false
   showPasswordConfirm.value = false
   departmentSearch.value = ''
+  positionSearch.value = ''
   groupSearch.value = ''
 }
 
@@ -264,7 +304,9 @@ function fillForm(user: User) {
   userName.value = user.userName || user.name || ''
   email.value = user.email || ''
   username.value = user.username
-  departmentId.value = user.departmentId ?? null
+  selectedDepartmentCode.value = user.departmentCode ?? null
+  selectedPositionCode.value = user.positionCode ?? null
+  selectedRole.value = user.role ?? 'USER'
   // groupIds 우선, 없으면 groups 배열에서 추출
   selectedGroupIds.value = user.groupIds ?? user.groups?.map(g => g.groupId) ?? []
   // 편집 모드에서 비밀번호는 비움
@@ -273,15 +315,34 @@ function fillForm(user: User) {
 }
 
 // 부서 선택
-function selectDepartment(id: number | null) {
-  departmentId.value = id
+function selectDepartment(code: string | null) {
+  selectedDepartmentCode.value = code
   showDepartmentDropdown.value = false
   departmentSearch.value = ''
 }
 
 // 부서 선택 해제
 function clearDepartment() {
-  departmentId.value = null
+  selectedDepartmentCode.value = null
+}
+
+// 직급 선택
+function selectPosition(code: string | null) {
+  selectedPositionCode.value = code
+  showPositionDropdown.value = false
+  positionSearch.value = ''
+}
+
+// 직급 선택 해제
+function clearPosition() {
+  selectedPositionCode.value = null
+}
+
+// 직급 드롭다운 닫기
+function closePositionDropdown() {
+  setTimeout(() => {
+    showPositionDropdown.value = false
+  }, 200)
 }
 
 // 그룹 추가
@@ -312,13 +373,15 @@ function closeGroupDropdown() {
 
 // 제출
 function handleSubmit() {
-  if (!isValid.value || props.loading) return
+  if (!isValid.value || props.loading || props.readonly) return
 
   if (isEditMode.value) {
     const data: UserUpdateRequest = {
       userName: userName.value.trim(),
       email: email.value.trim() || undefined,
-      departmentId: departmentId.value ?? undefined,
+      departmentCode: selectedDepartmentCode.value ?? undefined,
+      positionCode: selectedPositionCode.value ?? undefined,
+      role: selectedRole.value,
       groupIds: selectedGroupIds.value.length > 0 ? selectedGroupIds.value : undefined
     }
     // 비밀번호가 입력된 경우에만 포함
@@ -333,7 +396,9 @@ function handleSubmit() {
       passwordConfirm: passwordConfirm.value,
       userName: userName.value.trim(),
       email: email.value.trim() || undefined,
-      departmentId: departmentId.value ?? undefined,
+      departmentCode: selectedDepartmentCode.value ?? undefined,
+      positionCode: selectedPositionCode.value ?? undefined,
+      role: selectedRole.value,
       groupIds: selectedGroupIds.value.length > 0 ? selectedGroupIds.value : undefined
     }
     emit('submit', data)
@@ -374,7 +439,7 @@ defineExpose({ resetForm })
         placeholder="이름을 입력하세요"
         :required="true"
         :maxlength="50"
-        :disabled="loading"
+        :disabled="loading || readonly"
       />
 
       <!-- 이메일 -->
@@ -384,7 +449,7 @@ defineExpose({ resetForm })
         type="email"
         placeholder="example@email.com"
         :maxlength="100"
-        :disabled="loading"
+        :disabled="loading || readonly"
         :error="!emailValidation.isValid && email.length > 0"
         :error-message="emailValidation.message"
       />
@@ -421,7 +486,7 @@ defineExpose({ resetForm })
             :placeholder="isEditMode ? '변경 시에만 입력' : '비밀번호를 입력하세요'"
             class="input-field pr-10"
             :class="{ 'border-red-500': password && !passwordValidation.isValid }"
-            :disabled="loading"
+            :disabled="loading || readonly"
           />
           <button
             type="button"
@@ -499,7 +564,7 @@ defineExpose({ resetForm })
             placeholder="비밀번호를 다시 입력하세요"
             class="input-field pr-10"
             :class="{ 'border-red-500': passwordConfirm && !passwordsMatch }"
-            :disabled="loading"
+            :disabled="loading || readonly"
           />
           <button
             type="button"
@@ -529,14 +594,14 @@ defineExpose({ resetForm })
         <div class="relative">
           <div
             class="select-trigger"
-            :class="{ 'disabled': loading || loadingDepartments }"
-            @click="!loading && !loadingDepartments && (showDepartmentDropdown = !showDepartmentDropdown)"
+            :class="{ 'disabled': loading || loadingDepartments || readonly }"
+            @click="!loading && !loadingDepartments && !readonly && (showDepartmentDropdown = !showDepartmentDropdown)"
           >
             <span v-if="selectedDepartmentName" class="text-gray-900">{{ selectedDepartmentName }}</span>
             <span v-else class="text-gray-400">부서 선택</span>
             <div class="flex items-center gap-1">
               <button
-                v-if="departmentId"
+                v-if="selectedDepartmentCode"
                 type="button"
                 class="clear-btn"
                 @click.stop="clearDepartment"
@@ -576,21 +641,117 @@ defineExpose({ resetForm })
               </button>
               <button
                 v-for="dept in filteredDepartmentOptions"
-                :key="dept.id"
+                :key="dept.code"
                 type="button"
                 class="dropdown-item"
-                :class="{ 'selected': departmentId === dept.id }"
+                :class="{ 'selected': selectedDepartmentCode === dept.code }"
                 :style="{ paddingLeft: `${dept.depth * 16 + 12}px` }"
-                @mousedown.prevent="selectDepartment(dept.id)"
+                @mousedown.prevent="selectDepartment(dept.code)"
               >
                 <span v-if="dept.depth > 0" class="tree-indent">└</span>
                 {{ dept.name }}
-                <svg v-if="departmentId === dept.id" class="w-4 h-4 ml-auto text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg v-if="selectedDepartmentCode === dept.code" class="w-4 h-4 ml-auto text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 직급 -->
+      <div class="form-field">
+        <label class="block text-[13px] font-medium text-gray-700 mb-1">직급</label>
+        <div class="relative">
+          <div
+            class="select-trigger"
+            :class="{ 'disabled': loading || readonly }"
+            @click="!loading && !readonly && (showPositionDropdown = !showPositionDropdown)"
+          >
+            <span v-if="selectedPositionName" class="text-gray-900">{{ selectedPositionName }}</span>
+            <span v-else class="text-gray-400">직급 선택</span>
+            <div class="flex items-center gap-1">
+              <button
+                v-if="selectedPositionCode && !readonly"
+                type="button"
+                class="clear-btn"
+                @click.stop="clearPosition"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 직급 드롭다운 -->
+          <div v-if="showPositionDropdown" class="dropdown">
+            <div class="dropdown-search">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                v-model="positionSearch"
+                type="text"
+                class="dropdown-search-input"
+                placeholder="직급 검색..."
+                @blur="closePositionDropdown"
+              />
+            </div>
+            <div class="dropdown-list">
+              <button
+                type="button"
+                class="dropdown-item"
+                @mousedown.prevent="selectPosition(null)"
+              >
+                <span class="text-gray-400">(선택 안함)</span>
+              </button>
+              <button
+                v-for="pos in filteredPositionOptions"
+                :key="pos.positionCode"
+                type="button"
+                class="dropdown-item"
+                :class="{ 'selected': selectedPositionCode === pos.positionCode }"
+                @mousedown.prevent="selectPosition(pos.positionCode)"
+              >
+                {{ pos.positionName }}
+                <span class="text-xs text-gray-400 ml-2">({{ pos.positionCode }})</span>
+                <svg v-if="selectedPositionCode === pos.positionCode" class="w-4 h-4 ml-auto text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 권한 -->
+      <div class="form-field">
+        <label class="block text-[13px] font-medium text-gray-700 mb-1">권한</label>
+        <div class="flex flex-wrap gap-2">
+          <label
+            v-for="option in roleOptions"
+            :key="option.value"
+            class="role-option"
+            :class="{
+              'role-option-selected': selectedRole === option.value,
+              'cursor-not-allowed opacity-60': loading || readonly
+            }"
+          >
+            <input
+              type="radio"
+              v-model="selectedRole"
+              :value="option.value"
+              :disabled="loading || readonly"
+              class="sr-only"
+            />
+            <span class="role-dot" :class="`role-dot-${option.value.toLowerCase()}`" />
+            {{ option.label }}
+          </label>
         </div>
       </div>
 
@@ -630,8 +791,8 @@ defineExpose({ resetForm })
         <div class="relative">
           <div
             class="select-trigger"
-            :class="{ 'disabled': loading || loadingGroups }"
-            @click="!loading && !loadingGroups && (showGroupDropdown = !showGroupDropdown)"
+            :class="{ 'disabled': loading || loadingGroups || readonly }"
+            @click="!loading && !loadingGroups && !readonly && (showGroupDropdown = !showGroupDropdown)"
           >
             <span class="text-gray-400">그룹 추가...</span>
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -677,8 +838,8 @@ defineExpose({ resetForm })
         </div>
       </div>
 
-      <!-- 버튼 영역 -->
-      <div class="flex items-center gap-2 pt-2">
+      <!-- 버튼 영역 (readonly가 아닐 때만 표시) -->
+      <div v-if="!readonly" class="flex items-center gap-2 pt-2">
         <button
           type="button"
           class="btn-primary flex-1"
@@ -704,6 +865,11 @@ defineExpose({ resetForm })
         >
           취소
         </button>
+      </div>
+
+      <!-- readonly일 때 안내 메시지 -->
+      <div v-else class="pt-2 text-center">
+        <p class="text-sm text-gray-500">외부 시스템과 연동 중이므로 수정할 수 없습니다.</p>
       </div>
     </div>
   </div>
@@ -821,5 +987,35 @@ defineExpose({ resetForm })
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          disabled:opacity-50 disabled:cursor-not-allowed
          transition-colors duration-150;
+}
+
+/* 권한 옵션 스타일 */
+.role-option {
+  @apply flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300
+         cursor-pointer transition-all duration-150 hover:border-gray-400;
+}
+
+.role-option-selected {
+  @apply border-primary-500 bg-primary-50 text-primary-700;
+}
+
+.role-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.role-dot-admin {
+  @apply bg-red-500;
+}
+
+.role-dot-manager {
+  @apply bg-orange-500;
+}
+
+.role-dot-user {
+  @apply bg-blue-500;
+}
+
+.role-dot-guest {
+  @apply bg-gray-400;
 }
 </style>

@@ -59,7 +59,7 @@ public class FileController {
         log.info("File upload request: name={}, size={}, type={}, relatedType={}, relatedId={}",
                 file.getOriginalFilename(), file.getSize(), file.getContentType(), relatedType, relatedId);
 
-        FileUploadResponse response = fileService.uploadFile(file, relatedType, relatedId, user.getUserId());
+        FileUploadResponse response = fileService.uploadFile(file, relatedType, relatedId, user.getUsername());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -135,7 +135,7 @@ public class FileController {
             return ResponseEntity.status(401).body(ApiResponse.error("인증이 필요합니다."));
         }
 
-        fileService.deleteFile(fileId, user.getUserId());
+        fileService.deleteFile(fileId, user.getUsername());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
@@ -177,7 +177,7 @@ public class FileController {
             return ResponseEntity.status(401).body(ApiResponse.error("인증이 필요합니다."));
         }
 
-        fileService.updateRelated(fileId, relatedType, relatedId, user.getUserId());
+        fileService.updateRelated(fileId, relatedType, relatedId, user.getUsername());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 

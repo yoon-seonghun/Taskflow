@@ -10,7 +10,7 @@
     <resultMap id="TaskTemplateResultMap" type="com.taskflow.domain.TaskTemplate">
         <id property="templateId" column="TEMPLATE_ID"/>
         <result property="content" column="CONTENT"/>
-        <result property="defaultAssigneeId" column="DEFAULT_ASSIGNEE_ID"/>
+        <result property="defaultAssigneeUsername" column="DEFAULT_ASSIGNEE_USERNAME"/>
         <result property="defaultItemStatus" column="DEFAULT_ITEM_STATUS"/>
         <result property="status" column="STATUS"/>
         <result property="sortOrder" column="SORT_ORDER"/>
@@ -33,7 +33,7 @@
         SELECT
             t.TEMPLATE_ID,
             t.CONTENT,
-            t.DEFAULT_ASSIGNEE_ID,
+            t.DEFAULT_ASSIGNEE_USERNAME,
             t.DEFAULT_ITEM_STATUS,
             CASE WHEN t.USE_YN = 'Y' THEN 'ACTIVE' ELSE 'INACTIVE' END AS STATUS,
             t.SORT_ORDER,
@@ -46,9 +46,9 @@
             uu.NAME AS UPDATED_BY_NAME,
             ua.NAME AS DEFAULT_ASSIGNEE_NAME
         FROM TB_TASK_TEMPLATE t
-        LEFT JOIN TB_USER uc ON t.CREATED_BY = uc.USER_ID
-        LEFT JOIN TB_USER uu ON t.UPDATED_BY = uu.USER_ID
-        LEFT JOIN TB_USER ua ON t.DEFAULT_ASSIGNEE_ID = ua.USER_ID
+        LEFT JOIN TB_USER uc ON t.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON t.UPDATED_BY = uu.USERNAME
+        LEFT JOIN TB_USER ua ON t.DEFAULT_ASSIGNEE_USERNAME = ua.USERNAME
     </sql>
 
     <!-- ============================================= -->
@@ -104,7 +104,7 @@
     <insert id="insert" parameterType="com.taskflow.domain.TaskTemplate" useGeneratedKeys="true" keyProperty="templateId">
         INSERT INTO TB_TASK_TEMPLATE (
             CONTENT,
-            DEFAULT_ASSIGNEE_ID,
+            DEFAULT_ASSIGNEE_USERNAME,
             DEFAULT_ITEM_STATUS,
             SORT_ORDER,
             USE_COUNT,
@@ -112,7 +112,7 @@
             CREATED_BY
         ) VALUES (
             #{content},
-            #{defaultAssigneeId},
+            #{defaultAssigneeUsername},
             #{defaultItemStatus},
             COALESCE(#{sortOrder}, 0),
             COALESCE(#{useCount}, 0),
@@ -126,7 +126,7 @@
         UPDATE TB_TASK_TEMPLATE
         SET
             CONTENT = #{content},
-            DEFAULT_ASSIGNEE_ID = #{defaultAssigneeId},
+            DEFAULT_ASSIGNEE_USERNAME = #{defaultAssigneeUsername},
             DEFAULT_ITEM_STATUS = #{defaultItemStatus},
             SORT_ORDER = COALESCE(#{sortOrder}, SORT_ORDER),
             USE_YN = CASE WHEN #{status} = 'ACTIVE' THEN 'Y' WHEN #{status} = 'INACTIVE' THEN 'N' ELSE USE_YN END,

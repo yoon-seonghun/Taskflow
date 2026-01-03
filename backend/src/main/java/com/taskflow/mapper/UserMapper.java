@@ -41,7 +41,7 @@ public interface UserMapper {
     /**
      * 부서별 사용자 목록 조회
      */
-    List<User> findByDepartmentId(@Param("departmentId") Long departmentId);
+    List<User> findByDepartmentCode(@Param("departmentCode") String departmentCode);
 
     /**
      * 아이디 중복 확인
@@ -76,7 +76,7 @@ public interface UserMapper {
     int updatePassword(
             @Param("userId") Long userId,
             @Param("password") String password,
-            @Param("updatedBy") Long updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     /**
@@ -89,11 +89,44 @@ public interface UserMapper {
      */
     int deactivate(
             @Param("userId") Long userId,
-            @Param("updatedBy") Long updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     /**
      * 마지막 로그인 일시 업데이트
      */
     int updateLastLoginAt(@Param("userId") Long userId);
+
+    /**
+     * 팀장 지정/해제
+     */
+    int updateHeadYn(
+            @Param("username") String username,
+            @Param("headYn") String headYn,
+            @Param("updatedBy") String updatedBy
+    );
+
+    /**
+     * 부서 내 기존 팀장 해제
+     */
+    int clearDepartmentHead(
+            @Param("departmentCode") String departmentCode,
+            @Param("updatedBy") String updatedBy
+    );
+
+    // =============================================
+    // 사용자 동기화 (UPSERT)
+    // =============================================
+
+    /**
+     * 사용자 정보 UPSERT (username 기준)
+     * 존재하면 UPDATE, 없으면 INSERT
+     */
+    int upsertByUsername(User user);
+
+    /**
+     * 지정된 username 목록에 없는 사용자 비활성화
+     * (외부 시스템과 동기화 시 사용)
+     */
+    int deactivateUsersNotIn(@Param("activeUsernames") List<String> activeUsernames);
 }

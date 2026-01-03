@@ -62,7 +62,7 @@ public class CrossBoardItemController {
             @RequestParam(value = "size", required = false, defaultValue = "20") Integer size,
             @RequestParam(value = "sort", required = false, defaultValue = "dueDate,asc") String sort
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
         // 정렬 파라미터 파싱 (안전한 처리)
         String[] sortParams = parseSortParams(sort, "dueDate", "asc");
@@ -82,9 +82,9 @@ public class CrossBoardItemController {
         request.setSortDirection(sortParams[1]);
         request.setOverdueOnly(true);
 
-        log.debug("Get overdue items: userId={}, request={}", currentUserId, request);
+        log.debug("Get overdue items: username={}, request={}", currentUsername, request);
 
-        ItemPageResponse response = itemService.getOverdueItems(currentUserId, request);
+        ItemPageResponse response = itemService.getOverdueItems(currentUsername, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -106,7 +106,7 @@ public class CrossBoardItemController {
             @RequestParam(value = "size", required = false, defaultValue = "20") Integer size,
             @RequestParam(value = "sort", required = false, defaultValue = "updatedAt,desc") String sort
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
         // 정렬 파라미터 파싱 (안전한 처리)
         String[] sortParams = parseSortParams(sort, "updatedAt", "desc");
@@ -126,9 +126,9 @@ public class CrossBoardItemController {
         request.setSortDirection(sortParams[1]);
         request.setStatus("PENDING");
 
-        log.debug("Get pending items: userId={}, request={}", currentUserId, request);
+        log.debug("Get pending items: username={}, request={}", currentUsername, request);
 
-        ItemPageResponse response = itemService.getPendingItems(currentUserId, request);
+        ItemPageResponse response = itemService.getPendingItems(currentUsername, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -152,7 +152,7 @@ public class CrossBoardItemController {
             @RequestParam(value = "size", required = false, defaultValue = "20") Integer size,
             @RequestParam(value = "sort", required = false, defaultValue = "createdAt,desc") String sort
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
         // 정렬 파라미터 파싱 (안전한 처리)
         String[] sortParams = parseSortParams(sort, "createdAt", "desc");
@@ -173,9 +173,9 @@ public class CrossBoardItemController {
         request.setSortField(sortParams[0]);
         request.setSortDirection(sortParams[1]);
 
-        log.debug("Get active items cross-board: userId={}, request={}", currentUserId, request);
+        log.debug("Get active items cross-board: username={}, request={}", currentUsername, request);
 
-        ItemPageResponse response = itemService.getActiveItemsCrossBoard(currentUserId, request);
+        ItemPageResponse response = itemService.getActiveItemsCrossBoard(currentUsername, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -186,11 +186,11 @@ public class CrossBoardItemController {
      */
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.debug("Get cross-board stats: userId={}", currentUserId);
+        log.debug("Get cross-board stats: username={}", currentUsername);
 
-        Map<String, Object> stats = itemService.getCrossBoardStats(currentUserId);
+        Map<String, Object> stats = itemService.getCrossBoardStats(currentUsername);
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 }

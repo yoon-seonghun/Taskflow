@@ -14,6 +14,8 @@ import { useDepartmentStore } from '@/stores/department'
 import { useSlideOver } from '@/composables/useSlideOver'
 import type { UserOption, DepartmentOption } from '@/components/common'
 import { useToast } from '@/composables/useToast'
+import { userApi } from '@/api/user'
+import type { User } from '@/types/user'
 import { useConfirm } from '@/composables/useConfirm'
 import { Spinner, EmptyState } from '@/components/common'
 import PropertyHeader from '@/components/property/PropertyHeader.vue'
@@ -45,13 +47,15 @@ const { openItemDetail } = useSlideOver()
 const toast = useToast()
 const confirm = useConfirm()
 
-// 담당자 선택용 사용자 목록 (Board의 sharedUsers)
+// 모든 활성 사용자 목록
+const allUsers = ref<User[]>([])
+
+// 담당자 선택용 사용자 목록 (모든 활성 사용자)
 const sharedUsers = computed<UserOption[]>(() => {
-  const users = boardStore.currentBoard?.sharedUsers || []
-  return users.map(u => ({
-    userId: u.userId,
-    userName: u.userName,
-    departmentId: undefined,
+  return allUsers.value.map(u => ({
+    username: u.username,
+    userName: u.name || u.userName || u.username,
+    departmentId: u.departmentId,
     departmentName: u.departmentName
   }))
 })
@@ -112,6 +116,12 @@ const loading = computed(() => itemStore.loading || isLoading.value)
 async function loadData() {
   isLoading.value = true
   try {
+    // 모든 활성 사용자 로드
+    const userResponse = await userApi.getUsers({ useYn: 'Y', size: 1000 })
+    if (userResponse.success && userResponse.data?.content) {
+      allUsers.value = userResponse.data.content
+    }
+
     await Promise.all([
       itemStore.fetchItems(props.boardId),
       propertyStore.fetchProperties(props.boardId),
@@ -138,10 +148,17 @@ function handleItemClick(item: Item) {
   emit('itemClick', item)
 }
 
-// 아이템 업데이트 핸들러
+// 아이템 업데이트 핸들러 (null 클리어 지원)
 async function handleItemUpdate(itemId: number, field: string, value: unknown) {
-  const success = await itemStore.updateItem(props.boardId, itemId, { [field]: value })
-  if (!success) {
+  const data: Record<string, unknown> = { [field]: value }
+
+  // null/undefined일 경우 clear_fields 추가 (snake_case)
+  if (value === null || value === undefined) {
+    data.clear_fields = [field]
+  }
+
+  const result = await itemStore.updateItem(props.boardId, itemId, data)
+  if (!result) {
     toast.error('업데이트에 실패했습니다.')
   }
 }
@@ -301,6 +318,36 @@ watch(() => props.boardId, () => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
             </svg>
             업무내용
+          </div>
+
+          <!-- 상태 헤더 (고정) -->
+          <div class="w-24 min-w-[96px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
+            상태
+          </div>
+
+          <!-- 우선순위 헤더 (고정) -->
+          <div class="w-24 min-w-[96px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
+            우선순위
+          </div>
+
+          <!-- 담당자 헤더 (고정) -->
+          <div class="w-24 min-w-[96px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
+            담당자
+          </div>
+
+          <!-- 요청일 헤더 (고정) -->
+          <div class="w-32 min-w-[128px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
+            요청일
+          </div>
+
+          <!-- 마감일 헤더 (고정) -->
+          <div class="w-32 min-w-[128px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
+            마감일
+          </div>
+
+          <!-- 카테고리 헤더 (고정) -->
+          <div class="w-24 min-w-[96px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
+            카테고리
           </div>
 
           <!-- 동적 속성 헤더 -->

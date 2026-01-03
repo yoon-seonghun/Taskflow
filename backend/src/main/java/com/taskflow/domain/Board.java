@@ -13,9 +13,8 @@ import java.time.LocalDateTime;
  *
  * 테이블: TB_BOARD
  *
- * 업무 아이템들을 담는 컬렉션(보드)
- * - 소유자가 보드를 생성하고 관리
- * - 다른 사용자에게 공유 가능
+ * USERNAME 기반 FK 참조 시스템:
+ * - OWNER_USERNAME: 소유자 USERNAME 참조
  */
 @Getter
 @Setter
@@ -40,9 +39,9 @@ public class Board {
     private String description;
 
     /**
-     * 소유자 ID (FK)
+     * 소유자 USERNAME (FK → TB_USER.USERNAME)
      */
-    private Long ownerId;
+    private String ownerUsername;
 
     /**
      * 기본 뷰 타입 (TABLE, KANBAN, LIST)
@@ -70,9 +69,9 @@ public class Board {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -80,16 +79,16 @@ public class Board {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 설정)
     // =============================================
 
     /**
-     * 소유자명
+     * 소유자명 (조인)
      */
     private String ownerName;
 
@@ -115,9 +114,9 @@ public class Board {
     }
 
     /**
-     * 소유자 여부 확인
+     * 소유자 여부 확인 (USERNAME 기준)
      */
-    public boolean isOwner(Long userId) {
-        return ownerId != null && ownerId.equals(userId);
+    public boolean isOwner(String username) {
+        return ownerUsername != null && ownerUsername.equals(username);
     }
 }

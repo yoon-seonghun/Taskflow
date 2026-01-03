@@ -20,10 +20,10 @@ import lombok.Setter;
 public class BoardTransferRequest {
 
     /**
-     * 이관받을 사용자 ID (필수)
+     * 이관받을 사용자 USERNAME (필수)
      */
     @NotNull(message = "이관받을 사용자를 지정해주세요.")
-    private Long targetUserId;
+    private String targetUsername;
 
     /**
      * 이관 사유 (선택)

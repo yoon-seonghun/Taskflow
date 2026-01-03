@@ -66,12 +66,12 @@ public interface ItemMapper {
     /**
      * 담당자별 아이템 목록 조회
      *
-     * @param assigneeId 담당자 ID
+     * @param assigneeUsername 담당자 USERNAME
      * @param boardId    보드 ID (null이면 전체)
      * @return 아이템 목록
      */
-    List<Item> findByAssigneeId(@Param("assigneeId") Long assigneeId,
-                                 @Param("boardId") Long boardId);
+    List<Item> findByAssigneeUsername(@Param("assigneeUsername") String assigneeUsername,
+                                       @Param("boardId") Long boardId);
 
     /**
      * 오늘 완료/삭제된 아이템 목록 조회 (Hidden 처리용)
@@ -114,42 +114,42 @@ public interface ItemMapper {
      *
      * @param itemId    아이템 ID
      * @param status    상태
-     * @param updatedBy 수정자 ID
+     * @param updatedBy 수정자 USERNAME
      * @return 영향받은 행 수
      */
     int updateStatus(@Param("itemId") Long itemId,
                      @Param("status") String status,
-                     @Param("updatedBy") Long updatedBy);
+                     @Param("updatedBy") String updatedBy);
 
     /**
      * 아이템 완료 처리
      *
      * @param itemId      아이템 ID
-     * @param completedBy 완료자 ID
+     * @param completedBy 완료자 USERNAME
      * @return 영향받은 행 수
      */
     int complete(@Param("itemId") Long itemId,
-                 @Param("completedBy") Long completedBy);
+                 @Param("completedBy") String completedBy);
 
     /**
      * 아이템 삭제 처리 (논리 삭제)
      *
      * @param itemId    아이템 ID
-     * @param deletedBy 삭제자 ID
+     * @param deletedBy 삭제자 USERNAME
      * @return 영향받은 행 수
      */
     int softDelete(@Param("itemId") Long itemId,
-                   @Param("deletedBy") Long deletedBy);
+                   @Param("deletedBy") String deletedBy);
 
     /**
      * 아이템 복원
      *
      * @param itemId    아이템 ID
-     * @param updatedBy 수정자 ID
+     * @param updatedBy 수정자 USERNAME
      * @return 영향받은 행 수
      */
     int restore(@Param("itemId") Long itemId,
-                @Param("updatedBy") Long updatedBy);
+                @Param("updatedBy") String updatedBy);
 
     /**
      * 아이템 물리 삭제
@@ -174,61 +174,61 @@ public interface ItemMapper {
     /**
      * 사용자가 접근 가능한 보드의 지연 아이템 목록 조회
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param request 검색 조건
      * @return 지연 아이템 목록
      */
-    List<Item> findOverdueItems(@Param("userId") Long userId,
+    List<Item> findOverdueItems(@Param("username") String username,
                                  @Param("request") CrossBoardSearchRequest request);
 
     /**
      * 사용자가 접근 가능한 보드의 지연 아이템 총 개수 조회
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param request 검색 조건
      * @return 지연 아이템 개수
      */
-    long countOverdueItems(@Param("userId") Long userId,
+    long countOverdueItems(@Param("username") String username,
                             @Param("request") CrossBoardSearchRequest request);
 
     /**
      * 사용자가 접근 가능한 보드의 보류 아이템 목록 조회
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param request 검색 조건
      * @return 보류 아이템 목록
      */
-    List<Item> findPendingItems(@Param("userId") Long userId,
+    List<Item> findPendingItems(@Param("username") String username,
                                  @Param("request") CrossBoardSearchRequest request);
 
     /**
      * 사용자가 접근 가능한 보드의 보류 아이템 총 개수 조회
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param request 검색 조건
      * @return 보류 아이템 개수
      */
-    long countPendingItems(@Param("userId") Long userId,
+    long countPendingItems(@Param("username") String username,
                             @Param("request") CrossBoardSearchRequest request);
 
     /**
      * 사용자가 접근 가능한 보드의 활성 아이템 목록 조회 (Cross-board)
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param request 검색 조건
      * @return 활성 아이템 목록
      */
-    List<Item> findActiveItemsCrossBoard(@Param("userId") Long userId,
+    List<Item> findActiveItemsCrossBoard(@Param("username") String username,
                                           @Param("request") CrossBoardSearchRequest request);
 
     /**
      * 사용자가 접근 가능한 보드의 활성 아이템 총 개수 조회 (Cross-board)
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param request 검색 조건
      * @return 활성 아이템 개수
      */
-    long countActiveItemsCrossBoard(@Param("userId") Long userId,
+    long countActiveItemsCrossBoard(@Param("username") String username,
                                      @Param("request") CrossBoardSearchRequest request);
 
     // =============================================
@@ -241,13 +241,13 @@ public interface ItemMapper {
      * @param itemId          아이템 ID
      * @param newBoardId      새 보드 ID
      * @param originalBoardId 원본 보드 ID
-     * @param updatedBy       수정자 ID
+     * @param updatedBy       수정자 USERNAME
      * @return 영향받은 행 수
      */
     int transferToBoard(@Param("itemId") Long itemId,
                         @Param("newBoardId") Long newBoardId,
                         @Param("originalBoardId") Long originalBoardId,
-                        @Param("updatedBy") Long updatedBy);
+                        @Param("updatedBy") String updatedBy);
 
     /**
      * 다중 업무 보드 이동 (이관)
@@ -255,13 +255,13 @@ public interface ItemMapper {
      * @param itemIds         아이템 ID 목록
      * @param newBoardId      새 보드 ID
      * @param originalBoardId 원본 보드 ID
-     * @param updatedBy       수정자 ID
+     * @param updatedBy       수정자 USERNAME
      * @return 영향받은 행 수
      */
     int transferItemsToBoard(@Param("itemIds") List<Long> itemIds,
                              @Param("newBoardId") Long newBoardId,
                              @Param("originalBoardId") Long originalBoardId,
-                             @Param("updatedBy") Long updatedBy);
+                             @Param("updatedBy") String updatedBy);
 
     /**
      * 이관된 업무 목록 조회

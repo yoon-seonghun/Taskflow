@@ -37,30 +37,30 @@ public interface GroupService {
      * 그룹 등록
      *
      * @param request   등록 요청
-     * @param createdBy 생성자 ID
+     * @param createdBy 생성자 Username
      * @return 생성된 그룹 응답
      */
-    GroupResponse createGroup(GroupCreateRequest request, Long createdBy);
+    GroupResponse createGroup(GroupCreateRequest request, String createdBy);
 
     /**
      * 그룹 수정
      *
      * @param groupId   그룹 ID
      * @param request   수정 요청
-     * @param updatedBy 수정자 ID
+     * @param updatedBy 수정자 Username
      * @return 수정된 그룹 응답
      */
-    GroupResponse updateGroup(Long groupId, GroupUpdateRequest request, Long updatedBy);
+    GroupResponse updateGroup(Long groupId, GroupUpdateRequest request, String updatedBy);
 
     /**
      * 그룹 순서 변경
      *
      * @param groupId   그룹 ID
      * @param request   순서 변경 요청
-     * @param updatedBy 수정자 ID
+     * @param updatedBy 수정자 Username
      * @return 수정된 그룹 응답
      */
-    GroupResponse updateGroupOrder(Long groupId, GroupOrderRequest request, Long updatedBy);
+    GroupResponse updateGroupOrder(Long groupId, GroupOrderRequest request, String updatedBy);
 
     /**
      * 그룹 삭제
@@ -84,28 +84,28 @@ public interface GroupService {
     /**
      * 사용자별 소속 그룹 목록 조회
      *
-     * @param userId 사용자 ID
+     * @param username 사용자 Username
      * @return 그룹 목록
      */
-    List<GroupMemberResponse> getUserGroups(Long userId);
+    List<GroupMemberResponse> getUserGroups(String username);
 
     /**
      * 그룹 멤버 추가
      *
      * @param groupId   그룹 ID
      * @param request   멤버 추가 요청
-     * @param createdBy 생성자 ID
+     * @param createdBy 생성자 Username
      * @return 멤버 정보
      */
-    GroupMemberResponse addGroupMember(Long groupId, GroupMemberRequest request, Long createdBy);
+    GroupMemberResponse addGroupMember(Long groupId, GroupMemberRequest request, String createdBy);
 
     /**
      * 그룹 멤버 제거
      *
-     * @param groupId 그룹 ID
-     * @param userId  사용자 ID
+     * @param groupId  그룹 ID
+     * @param username 사용자 Username
      */
-    void removeGroupMember(Long groupId, Long userId);
+    void removeGroupMember(Long groupId, String username);
 
     // =============================================
     // 검증

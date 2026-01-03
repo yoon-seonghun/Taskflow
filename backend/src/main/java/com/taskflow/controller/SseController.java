@@ -35,11 +35,11 @@ public class SseController {
      */
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe() {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("SSE subscribe request from user: {}", currentUserId);
+        log.info("SSE subscribe request from user: {}", currentUsername);
 
-        return emitterManager.createEmitter(currentUserId);
+        return emitterManager.createEmitter(currentUsername);
     }
 
     /**
@@ -52,11 +52,11 @@ public class SseController {
     public ResponseEntity<ApiResponse<Void>> subscribeBoard(
             @PathVariable("boardId") Long boardId
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("Board subscribe request: user={}, boardId={}", currentUserId, boardId);
+        log.info("Board subscribe request: user={}, boardId={}", currentUsername, boardId);
 
-        emitterManager.subscribeBoard(currentUserId, boardId);
+        emitterManager.subscribeBoard(currentUsername, boardId);
 
         return ResponseEntity.ok(ApiResponse.success(null, "보드 구독이 완료되었습니다"));
     }
@@ -70,11 +70,11 @@ public class SseController {
     public ResponseEntity<ApiResponse<Void>> unsubscribeBoard(
             @PathVariable("boardId") Long boardId
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("Board unsubscribe request: user={}, boardId={}", currentUserId, boardId);
+        log.info("Board unsubscribe request: user={}, boardId={}", currentUsername, boardId);
 
-        emitterManager.unsubscribeBoard(currentUserId, boardId);
+        emitterManager.unsubscribeBoard(currentUsername, boardId);
 
         return ResponseEntity.ok(ApiResponse.success(null, "보드 구독이 해제되었습니다"));
     }
@@ -86,9 +86,9 @@ public class SseController {
      */
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<SseStatusResponse>> getStatus() {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        boolean connected = emitterManager.isConnected(currentUserId);
+        boolean connected = emitterManager.isConnected(currentUsername);
         int totalConnections = emitterManager.getConnectionCount();
 
         SseStatusResponse response = new SseStatusResponse(connected, totalConnections);
@@ -103,11 +103,11 @@ public class SseController {
      */
     @DeleteMapping("/subscribe")
     public ResponseEntity<ApiResponse<Void>> unsubscribe() {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("SSE unsubscribe request from user: {}", currentUserId);
+        log.info("SSE unsubscribe request from user: {}", currentUsername);
 
-        emitterManager.removeEmitter(currentUserId);
+        emitterManager.removeEmitter(currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(null, "SSE 연결이 해제되었습니다"));
     }

@@ -20,14 +20,14 @@ public interface ItemShareMapper {
     /**
      * 사용자가 공유받은 업무 목록 조회
      */
-    List<ItemShare> selectByUserId(@Param("userId") Long userId);
+    List<ItemShare> selectByUsername(@Param("username") String username);
 
     /**
      * 특정 업무-사용자 공유 조회
      */
-    ItemShare selectByItemIdAndUserId(
+    ItemShare selectByItemIdAndUsername(
             @Param("itemId") Long itemId,
-            @Param("userId") Long userId
+            @Param("username") String username
     );
 
     /**
@@ -40,9 +40,9 @@ public interface ItemShareMapper {
      */
     int updatePermission(
             @Param("itemId") Long itemId,
-            @Param("userId") Long userId,
+            @Param("username") String username,
             @Param("permission") String permission,
-            @Param("updatedBy") Long updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     /**
@@ -50,7 +50,7 @@ public interface ItemShareMapper {
      */
     int delete(
             @Param("itemId") Long itemId,
-            @Param("userId") Long userId
+            @Param("username") String username
     );
 
     /**
@@ -61,9 +61,9 @@ public interface ItemShareMapper {
     /**
      * 중복 체크
      */
-    boolean existsByItemIdAndUserId(
+    boolean existsByItemIdAndUsername(
             @Param("itemId") Long itemId,
-            @Param("userId") Long userId
+            @Param("username") String username
     );
 
     /**
@@ -71,6 +71,6 @@ public interface ItemShareMapper {
      */
     String getPermission(
             @Param("itemId") Long itemId,
-            @Param("userId") Long userId
+            @Param("username") String username
     );
 }

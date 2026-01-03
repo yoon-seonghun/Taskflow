@@ -85,6 +85,10 @@ public class BusinessException extends RuntimeException {
         return new BusinessException(message, HttpStatus.FORBIDDEN, "ACCESS_DENIED");
     }
 
+    public static BusinessException operationNotAllowed(String message) {
+        return new BusinessException(message, HttpStatus.FORBIDDEN, "OPERATION_NOT_ALLOWED");
+    }
+
     // =============================================
     // 404 Not Found
     // =============================================
@@ -93,8 +97,20 @@ public class BusinessException extends RuntimeException {
         return new BusinessException(message, HttpStatus.NOT_FOUND, "NOT_FOUND");
     }
 
+    public static BusinessException notFound(String resourceType, String identifier) {
+        return new BusinessException(
+            String.format("%s을(를) 찾을 수 없습니다: %s", resourceType, identifier),
+            HttpStatus.NOT_FOUND,
+            "NOT_FOUND"
+        );
+    }
+
     public static BusinessException userNotFound(Long userId) {
         return new BusinessException("사용자를 찾을 수 없습니다. ID: " + userId, HttpStatus.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    public static BusinessException userNotFound(String username) {
+        return new BusinessException("사용자를 찾을 수 없습니다. USERNAME: " + username, HttpStatus.NOT_FOUND, "USER_NOT_FOUND");
     }
 
     public static BusinessException boardNotFound(Long boardId) {
@@ -107,6 +123,10 @@ public class BusinessException extends RuntimeException {
 
     public static BusinessException departmentNotFound(Long departmentId) {
         return new BusinessException("부서를 찾을 수 없습니다. ID: " + departmentId, HttpStatus.NOT_FOUND, "DEPARTMENT_NOT_FOUND");
+    }
+
+    public static BusinessException departmentNotFound(String departmentCode) {
+        return new BusinessException("부서를 찾을 수 없습니다. 부서코드: " + departmentCode, HttpStatus.NOT_FOUND, "DEPARTMENT_NOT_FOUND");
     }
 
     public static BusinessException groupNotFound(Long groupId) {

@@ -16,9 +16,9 @@ public class ItemTransferRequest {
     private Long targetBoardId;
 
     /**
-     * 이관 대상 사용자 ID (사용자의 기본 보드로 이관)
+     * 이관 대상 사용자 USERNAME (사용자의 기본 보드로 이관)
      */
-    private Long targetUserId;
+    private String targetUsername;
 
     /**
      * 이관 사유 (선택)

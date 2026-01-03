@@ -17,9 +17,9 @@ import java.util.Map;
  *
  * 테이블: TB_ITEM
  *
- * 보드 내의 개별 업무/작업 항목
- * - 동적 속성값을 가질 수 있음 (EAV 패턴)
- * - 그룹(TB_GROUP)에 할당 가능
+ * USERNAME 기반 FK 참조 시스템:
+ * - ASSIGNEE_USERNAME: 담당자 USERNAME 참조
+ * - COMPLETED_BY, DELETED_BY, CREATED_BY, UPDATED_BY: USERNAME 참조
  */
 @Getter
 @Setter
@@ -64,7 +64,7 @@ public class Item {
     private String description;
 
     /**
-     * 상태 (NOT_STARTED, IN_PROGRESS, COMPLETED, DELETED)
+     * 상태 (NOT_STARTED, IN_PROGRESS, PENDING, COMPLETED, DELETED)
      */
     private String status;
 
@@ -74,9 +74,9 @@ public class Item {
     private String priority;
 
     /**
-     * 담당자 ID (FK)
+     * 담당자 USERNAME (FK → TB_USER.USERNAME)
      */
-    private Long assigneeId;
+    private String assigneeUsername;
 
     /**
      * 시작 시간
@@ -94,9 +94,9 @@ public class Item {
     private String previousStatus;
 
     /**
-     * 완료 처리자 ID
+     * 완료 처리자 USERNAME
      */
-    private Long completedBy;
+    private String completedBy;
 
     /**
      * 삭제일시
@@ -104,9 +104,9 @@ public class Item {
     private LocalDateTime deletedAt;
 
     /**
-     * 삭제자 ID
+     * 삭제자 USERNAME
      */
-    private Long deletedBy;
+    private String deletedBy;
 
     /**
      * 이관 원본 보드 ID
@@ -124,9 +124,9 @@ public class Item {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -134,9 +134,9 @@ public class Item {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 JOIN으로 설정)
@@ -158,17 +158,27 @@ public class Item {
     private String groupColor;
 
     /**
-     * 담당자명
+     * 카테고리명 (조인)
+     */
+    private String categoryName;
+
+    /**
+     * 카테고리 색상 (조인)
+     */
+    private String categoryColor;
+
+    /**
+     * 담당자명 (조인)
      */
     private String assigneeName;
 
     /**
-     * 생성자명
+     * 생성자명 (조인)
      */
     private String createdByName;
 
     /**
-     * 수정자명
+     * 수정자명 (조인)
      */
     private String updatedByName;
 

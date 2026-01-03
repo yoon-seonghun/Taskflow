@@ -48,26 +48,26 @@ public interface CommentService {
      *
      * @param itemId    아이템 ID
      * @param request   등록 요청
-     * @param createdBy 생성자 ID
+     * @param createdBy 생성자 USERNAME
      * @return 생성된 댓글 응답
      */
-    CommentResponse createComment(Long itemId, CommentCreateRequest request, Long createdBy);
+    CommentResponse createComment(Long itemId, CommentCreateRequest request, String createdBy);
 
     /**
      * 댓글 수정
      *
      * @param commentId 댓글 ID
      * @param request   수정 요청
-     * @param updatedBy 수정자 ID
+     * @param updatedBy 수정자 USERNAME
      * @return 수정된 댓글 응답
      */
-    CommentResponse updateComment(Long commentId, CommentUpdateRequest request, Long updatedBy);
+    CommentResponse updateComment(Long commentId, CommentUpdateRequest request, String updatedBy);
 
     /**
      * 댓글 삭제
      *
      * @param commentId 댓글 ID
-     * @param deletedBy 삭제자 ID
+     * @param deletedBy 삭제자 USERNAME
      */
-    void deleteComment(Long commentId, Long deletedBy);
+    void deleteComment(Long commentId, String deletedBy);
 }

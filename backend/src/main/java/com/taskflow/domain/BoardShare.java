@@ -13,9 +13,8 @@ import java.time.LocalDateTime;
  *
  * 테이블: TB_BOARD_SHARE
  *
- * 보드를 다른 사용자에게 공유
- * - 소유자 외에 보드에 접근 가능한 사용자 관리
- * - 권한 레벨 지정 가능 (MEMBER: 편집, VIEWER: 조회만)
+ * USERNAME 기반 FK 참조 시스템:
+ * - USERNAME: 공유받은 사용자 USERNAME 참조
  */
 @Getter
 @Setter
@@ -35,14 +34,19 @@ public class BoardShare {
     private Long boardId;
 
     /**
-     * 공유받은 사용자 ID (FK)
+     * 공유받은 사용자 USERNAME (FK → TB_USER.USERNAME)
      */
-    private Long userId;
+    private String username;
 
     /**
-     * 권한 레벨 (MEMBER: 편집, VIEWER: 조회만)
+     * 권한 레벨 (VIEW/EDIT/FULL)
      */
     private String permission;
+
+    /**
+     * 정렬 순서 (사용자별)
+     */
+    private Integer sortOrder;
 
     /**
      * 생성일시
@@ -50,9 +54,9 @@ public class BoardShare {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 JOIN으로 설정)
@@ -69,14 +73,14 @@ public class BoardShare {
     private String userName;
 
     /**
-     * 로그인 ID
-     */
-    private String loginId;
-
-    /**
      * 부서명
      */
     private String departmentName;
+
+    /**
+     * 로그인 ID (Mapper JOIN 필드)
+     */
+    private String loginId;
 
     // =============================================
     // 상수 (VIEW/EDIT/FULL 권한 체계)
@@ -111,6 +115,69 @@ public class BoardShare {
      */
     public boolean canDelete() {
         return PERMISSION_FULL.equals(permission);
+    }
+
+    /**
+     * 사용자명 getter (Lombok 호환성)
+     */
+    public String getUserName() {
+        return userName;
+    }
+
+    /**
+     * USERNAME getter (Lombok 호환성)
+     */
+    public String getUsername() {
+        return username;
+    }
+
+    /**
+     * 보드공유ID getter (Lombok 호환성)
+     */
+    public Long getBoardShareId() {
+        return boardShareId;
+    }
+
+    /**
+     * 보드ID getter (Lombok 호환성)
+     */
+    public Long getBoardId() {
+        return boardId;
+    }
+
+    /**
+     * 보드명 getter (Lombok 호환성)
+     */
+    public String getBoardName() {
+        return boardName;
+    }
+
+    /**
+     * 부서명 getter (Lombok 호환성)
+     */
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    /**
+     * 권한 getter (Lombok 호환성)
+     */
+    public String getPermission() {
+        return permission;
+    }
+
+    /**
+     * 생성일시 getter (Lombok 호환성)
+     */
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    /**
+     * 정렬순서 getter (Lombok 호환성)
+     */
+    public Integer getSortOrder() {
+        return sortOrder;
     }
 
     /**

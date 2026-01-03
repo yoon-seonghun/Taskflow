@@ -1,7 +1,7 @@
 package com.taskflow.dto.transfer;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,10 +21,10 @@ import java.util.List;
 public class TransferRequest {
 
     /**
-     * 이관받을 사용자 ID
+     * 이관받을 사용자 아이디
      */
-    @NotNull(message = "이관 대상자는 필수입니다.")
-    private Long targetUserId;
+    @NotBlank(message = "이관 대상자는 필수입니다.")
+    private String targetUsername;
 
     /**
      * 이관 사유 (선택)

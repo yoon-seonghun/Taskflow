@@ -36,12 +36,17 @@ export interface GroupUpdateRequest {
 }
 
 export interface GroupMember {
+  userGroupId: number
   userId: number
+  username: string
   userName: string
   departmentName?: string
+  groupId: number
+  groupName: string
+  groupCode: string
   joinedAt: string
 }
 
 export interface GroupMemberRequest {
-  userId: number
+  username: string
 }

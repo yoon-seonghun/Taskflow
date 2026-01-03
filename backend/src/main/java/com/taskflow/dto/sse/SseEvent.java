@@ -49,9 +49,9 @@ public class SseEvent<T> {
     private LocalDateTime timestamp;
 
     /**
-     * 이벤트 발생자 ID (본인에게는 전송하지 않음)
+     * 이벤트 발생자 USERNAME (본인에게는 전송하지 않음)
      */
-    private Long triggeredBy;
+    private String triggeredBy;
 
     // =============================================
     // 팩토리 메서드
@@ -60,7 +60,7 @@ public class SseEvent<T> {
     /**
      * 아이템 생성 이벤트
      */
-    public static <T> SseEvent<T> itemCreated(Long boardId, T data, Long triggeredBy) {
+    public static <T> SseEvent<T> itemCreated(Long boardId, T data, String triggeredBy) {
         return SseEvent.<T>builder()
                 .type(ITEM_CREATED)
                 .boardId(boardId)
@@ -73,7 +73,7 @@ public class SseEvent<T> {
     /**
      * 아이템 수정 이벤트
      */
-    public static <T> SseEvent<T> itemUpdated(Long boardId, T data, Long triggeredBy) {
+    public static <T> SseEvent<T> itemUpdated(Long boardId, T data, String triggeredBy) {
         return SseEvent.<T>builder()
                 .type(ITEM_UPDATED)
                 .boardId(boardId)
@@ -86,7 +86,7 @@ public class SseEvent<T> {
     /**
      * 아이템 삭제 이벤트
      */
-    public static <T> SseEvent<T> itemDeleted(Long boardId, T data, Long triggeredBy) {
+    public static <T> SseEvent<T> itemDeleted(Long boardId, T data, String triggeredBy) {
         return SseEvent.<T>builder()
                 .type(ITEM_DELETED)
                 .boardId(boardId)
@@ -99,7 +99,7 @@ public class SseEvent<T> {
     /**
      * 속성 정의 변경 이벤트
      */
-    public static <T> SseEvent<T> propertyUpdated(Long boardId, T data, Long triggeredBy) {
+    public static <T> SseEvent<T> propertyUpdated(Long boardId, T data, String triggeredBy) {
         return SseEvent.<T>builder()
                 .type(PROPERTY_UPDATED)
                 .boardId(boardId)
@@ -112,7 +112,7 @@ public class SseEvent<T> {
     /**
      * 댓글 생성 이벤트
      */
-    public static <T> SseEvent<T> commentCreated(Long boardId, T data, Long triggeredBy) {
+    public static <T> SseEvent<T> commentCreated(Long boardId, T data, String triggeredBy) {
         return SseEvent.<T>builder()
                 .type(COMMENT_CREATED)
                 .boardId(boardId)

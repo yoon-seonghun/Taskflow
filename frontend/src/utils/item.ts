@@ -5,24 +5,21 @@ import type { Item, ItemStatus } from '@/types/item'
 
 /**
  * 아이템이 지연(Overdue) 상태인지 확인
- * - dueDate가 오늘보다 이전이고
+ * - endTime(완료예정시간)이 현재보다 이전이고
  * - 완료/삭제 상태가 아닌 경우
  */
 export function isItemOverdue(item: Item): boolean {
-  if (!item.dueDate) return false
+  if (!item.endTime) return false
 
   // 완료 또는 삭제된 아이템은 지연으로 표시하지 않음
   if (item.status === 'COMPLETED' || item.status === 'DELETED') {
     return false
   }
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const now = new Date()
+  const endTime = new Date(item.endTime)
 
-  const dueDate = new Date(item.dueDate)
-  dueDate.setHours(0, 0, 0, 0)
-
-  return dueDate < today
+  return endTime < now
 }
 
 /**
@@ -30,16 +27,16 @@ export function isItemOverdue(item: Item): boolean {
  * @returns 지연 일수 (양수), 지연이 아니면 0
  */
 export function getOverdueDays(item: Item): number {
-  if (!item.dueDate) return 0
+  if (!item.endTime) return 0
   if (!isItemOverdue(item)) return 0
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const dueDate = new Date(item.dueDate)
-  dueDate.setHours(0, 0, 0, 0)
+  const endTime = new Date(item.endTime)
+  endTime.setHours(0, 0, 0, 0)
 
-  const diffTime = today.getTime() - dueDate.getTime()
+  const diffTime = today.getTime() - endTime.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   return diffDays

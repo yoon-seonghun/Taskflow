@@ -1,5 +1,6 @@
 package com.taskflow.dto.share;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -20,10 +21,10 @@ import lombok.Setter;
 public class ShareRequest {
 
     /**
-     * 공유받을 사용자 ID
+     * 공유받을 사용자 아이디
      */
-    @NotNull(message = "사용자 ID는 필수입니다.")
-    private Long userId;
+    @NotBlank(message = "사용자 아이디는 필수입니다.")
+    private String username;
 
     /**
      * 권한 (VIEW/EDIT/FULL)

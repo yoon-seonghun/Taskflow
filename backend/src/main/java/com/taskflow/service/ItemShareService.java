@@ -47,92 +47,92 @@ public class ItemShareService {
      * 공유 추가
      */
     @Transactional
-    public void addShare(Long itemId, ShareRequest request, Long currentUserId) {
+    public void addShare(Long itemId, ShareRequest request, String currentUsername) {
         // 업무 존재 확인
         Item item = itemMapper.findById(itemId)
                 .orElseThrow(() -> new BusinessException("업무를 찾을 수 없습니다."));
 
         // 중복 확인
-        if (itemShareMapper.existsByItemIdAndUserId(itemId, request.getUserId())) {
+        if (itemShareMapper.existsByItemIdAndUsername(itemId, request.getUsername())) {
             throw new BusinessException("이미 공유된 사용자입니다.");
         }
 
         // 자기 자신에게 공유 불가
-        if (request.getUserId().equals(item.getCreatedBy())) {
+        if (request.getUsername().equals(item.getCreatedBy())) {
             throw new BusinessException("업무 생성자에게는 공유할 수 없습니다.");
         }
 
         ItemShare itemShare = ItemShare.builder()
                 .itemId(itemId)
-                .userId(request.getUserId())
+                .username(request.getUsername())
                 .permission(request.getPermission())
-                .createdBy(currentUserId)
+                .createdBy(currentUsername)
                 .build();
 
         itemShareMapper.insert(itemShare);
 
         // 감사 로그 기록
-        auditLogService.logItemShared(itemId, currentUserId, request.getUserId(), request.getPermission());
+        auditLogService.logItemShared(itemId, currentUsername, request.getUsername(), request.getPermission());
 
-        log.info("Item {} shared with user {} (permission: {})", itemId, request.getUserId(), request.getPermission());
+        log.info("Item {} shared with user {} (permission: {})", itemId, request.getUsername(), request.getPermission());
     }
 
     /**
      * 권한 변경
      */
     @Transactional
-    public void updatePermission(Long itemId, Long userId, String permission, Long currentUserId) {
+    public void updatePermission(Long itemId, String username, String permission, String currentUsername) {
         // 기존 공유 확인
-        ItemShare existing = itemShareMapper.selectByItemIdAndUserId(itemId, userId);
+        ItemShare existing = itemShareMapper.selectByItemIdAndUsername(itemId, username);
         if (existing == null) {
             throw new BusinessException("공유 정보를 찾을 수 없습니다.");
         }
 
         String oldPermission = existing.getPermission();
-        itemShareMapper.updatePermission(itemId, userId, permission, currentUserId);
+        itemShareMapper.updatePermission(itemId, username, permission, currentUsername);
 
         // 감사 로그 기록
         auditLogService.log(
                 "ITEM_SHARE", itemId, "UPDATE",
-                currentUserId, String.format("권한 변경: %s → %s", oldPermission, permission),
-                null, null, userId
+                currentUsername, String.format("권한 변경: %s → %s", oldPermission, permission),
+                null, null, username
         );
 
         log.info("Item {} share permission changed for user {} ({} -> {})",
-                itemId, userId, oldPermission, permission);
+                itemId, username, oldPermission, permission);
     }
 
     /**
      * 공유 제거
      */
     @Transactional
-    public void removeShare(Long itemId, Long userId, Long currentUserId) {
+    public void removeShare(Long itemId, String username, String currentUsername) {
         // 기존 공유 확인
-        if (!itemShareMapper.existsByItemIdAndUserId(itemId, userId)) {
+        if (!itemShareMapper.existsByItemIdAndUsername(itemId, username)) {
             throw new BusinessException("공유 정보를 찾을 수 없습니다.");
         }
 
-        itemShareMapper.delete(itemId, userId);
+        itemShareMapper.delete(itemId, username);
 
         // 감사 로그 기록
-        auditLogService.logItemUnshared(itemId, currentUserId, userId);
+        auditLogService.logItemUnshared(itemId, currentUsername, username);
 
-        log.info("Item {} share removed for user {}", itemId, userId);
+        log.info("Item {} share removed for user {}", itemId, username);
     }
 
     /**
      * 사용자의 업무 접근 권한 확인
      */
     @Transactional(readOnly = true)
-    public String getPermission(Long itemId, Long userId) {
-        return itemShareMapper.getPermission(itemId, userId);
+    public String getPermission(Long itemId, String username) {
+        return itemShareMapper.getPermission(itemId, username);
     }
 
     /**
      * 사용자가 업무에 접근 가능한지 확인
      */
     @Transactional(readOnly = true)
-    public boolean hasAccess(Long itemId, Long userId) {
+    public boolean hasAccess(Long itemId, String username) {
         // 업무 조회
         Item item = itemMapper.findById(itemId).orElse(null);
         if (item == null) {
@@ -140,31 +140,31 @@ public class ItemShareService {
         }
 
         // 생성자인 경우
-        if (userId.equals(item.getCreatedBy())) {
+        if (username.equals(item.getCreatedBy())) {
             return true;
         }
 
         // 공유받은 경우
-        return itemShareMapper.existsByItemIdAndUserId(itemId, userId);
+        return itemShareMapper.existsByItemIdAndUsername(itemId, username);
     }
 
     /**
      * 수정 권한 확인
      */
     @Transactional(readOnly = true)
-    public boolean canEdit(Long itemId, Long userId) {
+    public boolean canEdit(Long itemId, String username) {
         Item item = itemMapper.findById(itemId).orElse(null);
         if (item == null) {
             return false;
         }
 
         // 생성자인 경우
-        if (userId.equals(item.getCreatedBy())) {
+        if (username.equals(item.getCreatedBy())) {
             return true;
         }
 
         // 공유 권한 확인
-        String permission = getPermission(itemId, userId);
+        String permission = getPermission(itemId, username);
         return ItemShare.PERMISSION_EDIT.equals(permission) || ItemShare.PERMISSION_FULL.equals(permission);
     }
 
@@ -172,26 +172,25 @@ public class ItemShareService {
      * 삭제 권한 확인
      */
     @Transactional(readOnly = true)
-    public boolean canDelete(Long itemId, Long userId) {
+    public boolean canDelete(Long itemId, String username) {
         Item item = itemMapper.findById(itemId).orElse(null);
         if (item == null) {
             return false;
         }
 
         // 생성자인 경우
-        if (userId.equals(item.getCreatedBy())) {
+        if (username.equals(item.getCreatedBy())) {
             return true;
         }
 
         // 공유 권한 확인
-        String permission = getPermission(itemId, userId);
+        String permission = getPermission(itemId, username);
         return ItemShare.PERMISSION_FULL.equals(permission);
     }
 
     private ShareResponse toResponse(ItemShare share) {
         return ShareResponse.builder()
-                .userId(share.getUserId())
-                .loginId(share.getLoginId())
+                .username(share.getUsername())
                 .userName(share.getUserName())
                 .departmentName(share.getDepartmentName())
                 .permission(share.getPermission())
@@ -209,25 +208,25 @@ public class ItemShareService {
     /**
      * 개별 업무 이관
      * - 다른 보드로 이관: targetBoardId 사용
-     * - 다른 사용자에게 이관: targetUserId 사용 (사용자의 "업무이관" 보드로 자동 이관)
+     * - 다른 사용자에게 이관: targetUsername 사용 (사용자의 "업무이관" 보드로 자동 이관)
      */
     @Transactional
-    public ItemResponse transferItem(Long itemId, ItemTransferRequest request, Long currentUserId) {
+    public ItemResponse transferItem(Long itemId, ItemTransferRequest request, String currentUsername) {
         // 업무 조회
         Item item = itemMapper.findById(itemId)
                 .orElseThrow(() -> new BusinessException("업무를 찾을 수 없습니다."));
 
         // 이관 권한 확인
-        if (!canTransfer(itemId, currentUserId)) {
+        if (!canTransfer(itemId, currentUsername)) {
             throw new BusinessException("업무를 이관할 권한이 없습니다.");
         }
 
         Long targetBoardId = request.getTargetBoardId();
         String targetBoardName = null;
 
-        // targetUserId가 지정된 경우, 해당 사용자의 "업무이관" 보드 찾기 또는 생성
-        if (request.getTargetUserId() != null) {
-            Board transferBoard = getOrCreateTransferBoard(request.getTargetUserId(), currentUserId);
+        // targetUsername이 지정된 경우, 해당 사용자의 "업무이관" 보드 찾기 또는 생성
+        if (request.getTargetUsername() != null) {
+            Board transferBoard = getOrCreateTransferBoard(request.getTargetUsername(), currentUsername);
             targetBoardId = transferBoard.getBoardId();
             targetBoardName = transferBoard.getBoardName();
         } else if (targetBoardId != null) {
@@ -237,7 +236,7 @@ public class ItemShareService {
             targetBoardName = targetBoard.getBoardName();
 
             // 대상 보드 접근 권한 확인
-            if (!boardMapper.hasAccess(targetBoardId, currentUserId)) {
+            if (!boardMapper.hasAccess(targetBoardId, currentUsername)) {
                 throw new BusinessException("이관 대상 보드에 접근 권한이 없습니다.");
             }
         } else {
@@ -253,7 +252,7 @@ public class ItemShareService {
         String originalBoardName = item.getBoardName();
 
         // 업무 이관 실행
-        int updated = itemMapper.transferToBoard(itemId, targetBoardId, originalBoardId, currentUserId);
+        int updated = itemMapper.transferToBoard(itemId, targetBoardId, originalBoardId, currentUsername);
         if (updated == 0) {
             throw new BusinessException("업무 이관에 실패했습니다.");
         }
@@ -261,12 +260,12 @@ public class ItemShareService {
         // 감사 로그 기록
         auditLogService.log(
                 "ITEM", itemId, "TRANSFER",
-                currentUserId, String.format("업무 이관: %s → %s", originalBoardName, targetBoardName),
-                null, null, request.getTargetUserId()
+                currentUsername, String.format("업무 이관: %s → %s", originalBoardName, targetBoardName),
+                null, null, request.getTargetUsername()
         );
 
         log.info("Item {} transferred from board {} to board {} by user {}",
-                itemId, originalBoardId, targetBoardId, currentUserId);
+                itemId, originalBoardId, targetBoardId, currentUsername);
 
         // 이관된 업무 조회 후 반환
         Item transferredItem = itemMapper.findById(itemId)
@@ -280,31 +279,31 @@ public class ItemShareService {
      * - 이미 존재하면 해당 보드 반환
      * - 없으면 새로 생성하여 반환
      */
-    private Board getOrCreateTransferBoard(Long targetUserId, Long currentUserId) {
+    private Board getOrCreateTransferBoard(String targetUsername, String currentUsername) {
         // 사용자의 "업무이관" 보드 조회
-        return boardMapper.findByOwnerIdAndName(targetUserId, TRANSFER_BOARD_NAME)
+        return boardMapper.findByOwnerUsernameAndName(targetUsername, TRANSFER_BOARD_NAME)
                 .orElseGet(() -> {
                     // 없으면 새로 생성
-                    log.info("Creating transfer board for user {}", targetUserId);
+                    log.info("Creating transfer board for user {}", targetUsername);
 
                     // 최대 정렬 순서 조회
-                    Integer maxSortOrder = boardMapper.getMaxSortOrder(targetUserId);
+                    Integer maxSortOrder = boardMapper.getMaxSortOrder(targetUsername);
                     int newSortOrder = (maxSortOrder != null ? maxSortOrder : 0) + 1;
 
                     Board newBoard = Board.builder()
                             .boardName(TRANSFER_BOARD_NAME)
                             .description("다른 사용자로부터 이관받은 업무가 저장되는 보드입니다.")
-                            .ownerId(targetUserId)
+                            .ownerUsername(targetUsername)
                             .defaultView("TABLE")
                             .sortOrder(newSortOrder)
                             .useYn("Y")
-                            .createdBy(currentUserId)
+                            .createdBy(currentUsername)
                             .build();
 
                     boardMapper.insert(newBoard);
 
                     log.info("Transfer board created: boardId={} for user {}",
-                            newBoard.getBoardId(), targetUserId);
+                            newBoard.getBoardId(), targetUsername);
 
                     return newBoard;
                 });
@@ -318,31 +317,31 @@ public class ItemShareService {
      * - 보드에서 FULL 권한 보유자
      */
     @Transactional(readOnly = true)
-    public boolean canTransfer(Long itemId, Long userId) {
+    public boolean canTransfer(Long itemId, String username) {
         Item item = itemMapper.findById(itemId).orElse(null);
         if (item == null) {
             return false;
         }
 
         // 업무 생성자인 경우
-        if (userId.equals(item.getCreatedBy())) {
+        if (username.equals(item.getCreatedBy())) {
             return true;
         }
 
         // 보드 소유자인 경우
         Board board = boardMapper.findById(item.getBoardId()).orElse(null);
-        if (board != null && userId.equals(board.getOwnerId())) {
+        if (board != null && username.equals(board.getOwnerUsername())) {
             return true;
         }
 
         // 보드에서 FULL 권한을 가진 경우
-        String boardPermission = boardMapper.getUserPermission(item.getBoardId(), userId);
+        String boardPermission = boardMapper.getUserPermission(item.getBoardId(), username);
         if ("FULL".equals(boardPermission)) {
             return true;
         }
 
         // 업무 공유에서 FULL 권한을 가진 경우
-        String itemPermission = getPermission(itemId, userId);
+        String itemPermission = getPermission(itemId, username);
         return ItemShare.PERMISSION_FULL.equals(itemPermission);
     }
 
@@ -350,8 +349,8 @@ public class ItemShareService {
      * 공유 가능 여부 확인 (이관 권한과 동일)
      */
     @Transactional(readOnly = true)
-    public boolean canShareItem(Long itemId, Long userId) {
-        return canTransfer(itemId, userId);
+    public boolean canShareItem(Long itemId, String username) {
+        return canTransfer(itemId, username);
     }
 
     // =============================================
@@ -365,24 +364,24 @@ public class ItemShareService {
      * - 업무 공유자
      */
     @Transactional(readOnly = true)
-    public boolean hasItemAccess(Long itemId, Long userId) {
+    public boolean hasItemAccess(Long itemId, String username) {
         Item item = itemMapper.findById(itemId).orElse(null);
         if (item == null) {
             return false;
         }
 
         // 업무 생성자인 경우
-        if (userId.equals(item.getCreatedBy())) {
+        if (username.equals(item.getCreatedBy())) {
             return true;
         }
 
         // 보드 접근 권한이 있는 경우
-        if (boardMapper.hasAccess(item.getBoardId(), userId)) {
+        if (boardMapper.hasAccess(item.getBoardId(), username)) {
             return true;
         }
 
         // 업무 공유받은 경우
-        return itemShareMapper.existsByItemIdAndUserId(itemId, userId);
+        return itemShareMapper.existsByItemIdAndUsername(itemId, username);
     }
 
     /**
@@ -390,25 +389,25 @@ public class ItemShareService {
      * 권한 우선순위: OWNER > FULL > EDIT > VIEW
      */
     @Transactional(readOnly = true)
-    public String getItemPermission(Long itemId, Long userId) {
+    public String getItemPermission(Long itemId, String username) {
         Item item = itemMapper.findById(itemId).orElse(null);
         if (item == null) {
             return null;
         }
 
         // 업무 생성자인 경우 OWNER 권한
-        if (userId.equals(item.getCreatedBy())) {
+        if (username.equals(item.getCreatedBy())) {
             return "OWNER";
         }
 
         // 보드 권한 확인
         Board board = boardMapper.findById(item.getBoardId()).orElse(null);
-        if (board != null && userId.equals(board.getOwnerId())) {
+        if (board != null && username.equals(board.getOwnerUsername())) {
             return "OWNER";
         }
 
-        String boardPermission = boardMapper.getUserPermission(item.getBoardId(), userId);
-        String itemPermission = getPermission(itemId, userId);
+        String boardPermission = boardMapper.getUserPermission(item.getBoardId(), username);
+        String itemPermission = getPermission(itemId, username);
 
         // 더 높은 권한 반환
         return getHigherPermission(boardPermission, itemPermission);
@@ -418,8 +417,8 @@ public class ItemShareService {
      * 수정 권한 확인 (보드 수준 권한 포함)
      */
     @Transactional(readOnly = true)
-    public boolean canEditItem(Long itemId, Long userId) {
-        String permission = getItemPermission(itemId, userId);
+    public boolean canEditItem(Long itemId, String username) {
+        String permission = getItemPermission(itemId, username);
         if (permission == null) {
             return false;
         }
@@ -430,8 +429,8 @@ public class ItemShareService {
      * 삭제 권한 확인 (보드 수준 권한 포함)
      */
     @Transactional(readOnly = true)
-    public boolean canDeleteItem(Long itemId, Long userId) {
-        String permission = getItemPermission(itemId, userId);
+    public boolean canDeleteItem(Long itemId, String username) {
+        String permission = getItemPermission(itemId, username);
         if (permission == null) {
             return false;
         }

@@ -167,7 +167,17 @@
         WHERE OPTION_ID = #{optionId}
     </update>
 
-    <!-- 옵션 삭제 -->
+    <!-- 옵션 논리 삭제 (USE_YN = 'N') -->
+    <update id="softDelete">
+        UPDATE TB_PROPERTY_OPTION
+        SET
+            USE_YN = 'N',
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE OPTION_ID = #{optionId}
+    </update>
+
+    <!-- 옵션 물리 삭제 (사용 금지 - 논리 삭제만 사용 권장) -->
     <delete id="delete">
         DELETE FROM TB_PROPERTY_OPTION
         WHERE OPTION_ID = #{optionId}

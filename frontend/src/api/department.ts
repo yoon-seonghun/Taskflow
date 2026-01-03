@@ -17,28 +17,28 @@ export const departmentApi = {
     return get<Department[]>('/departments/flat', params)
   },
 
-  getDepartment(departmentId: number) {
-    return get<Department>(`/departments/${departmentId}`)
+  getDepartment(departmentCode: string) {
+    return get<Department>(`/departments/${departmentCode}`)
   },
 
   createDepartment(data: DepartmentCreateRequest) {
     return post<Department>('/departments', data)
   },
 
-  updateDepartment(departmentId: number, data: DepartmentUpdateRequest) {
-    return put<Department>(`/departments/${departmentId}`, data)
+  updateDepartment(departmentCode: string, data: DepartmentUpdateRequest) {
+    return put<Department>(`/departments/${departmentCode}`, data)
   },
 
-  deleteDepartment(departmentId: number) {
-    return del<void>(`/departments/${departmentId}`)
+  deleteDepartment(departmentCode: string) {
+    return del<void>(`/departments/${departmentCode}`)
   },
 
-  updateDepartmentOrder(departmentId: number, sortOrder: number) {
-    return put<void>(`/departments/${departmentId}/order`, { sortOrder })
+  updateDepartmentOrder(departmentCode: string, sortOrder: number) {
+    return put<void>(`/departments/${departmentCode}/order`, { sortOrder })
   },
 
-  // 부서별 사용자 목록
-  getDepartmentUsers(departmentId: number) {
-    return get<User[]>(`/departments/${departmentId}/users`)
+  // 부서별 사용자 목록 (departmentCode로 조회)
+  getDepartmentUsers(departmentCode: string) {
+    return get<User[]>(`/departments/${departmentCode}/users`)
   }
 }

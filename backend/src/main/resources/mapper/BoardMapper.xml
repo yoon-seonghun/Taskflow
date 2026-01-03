@@ -11,7 +11,7 @@
         <id property="boardId" column="BOARD_ID"/>
         <result property="boardName" column="BOARD_NAME"/>
         <result property="description" column="BOARD_DESC"/>
-        <result property="ownerId" column="OWNER_ID"/>
+        <result property="ownerUsername" column="OWNER_USERNAME"/>
         <result property="defaultView" column="DEFAULT_VIEW"/>
         <result property="color" column="COLOR"/>
         <result property="sortOrder" column="SORT_ORDER"/>
@@ -35,7 +35,7 @@
             b.BOARD_ID,
             b.BOARD_NAME,
             b.DESCRIPTION AS BOARD_DESC,
-            b.OWNER_ID,
+            b.OWNER_USERNAME,
             b.DEFAULT_VIEW,
             b.COLOR,
             b.SORT_ORDER,
@@ -48,7 +48,7 @@
             (SELECT COUNT(*) FROM TB_ITEM i WHERE i.BOARD_ID = b.BOARD_ID) AS ITEM_COUNT,
             (SELECT COUNT(*) FROM TB_BOARD_SHARE bs WHERE bs.BOARD_ID = b.BOARD_ID) AS SHARE_COUNT
         FROM TB_BOARD b
-        LEFT JOIN TB_USER u ON b.OWNER_ID = u.USER_ID
+        LEFT JOIN TB_USER u ON b.OWNER_USERNAME = u.USERNAME
     </sql>
 
     <!-- ============================================= -->
@@ -62,29 +62,29 @@
     </select>
 
     <!-- 사용자가 소유한 보드 목록 조회 -->
-    <select id="findByOwnerId" resultMap="BoardResultMap">
+    <select id="findByOwnerUsername" resultMap="BoardResultMap">
         <include refid="selectBoard"/>
-        WHERE b.OWNER_ID = #{ownerId}
+        WHERE b.OWNER_USERNAME = #{ownerUsername}
         <if test="useYn != null and useYn != ''">
             AND b.USE_YN = #{useYn}
         </if>
-        ORDER BY b.BOARD_NAME
+        ORDER BY b.SORT_ORDER, b.CREATED_AT DESC
     </select>
 
     <!-- 사용자가 접근 가능한 모든 보드 목록 조회 (소유 + 공유) -->
-    <select id="findAccessibleByUserId" resultMap="BoardResultMap">
+    <select id="findAccessibleByUsername" resultMap="BoardResultMap">
         <include refid="selectBoard"/>
         WHERE (
-            b.OWNER_ID = #{userId}
+            b.OWNER_USERNAME = #{username}
             OR EXISTS (
                 SELECT 1 FROM TB_BOARD_SHARE bs
-                WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USER_ID = #{userId}
+                WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USERNAME = #{username}
             )
         )
         <if test="useYn != null and useYn != ''">
             AND b.USE_YN = #{useYn}
         </if>
-        ORDER BY b.BOARD_NAME
+        ORDER BY b.SORT_ORDER, b.CREATED_AT DESC
     </select>
 
     <!-- 전체 보드 목록 조회 (관리자용) -->
@@ -95,7 +95,7 @@
                 b.USE_YN = #{useYn}
             </if>
         </where>
-        ORDER BY b.BOARD_NAME
+        ORDER BY b.SORT_ORDER, b.CREATED_AT DESC
     </select>
 
     <!-- 사용자가 특정 보드에 접근 가능한지 확인 -->
@@ -104,10 +104,10 @@
             SELECT 1 FROM TB_BOARD b
             WHERE b.BOARD_ID = #{boardId}
               AND (
-                  b.OWNER_ID = #{userId}
+                  b.OWNER_USERNAME = #{username}
                   OR EXISTS (
                       SELECT 1 FROM TB_BOARD_SHARE bs
-                      WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USER_ID = #{userId}
+                      WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USERNAME = #{username}
                   )
               )
         )
@@ -117,8 +117,8 @@
     <select id="getMaxSortOrder" resultType="java.lang.Integer">
         SELECT COALESCE(MAX(SORT_ORDER), 0) FROM TB_BOARD
         <where>
-            <if test="ownerId != null">
-                OWNER_ID = #{ownerId}
+            <if test="ownerUsername != null">
+                OWNER_USERNAME = #{ownerUsername}
             </if>
         </where>
     </select>
@@ -139,7 +139,7 @@
         INSERT INTO TB_BOARD (
             BOARD_NAME,
             DESCRIPTION,
-            OWNER_ID,
+            OWNER_USERNAME,
             DEFAULT_VIEW,
             COLOR,
             SORT_ORDER,
@@ -148,7 +148,7 @@
         ) VALUES (
             #{boardName},
             #{description},
-            #{ownerId},
+            #{ownerUsername},
             COALESCE(#{defaultView}, 'TABLE'),
             #{color},
             COALESCE(#{sortOrder}, 0),
@@ -195,7 +195,7 @@
     <!-- 소유한 보드 목록 조회 (정렬 순서 포함) -->
     <select id="findOwnedBoards" resultMap="BoardResultMap">
         <include refid="selectBoard"/>
-        WHERE b.OWNER_ID = #{userId}
+        WHERE b.OWNER_USERNAME = #{username}
           AND b.USE_YN = 'Y'
         ORDER BY b.SORT_ORDER, b.CREATED_AT DESC
     </select>
@@ -206,18 +206,21 @@
             b.BOARD_ID,
             b.BOARD_NAME,
             b.DESCRIPTION AS BOARD_DESC,
-            b.OWNER_ID,
+            b.OWNER_USERNAME,
             b.DEFAULT_VIEW,
             b.COLOR,
+            bs.SORT_ORDER,
+            b.USE_YN,
             bs.PERMISSION,
             u.NAME AS OWNER_NAME,
-            (SELECT COUNT(*) FROM TB_ITEM i WHERE i.BOARD_ID = b.BOARD_ID) AS ITEM_COUNT
+            (SELECT COUNT(*) FROM TB_ITEM i WHERE i.BOARD_ID = b.BOARD_ID) AS ITEM_COUNT,
+            (SELECT COUNT(*) FROM TB_BOARD_SHARE bs2 WHERE bs2.BOARD_ID = b.BOARD_ID) AS SHARE_COUNT
         FROM TB_BOARD b
         INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID
-        LEFT JOIN TB_USER u ON b.OWNER_ID = u.USER_ID
-        WHERE bs.USER_ID = #{userId}
+        LEFT JOIN TB_USER u ON b.OWNER_USERNAME = u.USERNAME
+        WHERE bs.USERNAME = #{username}
           AND b.USE_YN = 'Y'
-        ORDER BY b.BOARD_NAME
+        ORDER BY bs.SORT_ORDER, b.CREATED_AT DESC
     </select>
 
     <!-- 미완료 업무 수 조회 -->
@@ -237,7 +240,7 @@
             i.PRIORITY,
             u.NAME AS ASSIGNEE_NAME
         FROM TB_ITEM i
-        LEFT JOIN TB_USER u ON i.ASSIGNEE_ID = u.USER_ID
+        LEFT JOIN TB_USER u ON i.ASSIGNEE_USERNAME = u.USERNAME
         WHERE i.BOARD_ID = #{boardId}
           AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
         ORDER BY i.CREATED_AT
@@ -256,19 +259,19 @@
     <select id="getUserPermission" resultType="String">
         SELECT
             CASE
-                WHEN b.OWNER_ID = #{userId} THEN 'OWNER'
+                WHEN b.OWNER_USERNAME = #{username} THEN 'OWNER'
                 ELSE bs.PERMISSION
             END AS PERMISSION
         FROM TB_BOARD b
-        LEFT JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USER_ID = #{userId}
+        LEFT JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username}
         WHERE b.BOARD_ID = #{boardId}
-          AND (b.OWNER_ID = #{userId} OR bs.USER_ID = #{userId})
+          AND (b.OWNER_USERNAME = #{username} OR bs.USERNAME = #{username})
     </select>
 
-    <!-- 소유자 ID와 보드명으로 보드 조회 -->
-    <select id="findByOwnerIdAndName" resultMap="BoardResultMap">
+    <!-- 소유자 USERNAME과 보드명으로 보드 조회 -->
+    <select id="findByOwnerUsernameAndName" resultMap="BoardResultMap">
         <include refid="selectBoard"/>
-        WHERE b.OWNER_ID = #{ownerId}
+        WHERE b.OWNER_USERNAME = #{ownerUsername}
           AND b.BOARD_NAME = #{boardName}
           AND b.USE_YN = 'Y'
     </select>
@@ -277,7 +280,7 @@
     <update id="transferOwnership">
         UPDATE TB_BOARD
         SET
-            OWNER_ID = #{newOwnerId},
+            OWNER_USERNAME = #{newOwnerUsername},
             <if test="newBoardName != null and newBoardName != ''">
             BOARD_NAME = #{newBoardName},
             </if>

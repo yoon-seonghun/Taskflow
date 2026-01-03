@@ -1,5 +1,6 @@
 package com.taskflow.service.impl;
 
+import com.taskflow.config.UserManagementProperties;
 import com.taskflow.domain.Department;
 import com.taskflow.dto.department.*;
 import com.taskflow.dto.user.UserResponse;
@@ -9,6 +10,7 @@ import com.taskflow.mapper.UserMapper;
 import com.taskflow.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,25 +18,43 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 부서 서비스 구현
+ * 부서 서비스 구현 (Internal 모드)
+ *
+ * 기본 관리 모드로 TaskFlow DB에서 부서 데이터를 직접 관리
+ * - 부서 CRUD 가능
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@ConditionalOnProperty(
+    name = "taskflow.user-management.mode",
+    havingValue = "internal",
+    matchIfMissing = true
+)
 public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentMapper departmentMapper;
     private final UserMapper userMapper;
+    private final UserManagementProperties userManagementProperties;
+
+    // =============================================
+    // 모드 확인
+    // =============================================
+
+    @Override
+    public boolean isCrudEnabled() {
+        return userManagementProperties.isDepartmentCrudEnabled();
+    }
 
     // =============================================
     // 조회
     // =============================================
 
     @Override
-    public DepartmentResponse getDepartment(Long departmentId) {
-        Department department = departmentMapper.findById(departmentId)
-                .orElseThrow(() -> BusinessException.departmentNotFound(departmentId));
+    public DepartmentResponse getDepartment(String departmentCode) {
+        Department department = departmentMapper.findByCode(departmentCode)
+                .orElseThrow(() -> BusinessException.departmentNotFound(departmentCode));
         return DepartmentResponse.from(department);
     }
 
@@ -56,23 +76,23 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public List<DepartmentResponse> getChildDepartments(Long departmentId) {
+    public List<DepartmentResponse> getChildDepartments(String departmentCode) {
         // 부서 존재 확인
-        departmentMapper.findById(departmentId)
-                .orElseThrow(() -> BusinessException.departmentNotFound(departmentId));
+        departmentMapper.findByCode(departmentCode)
+                .orElseThrow(() -> BusinessException.departmentNotFound(departmentCode));
 
-        return departmentMapper.findChildren(departmentId).stream()
+        return departmentMapper.findChildren(departmentCode).stream()
                 .map(DepartmentResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<UserResponse> getDepartmentUsers(Long departmentId) {
+    public List<UserResponse> getDepartmentUsers(String departmentCode) {
         // 부서 존재 확인
-        departmentMapper.findById(departmentId)
-                .orElseThrow(() -> BusinessException.departmentNotFound(departmentId));
+        departmentMapper.findByCode(departmentCode)
+                .orElseThrow(() -> BusinessException.departmentNotFound(departmentCode));
 
-        return userMapper.findByDepartmentId(departmentId).stream()
+        return userMapper.findByDepartmentCode(departmentCode).stream()
                 .map(UserResponse::from)
                 .collect(Collectors.toList());
     }
@@ -83,7 +103,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
-    public DepartmentResponse createDepartment(DepartmentCreateRequest request, Long createdBy) {
+    public DepartmentResponse createDepartment(DepartmentCreateRequest request, String createdBy) {
         log.info("Creating department: code={}", request.getDepartmentCode());
 
         // 부서 코드 중복 확인
@@ -92,22 +112,22 @@ public class DepartmentServiceImpl implements DepartmentService {
         }
 
         // 상위 부서 존재 확인
-        if (request.getParentId() != null) {
-            departmentMapper.findById(request.getParentId())
-                    .orElseThrow(() -> BusinessException.departmentNotFound(request.getParentId()));
+        if (request.getParentCode() != null) {
+            departmentMapper.findByCode(request.getParentCode())
+                    .orElseThrow(() -> BusinessException.departmentNotFound(request.getParentCode()));
         }
 
         // 정렬 순서 자동 설정
         Integer sortOrder = request.getSortOrder();
         if (sortOrder == null) {
-            sortOrder = departmentMapper.getMaxSortOrder(request.getParentId()) + 1;
+            sortOrder = departmentMapper.getMaxSortOrder(request.getParentCode()) + 1;
         }
 
         // 부서 엔티티 생성
         Department department = Department.builder()
                 .departmentCode(request.getDepartmentCode())
                 .departmentName(request.getDepartmentName())
-                .parentId(request.getParentId())
+                .parentCode(request.getParentCode())
                 .sortOrder(sortOrder)
                 .useYn("Y")
                 .createdBy(createdBy)
@@ -115,34 +135,34 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         // 저장
         departmentMapper.insert(department);
-        log.info("Department created: id={}, code={}", department.getDepartmentId(), department.getDepartmentCode());
+        log.info("Department created: code={}", department.getDepartmentCode());
 
-        return getDepartment(department.getDepartmentId());
+        return getDepartment(department.getDepartmentCode());
     }
 
     @Override
     @Transactional
-    public DepartmentResponse updateDepartment(Long departmentId, DepartmentUpdateRequest request, Long updatedBy) {
-        log.info("Updating department: id={}", departmentId);
+    public DepartmentResponse updateDepartment(String departmentCode, DepartmentUpdateRequest request, String updatedBy) {
+        log.info("Updating department: code={}", departmentCode);
 
         // 부서 존재 확인
-        Department department = departmentMapper.findById(departmentId)
-                .orElseThrow(() -> BusinessException.departmentNotFound(departmentId));
+        Department department = departmentMapper.findByCode(departmentCode)
+                .orElseThrow(() -> BusinessException.departmentNotFound(departmentCode));
 
         // 상위 부서 변경 시 순환 참조 검증
-        if (request.getParentId() != null && !Objects.equals(department.getParentId(), request.getParentId())) {
-            validateNotCircular(departmentId, request.getParentId());
+        if (request.getParentCode() != null && !Objects.equals(department.getParentCode(), request.getParentCode())) {
+            validateNotCircular(departmentCode, request.getParentCode());
         }
 
         // 상위 부서 존재 확인
-        if (request.getParentId() != null) {
-            departmentMapper.findById(request.getParentId())
-                    .orElseThrow(() -> BusinessException.departmentNotFound(request.getParentId()));
+        if (request.getParentCode() != null) {
+            departmentMapper.findByCode(request.getParentCode())
+                    .orElseThrow(() -> BusinessException.departmentNotFound(request.getParentCode()));
         }
 
         // 수정
         department.setDepartmentName(request.getDepartmentName());
-        department.setParentId(request.getParentId());
+        department.setParentCode(request.getParentCode());
         if (request.getSortOrder() != null) {
             department.setSortOrder(request.getSortOrder());
         }
@@ -152,54 +172,54 @@ public class DepartmentServiceImpl implements DepartmentService {
         department.setUpdatedBy(updatedBy);
 
         departmentMapper.update(department);
-        log.info("Department updated: id={}", departmentId);
+        log.info("Department updated: code={}", departmentCode);
 
-        return getDepartment(departmentId);
+        return getDepartment(departmentCode);
     }
 
     @Override
     @Transactional
-    public DepartmentResponse updateDepartmentOrder(Long departmentId, DepartmentOrderRequest request, Long updatedBy) {
-        log.info("Updating department order: id={}, newOrder={}", departmentId, request.getSortOrder());
+    public DepartmentResponse updateDepartmentOrder(String departmentCode, DepartmentOrderRequest request, String updatedBy) {
+        log.info("Updating department order: code={}, newOrder={}", departmentCode, request.getSortOrder());
 
         // 부서 존재 확인
-        Department department = departmentMapper.findById(departmentId)
-                .orElseThrow(() -> BusinessException.departmentNotFound(departmentId));
+        Department department = departmentMapper.findByCode(departmentCode)
+                .orElseThrow(() -> BusinessException.departmentNotFound(departmentCode));
 
         // 상위 부서 변경 시 순환 참조 검증
-        if (request.getParentId() != null && !Objects.equals(department.getParentId(), request.getParentId())) {
-            validateNotCircular(departmentId, request.getParentId());
+        if (request.getParentCode() != null && !Objects.equals(department.getParentCode(), request.getParentCode())) {
+            validateNotCircular(departmentCode, request.getParentCode());
         }
 
         // 순서 변경
-        departmentMapper.updateOrder(departmentId, request.getParentId(), request.getSortOrder(), updatedBy);
-        log.info("Department order updated: id={}", departmentId);
+        departmentMapper.updateOrder(departmentCode, request.getParentCode(), request.getSortOrder(), updatedBy);
+        log.info("Department order updated: code={}", departmentCode);
 
-        return getDepartment(departmentId);
+        return getDepartment(departmentCode);
     }
 
     @Override
     @Transactional
-    public void deleteDepartment(Long departmentId) {
-        log.info("Deleting department: id={}", departmentId);
+    public void deleteDepartment(String departmentCode) {
+        log.info("Deleting department: code={}", departmentCode);
 
         // 부서 존재 확인
-        departmentMapper.findById(departmentId)
-                .orElseThrow(() -> BusinessException.departmentNotFound(departmentId));
+        departmentMapper.findByCode(departmentCode)
+                .orElseThrow(() -> BusinessException.departmentNotFound(departmentCode));
 
         // 하위 부서 존재 확인
-        if (departmentMapper.hasChildren(departmentId)) {
+        if (departmentMapper.hasChildren(departmentCode)) {
             throw BusinessException.dataInUse("하위 부서가 존재하여 삭제할 수 없습니다. 하위 부서를 먼저 삭제해주세요.");
         }
 
         // 소속 사용자 존재 확인
-        if (departmentMapper.hasUsers(departmentId)) {
+        if (departmentMapper.hasUsers(departmentCode)) {
             throw BusinessException.dataInUse("소속된 사용자가 존재하여 삭제할 수 없습니다. 사용자를 다른 부서로 이동해주세요.");
         }
 
         // 삭제
-        departmentMapper.delete(departmentId);
-        log.info("Department deleted: id={}", departmentId);
+        departmentMapper.delete(departmentCode);
+        log.info("Department deleted: code={}", departmentCode);
     }
 
     // =============================================
@@ -223,20 +243,20 @@ public class DepartmentServiceImpl implements DepartmentService {
             return new ArrayList<>();
         }
 
-        // ID로 인덱싱
-        Map<Long, Department> departmentMap = new LinkedHashMap<>();
+        // 코드로 인덱싱
+        Map<String, Department> departmentMap = new LinkedHashMap<>();
         for (Department dept : flatList) {
             dept.setChildren(new ArrayList<>());
-            departmentMap.put(dept.getDepartmentId(), dept);
+            departmentMap.put(dept.getDepartmentCode(), dept);
         }
 
         // 트리 구조 구성
         List<Department> roots = new ArrayList<>();
         for (Department dept : flatList) {
-            if (dept.getParentId() == null) {
+            if (dept.getParentCode() == null) {
                 roots.add(dept);
             } else {
-                Department parent = departmentMap.get(dept.getParentId());
+                Department parent = departmentMap.get(dept.getParentCode());
                 if (parent != null) {
                     parent.addChild(dept);
                 }
@@ -250,23 +270,23 @@ public class DepartmentServiceImpl implements DepartmentService {
      * 순환 참조 검증
      * 자신의 하위 부서를 상위 부서로 지정하려는 경우 예외 발생
      */
-    private void validateNotCircular(Long departmentId, Long newParentId) {
-        if (departmentId.equals(newParentId)) {
+    private void validateNotCircular(String departmentCode, String newParentCode) {
+        if (departmentCode.equals(newParentCode)) {
             throw BusinessException.badRequest("자기 자신을 상위 부서로 지정할 수 없습니다");
         }
 
         // 새 상위 부서의 모든 상위 부서를 조회하여 순환 참조 확인
-        List<Department> ancestors = departmentMapper.findAncestors(newParentId);
+        List<Department> ancestors = departmentMapper.findAncestors(newParentCode);
         for (Department ancestor : ancestors) {
-            if (ancestor.getDepartmentId().equals(departmentId)) {
+            if (ancestor.getDepartmentCode().equals(departmentCode)) {
                 throw BusinessException.badRequest("하위 부서를 상위 부서로 지정할 수 없습니다 (순환 참조)");
             }
         }
 
         // 새 상위 부서가 현재 부서의 하위 부서인지 확인
-        List<Department> descendants = departmentMapper.findAllDescendants(departmentId);
+        List<Department> descendants = departmentMapper.findAllDescendants(departmentCode);
         for (Department descendant : descendants) {
-            if (descendant.getDepartmentId().equals(newParentId)) {
+            if (descendant.getDepartmentCode().equals(newParentCode)) {
                 throw BusinessException.badRequest("하위 부서를 상위 부서로 지정할 수 없습니다 (순환 참조)");
             }
         }

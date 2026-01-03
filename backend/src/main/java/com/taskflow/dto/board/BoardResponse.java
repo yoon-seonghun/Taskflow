@@ -32,9 +32,9 @@ public class BoardResponse {
     private String description;
 
     /**
-     * 소유자 ID
+     * 소유자 USERNAME
      */
-    private Long ownerId;
+    private String ownerUsername;
 
     /**
      * 소유자명
@@ -118,7 +118,7 @@ public class BoardResponse {
                 .boardId(board.getBoardId())
                 .boardName(board.getBoardName())
                 .description(board.getDescription())
-                .ownerId(board.getOwnerId())
+                .ownerUsername(board.getOwnerUsername())
                 .ownerName(board.getOwnerName())
                 .defaultView(board.getDefaultView())
                 .color(board.getColor())
@@ -150,7 +150,7 @@ public class BoardResponse {
     @Getter
     @Builder
     public static class SharedUserInfo {
-        private Long userId;
+        private String username;
         private String userName;
         private String departmentName;
     }

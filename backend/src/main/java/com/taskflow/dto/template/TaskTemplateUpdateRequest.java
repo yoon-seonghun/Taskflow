@@ -20,9 +20,9 @@ public class TaskTemplateUpdateRequest {
     private String content;
 
     /**
-     * 기본 담당자 ID
+     * 기본 담당자 USERNAME
      */
-    private Long defaultAssigneeId;
+    private String defaultAssigneeUsername;
 
     /**
      * 기본 업무 상태 (NOT_STARTED, IN_PROGRESS, PENDING)

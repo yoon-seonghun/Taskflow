@@ -41,9 +41,14 @@ public class CommentResponse {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
+
+    /**
+     * 생성자 USER_ID (SSE 이벤트용)
+     */
+    private Long createdByUserId;
 
     /**
      * 작성자 이름
@@ -56,9 +61,14 @@ public class CommentResponse {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
+
+    /**
+     * 수정자 USER_ID
+     */
+    private Long updatedByUserId;
 
     /**
      * 수정자 이름
@@ -81,9 +91,11 @@ public class CommentResponse {
                 .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())
                 .createdBy(comment.getCreatedBy())
+                .createdByUserId(comment.getCreatedByUserId())
                 .createdByName(comment.getCreatedByName())
                 .updatedAt(comment.getUpdatedAt())
                 .updatedBy(comment.getUpdatedBy())
+                .updatedByUserId(comment.getUpdatedByUserId())
                 .updatedByName(comment.getUpdatedByName())
                 .edited(comment.getUpdatedAt() != null)
                 .build();

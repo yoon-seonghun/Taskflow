@@ -70,7 +70,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public PropertyResponse createProperty(Long boardId, PropertyCreateRequest request, Long createdBy) {
+    public PropertyResponse createProperty(Long boardId, PropertyCreateRequest request, String createdBy) {
         log.info("Creating property: boardId={}, name={}", boardId, request.getPropertyName());
 
         // 보드 존재 확인
@@ -111,19 +111,20 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public PropertyResponse updateProperty(Long propertyId, PropertyUpdateRequest request, Long updatedBy) {
+    public PropertyResponse updateProperty(Long propertyId, PropertyUpdateRequest request, String updatedBy) {
         log.info("Updating property: id={}", propertyId);
 
         // 속성 존재 확인
         PropertyDef propertyDef = propertyDefMapper.findById(propertyId)
                 .orElseThrow(() -> BusinessException.propertyNotFound(propertyId));
 
-        // 타입 변경 시 경고 (값이 존재하는 경우)
+        // 타입 변경 불가 (값이 존재하는 경우)
         if (request.getPropertyType() != null
                 && !propertyDef.getPropertyType().equals(request.getPropertyType())
                 && propertyDefMapper.hasPropertyValues(propertyId)) {
-            log.warn("Property type change with existing values: id={}, from={}, to={}",
+            log.warn("Property type change blocked - values exist: id={}, from={}, to={}",
                     propertyId, propertyDef.getPropertyType(), request.getPropertyType());
+            throw BusinessException.dataInUse("사용 중인 속성의 타입은 변경할 수 없습니다. 기존 데이터를 먼저 삭제해주세요.");
         }
 
         // 속성명 중복 확인 (자신 제외)
@@ -161,26 +162,18 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public void deleteProperty(Long propertyId) {
-        log.info("Deleting property: id={}", propertyId);
+    public void deleteProperty(Long propertyId, String deletedBy) {
+        log.info("Soft deleting property: id={}", propertyId);
 
         // 속성 존재 확인
         PropertyDef propertyDef = propertyDefMapper.findById(propertyId)
                 .orElseThrow(() -> BusinessException.propertyNotFound(propertyId));
 
-        // 속성 값 사용 중 확인
-        if (propertyDefMapper.hasPropertyValues(propertyId)) {
-            throw BusinessException.dataInUse("속성에 저장된 값이 존재하여 삭제할 수 없습니다. 속성을 숨기거나 값을 먼저 삭제해주세요.");
-        }
-
         Long boardId = propertyDef.getBoardId();
 
-        // 옵션 삭제
-        propertyOptionMapper.deleteByPropertyId(propertyId);
-
-        // 속성 삭제
-        propertyDefMapper.delete(propertyId);
-        log.info("Property deleted: id={}", propertyId);
+        // 논리 삭제 (USE_YN = 'N')
+        propertyDefMapper.softDelete(propertyId, deletedBy);
+        log.info("Property soft deleted: id={}", propertyId);
 
         // 캐시 무효화
         propertyCacheService.evictBoardCache(boardId);
@@ -218,7 +211,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public OptionDetailResponse createOption(Long propertyId, OptionCreateRequest request, Long createdBy) {
+    public OptionDetailResponse createOption(Long propertyId, OptionCreateRequest request, String createdBy) {
         log.info("Creating option: propertyId={}, name={}", propertyId, request.getOptionName());
 
         // 속성 존재 확인
@@ -263,7 +256,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public OptionDetailResponse updateOption(Long optionId, OptionUpdateRequest request, Long updatedBy) {
+    public OptionDetailResponse updateOption(Long optionId, OptionUpdateRequest request, String updatedBy) {
         log.info("Updating option: id={}", optionId);
 
         // 옵션 존재 확인
@@ -303,23 +296,18 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public void deleteOption(Long optionId) {
-        log.info("Deleting option: id={}", optionId);
+    public void deleteOption(Long optionId, String deletedBy) {
+        log.info("Soft deleting option: id={}", optionId);
 
         // 옵션 존재 확인
         PropertyOption option = propertyOptionMapper.findById(optionId)
                 .orElseThrow(() -> BusinessException.optionNotFound(optionId));
 
-        // 사용 중인지 확인
-        if (propertyOptionMapper.isOptionInUse(optionId)) {
-            throw BusinessException.dataInUse("옵션이 사용 중이어서 삭제할 수 없습니다. 옵션을 비활성화하거나 사용 중인 항목을 먼저 변경해주세요.");
-        }
-
         Long boardId = option.getBoardId();
 
-        // 삭제
-        propertyOptionMapper.delete(optionId);
-        log.info("Option deleted: id={}", optionId);
+        // 논리 삭제 (USE_YN = 'N')
+        propertyOptionMapper.softDelete(optionId, deletedBy);
+        log.info("Option soft deleted: id={}", optionId);
 
         // 캐시 무효화
         propertyCacheService.evictBoardCache(boardId);

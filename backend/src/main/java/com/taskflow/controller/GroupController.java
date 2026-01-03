@@ -68,8 +68,8 @@ public class GroupController {
     ) {
         log.info("Create group: code={}", request.getGroupCode());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        GroupResponse response = groupService.createGroup(request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        GroupResponse response = groupService.createGroup(request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "그룹이 등록되었습니다"));
@@ -98,8 +98,8 @@ public class GroupController {
     ) {
         log.info("Update group: id={}", groupId);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        GroupResponse response = groupService.updateGroup(groupId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        GroupResponse response = groupService.updateGroup(groupId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "그룹 정보가 수정되었습니다"));
     }
@@ -127,8 +127,8 @@ public class GroupController {
     ) {
         log.info("Update group order: id={}, order={}", groupId, request.getSortOrder());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        GroupResponse response = groupService.updateGroupOrder(groupId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        GroupResponse response = groupService.updateGroupOrder(groupId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "그룹 순서가 변경되었습니다"));
     }
@@ -171,10 +171,10 @@ public class GroupController {
             @PathVariable("id") Long groupId,
             @Valid @RequestBody GroupMemberRequest request
     ) {
-        log.info("Add group member: groupId={}, userId={}", groupId, request.getUserId());
+        log.info("Add group member: groupId={}, username={}", groupId, request.getUsername());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        GroupMemberResponse response = groupService.addGroupMember(groupId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        GroupMemberResponse response = groupService.addGroupMember(groupId, request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "멤버가 추가되었습니다"));
@@ -183,14 +183,14 @@ public class GroupController {
     /**
      * 그룹 멤버 제거
      */
-    @DeleteMapping("/groups/{id}/members/{userId}")
+    @DeleteMapping("/groups/{id}/members/{username}")
     public ResponseEntity<ApiResponse<Void>> removeGroupMember(
             @PathVariable("id") Long groupId,
-            @PathVariable("userId") Long userId
+            @PathVariable("username") String username
     ) {
-        log.info("Remove group member: groupId={}, userId={}", groupId, userId);
+        log.info("Remove group member: groupId={}, username={}", groupId, username);
 
-        groupService.removeGroupMember(groupId, userId);
+        groupService.removeGroupMember(groupId, username);
         return ResponseEntity.ok(ApiResponse.successWithMessage("멤버가 제거되었습니다"));
     }
 
@@ -201,13 +201,13 @@ public class GroupController {
     /**
      * 사용자별 소속 그룹 목록 조회
      */
-    @GetMapping("/users/{userId}/groups")
+    @GetMapping("/users/{username}/groups")
     public ResponseEntity<ApiResponse<List<GroupMemberResponse>>> getUserGroups(
-            @PathVariable("userId") Long userId
+            @PathVariable("username") String username
     ) {
-        log.debug("Get user groups: userId={}", userId);
+        log.debug("Get user groups: username={}", username);
 
-        List<GroupMemberResponse> response = groupService.getUserGroups(userId);
+        List<GroupMemberResponse> response = groupService.getUserGroups(username);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

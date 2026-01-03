@@ -31,18 +31,18 @@ public class AuditLogService {
      */
     @Transactional
     public void log(String targetType, Long targetId, String action,
-                    Long actorId, String description,
-                    Object beforeData, Object afterData, Long relatedUserId) {
+                    String actorUsername, String description,
+                    Object beforeData, Object afterData, String relatedUsername) {
         try {
             AuditLog auditLog = AuditLog.builder()
                     .targetType(targetType)
                     .targetId(targetId)
                     .action(action)
-                    .actorId(actorId)
+                    .actorUsername(actorUsername)
                     .description(description)
                     .beforeData(beforeData != null ? objectMapper.writeValueAsString(beforeData) : null)
                     .afterData(afterData != null ? objectMapper.writeValueAsString(afterData) : null)
-                    .relatedUserId(relatedUserId)
+                    .relatedUsername(relatedUsername)
                     .build();
 
             auditLogMapper.insert(auditLog);
@@ -57,74 +57,74 @@ public class AuditLogService {
      * 보드 생성 로그
      */
     @Transactional
-    public void logBoardCreated(Long boardId, Long actorId, String boardName) {
+    public void logBoardCreated(Long boardId, String actorUsername, String boardName) {
         log(AuditLog.TARGET_BOARD, boardId, AuditLog.ACTION_CREATE,
-                actorId, "보드 생성: " + boardName, null, null, null);
+                actorUsername, "보드 생성: " + boardName, null, null, null);
     }
 
     /**
      * 보드 수정 로그
      */
     @Transactional
-    public void logBoardUpdated(Long boardId, Long actorId, Object beforeData, Object afterData) {
+    public void logBoardUpdated(Long boardId, String actorUsername, Object beforeData, Object afterData) {
         log(AuditLog.TARGET_BOARD, boardId, AuditLog.ACTION_UPDATE,
-                actorId, "보드 수정", beforeData, afterData, null);
+                actorUsername, "보드 수정", beforeData, afterData, null);
     }
 
     /**
      * 보드 삭제 로그
      */
     @Transactional
-    public void logBoardDeleted(Long boardId, Long actorId, String boardName) {
+    public void logBoardDeleted(Long boardId, String actorUsername, String boardName) {
         log(AuditLog.TARGET_BOARD, boardId, AuditLog.ACTION_DELETE,
-                actorId, "보드 삭제: " + boardName, null, null, null);
+                actorUsername, "보드 삭제: " + boardName, null, null, null);
     }
 
     /**
      * 업무 이관 로그
      */
     @Transactional
-    public void logItemTransferred(Long itemId, Long actorId, Long targetUserId,
+    public void logItemTransferred(Long itemId, String actorUsername, String targetUsername,
                                     String fromBoardName, String toBoardName) {
         String description = String.format("업무 이관: %s → %s", fromBoardName, toBoardName);
         log(AuditLog.TARGET_ITEM, itemId, AuditLog.ACTION_TRANSFER,
-                actorId, description, null, null, targetUserId);
+                actorUsername, description, null, null, targetUsername);
     }
 
     /**
      * 보드 공유 추가 로그
      */
     @Transactional
-    public void logBoardShared(Long boardId, Long actorId, Long targetUserId, String permission) {
+    public void logBoardShared(Long boardId, String actorUsername, String targetUsername, String permission) {
         log(AuditLog.TARGET_BOARD_SHARE, boardId, AuditLog.ACTION_SHARE,
-                actorId, "보드 공유 추가 (" + permission + ")", null, null, targetUserId);
+                actorUsername, "보드 공유 추가 (" + permission + ")", null, null, targetUsername);
     }
 
     /**
      * 보드 공유 해제 로그
      */
     @Transactional
-    public void logBoardUnshared(Long boardId, Long actorId, Long targetUserId) {
+    public void logBoardUnshared(Long boardId, String actorUsername, String targetUsername) {
         log(AuditLog.TARGET_BOARD_SHARE, boardId, AuditLog.ACTION_UNSHARE,
-                actorId, "보드 공유 해제", null, null, targetUserId);
+                actorUsername, "보드 공유 해제", null, null, targetUsername);
     }
 
     /**
      * 업무 공유 추가 로그
      */
     @Transactional
-    public void logItemShared(Long itemId, Long actorId, Long targetUserId, String permission) {
+    public void logItemShared(Long itemId, String actorUsername, String targetUsername, String permission) {
         log(AuditLog.TARGET_ITEM_SHARE, itemId, AuditLog.ACTION_SHARE,
-                actorId, "업무 공유 추가 (" + permission + ")", null, null, targetUserId);
+                actorUsername, "업무 공유 추가 (" + permission + ")", null, null, targetUsername);
     }
 
     /**
      * 업무 공유 해제 로그
      */
     @Transactional
-    public void logItemUnshared(Long itemId, Long actorId, Long targetUserId) {
+    public void logItemUnshared(Long itemId, String actorUsername, String targetUsername) {
         log(AuditLog.TARGET_ITEM_SHARE, itemId, AuditLog.ACTION_UNSHARE,
-                actorId, "업무 공유 해제", null, null, targetUserId);
+                actorUsername, "업무 공유 해제", null, null, targetUsername);
     }
 
     /**
@@ -187,10 +187,10 @@ public class AuditLogService {
                 .targetId(log.getTargetId())
                 .targetName(log.getTargetName())
                 .action(log.getAction())
-                .actorId(log.getActorId())
+                .actorUsername(log.getActorUsername())
                 .actorName(log.getActorName())
                 .description(log.getDescription())
-                .relatedUserId(log.getRelatedUserId())
+                .relatedUsername(log.getRelatedUsername())
                 .relatedUserName(log.getRelatedUserName())
                 .createdAt(log.getCreatedAt())
                 .build();

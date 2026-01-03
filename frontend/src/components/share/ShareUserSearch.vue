@@ -11,12 +11,12 @@ import type { User } from '@/types/user'
 import type { BoardPermission, BoardShareRequest } from '@/types/board'
 
 interface Props {
-  existingUserIds?: number[]
+  existingUsernames?: string[]
   loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  existingUserIds: () => [],
+  existingUsernames: () => [],
   loading: false
 })
 
@@ -52,10 +52,10 @@ function handleUserSelect(user: User | null) {
 
 // 사용자 추가
 function handleAdd() {
-  if (!selectedUserId.value) return
+  if (!selectedUserId.value || !selectedUser.value) return
 
   const data: BoardShareRequest = {
-    userId: selectedUserId.value,
+    username: selectedUser.value.username,
     permission: selectedPermission.value
   }
 
@@ -76,7 +76,7 @@ function handleAdd() {
       <!-- 사용자 검색/선택 -->
       <UserSearchSelector
         v-model="selectedUserId"
-        :exclude-user-ids="existingUserIds"
+        :exclude-usernames="existingUsernames"
         placeholder="사용자를 선택하세요"
         @select="handleUserSelect"
       />

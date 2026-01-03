@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 아이템 수정 요청 DTO
@@ -43,9 +44,9 @@ public class ItemUpdateRequest {
     private Long categoryId;
 
     /**
-     * 상태 (NOT_STARTED, IN_PROGRESS, COMPLETED, DELETED)
+     * 상태 (NOT_STARTED, IN_PROGRESS, PENDING, COMPLETED, DELETED)
      */
-    @Pattern(regexp = "^(NOT_STARTED|IN_PROGRESS|COMPLETED|DELETED)$",
+    @Pattern(regexp = "^(NOT_STARTED|IN_PROGRESS|PENDING|COMPLETED|DELETED)$",
             message = "유효하지 않은 상태입니다")
     private String status;
 
@@ -57,9 +58,9 @@ public class ItemUpdateRequest {
     private String priority;
 
     /**
-     * 담당자 ID
+     * 담당자 아이디
      */
-    private Long assigneeId;
+    private String assigneeUsername;
 
     /**
      * 시작 시간
@@ -85,4 +86,11 @@ public class ItemUpdateRequest {
      * 동적 속성값 (propertyId -> value)
      */
     private Map<Long, Object> properties;
+
+    /**
+     * null로 설정할 필드 목록
+     * 프론트엔드에서 특정 필드를 명시적으로 null로 설정할 때 사용
+     * 예: ["startTime", "endTime", "assigneeUsername", "groupId"]
+     */
+    private Set<String> clearFields;
 }

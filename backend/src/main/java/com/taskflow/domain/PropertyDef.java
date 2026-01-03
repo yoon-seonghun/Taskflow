@@ -15,9 +15,8 @@ import java.util.List;
  *
  * 테이블: TB_PROPERTY_DEF
  *
- * 보드별 동적 속성을 정의 (EAV 패턴)
- * - 각 보드마다 고유한 속성들을 정의
- * - 속성 타입에 따라 다른 값 저장 방식 사용
+ * USERNAME 기반 FK 참조 시스템:
+ * - CREATED_BY, UPDATED_BY: USERNAME 참조
  */
 @Getter
 @Setter
@@ -63,14 +62,19 @@ public class PropertyDef {
     private String visibleYn;
 
     /**
+     * 사용 여부 (Y/N) - 논리 삭제용
+     */
+    private String useYn;
+
+    /**
      * 생성일시
      */
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -78,9 +82,9 @@ public class PropertyDef {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 설정)
@@ -120,6 +124,13 @@ public class PropertyDef {
      */
     public boolean isVisible() {
         return "Y".equals(visibleYn);
+    }
+
+    /**
+     * 활성 속성 여부 (논리 삭제 여부)
+     */
+    public boolean isActive() {
+        return "Y".equals(useYn);
     }
 
     /**

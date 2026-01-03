@@ -6,23 +6,29 @@
  */
 import { computed } from 'vue'
 import Badge from '@/components/common/Badge.vue'
-import type { User } from '@/types/user'
+import type { User, UserRole } from '@/types/user'
 
 interface Props {
   users: User[]
   selectedUserId?: number | null
   loading?: boolean
+  readonly?: boolean
+  showHeadActions?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selectedUserId: null,
-  loading: false
+  loading: false,
+  readonly: false,
+  showHeadActions: false
 })
 
 const emit = defineEmits<{
   (e: 'select', user: User): void
   (e: 'toggle-status', user: User): void
   (e: 'delete', user: User): void
+  (e: 'set-head', user: User): void
+  (e: 'unset-head', user: User): void
 }>()
 
 // 빈 데이터 여부
@@ -42,6 +48,24 @@ function formatDateTime(dateStr?: string): string {
   })
 }
 
+// 권한 표시 텍스트
+const roleLabels: Record<UserRole, string> = {
+  ADMIN: '관리자',
+  MANAGER: '매니저',
+  USER: '사용자',
+  GUEST: '게스트'
+}
+
+// 권한 배지 색상
+function getRoleVariant(role?: UserRole): 'danger' | 'warning' | 'primary' | 'default' {
+  switch (role) {
+    case 'ADMIN': return 'danger'
+    case 'MANAGER': return 'warning'
+    case 'USER': return 'primary'
+    default: return 'default'
+  }
+}
+
 // 행 클릭 (선택)
 function handleRowClick(user: User) {
   emit('select', user)
@@ -57,6 +81,18 @@ function handleToggleStatus(event: Event, user: User) {
 function handleDelete(event: Event, user: User) {
   event.stopPropagation()
   emit('delete', user)
+}
+
+// 팀장 지정
+function handleSetHead(event: Event, user: User) {
+  event.stopPropagation()
+  emit('set-head', user)
+}
+
+// 팀장 해제
+function handleUnsetHead(event: Event, user: User) {
+  event.stopPropagation()
+  emit('unset-head', user)
 }
 </script>
 
@@ -88,6 +124,8 @@ function handleDelete(event: Event, user: User) {
           <th class="w-[100px]">아이디</th>
           <th class="w-[150px]">이메일</th>
           <th class="w-[100px]">부서</th>
+          <th class="w-[80px]">직급</th>
+          <th class="w-[70px]">권한</th>
           <th class="w-[70px]">상태</th>
           <th class="w-[130px]">등록일시</th>
           <th class="w-[80px]">관리</th>
@@ -113,6 +151,20 @@ function handleDelete(event: Event, user: User) {
           <td class="text-gray-600">
             {{ user.departmentName || '-' }}
           </td>
+          <td class="text-gray-600">
+            <span class="flex items-center gap-1">
+              {{ user.positionName || '-' }}
+              <Badge v-if="user.headYn === 'Y'" variant="primary" size="xs">팀장</Badge>
+            </span>
+          </td>
+          <td>
+            <Badge
+              :variant="getRoleVariant(user.role)"
+              size="sm"
+            >
+              {{ roleLabels[user.role || 'USER'] }}
+            </Badge>
+          </td>
           <td>
             <Badge
               :variant="user.useYn === 'Y' ? 'success' : 'default'"
@@ -126,8 +178,36 @@ function handleDelete(event: Event, user: User) {
           </td>
           <td>
             <div class="flex items-center gap-2">
-              <!-- 상태 토글 버튼 -->
+              <!-- 팀장 지정/해제 버튼 (showHeadActions가 true일 때만) -->
+              <template v-if="showHeadActions && user.departmentCode">
+                <button
+                  v-if="user.headYn === 'Y'"
+                  type="button"
+                  class="action-btn"
+                  title="팀장 해제"
+                  @click="handleUnsetHead($event, user)"
+                >
+                  <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                  </svg>
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="action-btn"
+                  title="팀장 지정"
+                  @click="handleSetHead($event, user)"
+                >
+                  <svg class="w-4 h-4 text-gray-400 hover:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </button>
+              </template>
+
+              <!-- 상태 토글 버튼 (readonly가 false일 때만) -->
               <button
+                v-if="!readonly"
                 type="button"
                 class="action-btn"
                 :title="user.useYn === 'Y' ? '비활성화' : '활성화'"
@@ -143,8 +223,9 @@ function handleDelete(event: Event, user: User) {
                 </svg>
               </button>
 
-              <!-- 삭제 버튼 -->
+              <!-- 삭제 버튼 (readonly가 false일 때만) -->
               <button
+                v-if="!readonly"
                 type="button"
                 class="action-btn"
                 title="삭제"
@@ -155,6 +236,9 @@ function handleDelete(event: Event, user: User) {
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
+
+              <!-- readonly일 때 표시할 정보 없음 표시 -->
+              <span v-if="readonly && !showHeadActions" class="text-gray-400 text-xs">-</span>
             </div>
           </td>
         </tr>

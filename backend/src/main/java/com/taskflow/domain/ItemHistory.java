@@ -48,9 +48,9 @@ public class ItemHistory {
     private String result;
 
     /**
-     * 작업자 ID (완료/삭제 처리한 사람)
+     * 작업자 Username (완료/삭제 처리한 사람)
      */
-    private Long workerId;
+    private String workerUsername;
 
     /**
      * 등록시간

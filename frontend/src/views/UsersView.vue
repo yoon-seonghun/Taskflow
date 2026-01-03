@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
- * 사용자 등록 메뉴 (Users View)
+ * 사용자 관리 메뉴 (Users View)
  * - 사용자 목록 표시
  * - 사용자 등록/수정/삭제
+ * - External 모드: 조회만 가능
+ * - 팀장 지정/해제 기능
  */
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import UserForm from '@/components/user/UserForm.vue'
 import UserList from '@/components/user/UserList.vue'
 import Pagination from '@/components/common/Pagination.vue'
@@ -14,8 +16,17 @@ import type { SelectOption } from '@/components/common/Select.vue'
 import type { User, UserCreateRequest, UserUpdateRequest } from '@/types/user'
 import { userApi } from '@/api/user'
 import { useUiStore } from '@/stores/ui'
+import { useConfigStore } from '@/stores/config'
+import { usePositionStore } from '@/stores/position'
 
 const uiStore = useUiStore()
+const configStore = useConfigStore()
+const positionStore = usePositionStore()
+
+// 설정 기반 computed
+const isExternalMode = computed(() => configStore.isExternalMode)
+const userCrudEnabled = computed(() => configStore.userCrudEnabled)
+const headManagementEnabled = computed(() => configStore.headManagementEnabled)
 
 // 사용자 목록
 const users = ref<User[]>([])
@@ -179,6 +190,50 @@ async function handleDelete(user: User) {
   }
 }
 
+// 팀장 지정
+async function handleSetHead(user: User) {
+  const confirmed = await uiStore.confirm({
+    title: '팀장 지정',
+    message: `'${user.userName}'님을 ${user.departmentName || '해당 부서'}의 팀장으로 지정하시겠습니까?\n기존 팀장이 있는 경우 해제됩니다.`,
+    confirmText: '지정',
+    cancelText: '취소'
+  })
+
+  if (!confirmed) return
+
+  try {
+    await userApi.setHead(user.username)
+    uiStore.showSuccess(`${user.userName}님이 팀장으로 지정되었습니다.`)
+    await loadUsers()
+  } catch (error: any) {
+    console.error('Failed to set head:', error)
+    const message = error.response?.data?.message || '팀장 지정에 실패했습니다.'
+    uiStore.showError(message)
+  }
+}
+
+// 팀장 해제
+async function handleUnsetHead(user: User) {
+  const confirmed = await uiStore.confirm({
+    title: '팀장 해제',
+    message: `'${user.userName}'님의 팀장 지정을 해제하시겠습니까?`,
+    confirmText: '해제',
+    cancelText: '취소'
+  })
+
+  if (!confirmed) return
+
+  try {
+    await userApi.unsetHead(user.username)
+    uiStore.showSuccess(`${user.userName}님의 팀장이 해제되었습니다.`)
+    await loadUsers()
+  } catch (error: any) {
+    console.error('Failed to unset head:', error)
+    const message = error.response?.data?.message || '팀장 해제에 실패했습니다.'
+    uiStore.showError(message)
+  }
+}
+
 // 검색
 function handleSearch() {
   currentPage.value = 0
@@ -192,7 +247,10 @@ function handlePageChange(page: number) {
 }
 
 // 초기 로드
-onMounted(() => {
+onMounted(async () => {
+  // 설정 및 직급 목록 로드
+  await configStore.fetchConfig()
+  await positionStore.fetchPositions({ useYn: 'Y' })
   loadUsers()
 })
 </script>
@@ -203,13 +261,18 @@ onMounted(() => {
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-gray-900">사용자 관리</h1>
       <p class="mt-1 text-sm text-gray-500">
-        사용자를 등록하고 관리합니다.
+        <template v-if="isExternalMode">
+          외부 시스템과 연동되어 사용자 정보를 조회만 할 수 있습니다.
+        </template>
+        <template v-else>
+          사용자를 등록하고 관리합니다.
+        </template>
       </p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- 왼쪽: 사용자 폼 -->
-      <div class="lg:col-span-1">
+      <!-- 왼쪽: 사용자 폼 (Internal 모드일 때만 표시) -->
+      <div v-if="userCrudEnabled" class="lg:col-span-1">
         <div class="sticky top-4">
           <h2 class="text-base font-medium text-gray-900 mb-3">
             {{ selectedUser ? '사용자 수정' : '사용자 등록' }}
@@ -218,6 +281,7 @@ onMounted(() => {
             ref="formRef"
             :user="selectedUser"
             :loading="formLoading"
+            :readonly="isExternalMode"
             @submit="handleSubmit"
             @cancel="handleCancel"
           />
@@ -225,7 +289,7 @@ onMounted(() => {
       </div>
 
       <!-- 오른쪽: 사용자 목록 -->
-      <div class="lg:col-span-2">
+      <div :class="userCrudEnabled ? 'lg:col-span-2' : 'lg:col-span-3'">
         <!-- 검색 필터 -->
         <div class="filter-section mb-4">
           <div class="flex items-center gap-4">
@@ -264,6 +328,9 @@ onMounted(() => {
           <p class="text-sm text-gray-600">
             총 <span class="font-medium text-gray-900">{{ totalElements }}</span>명
           </p>
+          <p v-if="isExternalMode" class="text-xs text-amber-600">
+            외부 연동 모드 (조회 전용)
+          </p>
         </div>
 
         <!-- 사용자 목록 -->
@@ -272,9 +339,13 @@ onMounted(() => {
             :users="users"
             :selected-user-id="selectedUser?.userId"
             :loading="loading"
+            :readonly="isExternalMode"
+            :show-head-actions="headManagementEnabled"
             @select="handleSelect"
             @toggle-status="handleToggleStatus"
             @delete="handleDelete"
+            @set-head="handleSetHead"
+            @unset-head="handleUnsetHead"
           />
         </div>
 

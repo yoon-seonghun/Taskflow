@@ -9,11 +9,11 @@
         <result property="targetType" column="TARGET_TYPE"/>
         <result property="targetId" column="TARGET_ID"/>
         <result property="action" column="ACTION"/>
-        <result property="actorId" column="ACTOR_ID"/>
+        <result property="actorUsername" column="ACTOR_USERNAME"/>
         <result property="description" column="DESCRIPTION"/>
         <result property="beforeData" column="BEFORE_DATA"/>
         <result property="afterData" column="AFTER_DATA"/>
-        <result property="relatedUserId" column="RELATED_USER_ID"/>
+        <result property="relatedUsername" column="RELATED_USERNAME"/>
         <result property="createdAt" column="CREATED_AT"/>
         <!-- JOIN 필드 -->
         <result property="targetName" column="TARGET_NAME"/>
@@ -27,21 +27,21 @@
             TARGET_TYPE,
             TARGET_ID,
             ACTION,
-            ACTOR_ID,
+            ACTOR_USERNAME,
             DESCRIPTION,
             BEFORE_DATA,
             AFTER_DATA,
-            RELATED_USER_ID,
+            RELATED_USERNAME,
             CREATED_AT
         ) VALUES (
             #{targetType},
             #{targetId},
             #{action},
-            #{actorId},
+            #{actorUsername},
             #{description},
             #{beforeData},
             #{afterData},
-            #{relatedUserId},
+            #{relatedUsername},
             NOW()
         )
     </insert>
@@ -53,9 +53,9 @@
             l.TARGET_TYPE,
             l.TARGET_ID,
             l.ACTION,
-            l.ACTOR_ID,
+            l.ACTOR_USERNAME,
             l.DESCRIPTION,
-            l.RELATED_USER_ID,
+            l.RELATED_USERNAME,
             l.CREATED_AT,
             u.NAME AS ACTOR_NAME,
             ru.NAME AS RELATED_USER_NAME,
@@ -65,8 +65,8 @@
                 ELSE NULL
             END AS TARGET_NAME
         FROM TB_AUDIT_LOG l
-        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
-        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        INNER JOIN TB_USER u ON l.ACTOR_USERNAME = u.USERNAME
+        LEFT JOIN TB_USER ru ON l.RELATED_USERNAME = ru.USERNAME
         <where>
             <if test="targetType != null and targetType != ''">
                 AND l.TARGET_TYPE = #{targetType}
@@ -74,8 +74,8 @@
             <if test="action != null and action != ''">
                 AND l.ACTION = #{action}
             </if>
-            <if test="actorId != null">
-                AND l.ACTOR_ID = #{actorId}
+            <if test="actorUsername != null and actorUsername != ''">
+                AND l.ACTOR_USERNAME = #{actorUsername}
             </if>
             <if test="startDate != null">
                 AND DATE(l.CREATED_AT) &gt;= #{startDate}
@@ -99,8 +99,8 @@
             <if test="action != null and action != ''">
                 AND l.ACTION = #{action}
             </if>
-            <if test="actorId != null">
-                AND l.ACTOR_ID = #{actorId}
+            <if test="actorUsername != null and actorUsername != ''">
+                AND l.ACTOR_USERNAME = #{actorUsername}
             </if>
             <if test="startDate != null">
                 AND DATE(l.CREATED_AT) &gt;= #{startDate}
@@ -118,17 +118,17 @@
             l.TARGET_TYPE,
             l.TARGET_ID,
             l.ACTION,
-            l.ACTOR_ID,
+            l.ACTOR_USERNAME,
             l.DESCRIPTION,
             l.BEFORE_DATA,
             l.AFTER_DATA,
-            l.RELATED_USER_ID,
+            l.RELATED_USERNAME,
             l.CREATED_AT,
             u.NAME AS ACTOR_NAME,
             ru.NAME AS RELATED_USER_NAME
         FROM TB_AUDIT_LOG l
-        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
-        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        INNER JOIN TB_USER u ON l.ACTOR_USERNAME = u.USERNAME
+        LEFT JOIN TB_USER ru ON l.RELATED_USERNAME = ru.USERNAME
         WHERE l.TARGET_TYPE = #{targetType}
           AND l.TARGET_ID = #{targetId}
         ORDER BY l.CREATED_AT DESC
@@ -141,9 +141,9 @@
             l.TARGET_TYPE,
             l.TARGET_ID,
             l.ACTION,
-            l.ACTOR_ID,
+            l.ACTOR_USERNAME,
             l.DESCRIPTION,
-            l.RELATED_USER_ID,
+            l.RELATED_USERNAME,
             l.CREATED_AT,
             u.NAME AS ACTOR_NAME,
             ru.NAME AS RELATED_USER_NAME,
@@ -153,8 +153,8 @@
                 ELSE NULL
             END AS TARGET_NAME
         FROM TB_AUDIT_LOG l
-        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
-        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        INNER JOIN TB_USER u ON l.ACTOR_USERNAME = u.USERNAME
+        LEFT JOIN TB_USER ru ON l.RELATED_USERNAME = ru.USERNAME
         WHERE (l.TARGET_TYPE = 'BOARD' AND l.TARGET_ID = #{boardId})
            OR (l.TARGET_TYPE = 'BOARD_SHARE' AND l.TARGET_ID = #{boardId})
            OR (l.TARGET_TYPE = 'ITEM' AND l.TARGET_ID IN (SELECT ITEM_ID FROM TB_ITEM WHERE BOARD_ID = #{boardId}))
@@ -169,30 +169,30 @@
             l.TARGET_TYPE,
             l.TARGET_ID,
             l.ACTION,
-            l.ACTOR_ID,
+            l.ACTOR_USERNAME,
             l.DESCRIPTION,
-            l.RELATED_USER_ID,
+            l.RELATED_USERNAME,
             l.CREATED_AT,
             u.NAME AS ACTOR_NAME,
             ru.NAME AS RELATED_USER_NAME
         FROM TB_AUDIT_LOG l
-        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
-        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        INNER JOIN TB_USER u ON l.ACTOR_USERNAME = u.USERNAME
+        LEFT JOIN TB_USER ru ON l.RELATED_USERNAME = ru.USERNAME
         WHERE (l.TARGET_TYPE = 'ITEM' AND l.TARGET_ID = #{itemId})
            OR (l.TARGET_TYPE = 'ITEM_SHARE' AND l.TARGET_ID = #{itemId})
         ORDER BY l.CREATED_AT DESC
     </select>
 
     <!-- 수행자별 로그 조회 -->
-    <select id="selectByActorId" resultMap="AuditLogResultMap">
+    <select id="selectByActorUsername" resultMap="AuditLogResultMap">
         SELECT
             l.LOG_ID,
             l.TARGET_TYPE,
             l.TARGET_ID,
             l.ACTION,
-            l.ACTOR_ID,
+            l.ACTOR_USERNAME,
             l.DESCRIPTION,
-            l.RELATED_USER_ID,
+            l.RELATED_USERNAME,
             l.CREATED_AT,
             u.NAME AS ACTOR_NAME,
             ru.NAME AS RELATED_USER_NAME,
@@ -202,9 +202,9 @@
                 ELSE NULL
             END AS TARGET_NAME
         FROM TB_AUDIT_LOG l
-        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
-        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
-        WHERE l.ACTOR_ID = #{actorId}
+        INNER JOIN TB_USER u ON l.ACTOR_USERNAME = u.USERNAME
+        LEFT JOIN TB_USER ru ON l.RELATED_USERNAME = ru.USERNAME
+        WHERE l.ACTOR_USERNAME = #{actorUsername}
         ORDER BY l.CREATED_AT DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
@@ -216,9 +216,9 @@
             l.TARGET_TYPE,
             l.TARGET_ID,
             l.ACTION,
-            l.ACTOR_ID,
+            l.ACTOR_USERNAME,
             l.DESCRIPTION,
-            l.RELATED_USER_ID,
+            l.RELATED_USERNAME,
             l.CREATED_AT,
             u.NAME AS ACTOR_NAME,
             ru.NAME AS RELATED_USER_NAME,
@@ -228,8 +228,8 @@
                 ELSE NULL
             END AS TARGET_NAME
         FROM TB_AUDIT_LOG l
-        INNER JOIN TB_USER u ON l.ACTOR_ID = u.USER_ID
-        LEFT JOIN TB_USER ru ON l.RELATED_USER_ID = ru.USER_ID
+        INNER JOIN TB_USER u ON l.ACTOR_USERNAME = u.USERNAME
+        LEFT JOIN TB_USER ru ON l.RELATED_USERNAME = ru.USERNAME
         ORDER BY l.CREATED_AT DESC
         LIMIT #{limit}
     </select>

@@ -6,9 +6,10 @@
  * - 행 클릭 시 상세 패널 오픈
  * Compact UI: height 36px, font 13px
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Select, DatePicker, Badge, UserSelect } from '@/components/common'
 import type { UserOption, DepartmentOption } from '@/components/common'
+import { useCategoryStore } from '@/stores/category'
 import { isItemOverdue, getOverdueDays } from '@/utils/item'
 import type { Item, ItemStatus, Priority } from '@/types/item'
 import type { PropertyDef, PropertyOption } from '@/types/property'
@@ -37,6 +38,18 @@ const emit = defineEmits<{
   (e: 'restore', itemId: number): void
 }>()
 
+// 카테고리 스토어
+const categoryStore = useCategoryStore()
+
+// 카테고리 옵션
+const categoryOptions = computed(() => {
+  return categoryStore.activeCategories.map(c => ({
+    value: c.categoryId,
+    label: c.categoryName,
+    color: c.color
+  }))
+})
+
 // 인라인 편집 상태
 const editingField = ref<string | null>(null)
 const editValue = ref<unknown>(null)
@@ -49,7 +62,7 @@ const editPropertyValue = ref<unknown>(null)
 const statusOptions = [
   { value: 'NOT_STARTED', label: '시작전', color: '#6B7280' },
   { value: 'IN_PROGRESS', label: '진행중', color: '#3B82F6' },
-  { value: 'PENDING', label: '대기', color: '#F59E0B' },
+  { value: 'PENDING', label: '보류', color: '#F59E0B' },
   { value: 'COMPLETED', label: '완료', color: '#10B981' },
   { value: 'DELETED', label: '삭제', color: '#EF4444' }
 ]
@@ -123,8 +136,8 @@ function startEdit(field: string) {
     case 'endTime':
       editValue.value = props.item.endTime
       break
-    case 'assigneeId':
-      editValue.value = props.item.assigneeId
+    case 'assigneeUsername':
+      editValue.value = props.item.assigneeUsername
       break
   }
 }
@@ -185,7 +198,7 @@ function getFieldValue(field: string): unknown {
     case 'priority': return props.item.priority
     case 'startTime': return props.item.startTime
     case 'endTime': return props.item.endTime
-    case 'assigneeId': return props.item.assigneeId
+    case 'assigneeUsername': return props.item.assigneeUsername
     default: return null
   }
 }
@@ -249,19 +262,11 @@ function getPropertyValue(propertyId: number): unknown {
   }
 
   // 담당자 속성
-  if (property.propertyType === 'USER' && props.item.assigneeId) {
-    return props.item.assigneeId
+  if (property.propertyType === 'USER' && props.item.assigneeUsername) {
+    return props.item.assigneeUsername
   }
 
-  // 시작일 속성
-  if (property.propertyName === '시작일' && props.item.startTime) {
-    return props.item.startTime
-  }
-
-  // 마감일 속성
-  if (property.propertyName === '마감일' && props.item.endTime) {
-    return props.item.endTime
-  }
+  // 요청일/마감일은 TB_ITEM 고정 컬럼으로 처리됨 (TB_PROPERTY_DEF에 없음)
 
   return null
 }
@@ -355,6 +360,99 @@ function handleRowClick() {
       </template>
     </div>
 
+    <!-- 상태 컬럼 (고정) -->
+    <div
+      class="w-24 min-w-[96px] px-2 flex items-center h-full border-r border-gray-200"
+      @click.stop
+    >
+      <Select
+        :model-value="item.status"
+        :options="statusOptions"
+        size="sm"
+        placeholder="-"
+        class="w-full"
+        @update:model-value="handleSelectChange('status', $event)"
+      />
+    </div>
+
+    <!-- 우선순위 컬럼 (고정) -->
+    <div
+      class="w-24 min-w-[96px] px-2 flex items-center h-full border-r border-gray-200"
+      @click.stop
+    >
+      <Select
+        :model-value="item.priority"
+        :options="priorityOptions"
+        size="sm"
+        placeholder="-"
+        class="w-full"
+        @update:model-value="handleSelectChange('priority', $event)"
+      />
+    </div>
+
+    <!-- 담당자 컬럼 (고정) -->
+    <div
+      class="w-24 min-w-[96px] px-2 flex items-center h-full border-r border-gray-200"
+      @click.stop
+    >
+      <UserSelect
+        :model-value="item.assigneeUsername"
+        :users="sharedUsers || []"
+        :departments="departments || []"
+        size="sm"
+        placeholder="-"
+        clearable
+        class="w-full"
+        @update:model-value="handleSelectChange('assigneeUsername', $event)"
+      />
+    </div>
+
+    <!-- 요청일 컬럼 (고정) -->
+    <div
+      class="w-32 min-w-[128px] px-2 flex items-center h-full border-r border-gray-200"
+      @click.stop
+    >
+      <DatePicker
+        :model-value="item.startTime"
+        size="sm"
+        placeholder="-"
+        clearable
+        class="w-full"
+        @update:model-value="handleSelectChange('startTime', $event)"
+      />
+    </div>
+
+    <!-- 마감일 컬럼 (고정) -->
+    <div
+      class="w-32 min-w-[128px] px-2 flex items-center h-full border-r border-gray-200"
+      @click.stop
+    >
+      <DatePicker
+        :model-value="item.endTime"
+        size="sm"
+        placeholder="-"
+        clearable
+        class="w-full"
+        @update:model-value="handleSelectChange('endTime', $event)"
+      />
+    </div>
+
+    <!-- 카테고리 컬럼 (고정) -->
+    <div
+      class="w-24 min-w-[96px] px-2 flex items-center h-full border-r border-gray-200"
+      @click.stop
+    >
+      <Select
+        :model-value="item.categoryId"
+        :options="categoryOptions"
+        size="sm"
+        placeholder="-"
+        clearable
+        class="w-full"
+        @update:model-value="handleSelectChange('categoryId', $event)"
+      />
+    </div>
+
     <!-- 동적 속성 컬럼들 -->
     <template v-for="property in properties" :key="property.propertyId">
       <div
@@ -415,6 +513,7 @@ function handleRowClick() {
             :model-value="getPropertyValue(property.propertyId) as string"
             size="sm"
             placeholder="-"
+            clearable
             class="w-full"
             @update:model-value="handlePropertyChange(property.propertyId, $event)"
             @click.stop
@@ -463,7 +562,7 @@ function handleRowClick() {
         <!-- USER 타입 -->
         <template v-else-if="property.propertyType === 'USER'">
           <UserSelect
-            :model-value="getPropertyValue(property.propertyId) as number"
+            :model-value="getPropertyValue(property.propertyId) as string"
             :users="sharedUsers || []"
             :departments="departments || []"
             size="sm"

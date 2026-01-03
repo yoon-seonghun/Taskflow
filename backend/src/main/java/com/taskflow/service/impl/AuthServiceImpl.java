@@ -1,6 +1,7 @@
 package com.taskflow.service.impl;
 
 import com.taskflow.common.LogMaskUtils;
+import com.taskflow.config.UserManagementProperties;
 import com.taskflow.domain.User;
 import com.taskflow.dto.auth.LoginRequest;
 import com.taskflow.dto.auth.LoginResponse;
@@ -10,31 +11,60 @@ import com.taskflow.exception.BusinessException;
 import com.taskflow.mapper.UserMapper;
 import com.taskflow.security.JwtTokenProvider;
 import com.taskflow.service.AuthService;
+import com.taskflow.service.UserService;
+import com.taskflow.service.UserSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 인증 서비스 구현
+ *
+ * UserService를 통해 사용자 조회 (internal/external 모드 지원)
+ * External 모드에서는 UserSyncService를 통해 Shadow User 동기화
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AuthServiceImpl implements AuthService {
 
-    private final UserMapper userMapper;
+    private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final UserManagementProperties userManagementProperties;
+    private final UserMapper userMapper;
+
+    // External 모드에서만 주입됨 (Optional)
+    private UserSyncService userSyncService;
+
+    public AuthServiceImpl(
+            UserService userService,
+            JwtTokenProvider jwtTokenProvider,
+            PasswordEncoder passwordEncoder,
+            UserManagementProperties userManagementProperties,
+            UserMapper userMapper) {
+        this.userService = userService;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.passwordEncoder = passwordEncoder;
+        this.userManagementProperties = userManagementProperties;
+        this.userMapper = userMapper;
+    }
+
+    @Autowired(required = false)
+    public void setUserSyncService(UserSyncService userSyncService) {
+        this.userSyncService = userSyncService;
+    }
 
     @Override
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         log.info("Login attempt: username={}", LogMaskUtils.maskUsername(request.getUsername()));
 
-        // 사용자 조회
-        User user = userMapper.findByUsername(request.getUsername())
+        // 사용자 조회 (UserService를 통해 internal/external 모드 지원)
+        User user = userService.findByUsernameForAuth(request.getUsername())
                 .orElseThrow(() -> {
                     log.warn("Login failed: user not found - {}", LogMaskUtils.maskUsername(request.getUsername()));
                     return BusinessException.authenticationFailed("아이디 또는 비밀번호가 올바르지 않습니다");
@@ -52,15 +82,42 @@ public class AuthServiceImpl implements AuthService {
             throw BusinessException.authenticationFailed("비활성화된 계정입니다");
         }
 
-        // Access Token 생성
-        String accessToken = jwtTokenProvider.createAccessToken(user.getUserId(), user.getUsername());
+        // External 모드: Shadow User 동기화 및 내부 USER_ID 획득
+        Long internalUserId;
+        User internalUser;
 
-        log.info("Login successful: userId={}, username={}", user.getUserId(), LogMaskUtils.maskUsername(user.getUsername()));
+        if (userManagementProperties.isExternalMode() && userSyncService != null) {
+            // External 모드: Shadow User 동기화
+            User syncedUser = userSyncService.syncUserOnLogin(request.getUsername());
+            if (syncedUser == null) {
+                log.error("Failed to sync shadow user: {}", LogMaskUtils.maskUsername(request.getUsername()));
+                throw BusinessException.authenticationFailed("사용자 동기화에 실패했습니다");
+            }
+
+            internalUserId = syncedUser.getUserId();
+            internalUser = syncedUser;
+
+            log.debug("Shadow user synced: username={} -> internal={}",
+                    user.getUsername(), internalUserId);
+        } else {
+            // Internal 모드: 기존 로직 유지
+            internalUserId = user.getUserId();
+            internalUser = user;
+
+            // 마지막 로그인 시간 업데이트
+            userMapper.updateLastLoginAt(internalUserId);
+        }
+
+        // Access Token 생성 (내부 USER_ID 사용)
+        String accessToken = jwtTokenProvider.createAccessToken(internalUserId, user.getUsername());
+
+        log.info("Login successful: internalUserId={}, username={}",
+                internalUserId, LogMaskUtils.maskUsername(user.getUsername()));
 
         return LoginResponse.of(
                 accessToken,
                 jwtTokenProvider.getAccessTokenValidity(),
-                UserResponse.from(user)
+                UserResponse.from(internalUser)
         );
     }
 
@@ -84,8 +141,8 @@ public class AuthServiceImpl implements AuthService {
         Long userId = jwtTokenProvider.getUserId(refreshToken);
         String username = jwtTokenProvider.getUsername(refreshToken);
 
-        // 사용자 존재 및 활성 상태 확인
-        User user = userMapper.findById(userId)
+        // 사용자 존재 및 활성 상태 확인 (UserService를 통해 internal/external 모드 지원)
+        User user = userService.findByIdForAuth(userId)
                 .orElseThrow(() -> BusinessException.userNotFound(userId));
 
         if (!user.isActive()) {

@@ -31,9 +31,9 @@ public class DepartmentTreeResponse {
     private String departmentName;
 
     /**
-     * 상위 부서 ID
+     * 상위 부서 코드
      */
-    private Long parentId;
+    private String parentCode;
 
     /**
      * 정렬 순서
@@ -80,7 +80,7 @@ public class DepartmentTreeResponse {
                 .departmentId(department.getDepartmentId())
                 .departmentCode(department.getDepartmentCode())
                 .departmentName(department.getDepartmentName())
-                .parentId(department.getParentId())
+                .parentCode(department.getParentCode())
                 .sortOrder(department.getSortOrder())
                 .useYn(department.getUseYn())
                 .level(department.getLevel())

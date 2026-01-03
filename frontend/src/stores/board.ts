@@ -79,8 +79,8 @@ export const useBoardStore = defineStore('board', () => {
     boardShares.value.push(share)
   }
 
-  function _removeBoardShare(userId: number) {
-    boardShares.value = boardShares.value.filter(s => s.userId !== userId)
+  function _removeBoardShare(username: string) {
+    boardShares.value = boardShares.value.filter(s => s.username !== username)
   }
 
   // ==================== Actions ====================
@@ -259,16 +259,16 @@ export const useBoardStore = defineStore('board', () => {
   /**
    * 공유 사용자 제거 (Optimistic Update)
    */
-  async function removeBoardShare(boardId: number, userId: number): Promise<boolean> {
+  async function removeBoardShare(boardId: number, username: string): Promise<boolean> {
     // 1. 원본 데이터 백업
     const originalShares = [...boardShares.value]
 
     // 2. Store 먼저 갱신 (Optimistic Update)
-    _removeBoardShare(userId)
+    _removeBoardShare(username)
 
     try {
       // 3. API 호출
-      const response = await boardApi.removeBoardShare(boardId, userId)
+      const response = await boardApi.removeBoardShare(boardId, username)
       if (response.success) {
         return true
       }
@@ -290,12 +290,12 @@ export const useBoardStore = defineStore('board', () => {
    */
   async function updateBoardSharePermission(
     boardId: number,
-    userId: number,
+    username: string,
     data: BoardShareUpdateRequest
   ): Promise<boolean> {
     // 1. 원본 데이터 백업
     const originalShares = [...boardShares.value]
-    const shareIndex = boardShares.value.findIndex(s => s.userId === userId)
+    const shareIndex = boardShares.value.findIndex(s => s.username === username)
 
     // 2. Store 먼저 갱신 (Optimistic Update)
     if (shareIndex !== -1) {
@@ -306,7 +306,7 @@ export const useBoardStore = defineStore('board', () => {
     }
 
     try {
-      const response = await boardApi.updateBoardSharePermission(boardId, userId, data)
+      const response = await boardApi.updateBoardSharePermission(boardId, username, data)
       if (response.success) {
         return true
       }
@@ -354,7 +354,7 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   /**
-   * 보드 순서 변경
+   * 소유 보드 순서 변경
    */
   async function updateBoardOrder(boardId: number, sortOrder: number): Promise<boolean> {
     // 1. 원본 데이터 백업
@@ -380,6 +380,37 @@ export const useBoardStore = defineStore('board', () => {
       // 실패 시 롤백
       _updateBoard(boardId, { sortOrder: originalSortOrder })
       error.value = '순서 변경에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 공유받은 보드 순서 변경
+   */
+  async function updateSharedBoardOrder(boardId: number, sortOrder: number): Promise<boolean> {
+    // 1. 원본 데이터 백업
+    const originalBoard = boards.value.find(b => b.boardId === boardId)
+    if (!originalBoard) return false
+
+    const originalSortOrder = originalBoard.sortOrder
+
+    // 2. Store 먼저 갱신 (Optimistic Update)
+    _updateBoard(boardId, { sortOrder })
+
+    try {
+      const response = await boardApi.updateSharedBoardOrder(boardId, { sortOrder })
+      if (response.success) {
+        return true
+      }
+
+      // 실패 시 롤백
+      _updateBoard(boardId, { sortOrder: originalSortOrder })
+      error.value = response.message || '공유 보드 순서 변경에 실패했습니다.'
+      return false
+    } catch (e) {
+      // 실패 시 롤백
+      _updateBoard(boardId, { sortOrder: originalSortOrder })
+      error.value = '공유 보드 순서 변경에 실패했습니다.'
       return false
     }
   }
@@ -490,6 +521,7 @@ export const useBoardStore = defineStore('board', () => {
     createBoard,
     updateBoard,
     updateBoardOrder,
+    updateSharedBoardOrder,
     deleteBoard,
     deleteBoardWithTransfer,
     getTransferPreview,

@@ -13,9 +13,8 @@ import java.time.LocalDateTime;
  *
  * 테이블: TB_ITEM_SHARE
  *
- * 개별 업무를 다른 사용자에게 공유
- * - 보드 접근 권한 없이 특정 업무만 공유 가능
- * - 권한 레벨 지정 가능 (VIEW/EDIT/FULL)
+ * USERNAME 기반 FK 참조 시스템:
+ * - USERNAME: 공유받은 사용자 USERNAME 참조
  */
 @Getter
 @Setter
@@ -35,9 +34,9 @@ public class ItemShare {
     private Long itemId;
 
     /**
-     * 공유받은 사용자 ID (FK)
+     * 공유받은 사용자 USERNAME (FK → TB_USER.USERNAME)
      */
-    private Long userId;
+    private String username;
 
     /**
      * 권한 (VIEW/EDIT/FULL)
@@ -50,9 +49,9 @@ public class ItemShare {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -60,18 +59,13 @@ public class ItemShare {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 JOIN으로 설정)
     // =============================================
-
-    /**
-     * 사용자 로그인 ID
-     */
-    private String loginId;
 
     /**
      * 사용자명
@@ -87,6 +81,11 @@ public class ItemShare {
      * 업무 제목
      */
     private String itemContent;
+
+    /**
+     * 로그인 ID (Mapper JOIN 필드)
+     */
+    private String loginId;
 
     // =============================================
     // 상수
@@ -119,6 +118,62 @@ public class ItemShare {
      */
     public boolean canDelete() {
         return PERMISSION_FULL.equals(permission);
+    }
+
+    /**
+     * 사용자명 getter (Lombok 호환성)
+     */
+    public String getUserName() {
+        return userName;
+    }
+
+    /**
+     * USERNAME getter (Lombok 호환성)
+     */
+    public String getUsername() {
+        return username;
+    }
+
+    /**
+     * 부서명 getter (Lombok 호환성)
+     */
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    /**
+     * 권한 getter (Lombok 호환성)
+     */
+    public String getPermission() {
+        return permission;
+    }
+
+    /**
+     * 아이템ID getter (Lombok 호환성)
+     */
+    public Long getItemId() {
+        return itemId;
+    }
+
+    /**
+     * 아이템공유ID getter (Lombok 호환성)
+     */
+    public Long getItemShareId() {
+        return itemShareId;
+    }
+
+    /**
+     * 생성일시 getter (Lombok 호환성)
+     */
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    /**
+     * 수정일시 getter (Lombok 호환성)
+     */
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
     /**

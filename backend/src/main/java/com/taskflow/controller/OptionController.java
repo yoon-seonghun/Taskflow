@@ -50,22 +50,23 @@ public class OptionController {
     ) {
         log.info("Update option: id={}", optionId);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        OptionDetailResponse response = propertyService.updateOption(optionId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        OptionDetailResponse response = propertyService.updateOption(optionId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "옵션이 수정되었습니다"));
     }
 
     /**
-     * 옵션 삭제
+     * 옵션 논리 삭제
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteOption(
             @PathVariable("id") Long optionId
     ) {
-        log.info("Delete option: id={}", optionId);
+        log.info("Soft delete option: id={}", optionId);
 
-        propertyService.deleteOption(optionId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        propertyService.deleteOption(optionId, currentUsername);
         return ResponseEntity.ok(ApiResponse.successWithMessage("옵션이 삭제되었습니다"));
     }
 }

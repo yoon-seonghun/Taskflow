@@ -36,19 +36,19 @@ public interface UserGroupMapper {
     /**
      * 사용자별 소속 그룹 목록 조회
      *
-     * @param userId 사용자 ID
+     * @param username 사용자 USERNAME
      * @return 그룹 목록
      */
-    List<UserGroup> findByUserId(@Param("userId") Long userId);
+    List<UserGroup> findByUsername(@Param("username") String username);
 
     /**
      * 특정 사용자가 특정 그룹에 소속되어 있는지 확인
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param groupId 그룹 ID
      * @return 소속 여부
      */
-    boolean existsByUserIdAndGroupId(@Param("userId") Long userId, @Param("groupId") Long groupId);
+    boolean existsByUsernameAndGroupId(@Param("username") String username, @Param("groupId") Long groupId);
 
     /**
      * 그룹에 멤버가 있는지 확인
@@ -82,10 +82,10 @@ public interface UserGroupMapper {
      * 그룹 멤버 제거 (특정 사용자)
      *
      * @param groupId 그룹 ID
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @return 영향받은 행 수
      */
-    int deleteByGroupIdAndUserId(@Param("groupId") Long groupId, @Param("userId") Long userId);
+    int deleteByGroupIdAndUsername(@Param("groupId") Long groupId, @Param("username") String username);
 
     /**
      * 그룹의 모든 멤버 제거
@@ -98,8 +98,8 @@ public interface UserGroupMapper {
     /**
      * 사용자의 모든 그룹 소속 제거
      *
-     * @param userId 사용자 ID
+     * @param username 사용자 USERNAME
      * @return 영향받은 행 수
      */
-    int deleteByUserId(@Param("userId") Long userId);
+    int deleteByUsername(@Param("username") String username);
 }

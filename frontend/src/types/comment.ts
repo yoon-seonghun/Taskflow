@@ -8,11 +8,13 @@ export interface Comment {
   itemTitle?: string
   content: string
   createdAt: string
-  createdBy: number
-  createdByName?: string
+  createdBy: string          // 작성자 USERNAME
+  createdByUserId?: number   // 작성자 ID (SSE 이벤트용)
+  createdByName?: string     // 작성자 표시명
   updatedAt?: string
-  updatedBy?: number
-  updatedByName?: string
+  updatedBy?: string         // 수정자 USERNAME
+  updatedByUserId?: number   // 수정자 ID (SSE 이벤트용)
+  updatedByName?: string     // 수정자 표시명
   edited: boolean
 }
 

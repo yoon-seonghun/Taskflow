@@ -13,10 +13,12 @@ import { useUiStore } from '@/stores/ui'
 
 interface Props {
   showInactive?: boolean
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showInactive: true
+  showInactive: true,
+  readonly: false
 })
 
 const emit = defineEmits<{
@@ -114,8 +116,8 @@ async function handleDrop(event: DragEvent, targetDepartment: Department) {
 
   try {
     // 부서 이동 (상위 부서 변경)
-    const success = await departmentStore.updateDepartment(draggedDepartment.value.departmentId, {
-      parentId: targetDepartment.departmentId
+    const success = await departmentStore.updateDepartment(draggedDepartment.value.departmentCode, {
+      parentCode: targetDepartment.departmentCode
     })
 
     if (success) {
@@ -166,7 +168,7 @@ function isDescendant(parent: Department, targetId: number): boolean {
               d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
           </svg>
         </button>
-        <button type="button" class="add-btn" @click="handleAddRoot">
+        <button v-if="!readonly" type="button" class="add-btn" @click="handleAddRoot">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -191,7 +193,7 @@ function isDescendant(parent: Department, targetId: number): boolean {
           d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
       </svg>
       <p class="mt-2 text-sm text-gray-500">등록된 부서가 없습니다.</p>
-      <button type="button" class="mt-3 text-sm text-primary-600 hover:text-primary-700" @click="handleAddRoot">
+      <button v-if="!readonly" type="button" class="mt-3 text-sm text-primary-600 hover:text-primary-700" @click="handleAddRoot">
         + 첫 번째 부서 추가하기
       </button>
     </div>
@@ -203,6 +205,7 @@ function isDescendant(parent: Department, targetId: number): boolean {
         :key="department.departmentId"
         :department="department"
         :depth="0"
+        :readonly="readonly"
         @select="handleSelect"
         @edit="handleEdit"
         @delete="handleDelete"

@@ -6,7 +6,7 @@ export interface Department {
   departmentId: number
   departmentCode: string
   departmentName: string
-  parentId?: number
+  parentCode?: string
   parentName?: string
   sortOrder: number
   useYn: string
@@ -14,27 +14,25 @@ export interface Department {
   userCount?: number
   children?: Department[]
   createdAt: string
-  createdBy: number
+  createdBy: string
   updatedAt?: string
-  updatedBy?: number
+  updatedBy?: string
 }
 
 export interface DepartmentCreateRequest {
   departmentCode: string
   departmentName: string
-  parentId?: number
+  parentCode?: string
   sortOrder?: number
 }
 
 export interface DepartmentUpdateRequest {
-  departmentCode?: string
   departmentName?: string
-  parentId?: number
+  parentCode?: string
   sortOrder?: number
   useYn?: string
 }
 
 export interface DepartmentOrderRequest {
-  departmentId: number
   sortOrder: number
 }

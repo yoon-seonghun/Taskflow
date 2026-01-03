@@ -8,8 +8,8 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
 export interface UserOption {
-  userId: number
-  userName: string
+  username: string         // 사용자 USERNAME (FK 참조용)
+  userName: string         // 표시용 이름
   departmentId?: number
   departmentName?: string
 }
@@ -22,7 +22,7 @@ export interface DepartmentOption {
 export type SelectSize = 'sm' | 'md' | 'lg'
 
 interface Props {
-  modelValue?: number | null
+  modelValue?: string | null   // username (string) 값
   users: UserOption[]
   departments?: DepartmentOption[]
   size?: SelectSize
@@ -48,8 +48,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: number | null): void
-  (e: 'change', value: number | null): void
+  (e: 'update:modelValue', value: string | null): void
+  (e: 'change', value: string | null): void
 }>()
 
 const isOpen = ref(false)
@@ -61,7 +61,7 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 
 // 선택된 사용자
 const selectedUser = computed(() =>
-  props.users.find(user => user.userId === props.modelValue)
+  props.users.find(user => user.username === props.modelValue)
 )
 
 // 부서별 필터링된 사용자
@@ -80,6 +80,7 @@ const filteredUsers = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return departmentFilteredUsers.value.filter(user =>
     user.userName.toLowerCase().includes(query) ||
+    user.username.toLowerCase().includes(query) ||
     (user.departmentName && user.departmentName.toLowerCase().includes(query))
   )
 })
@@ -132,8 +133,8 @@ function closeDropdown() {
 
 // 사용자 선택
 function selectUser(user: UserOption) {
-  emit('update:modelValue', user.userId)
-  emit('change', user.userId)
+  emit('update:modelValue', user.username)
+  emit('change', user.username)
   closeDropdown()
 }
 
@@ -307,12 +308,12 @@ onUnmounted(() => {
         <div class="overflow-y-auto max-h-48">
           <div
             v-for="(user, index) in filteredUsers"
-            :key="user.userId"
+            :key="user.username"
             class="px-3 py-2 text-[13px] cursor-pointer flex items-center gap-2"
             :class="[
               'hover:bg-gray-50',
               highlightedIndex === index ? 'bg-gray-100' : '',
-              user.userId === modelValue ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
+              user.username === modelValue ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
             ]"
             @click="selectUser(user)"
             @mouseenter="highlightedIndex = index"
@@ -332,7 +333,7 @@ onUnmounted(() => {
 
             <!-- Check Icon -->
             <svg
-              v-if="user.userId === modelValue"
+              v-if="user.username === modelValue"
               class="w-4 h-4 text-primary-600 flex-shrink-0"
               fill="none"
               stroke="currentColor"

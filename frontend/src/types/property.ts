@@ -17,8 +17,9 @@ export interface PropertyOption {
   optionCode?: string     // DB에 없음 (null 반환)
   optionName: string      // DB: OPTION_LABEL
   color?: string
-  sortOrder?: number      // DB에 없음 (null 반환)
+  sortOrder?: number
   useYn?: string
+  usageCount?: number     // 사용 횟수 (관리용)
 }
 
 export interface PropertyDef {

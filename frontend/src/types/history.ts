@@ -12,7 +12,7 @@ export interface ItemHistory {
   boardName?: string
   title: string
   result: HistoryResult
-  workerId?: number
+  workerUsername?: string
   workerName?: string
   createdAt: string
   createdByName?: string
@@ -26,7 +26,7 @@ export interface ItemHistory {
 export interface ItemHistorySearchRequest {
   boardId?: number
   result?: HistoryResult
-  workerId?: number
+  workerUsername?: string
   startDate?: string
   endDate?: string
   keyword?: string
@@ -39,8 +39,8 @@ export interface TemplateHistory {
   templateId: number
   content: string
   status: string
-  createdBy: number
-  createdByName?: string
+  createdBy: string          // 생성자 USERNAME
+  createdByName?: string     // 생성자 표시명
   createdAt: string
   updatedAt?: string
   updatedByName?: string
@@ -67,11 +67,11 @@ export interface AuditLog {
   targetId: number
   targetName?: string
   action: AuditAction
-  actorId: number
-  actorName?: string
+  actorUsername?: string      // 수행자 USERNAME
+  actorName?: string          // 수행자 표시명
   description?: string
-  relatedUserId?: number
-  relatedUserName?: string
+  relatedUsername?: string    // 관련 사용자 USERNAME (공유/이관 대상)
+  relatedUserName?: string    // 관련 사용자 표시명
   createdAt: string
 }
 

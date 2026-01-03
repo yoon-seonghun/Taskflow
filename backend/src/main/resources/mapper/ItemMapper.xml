@@ -17,7 +17,7 @@
         <result property="description" column="DESCRIPTION"/>
         <result property="status" column="STATUS"/>
         <result property="priority" column="PRIORITY"/>
-        <result property="assigneeId" column="ASSIGNEE_ID"/>
+        <result property="assigneeUsername" column="ASSIGNEE_USERNAME"/>
         <result property="startTime" column="START_TIME"/>
         <result property="endTime" column="END_TIME"/>
         <result property="previousStatus" column="PREVIOUS_STATUS"/>
@@ -34,6 +34,8 @@
         <result property="boardName" column="BOARD_NAME"/>
         <result property="groupName" column="GROUP_NAME"/>
         <result property="groupColor" column="GROUP_COLOR"/>
+        <result property="categoryName" column="CATEGORY_NAME"/>
+        <result property="categoryColor" column="CATEGORY_COLOR"/>
         <result property="assigneeName" column="ASSIGNEE_NAME"/>
         <result property="createdByName" column="CREATED_BY_NAME"/>
         <result property="updatedByName" column="UPDATED_BY_NAME"/>
@@ -55,7 +57,7 @@
             i.DESCRIPTION,
             i.STATUS,
             i.PRIORITY,
-            i.ASSIGNEE_ID,
+            i.ASSIGNEE_USERNAME,
             i.START_TIME,
             i.END_TIME,
             i.PREVIOUS_STATUS,
@@ -71,6 +73,8 @@
             b.BOARD_NAME,
             g.GROUP_NAME,
             g.GROUP_COLOR,
+            cat.CATEGORY_NAME,
+            cat.COLOR AS CATEGORY_COLOR,
             ua.NAME AS ASSIGNEE_NAME,
             uc.NAME AS CREATED_BY_NAME,
             uu.NAME AS UPDATED_BY_NAME,
@@ -78,9 +82,10 @@
         FROM TB_ITEM i
         INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
         LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
-        LEFT JOIN TB_USER ua ON i.ASSIGNEE_ID = ua.USER_ID
-        LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USER_ID
-        LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USER_ID
+        LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+        LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+        LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
     </sql>
 
     <!-- 필터 조건 -->
@@ -94,8 +99,8 @@
         <if test="request.priority != null and request.priority != ''">
             AND i.PRIORITY = #{request.priority}
         </if>
-        <if test="request.assigneeId != null">
-            AND i.ASSIGNEE_ID = #{request.assigneeId}
+        <if test="request.assigneeUsername != null and request.assigneeUsername != ''">
+            AND i.ASSIGNEE_USERNAME = #{request.assigneeUsername}
         </if>
         <if test="request.groupId != null">
             AND i.GROUP_ID = #{request.groupId}
@@ -161,9 +166,9 @@
     </select>
 
     <!-- 담당자별 아이템 목록 조회 -->
-    <select id="findByAssigneeId" resultMap="ItemResultMap">
+    <select id="findByAssigneeUsername" resultMap="ItemResultMap">
         <include refid="selectItem"/>
-        WHERE i.ASSIGNEE_ID = #{assigneeId}
+        WHERE i.ASSIGNEE_USERNAME = #{assigneeUsername}
           AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
         <if test="boardId != null">
             AND i.BOARD_ID = #{boardId}
@@ -202,7 +207,7 @@
             DESCRIPTION,
             STATUS,
             PRIORITY,
-            ASSIGNEE_ID,
+            ASSIGNEE_USERNAME,
             START_TIME,
             END_TIME,
             CREATED_BY
@@ -214,7 +219,7 @@
             #{description},
             COALESCE(#{status}, 'NOT_STARTED'),
             COALESCE(#{priority}, 'NORMAL'),
-            #{assigneeId},
+            #{assigneeUsername},
             #{startTime},
             #{endTime},
             #{createdBy}
@@ -231,7 +236,7 @@
             DESCRIPTION = #{description},
             STATUS = #{status},
             PRIORITY = #{priority},
-            ASSIGNEE_ID = #{assigneeId},
+            ASSIGNEE_USERNAME = #{assigneeUsername},
             START_TIME = #{startTime},
             END_TIME = #{endTime},
             UPDATED_BY = #{updatedBy},
@@ -309,10 +314,10 @@
     <!-- 사용자 접근 가능 보드 조건 -->
     <sql id="accessibleBoardCondition">
         AND (
-            b.OWNER_ID = #{userId}
+            b.OWNER_USERNAME = #{username}
             OR EXISTS (
                 SELECT 1 FROM TB_BOARD_SHARE bs
-                WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USER_ID = #{userId}
+                WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USERNAME = #{username}
             )
         )
         AND b.USE_YN = 'Y'
@@ -326,8 +331,8 @@
         <if test="request.priority != null and request.priority != ''">
             AND i.PRIORITY = #{request.priority}
         </if>
-        <if test="request.assigneeId != null">
-            AND i.ASSIGNEE_ID = #{request.assigneeId}
+        <if test="request.assigneeUsername != null and request.assigneeUsername != ''">
+            AND i.ASSIGNEE_USERNAME = #{request.assigneeUsername}
         </if>
         <if test="request.groupId != null">
             AND i.GROUP_ID = #{request.groupId}

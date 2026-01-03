@@ -17,7 +17,9 @@
         <result property="updatedBy" column="UPDATED_BY"/>
         <!-- 조인 필드 -->
         <result property="itemTitle" column="ITEM_TITLE"/>
+        <result property="createdByUserId" column="CREATED_BY_USER_ID"/>
         <result property="createdByName" column="CREATED_BY_NAME"/>
+        <result property="updatedByUserId" column="UPDATED_BY_USER_ID"/>
         <result property="updatedByName" column="UPDATED_BY_NAME"/>
     </resultMap>
 
@@ -35,12 +37,14 @@
             c.UPDATED_AT,
             c.UPDATED_BY,
             i.CONTENT AS ITEM_TITLE,
+            uc.USER_ID AS CREATED_BY_USER_ID,
             uc.NAME AS CREATED_BY_NAME,
+            uu.USER_ID AS UPDATED_BY_USER_ID,
             uu.NAME AS UPDATED_BY_NAME
         FROM TB_COMMENT c
         INNER JOIN TB_ITEM i ON c.ITEM_ID = i.ITEM_ID
-        LEFT JOIN TB_USER uc ON c.CREATED_BY = uc.USER_ID
-        LEFT JOIN TB_USER uu ON c.UPDATED_BY = uu.USER_ID
+        LEFT JOIN TB_USER uc ON c.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON c.UPDATED_BY = uu.USERNAME
     </sql>
 
     <!-- ============================================= -->

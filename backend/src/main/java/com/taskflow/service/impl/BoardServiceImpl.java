@@ -71,9 +71,9 @@ public class BoardServiceImpl implements BoardService {
         List<BoardResponse.SharedUserInfo> sharedUsers = new ArrayList<>();
 
         // 1. 소유자 추가
-        userMapper.findById(board.getOwnerId()).ifPresent(owner -> {
+        userMapper.findByUsername(board.getOwnerUsername()).ifPresent(owner -> {
             sharedUsers.add(BoardResponse.SharedUserInfo.builder()
-                    .userId(owner.getUserId())
+                    .username(owner.getUsername())
                     .userName(owner.getName())
                     .departmentName(owner.getDepartmentName())
                     .build());
@@ -82,9 +82,9 @@ public class BoardServiceImpl implements BoardService {
         // 2. 공유 사용자 추가
         List<BoardShare> shares = boardShareMapper.findByBoardId(boardId);
         for (BoardShare share : shares) {
-            userMapper.findById(share.getUserId()).ifPresent(user -> {
+            userMapper.findByUsername(share.getUsername()).ifPresent(user -> {
                 sharedUsers.add(BoardResponse.SharedUserInfo.builder()
-                        .userId(user.getUserId())
+                        .username(user.getUsername())
                         .userName(user.getName())
                         .departmentName(user.getDepartmentName())
                         .build());
@@ -96,7 +96,7 @@ public class BoardServiceImpl implements BoardService {
                 .boardId(response.getBoardId())
                 .boardName(response.getBoardName())
                 .description(response.getDescription())
-                .ownerId(response.getOwnerId())
+                .ownerUsername(response.getOwnerUsername())
                 .ownerName(response.getOwnerName())
                 .defaultView(response.getDefaultView())
                 .color(response.getColor())
@@ -112,18 +112,18 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
-    public List<BoardResponse> getAccessibleBoards(Long userId, String useYn) {
-        List<Board> boards = boardMapper.findAccessibleByUserId(userId, useYn);
+    public List<BoardResponse> getAccessibleBoards(String username, String useYn) {
+        List<Board> boards = boardMapper.findAccessibleByUsername(username, useYn);
         return boards.stream()
                 .map(board -> {
                     BoardResponse response = BoardResponse.from(board);
-                    boolean isOwnerFlag = board.isOwner(userId);
-                    String permission = isOwnerFlag ? "OWNER" : getUserPermission(board.getBoardId(), userId);
+                    boolean isOwnerFlag = board.isOwner(username);
+                    String permission = isOwnerFlag ? "OWNER" : getUserPermission(board.getBoardId(), username);
                     return BoardResponse.builder()
                             .boardId(response.getBoardId())
                             .boardName(response.getBoardName())
                             .description(response.getDescription())
-                            .ownerId(response.getOwnerId())
+                            .ownerUsername(response.getOwnerUsername())
                             .ownerName(response.getOwnerName())
                             .defaultView(response.getDefaultView())
                             .color(response.getColor())
@@ -141,8 +141,8 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
-    public List<BoardResponse> getOwnedBoards(Long ownerId, String useYn) {
-        List<Board> boards = boardMapper.findByOwnerId(ownerId, useYn);
+    public List<BoardResponse> getOwnedBoards(String ownerUsername, String useYn) {
+        List<Board> boards = boardMapper.findByOwnerUsername(ownerUsername, useYn);
         return boards.stream()
                 .map(board -> {
                     BoardResponse response = BoardResponse.from(board);
@@ -150,7 +150,7 @@ public class BoardServiceImpl implements BoardService {
                             .boardId(response.getBoardId())
                             .boardName(response.getBoardName())
                             .description(response.getDescription())
-                            .ownerId(response.getOwnerId())
+                            .ownerUsername(response.getOwnerUsername())
                             .ownerName(response.getOwnerName())
                             .defaultView(response.getDefaultView())
                             .color(response.getColor())
@@ -179,7 +179,7 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public BoardResponse createBoard(BoardCreateRequest request, Long createdBy) {
+    public BoardResponse createBoard(BoardCreateRequest request, String createdBy) {
         log.info("Creating board: name={}, owner={}", request.getBoardName(), createdBy);
 
         // 정렬 순서 자동 설정
@@ -198,7 +198,7 @@ public class BoardServiceImpl implements BoardService {
         Board board = Board.builder()
                 .boardName(request.getBoardName())
                 .description(request.getDescription())
-                .ownerId(createdBy)
+                .ownerUsername(createdBy)
                 .defaultView(defaultView)
                 .color(request.getColor())
                 .sortOrder(sortOrder)
@@ -210,8 +210,9 @@ public class BoardServiceImpl implements BoardService {
         boardMapper.insert(board);
         log.info("Board created: id={}, name={}", board.getBoardId(), board.getBoardName());
 
-        // 기본 속성 정의 및 옵션 생성
-        createDefaultProperties(board.getBoardId(), createdBy);
+        // 카테고리는 TB_CATEGORY 테이블로 전역 관리됨 (보드별 생성 불필요)
+        // 기타 추가 속성 정의가 필요한 경우 아래 메서드 호출
+        // createDefaultProperties(board.getBoardId(), createdBy);
 
         // 감사 로그 기록
         auditLogService.logBoardCreated(board.getBoardId(), createdBy, board.getBoardName());
@@ -220,46 +221,27 @@ public class BoardServiceImpl implements BoardService {
     }
 
     /**
-     * 신규 보드에 기본 속성 정의 및 옵션 생성
+     * 신규 보드에 기본 속성 정의 및 옵션 생성 (현재 미사용)
+     *
+     * 변경 이력:
+     * - 카테고리: TB_CATEGORY 테이블로 전역 관리 (보드별 생성 불필요)
+     * - 담당자/요청일/마감일: TB_ITEM 고정 컬럼으로 관리 (ASSIGNEE_USERNAME, START_TIME, END_TIME)
+     * - 상태/우선순위: TB_ITEM 고정 컬럼으로 관리 (STATUS, PRIORITY)
+     *
+     * 추가 동적 속성이 필요한 경우 이 메서드를 활용할 수 있음
      *
      * @param boardId   보드 ID
-     * @param createdBy 생성자 ID
+     * @param createdBy 생성자 username
      */
-    private void createDefaultProperties(Long boardId, Long createdBy) {
-        log.info("Creating default properties for board: id={}", boardId);
-
-        // 1. 기본 속성 정의 생성 (카테고리, 상태, 우선순위, 담당자, 시작일, 마감일)
-        propertyDefMapper.insertDefaultProperties(boardId, createdBy);
-
-        // 2. 생성된 속성 조회하여 SELECT 타입 속성에 옵션 추가
-        java.util.List<PropertyDef> properties = propertyDefMapper.findAllByBoardId(boardId);
-
-        for (PropertyDef property : properties) {
-            switch (property.getPropertyName()) {
-                case "카테고리":
-                    propertyOptionMapper.insertCategoryOptions(property.getPropertyId(), createdBy);
-                    log.debug("Created category options for property: id={}", property.getPropertyId());
-                    break;
-                case "상태":
-                    propertyOptionMapper.insertStatusOptions(property.getPropertyId(), createdBy);
-                    log.debug("Created status options for property: id={}", property.getPropertyId());
-                    break;
-                case "우선순위":
-                    propertyOptionMapper.insertPriorityOptions(property.getPropertyId(), createdBy);
-                    log.debug("Created priority options for property: id={}", property.getPropertyId());
-                    break;
-                default:
-                    // 담당자, 시작일, 마감일은 옵션이 필요 없음
-                    break;
-            }
-        }
-
-        log.info("Default properties created for board: id={}, propertyCount={}", boardId, properties.size());
+    @SuppressWarnings("unused")
+    private void createDefaultProperties(Long boardId, String createdBy) {
+        log.info("Creating default properties for board: id={} (currently no default properties)", boardId);
+        // 현재 기본 속성 정의 없음 (카테고리는 TB_CATEGORY로 전역 관리)
     }
 
     @Override
     @Transactional
-    public BoardResponse updateBoard(Long boardId, BoardUpdateRequest request, Long updatedBy) {
+    public BoardResponse updateBoard(Long boardId, BoardUpdateRequest request, String updatedBy) {
         log.info("Updating board: id={}", boardId);
 
         // 보드 존재 확인
@@ -301,15 +283,15 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public void deleteBoard(Long boardId, Long userId) {
-        log.info("Deleting board: id={}, userId={}", boardId, userId);
+    public void deleteBoard(Long boardId, String username) {
+        log.info("Deleting board: id={}, username={}", boardId, username);
 
         // 보드 존재 확인
         Board board = boardMapper.findById(boardId)
                 .orElseThrow(() -> BusinessException.boardNotFound(boardId));
 
         // 소유자 확인
-        if (!board.isOwner(userId)) {
+        if (!board.isOwner(username)) {
             throw BusinessException.accessDenied("보드 소유자만 삭제할 수 있습니다.");
         }
 
@@ -342,8 +324,8 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public BoardShareResponse addBoardShare(Long boardId, BoardShareRequest request, Long createdBy) {
-        log.info("Adding board share: boardId={}, userId={}", boardId, request.getUserId());
+    public BoardShareResponse addBoardShare(Long boardId, BoardShareRequest request, String createdBy) {
+        log.info("Adding board share: boardId={}, username={}", boardId, request.getUsername());
 
         // 보드 존재 확인
         Board board = boardMapper.findById(boardId)
@@ -355,16 +337,16 @@ public class BoardServiceImpl implements BoardService {
         }
 
         // 소유자에게는 공유 불가
-        if (board.isOwner(request.getUserId())) {
+        if (board.isOwner(request.getUsername())) {
             throw BusinessException.badRequest("보드 소유자에게는 공유할 수 없습니다.");
         }
 
         // 사용자 존재 확인
-        userMapper.findById(request.getUserId())
-                .orElseThrow(() -> BusinessException.userNotFound(request.getUserId()));
+        userMapper.findByUsername(request.getUsername())
+                .orElseThrow(() -> BusinessException.userNotFound(request.getUsername()));
 
         // 이미 공유되어 있는지 확인
-        if (boardShareMapper.existsByBoardIdAndUserId(boardId, request.getUserId())) {
+        if (boardShareMapper.existsByBoardIdAndUsername(boardId, request.getUsername())) {
             throw BusinessException.conflict("이미 해당 사용자에게 공유되어 있습니다.");
         }
 
@@ -377,7 +359,7 @@ public class BoardServiceImpl implements BoardService {
         // 공유 추가
         BoardShare boardShare = BoardShare.builder()
                 .boardId(boardId)
-                .userId(request.getUserId())
+                .username(request.getUsername())
                 .permission(permission)
                 .createdBy(createdBy)
                 .build();
@@ -386,7 +368,7 @@ public class BoardServiceImpl implements BoardService {
         log.info("Board share added: boardShareId={}", boardShare.getBoardShareId());
 
         // 감사 로그 기록
-        auditLogService.logBoardShared(boardId, createdBy, request.getUserId(), permission);
+        auditLogService.logBoardShared(boardId, createdBy, request.getUsername(), permission);
 
         // 저장된 정보 조회하여 반환
         return BoardShareResponse.from(
@@ -396,29 +378,29 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public void removeBoardShare(Long boardId, Long userId, Long requestUserId) {
-        log.info("Removing board share: boardId={}, userId={}", boardId, userId);
+    public void removeBoardShare(Long boardId, String username, String requestUsername) {
+        log.info("Removing board share: boardId={}, username={}", boardId, username);
 
         // 보드 존재 확인
         Board board = boardMapper.findById(boardId)
                 .orElseThrow(() -> BusinessException.boardNotFound(boardId));
 
         // 소유자만 공유 해제 가능
-        if (!board.isOwner(requestUserId)) {
+        if (!board.isOwner(requestUsername)) {
             throw BusinessException.accessDenied("보드 소유자만 공유를 해제할 수 있습니다.");
         }
 
         // 공유되어 있는지 확인
-        if (!boardShareMapper.existsByBoardIdAndUserId(boardId, userId)) {
+        if (!boardShareMapper.existsByBoardIdAndUsername(boardId, username)) {
             throw BusinessException.notFound("해당 사용자에게 공유되어 있지 않습니다.");
         }
 
         // 공유 제거
-        boardShareMapper.deleteByBoardIdAndUserId(boardId, userId);
-        log.info("Board share removed: boardId={}, userId={}", boardId, userId);
+        boardShareMapper.deleteByBoardIdAndUsername(boardId, username);
+        log.info("Board share removed: boardId={}, username={}", boardId, username);
 
         // 감사 로그 기록
-        auditLogService.logBoardUnshared(boardId, requestUserId, userId);
+        auditLogService.logBoardUnshared(boardId, requestUsername, username);
     }
 
     // =============================================
@@ -426,14 +408,14 @@ public class BoardServiceImpl implements BoardService {
     // =============================================
 
     @Override
-    public boolean hasAccess(Long boardId, Long userId) {
-        return boardMapper.hasAccess(boardId, userId);
+    public boolean hasAccess(Long boardId, String username) {
+        return boardMapper.hasAccess(boardId, username);
     }
 
     @Override
-    public boolean isOwner(Long boardId, Long userId) {
+    public boolean isOwner(Long boardId, String username) {
         return boardMapper.findById(boardId)
-                .map(board -> board.isOwner(userId))
+                .map(board -> board.isOwner(username))
                 .orElse(false);
     }
 
@@ -442,12 +424,12 @@ public class BoardServiceImpl implements BoardService {
     // =============================================
 
     @Override
-    public BoardResponse getBoardWithPermission(Long boardId, Long userId) {
+    public BoardResponse getBoardWithPermission(Long boardId, String username) {
         Board board = boardMapper.findById(boardId)
                 .orElseThrow(() -> BusinessException.boardNotFound(boardId));
 
         // 접근 권한 확인
-        if (!hasAccess(boardId, userId)) {
+        if (!hasAccess(boardId, username)) {
             throw BusinessException.accessDenied("보드에 접근 권한이 없습니다.");
         }
 
@@ -462,9 +444,9 @@ public class BoardServiceImpl implements BoardService {
         List<BoardResponse.SharedUserInfo> sharedUsers = new ArrayList<>();
 
         // 1. 소유자 추가
-        userMapper.findById(board.getOwnerId()).ifPresent(owner -> {
+        userMapper.findByUsername(board.getOwnerUsername()).ifPresent(owner -> {
             sharedUsers.add(BoardResponse.SharedUserInfo.builder()
-                    .userId(owner.getUserId())
+                    .username(owner.getUsername())
                     .userName(owner.getName())
                     .departmentName(owner.getDepartmentName())
                     .build());
@@ -473,9 +455,9 @@ public class BoardServiceImpl implements BoardService {
         // 2. 공유 사용자 추가
         List<BoardShare> shares = boardShareMapper.findByBoardId(boardId);
         for (BoardShare share : shares) {
-            userMapper.findById(share.getUserId()).ifPresent(user -> {
+            userMapper.findByUsername(share.getUsername()).ifPresent(user -> {
                 sharedUsers.add(BoardResponse.SharedUserInfo.builder()
-                        .userId(user.getUserId())
+                        .username(user.getUsername())
                         .userName(user.getName())
                         .departmentName(user.getDepartmentName())
                         .build());
@@ -486,15 +468,15 @@ public class BoardServiceImpl implements BoardService {
         int pendingItemCount = boardMapper.countPendingItems(boardId);
 
         // 현재 사용자 권한
-        String currentUserPermission = getUserPermission(boardId, userId);
-        boolean isOwnerFlag = board.isOwner(userId);
+        String currentUserPermission = getUserPermission(boardId, username);
+        boolean isOwnerFlag = board.isOwner(username);
 
         // Builder로 새 객체 생성
         return BoardResponse.builder()
                 .boardId(response.getBoardId())
                 .boardName(response.getBoardName())
                 .description(response.getDescription())
-                .ownerId(response.getOwnerId())
+                .ownerUsername(response.getOwnerUsername())
                 .ownerName(response.getOwnerName())
                 .defaultView(response.getDefaultView())
                 .color(response.getColor())
@@ -513,9 +495,9 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
-    public BoardListResponse getBoardList(Long userId) {
+    public BoardListResponse getBoardList(String username) {
         // 소유한 보드 목록
-        List<Board> ownedBoards = boardMapper.findOwnedBoards(userId);
+        List<Board> ownedBoards = boardMapper.findByOwnerUsername(username, "Y");
         List<BoardResponse> ownedBoardResponses = ownedBoards.stream()
                 .map(board -> {
                     BoardResponse response = BoardResponse.from(board);
@@ -524,7 +506,7 @@ public class BoardServiceImpl implements BoardService {
                             .boardId(response.getBoardId())
                             .boardName(response.getBoardName())
                             .description(response.getDescription())
-                            .ownerId(response.getOwnerId())
+                            .ownerUsername(response.getOwnerUsername())
                             .ownerName(response.getOwnerName())
                             .defaultView(response.getDefaultView())
                             .color(response.getColor())
@@ -542,7 +524,7 @@ public class BoardServiceImpl implements BoardService {
                 .collect(Collectors.toList());
 
         // 공유받은 보드 목록
-        List<Map<String, Object>> sharedBoardMaps = boardMapper.findSharedBoards(userId);
+        List<Map<String, Object>> sharedBoardMaps = boardMapper.findSharedBoards(username);
         List<BoardResponse> sharedBoardResponses = sharedBoardMaps.stream()
                 .map(map -> {
                     Long boardId = ((Number) map.get("BOARD_ID")).longValue();
@@ -553,7 +535,7 @@ public class BoardServiceImpl implements BoardService {
                             .boardId(boardId)
                             .boardName((String) map.get("BOARD_NAME"))
                             .description((String) map.get("DESCRIPTION"))
-                            .ownerId(((Number) map.get("OWNER_ID")).longValue())
+                            .ownerUsername((String) map.get("OWNER_USERNAME"))
                             .ownerName((String) map.get("OWNER_NAME"))
                             .defaultView((String) map.get("DEFAULT_VIEW"))
                             .color((String) map.get("COLOR"))
@@ -578,7 +560,7 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public void updateBoardOrder(Long boardId, Integer sortOrder, Long userId) {
+    public void updateBoardOrder(Long boardId, Integer sortOrder, String username) {
         log.info("Updating board order: boardId={}, sortOrder={}", boardId, sortOrder);
 
         // 보드 존재 확인
@@ -586,26 +568,45 @@ public class BoardServiceImpl implements BoardService {
                 .orElseThrow(() -> BusinessException.boardNotFound(boardId));
 
         // 소유자 확인
-        if (!board.isOwner(userId)) {
+        if (!board.isOwner(username)) {
             throw BusinessException.accessDenied("보드 소유자만 순서를 변경할 수 있습니다.");
         }
 
         // 순서 변경
-        boardMapper.updateSortOrder(boardId, sortOrder, userId);
+        boardMapper.updateSortOrder(boardId, sortOrder, username);
         log.info("Board order updated: boardId={}, sortOrder={}", boardId, sortOrder);
     }
 
     @Override
     @Transactional
-    public TransferResultResponse deleteBoardWithTransfer(Long boardId, BoardDeleteRequest request, Long userId) {
-        log.info("Deleting board with transfer: boardId={}, userId={}", boardId, userId);
+    public void updateSharedBoardOrder(Long boardId, Integer sortOrder, String username) {
+        log.info("Updating shared board order: boardId={}, sortOrder={}, username={}", boardId, sortOrder, username);
+
+        // 보드 존재 확인
+        boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        // 공유받은 보드인지 확인
+        if (!boardShareMapper.existsByBoardIdAndUsername(boardId, username)) {
+            throw BusinessException.accessDenied("공유받은 보드가 아닙니다.");
+        }
+
+        // 순서 변경
+        boardShareMapper.updateSortOrder(boardId, username, sortOrder);
+        log.info("Shared board order updated: boardId={}, sortOrder={}, username={}", boardId, sortOrder, username);
+    }
+
+    @Override
+    @Transactional
+    public TransferResultResponse deleteBoardWithTransfer(Long boardId, BoardDeleteRequest request, String username) {
+        log.info("Deleting board with transfer: boardId={}, username={}", boardId, username);
 
         // 보드 존재 확인
         Board board = boardMapper.findById(boardId)
                 .orElseThrow(() -> BusinessException.boardNotFound(boardId));
 
         // 소유자 확인
-        if (!board.isOwner(userId)) {
+        if (!board.isOwner(username)) {
             throw BusinessException.accessDenied("보드 소유자만 삭제할 수 있습니다.");
         }
 
@@ -613,10 +614,10 @@ public class BoardServiceImpl implements BoardService {
 
         // 미완료 업무가 있고, 이관 대상자가 지정된 경우 이관 실행
         int pendingCount = boardMapper.countPendingItems(boardId);
-        if (pendingCount > 0 && request.getTargetUserId() != null) {
+        if (pendingCount > 0 && request.getTargetUsername() != null) {
             // 이관 요청 생성
             TransferRequest transferRequest = new TransferRequest();
-            transferRequest.setTargetUserId(request.getTargetUserId());
+            transferRequest.setTargetUsername(request.getTargetUsername());
 
             // 미완료 업무 ID 목록 조회
             List<Long> pendingItemIds = boardMapper.findPendingItems(boardId).stream()
@@ -625,7 +626,7 @@ public class BoardServiceImpl implements BoardService {
             transferRequest.setItemIds(pendingItemIds);
 
             // 이관 실행
-            transferResult = transferService.executeTransfer(boardId, transferRequest, userId);
+            transferResult = transferService.executeTransfer(boardId, transferRequest, username);
         }
 
         // 강제 삭제 또는 이관 완료 후 삭제
@@ -635,11 +636,11 @@ public class BoardServiceImpl implements BoardService {
 
             // 보드 비활성화 (소프트 삭제)
             board.setUseYn("N");
-            board.setUpdatedBy(userId);
+            board.setUpdatedBy(username);
             boardMapper.update(board);
 
             // 감사 로그 기록
-            auditLogService.logBoardDeleted(boardId, userId, board.getBoardName());
+            auditLogService.logBoardDeleted(boardId, username, board.getBoardName());
 
             log.info("Board deleted: boardId={}", boardId);
         }
@@ -658,43 +659,43 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public void updateBoardSharePermission(Long boardId, Long userId, ShareUpdateRequest request, Long requestUserId) {
-        log.info("Updating board share permission: boardId={}, userId={}, permission={}",
-                boardId, userId, request.getPermission());
+    public void updateBoardSharePermission(Long boardId, String username, ShareUpdateRequest request, String requestUsername) {
+        log.info("Updating board share permission: boardId={}, username={}, permission={}",
+                boardId, username, request.getPermission());
 
         // 보드 존재 확인
         Board board = boardMapper.findById(boardId)
                 .orElseThrow(() -> BusinessException.boardNotFound(boardId));
 
         // 소유자만 권한 변경 가능
-        if (!board.isOwner(requestUserId)) {
+        if (!board.isOwner(requestUsername)) {
             throw BusinessException.accessDenied("보드 소유자만 권한을 변경할 수 있습니다.");
         }
 
         // 공유되어 있는지 확인
-        if (!boardShareMapper.existsByBoardIdAndUserId(boardId, userId)) {
+        if (!boardShareMapper.existsByBoardIdAndUsername(boardId, username)) {
             throw BusinessException.notFound("해당 사용자에게 공유되어 있지 않습니다.");
         }
 
         // 기존 권한 조회
-        String oldPermission = boardMapper.getUserPermission(boardId, userId);
+        String oldPermission = boardMapper.getUserPermission(boardId, username);
 
         // 권한 변경
-        boardShareMapper.updatePermissionByBoardAndUser(boardId, userId, request.getPermission(), requestUserId);
-        log.info("Board share permission updated: boardId={}, userId={}, permission={}",
-                boardId, userId, request.getPermission());
+        boardShareMapper.updatePermissionByBoardAndUser(boardId, username, request.getPermission(), requestUsername);
+        log.info("Board share permission updated: boardId={}, username={}, permission={}",
+                boardId, username, request.getPermission());
 
         // 감사 로그 기록
         auditLogService.log(
                 "BOARD_SHARE", boardId, "UPDATE",
-                requestUserId,
+                requestUsername,
                 String.format("보드 공유 권한 변경: %s → %s", oldPermission, request.getPermission()),
-                null, null, userId
+                null, null, username
         );
     }
 
     @Override
-    public String getUserPermission(Long boardId, Long userId) {
+    public String getUserPermission(Long boardId, String username) {
         // 보드 존재 확인
         Board board = boardMapper.findById(boardId).orElse(null);
         if (board == null) {
@@ -702,17 +703,17 @@ public class BoardServiceImpl implements BoardService {
         }
 
         // 소유자인 경우
-        if (board.isOwner(userId)) {
+        if (board.isOwner(username)) {
             return "OWNER";
         }
 
         // 공유 권한 조회
-        return boardMapper.getUserPermission(boardId, userId);
+        return boardMapper.getUserPermission(boardId, username);
     }
 
     @Override
-    public boolean canEdit(Long boardId, Long userId) {
-        String permission = getUserPermission(boardId, userId);
+    public boolean canEdit(Long boardId, String username) {
+        String permission = getUserPermission(boardId, username);
         if (permission == null) {
             return false;
         }
@@ -722,8 +723,8 @@ public class BoardServiceImpl implements BoardService {
     }
 
     @Override
-    public boolean canDelete(Long boardId, Long userId) {
-        String permission = getUserPermission(boardId, userId);
+    public boolean canDelete(Long boardId, String username) {
+        String permission = getUserPermission(boardId, username);
         if (permission == null) {
             return false;
         }
@@ -739,36 +740,36 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public BoardResponse transferBoardOwnership(Long boardId, BoardTransferRequest request, Long currentUserId) {
-        log.info("Transferring board ownership: boardId={}, targetUserId={}", boardId, request.getTargetUserId());
+    public BoardResponse transferBoardOwnership(Long boardId, BoardTransferRequest request, String currentUsername) {
+        log.info("Transferring board ownership: boardId={}, targetUsername={}", boardId, request.getTargetUsername());
 
         // 보드 존재 확인
         Board board = boardMapper.findById(boardId)
                 .orElseThrow(() -> BusinessException.boardNotFound(boardId));
 
         // 소유자 확인
-        if (!board.isOwner(currentUserId)) {
+        if (!board.isOwner(currentUsername)) {
             throw BusinessException.accessDenied("보드 소유자만 이관할 수 있습니다.");
         }
 
         // 자기 자신에게 이관 불가
-        if (currentUserId.equals(request.getTargetUserId())) {
+        if (currentUsername.equals(request.getTargetUsername())) {
             throw BusinessException.badRequest("자기 자신에게 이관할 수 없습니다.");
         }
 
         // 대상 사용자 존재 확인
-        User targetUser = userMapper.findById(request.getTargetUserId())
-                .orElseThrow(() -> BusinessException.userNotFound(request.getTargetUserId()));
+        User targetUser = userMapper.findByUsername(request.getTargetUsername())
+                .orElseThrow(() -> BusinessException.userNotFound(request.getTargetUsername()));
 
         String originalBoardName = board.getBoardName();
-        Long originalOwnerId = board.getOwnerId();
+        String originalOwnerUsername = board.getOwnerUsername();
 
         // 보드 소유권 이전 (보드명 -> "보드이관"으로 변경)
         int updated = boardMapper.transferOwnership(
                 boardId,
-                request.getTargetUserId(),
+                request.getTargetUsername(),
                 TRANSFERRED_BOARD_NAME,
-                currentUserId
+                currentUsername
         );
 
         if (updated == 0) {
@@ -776,22 +777,22 @@ public class BoardServiceImpl implements BoardService {
         }
 
         // 기존 소유자를 공유 사용자에서 제거 (이미 공유되어 있었다면)
-        if (boardShareMapper.existsByBoardIdAndUserId(boardId, request.getTargetUserId())) {
-            boardShareMapper.deleteByBoardIdAndUserId(boardId, request.getTargetUserId());
+        if (boardShareMapper.existsByBoardIdAndUsername(boardId, request.getTargetUsername())) {
+            boardShareMapper.deleteByBoardIdAndUsername(boardId, request.getTargetUsername());
         }
 
         // 감사 로그 기록
         String description = String.format("보드 이관: %s → %s (보드명: %s → %s)",
-                originalOwnerId, request.getTargetUserId(),
+                originalOwnerUsername, request.getTargetUsername(),
                 originalBoardName, TRANSFERRED_BOARD_NAME);
         auditLogService.log(
                 "BOARD", boardId, "TRANSFER",
-                currentUserId, description,
-                null, null, request.getTargetUserId()
+                currentUsername, description,
+                null, null, request.getTargetUsername()
         );
 
-        log.info("Board ownership transferred: boardId={}, from userId={} to userId={}",
-                boardId, originalOwnerId, request.getTargetUserId());
+        log.info("Board ownership transferred: boardId={}, from username={} to username={}",
+                boardId, originalOwnerUsername, request.getTargetUsername());
 
         return getBoard(boardId);
     }

@@ -100,4 +100,32 @@ public class PageRequest {
         request.setSortDirection(sortDirection);
         return request;
     }
+
+    // ============================================
+    // Lombok 호환성을 위한 명시적 getter/setter
+    // ============================================
+
+    public int getPage() {
+        return page;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public String getSortField() {
+        return sortField;
+    }
+
+    public void setSortField(String sortField) {
+        this.sortField = sortField;
+    }
+
+    public String getSortDirection() {
+        return sortDirection;
+    }
+
+    public void setSortDirection(String sortDirection) {
+        this.sortDirection = sortDirection;
+    }
 }

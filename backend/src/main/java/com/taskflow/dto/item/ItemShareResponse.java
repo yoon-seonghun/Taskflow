@@ -26,14 +26,9 @@ public class ItemShareResponse {
     private Long itemId;
 
     /**
-     * 사용자 ID
+     * 사용자 USERNAME
      */
-    private Long userId;
-
-    /**
-     * 로그인 ID
-     */
-    private String loginId;
+    private String username;
 
     /**
      * 사용자 이름
@@ -86,8 +81,7 @@ public class ItemShareResponse {
         return ItemShareResponse.builder()
                 .itemShareId(share.getItemShareId())
                 .itemId(share.getItemId())
-                .userId(share.getUserId())
-                .loginId(share.getLoginId())
+                .username(share.getUsername())
                 .userName(share.getUserName())
                 .departmentName(share.getDepartmentName())
                 .permission(share.getPermission())

@@ -90,12 +90,12 @@ public interface GroupMapper {
      *
      * @param groupId   그룹 ID
      * @param sortOrder 정렬 순서
-     * @param updatedBy 수정자 ID
+     * @param updatedBy 수정자 USERNAME
      * @return 영향받은 행 수
      */
     int updateOrder(@Param("groupId") Long groupId,
                     @Param("sortOrder") Integer sortOrder,
-                    @Param("updatedBy") Long updatedBy);
+                    @Param("updatedBy") String updatedBy);
 
     /**
      * 그룹 삭제 (물리 삭제)
@@ -109,8 +109,8 @@ public interface GroupMapper {
      * 그룹 비활성화 (논리 삭제)
      *
      * @param groupId   그룹 ID
-     * @param updatedBy 수정자 ID
+     * @param updatedBy 수정자 USERNAME
      * @return 영향받은 행 수
      */
-    int deactivate(@Param("groupId") Long groupId, @Param("updatedBy") Long updatedBy);
+    int deactivate(@Param("groupId") Long groupId, @Param("updatedBy") String updatedBy);
 }

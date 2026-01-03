@@ -46,7 +46,7 @@ const priorityLabels: Record<Priority, string> = {
 const statusLabels: Record<ItemStatus, string> = {
   NOT_STARTED: '시작전',
   IN_PROGRESS: '진행중',
-  PENDING: '대기',
+  PENDING: '보류',
   COMPLETED: '완료',
   DELETED: '삭제'
 }
@@ -140,6 +140,15 @@ function handleClick() {
         >
           {{ item.groupName }}
         </span>
+
+        <!-- 카테고리 -->
+        <span
+          v-if="item.categoryName"
+          class="px-1.5 py-0.5 rounded text-[11px] bg-gray-100 text-gray-600"
+          :style="item.categoryColor ? { backgroundColor: `${item.categoryColor}20`, color: item.categoryColor } : {}"
+        >
+          {{ item.categoryName }}
+        </span>
       </div>
 
       <!-- 하단 정보 -->
@@ -158,12 +167,12 @@ function handleClick() {
 
         <!-- 우측 정보 -->
         <div class="flex items-center gap-2">
-          <!-- 마감일 -->
-          <span v-if="item.dueDate" class="text-[11px] text-gray-500 flex items-center gap-0.5">
+          <!-- 완료예정 -->
+          <span v-if="item.endTime" class="text-[11px] text-gray-500 flex items-center gap-0.5">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            {{ formatDate(item.dueDate) }}
+            {{ formatDate(item.endTime) }}
           </span>
 
           <!-- 댓글 수 -->

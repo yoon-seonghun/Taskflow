@@ -45,12 +45,24 @@ export const useDepartmentStore = defineStore('department', () => {
       }))
   }
 
-  // 부서 찾기 (트리에서)
+  // 부서 찾기 (트리에서 - ID 기준)
   function findDepartmentInTree(depts: Department[], id: number): Department | null {
     for (const dept of depts) {
       if (dept.departmentId === id) return dept
       if (dept.children) {
         const found = findDepartmentInTree(dept.children, id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  // 부서 찾기 (트리에서 - Code 기준)
+  function findDepartmentByCode(depts: Department[], code: string): Department | null {
+    for (const dept of depts) {
+      if (dept.departmentCode === code) return dept
+      if (dept.children) {
+        const found = findDepartmentByCode(dept.children, code)
         if (found) return found
       }
     }
@@ -151,27 +163,27 @@ export const useDepartmentStore = defineStore('department', () => {
   }
 
   /**
-   * 부서 수정
+   * 부서 수정 (departmentCode 기반)
    */
-  async function updateDepartment(departmentId: number, data: DepartmentUpdateRequest): Promise<boolean> {
+  async function updateDepartment(departmentCode: string, data: DepartmentUpdateRequest): Promise<boolean> {
     error.value = null
 
     try {
-      // 현재 부서의 상위 부서 ID 저장 (변경 감지용)
-      const currentDept = findDepartmentInTree(departments.value, departmentId)
-      const previousParentId = currentDept?.parentId
+      // 현재 부서의 상위 부서 코드 저장 (변경 감지용)
+      const currentDept = findDepartmentByCode(departments.value, departmentCode)
+      const previousParentCode = currentDept?.parentCode
 
-      const response = await departmentApi.updateDepartment(departmentId, data)
+      const response = await departmentApi.updateDepartment(departmentCode, data)
       if (response.success && response.data) {
         // 상위 부서가 변경되면 전체 트리 새로고침
-        if (data.parentId !== previousParentId) {
+        if (data.parentCode !== previousParentCode) {
           await fetchDepartments()
-        } else {
+        } else if (currentDept) {
           // 트리 업데이트
-          updateDepartmentInTree(departments.value, departmentId, response.data)
+          updateDepartmentInTree(departments.value, currentDept.departmentId, response.data)
         }
         // 선택된 부서 업데이트
-        if (selectedDepartment.value?.departmentId === departmentId) {
+        if (selectedDepartment.value?.departmentCode === departmentCode) {
           selectedDepartment.value = response.data
         }
         // 평면 목록도 새로고침
@@ -187,18 +199,22 @@ export const useDepartmentStore = defineStore('department', () => {
   }
 
   /**
-   * 부서 삭제
+   * 부서 삭제 (departmentCode 기반)
    */
-  async function deleteDepartment(departmentId: number): Promise<boolean> {
+  async function deleteDepartment(departmentCode: string): Promise<boolean> {
     error.value = null
 
     try {
-      const response = await departmentApi.deleteDepartment(departmentId)
+      const response = await departmentApi.deleteDepartment(departmentCode)
       if (response.success) {
-        // 트리에서 제거
-        departments.value = removeDepartmentFromTree(departments.value, departmentId)
+        // departmentCode로 부서 찾아서 ID 획득
+        const dept = findDepartmentByCode(departments.value, departmentCode)
+        if (dept) {
+          // 트리에서 제거
+          departments.value = removeDepartmentFromTree(departments.value, dept.departmentId)
+        }
         // 선택 해제
-        if (selectedDepartment.value?.departmentId === departmentId) {
+        if (selectedDepartment.value?.departmentCode === departmentCode) {
           selectedDepartment.value = null
           departmentUsers.value = []
         }
@@ -215,11 +231,11 @@ export const useDepartmentStore = defineStore('department', () => {
   }
 
   /**
-   * 부서 순서 변경
+   * 부서 순서 변경 (departmentCode 기반)
    */
-  async function updateDepartmentOrder(departmentId: number, sortOrder: number): Promise<boolean> {
+  async function updateDepartmentOrder(departmentCode: string, sortOrder: number): Promise<boolean> {
     try {
-      const response = await departmentApi.updateDepartmentOrder(departmentId, sortOrder)
+      const response = await departmentApi.updateDepartmentOrder(departmentCode, sortOrder)
       if (response.success) {
         // 목록 새로고침
         await fetchDepartments()
@@ -232,11 +248,11 @@ export const useDepartmentStore = defineStore('department', () => {
   }
 
   /**
-   * 부서별 사용자 목록 조회
+   * 부서별 사용자 목록 조회 (departmentCode 기준)
    */
-  async function fetchDepartmentUsers(departmentId: number): Promise<boolean> {
+  async function fetchDepartmentUsers(departmentCode: string): Promise<boolean> {
     try {
-      const response = await departmentApi.getDepartmentUsers(departmentId)
+      const response = await departmentApi.getDepartmentUsers(departmentCode)
       if (response.success && response.data) {
         departmentUsers.value = response.data
         return true
@@ -288,7 +304,7 @@ export const useDepartmentStore = defineStore('department', () => {
   function selectDepartment(department: Department | null) {
     selectedDepartment.value = department
     if (department) {
-      fetchDepartmentUsers(department.departmentId)
+      fetchDepartmentUsers(department.departmentCode)
     } else {
       departmentUsers.value = []
     }

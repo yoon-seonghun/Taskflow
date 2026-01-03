@@ -12,7 +12,7 @@
         <result property="boardId" column="BOARD_ID"/>
         <result property="title" column="TITLE"/>
         <result property="result" column="RESULT"/>
-        <result property="workerId" column="WORKER_ID"/>
+        <result property="workerUsername" column="WORKER_USERNAME"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="startTime" column="START_TIME"/>
         <result property="completedAt" column="COMPLETED_AT"/>
@@ -38,7 +38,7 @@
             CASE
                 WHEN i.STATUS = 'COMPLETED' THEN i.COMPLETED_BY
                 WHEN i.STATUS = 'DELETED' THEN i.DELETED_BY
-            END AS WORKER_ID,
+            END AS WORKER_USERNAME,
             i.CREATED_AT,
             i.START_TIME,
             i.END_TIME AS COMPLETED_AT,
@@ -53,9 +53,9 @@
             ucr.NAME AS CREATED_BY_NAME
         FROM TB_ITEM i
         INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
-        LEFT JOIN TB_USER uc ON i.COMPLETED_BY = uc.USER_ID
-        LEFT JOIN TB_USER ud ON i.DELETED_BY = ud.USER_ID
-        LEFT JOIN TB_USER ucr ON i.CREATED_BY = ucr.USER_ID
+        LEFT JOIN TB_USER uc ON i.COMPLETED_BY = uc.USERNAME
+        LEFT JOIN TB_USER ud ON i.DELETED_BY = ud.USERNAME
+        LEFT JOIN TB_USER ucr ON i.CREATED_BY = ucr.USERNAME
     </sql>
 
     <sql id="historyConditions">
@@ -66,8 +66,8 @@
         <if test="request.result != null and request.result != ''">
             AND i.STATUS = #{request.result}
         </if>
-        <if test="request.workerId != null">
-            AND i.UPDATED_BY = #{request.workerId}
+        <if test="request.workerUsername != null and request.workerUsername != ''">
+            AND i.UPDATED_BY = #{request.workerUsername}
         </if>
         <!-- 날짜 필터: END_TIME이 NULL인 경우 UPDATED_AT 또는 CREATED_AT으로 대체 -->
         <if test="request.startDate != null">

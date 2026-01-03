@@ -41,7 +41,7 @@ export const groupApi = {
     return post<GroupMember>(`/groups/${groupId}/members`, data)
   },
 
-  removeGroupMember(groupId: number, userId: number) {
-    return del<void>(`/groups/${groupId}/members/${userId}`)
+  removeGroupMember(groupId: number, username: string) {
+    return del<void>(`/groups/${groupId}/members/${username}`)
   }
 }

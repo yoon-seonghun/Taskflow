@@ -28,9 +28,9 @@ public class ItemSearchRequest {
     private String priority;
 
     /**
-     * 담당자 ID 필터
+     * 담당자 아이디 필터
      */
-    private Long assigneeId;
+    private String assigneeUsername;
 
     /**
      * 그룹 ID 필터
@@ -97,7 +97,7 @@ public class ItemSearchRequest {
             case "title", "content" -> "i.CONTENT";
             case "status" -> "i.STATUS";
             case "priority" -> "i.PRIORITY";
-            case "assigneeId" -> "i.ASSIGNEE_ID";
+            case "assigneeUsername" -> "i.ASSIGNEE_USERNAME";
             case "groupId" -> "i.GROUP_ID";
             case "categoryId" -> "i.CATEGORY_ID";
             case "startTime" -> "i.START_TIME";

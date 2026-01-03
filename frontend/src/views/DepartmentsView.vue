@@ -3,7 +3,8 @@
  * 부서 관리 메뉴 (Departments View)
  * - 부서 트리 표시
  * - 부서 CRUD
- * - 부서별 사용자 목록
+ * - 부서별 사용자 목록 (팀장 우선, 직급순 정렬)
+ * - External 모드: 조회만 가능
  */
 import { ref, computed, onMounted } from 'vue'
 import DepartmentTree from '@/components/department/DepartmentTree.vue'
@@ -12,9 +13,15 @@ import Badge from '@/components/common/Badge.vue'
 import type { Department, DepartmentCreateRequest, DepartmentUpdateRequest } from '@/types/department'
 import { useDepartmentStore } from '@/stores/department'
 import { useUiStore } from '@/stores/ui'
+import { useConfigStore } from '@/stores/config'
 
 const departmentStore = useDepartmentStore()
 const uiStore = useUiStore()
+const configStore = useConfigStore()
+
+// 설정 기반 computed
+const isExternalMode = computed(() => configStore.isExternalMode)
+const departmentCrudEnabled = computed(() => configStore.departmentCrudEnabled)
 
 // 폼 상태
 type FormMode = 'none' | 'create' | 'edit' | 'create-child'
@@ -33,8 +40,21 @@ const showInactive = ref(true)
 // 선택된 부서
 const selectedDepartment = computed(() => departmentStore.selectedDepartment)
 
-// 선택된 부서의 사용자 목록
-const departmentUsers = computed(() => departmentStore.departmentUsers)
+// 선택된 부서의 사용자 목록 (팀장 우선, 직급순 정렬)
+const departmentUsers = computed(() => {
+  const users = departmentStore.departmentUsers
+  return [...users].sort((a, b) => {
+    // 1. 팀장 우선 (HEAD_YN='Y'인 사용자가 맨 위)
+    if (a.headYn === 'Y' && b.headYn !== 'Y') return -1
+    if (a.headYn !== 'Y' && b.headYn === 'Y') return 1
+    // 2. 직급 순서 (낮을수록 높은 직급)
+    const aSort = a.positionSortOrder ?? 999
+    const bSort = b.positionSortOrder ?? 999
+    if (aSort !== bSort) return aSort - bSort
+    // 3. 이름순
+    return (a.userName || '').localeCompare(b.userName || '')
+  })
+})
 
 // Form ref
 const formRef = ref<InstanceType<typeof DepartmentForm> | null>(null)
@@ -42,6 +62,7 @@ const formRef = ref<InstanceType<typeof DepartmentForm> | null>(null)
 // 초기 로드
 async function loadData() {
   await Promise.all([
+    configStore.fetchConfig(),
     departmentStore.fetchDepartments(),
     departmentStore.fetchFlatDepartments()
   ])
@@ -101,7 +122,7 @@ async function handleDelete(department: Department) {
   if (!confirmed) return
 
   try {
-    const success = await departmentStore.deleteDepartment(department.departmentId)
+    const success = await departmentStore.deleteDepartment(department.departmentCode)
     if (success) {
       uiStore.showSuccess('부서가 삭제되었습니다.')
     } else {
@@ -121,7 +142,7 @@ async function handleFormSubmit(data: DepartmentCreateRequest | DepartmentUpdate
     if (formMode.value === 'edit' && editingDepartment.value) {
       // 수정
       const success = await departmentStore.updateDepartment(
-        editingDepartment.value.departmentId,
+        editingDepartment.value.departmentCode,
         data as DepartmentUpdateRequest
       )
       if (success) {
@@ -170,7 +191,12 @@ onMounted(() => {
     <div class="mb-6">
       <h1 class="text-xl font-semibold text-gray-900">부서 관리</h1>
       <p class="mt-1 text-sm text-gray-500">
-        조직의 부서를 등록하고 관리합니다.
+        <template v-if="isExternalMode">
+          외부 시스템과 연동되어 부서 정보를 조회만 할 수 있습니다.
+        </template>
+        <template v-else>
+          조직의 부서를 등록하고 관리합니다.
+        </template>
       </p>
     </div>
 
@@ -191,6 +217,7 @@ onMounted(() => {
 
         <DepartmentTree
           :show-inactive="showInactive"
+          :readonly="!departmentCrudEnabled"
           @select="handleSelect"
           @edit="handleEdit"
           @delete="handleDelete"
@@ -201,8 +228,8 @@ onMounted(() => {
 
       <!-- 오른쪽: 상세/폼 -->
       <div class="lg:col-span-7">
-        <!-- 폼 모드 -->
-        <template v-if="formMode !== 'none'">
+        <!-- 폼 모드 (departmentCrudEnabled일 때만 표시) -->
+        <template v-if="formMode !== 'none' && departmentCrudEnabled">
           <DepartmentForm
             ref="formRef"
             :department="editingDepartment"
@@ -255,8 +282,8 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- 액션 버튼 -->
-            <div class="detail-actions">
+            <!-- 액션 버튼 (departmentCrudEnabled일 때만 표시) -->
+            <div v-if="departmentCrudEnabled" class="detail-actions">
               <button type="button" class="btn-secondary" @click="handleEdit(selectedDepartment)">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -270,6 +297,10 @@ onMounted(() => {
                 </svg>
                 하위 부서 추가
               </button>
+            </div>
+            <!-- External 모드 안내 -->
+            <div v-else class="external-notice">
+              <p class="text-sm text-amber-600">외부 연동 모드 (조회 전용)</p>
             </div>
 
             <!-- 소속 사용자 목록 -->
@@ -292,12 +323,18 @@ onMounted(() => {
                   :key="user.userId"
                   class="user-item"
                 >
-                  <div class="user-avatar">
+                  <div class="user-avatar" :class="{ 'head-avatar': user.headYn === 'Y' }">
                     {{ user.userName.charAt(0) }}
                   </div>
                   <div class="user-info">
-                    <span class="user-name">{{ user.userName }}</span>
-                    <span class="user-id">{{ user.username }}</span>
+                    <div class="flex items-center gap-1.5">
+                      <span class="user-name">{{ user.userName }}</span>
+                      <Badge v-if="user.headYn === 'Y'" variant="primary" size="xs">팀장</Badge>
+                    </div>
+                    <span class="user-meta">
+                      {{ user.username }}
+                      <span v-if="user.positionName" class="text-gray-400 ml-1">· {{ user.positionName }}</span>
+                    </span>
                   </div>
                   <Badge
                     :variant="user.useYn === 'Y' ? 'success' : 'default'"
@@ -403,8 +440,16 @@ onMounted(() => {
   @apply block text-sm font-medium text-gray-900 truncate;
 }
 
-.user-id {
+.user-meta {
   @apply block text-xs text-gray-500;
+}
+
+.head-avatar {
+  @apply bg-amber-100 text-amber-700 ring-2 ring-amber-300;
+}
+
+.external-notice {
+  @apply p-4 border-b border-gray-200 text-center;
 }
 
 .empty-state {

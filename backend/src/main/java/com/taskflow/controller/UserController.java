@@ -30,6 +30,8 @@ import java.util.Map;
  * - DELETE /api/users/{id} - 사용자 삭제
  * - PUT /api/users/{id}/password - 비밀번호 변경
  * - GET /api/users/check-username - 아이디 중복 확인
+ * - PUT /api/users/{username}/head - 팀장 지정
+ * - DELETE /api/users/{username}/head - 팀장 해제
  */
 @Slf4j
 @RestController
@@ -63,8 +65,8 @@ public class UserController {
     ) {
         log.info("Create user: username={}", LogMaskUtils.maskUsername(request.getUsername()));
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        UserResponse response = userService.createUser(request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        UserResponse response = userService.createUser(request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "사용자가 등록되었습니다"));
@@ -93,8 +95,8 @@ public class UserController {
     ) {
         log.info("Update user: userId={}", userId);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        UserResponse response = userService.updateUser(userId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        UserResponse response = userService.updateUser(userId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "사용자 정보가 수정되었습니다"));
     }
@@ -122,8 +124,8 @@ public class UserController {
     ) {
         log.info("Change password: userId={}", userId);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        userService.changePassword(userId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        userService.changePassword(userId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.successWithMessage("비밀번호가 변경되었습니다"));
     }
@@ -148,13 +150,52 @@ public class UserController {
      * @see com.taskflow.controller.DepartmentController#getUsersByDepartment
      */
     @Deprecated
-    @GetMapping("/department/{departmentId}")
+    @GetMapping("/department/{departmentCode}")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getUsersByDepartment(
-            @PathVariable("departmentId") Long departmentId
+            @PathVariable("departmentCode") String departmentCode
     ) {
-        log.debug("Get users by department: departmentId={}", departmentId);
+        log.debug("Get users by department: departmentCode={}", departmentCode);
 
-        List<UserResponse> response = userService.getUsersByDepartment(departmentId);
+        List<UserResponse> response = userService.getUsersByDepartment(departmentCode);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // =============================================
+    // 팀장 관리 API
+    // =============================================
+
+    /**
+     * 팀장 지정
+     * - 해당 부서의 기존 팀장은 자동으로 해제됨
+     *
+     * @param username 팀장으로 지정할 사용자 Username
+     */
+    @PutMapping("/{username}/head")
+    public ResponseEntity<ApiResponse<UserResponse>> setHead(
+            @PathVariable("username") String username
+    ) {
+        log.info("Set user as head: username={}", LogMaskUtils.maskUsername(username));
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        UserResponse response = userService.setHead(username, currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "팀장으로 지정되었습니다"));
+    }
+
+    /**
+     * 팀장 해제
+     *
+     * @param username 팀장에서 해제할 사용자 Username
+     */
+    @DeleteMapping("/{username}/head")
+    public ResponseEntity<ApiResponse<UserResponse>> unsetHead(
+            @PathVariable("username") String username
+    ) {
+        log.info("Unset user as head: username={}", LogMaskUtils.maskUsername(username));
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        UserResponse response = userService.unsetHead(username, currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "팀장이 해제되었습니다"));
     }
 }

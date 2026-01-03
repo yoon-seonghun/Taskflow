@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 지연 업무 메뉴
- * - 마감일이 지난 업무 목록 표시 (Cross-board)
+ * - 완료예정시간(endTime)이 지난 업무 목록 표시 (Cross-board)
  * - 서버 사이드 필터링/페이징
  * - 지연 일수 표시
  * - 우선순위/담당자별 필터
@@ -69,7 +69,7 @@ async function loadData() {
       priority: priorityFilter.value !== 'all' ? priorityFilter.value : undefined,
       page: currentPage.value,
       size: pageSize.value,
-      sort: 'dueDate,asc'
+      sort: 'endTime,asc'
     }
 
     const response = await itemApi.getOverdueItems(params)
@@ -144,14 +144,14 @@ async function handlePriorityChange(item: Item, priority: Priority) {
   }
 }
 
-// 지연 일수 계산
+// 지연 일수 계산 (endTime 기준)
 function getOverdueDays(item: Item): number {
-  if (!item.dueDate) return 0
-  const dueDate = new Date(item.dueDate)
+  if (!item.endTime) return 0
+  const endTime = new Date(item.endTime)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  dueDate.setHours(0, 0, 0, 0)
-  const diff = today.getTime() - dueDate.getTime()
+  endTime.setHours(0, 0, 0, 0)
+  const diff = today.getTime() - endTime.getTime()
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
 }
 
@@ -215,7 +215,7 @@ onMounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </h2>
-        <p class="text-sm text-gray-500 mt-1">마감일이 지난 업무를 관리합니다.</p>
+        <p class="text-sm text-gray-500 mt-1">완료예정시간이 지난 업무를 관리합니다.</p>
       </div>
     </div>
 
@@ -300,7 +300,7 @@ onMounted(() => {
                   작업 내용
                 </th>
                 <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
-                  마감일
+                  완료예정
                 </th>
                 <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
                   우선순위
@@ -358,9 +358,9 @@ onMounted(() => {
                   </div>
                 </td>
 
-                <!-- 마감일 -->
+                <!-- 완료예정일 -->
                 <td class="px-4 h-12 text-[13px] text-red-600 font-medium whitespace-nowrap">
-                  {{ formatDate(item.dueDate) }}
+                  {{ formatDate(item.endTime) }}
                 </td>
 
                 <!-- 우선순위 -->

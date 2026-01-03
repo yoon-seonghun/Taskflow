@@ -89,11 +89,11 @@ public class TaskTemplateController {
     public ResponseEntity<ApiResponse<TaskTemplateResponse>> createTemplate(
             @Valid @RequestBody TaskTemplateCreateRequest request
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("Create task template: content={}, userId={}", request.getContent(), currentUserId);
+        log.info("Create task template: content={}, username={}", request.getContent(), currentUsername);
 
-        TaskTemplateResponse response = taskTemplateService.createTemplate(request, currentUserId);
+        TaskTemplateResponse response = taskTemplateService.createTemplate(request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "템플릿이 등록되었습니다"));
@@ -107,11 +107,11 @@ public class TaskTemplateController {
             @PathVariable("id") Long templateId,
             @Valid @RequestBody TaskTemplateUpdateRequest request
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        log.info("Update task template: id={}, userId={}", templateId, currentUserId);
+        log.info("Update task template: id={}, username={}", templateId, currentUsername);
 
-        TaskTemplateResponse response = taskTemplateService.updateTemplate(templateId, request, currentUserId);
+        TaskTemplateResponse response = taskTemplateService.updateTemplate(templateId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "템플릿이 수정되었습니다"));
     }

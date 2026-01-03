@@ -79,9 +79,9 @@ public class ItemResponse {
     private String priority;
 
     /**
-     * 담당자 ID
+     * 담당자 USERNAME
      */
-    private Long assigneeId;
+    private String assigneeUsername;
 
     /**
      * 담당자명
@@ -191,7 +191,7 @@ public class ItemResponse {
                 .description(item.getDescription())
                 .status(item.getStatus())
                 .priority(item.getPriority())
-                .assigneeId(item.getAssigneeId())
+                .assigneeUsername(item.getAssigneeUsername())
                 .assigneeName(item.getAssigneeName())
                 .startTime(item.getStartTime())
                 .endTime(item.getEndTime())
@@ -241,8 +241,8 @@ public class ItemResponse {
             String displayValue = null;
             if (prop.getOptionName() != null) {
                 displayValue = prop.getOptionName();
-            } else if (prop.getValueUserName() != null) {
-                displayValue = prop.getValueUserName();
+            } else if (prop.getValueUsername() != null) {
+                displayValue = prop.getValueUsername();
             }
 
             return PropertyValueResponse.builder()

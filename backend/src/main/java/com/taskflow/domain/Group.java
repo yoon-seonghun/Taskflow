@@ -13,9 +13,8 @@ import java.time.LocalDateTime;
  *
  * 테이블: TB_GROUP
  *
- * 그룹 vs 부서 차이:
- * - 부서: 조직도 기반의 고정 소속 (1인 1부서)
- * - 그룹: 프로젝트/업무 기반의 유연한 팀 (1인 다중 그룹 가능)
+ * USERNAME 기반 FK 참조 시스템:
+ * - CREATED_BY, UPDATED_BY: USERNAME 참조
  */
 @Getter
 @Setter
@@ -65,9 +64,9 @@ public class Group {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -75,9 +74,9 @@ public class Group {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 설정)

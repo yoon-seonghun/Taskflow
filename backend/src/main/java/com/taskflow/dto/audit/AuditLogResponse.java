@@ -44,9 +44,9 @@ public class AuditLogResponse {
     private String action;
 
     /**
-     * 수행자 ID
+     * 수행자 USERNAME
      */
-    private Long actorId;
+    private String actorUsername;
 
     /**
      * 수행자명
@@ -59,9 +59,9 @@ public class AuditLogResponse {
     private String description;
 
     /**
-     * 관련 사용자 ID
+     * 관련 사용자 USERNAME
      */
-    private Long relatedUserId;
+    private String relatedUsername;
 
     /**
      * 관련 사용자명

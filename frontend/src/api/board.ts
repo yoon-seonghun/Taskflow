@@ -51,6 +51,10 @@ export const boardApi = {
     return put<void>(`/boards/${boardId}/order`, data)
   },
 
+  updateSharedBoardOrder(boardId: number, data: BoardOrderRequest) {
+    return put<void>(`/boards/${boardId}/shares/order`, data)
+  },
+
   deleteBoardWithTransfer(boardId: number, data: BoardDeleteRequest) {
     return del<TransferResultResponse>(`/boards/${boardId}/with-transfer`, data)
   },
@@ -80,11 +84,11 @@ export const boardApi = {
     return post<BoardShare>(`/boards/${boardId}/shares`, data)
   },
 
-  updateBoardSharePermission(boardId: number, userId: number, data: BoardShareUpdateRequest) {
-    return put<void>(`/boards/${boardId}/shares/${userId}`, data)
+  updateBoardSharePermission(boardId: number, username: string, data: BoardShareUpdateRequest) {
+    return put<void>(`/boards/${boardId}/shares/${username}`, data)
   },
 
-  removeBoardShare(boardId: number, userId: number) {
-    return del<void>(`/boards/${boardId}/shares/${userId}`)
+  removeBoardShare(boardId: number, username: string) {
+    return del<void>(`/boards/${boardId}/shares/${username}`)
   }
 }

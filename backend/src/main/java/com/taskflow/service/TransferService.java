@@ -58,24 +58,24 @@ public class TransferService {
      * 업무 이관 실행
      */
     @Transactional
-    public TransferResultResponse executeTransfer(Long boardId, TransferRequest request, Long currentUserId) {
+    public TransferResultResponse executeTransfer(Long boardId, TransferRequest request, String currentUsername) {
         // 원본 보드 조회
         Board originalBoard = boardMapper.findById(boardId)
                 .orElseThrow(() -> new BusinessException("보드를 찾을 수 없습니다."));
 
         // 소유자 확인
-        if (!originalBoard.getOwnerId().equals(currentUserId)) {
+        if (!originalBoard.getOwnerUsername().equals(currentUsername)) {
             throw new BusinessException("보드 소유자만 업무를 이관할 수 있습니다.");
         }
 
         // 이관 대상 사용자 확인
-        if (request.getTargetUserId() == null) {
+        if (request.getTargetUsername() == null) {
             throw new BusinessException("이관 대상자를 지정해주세요.");
         }
 
         // 이관 보드 생성
         String newBoardName = createTransferBoardName(originalBoard.getBoardName());
-        Board newBoard = createTransferBoard(request.getTargetUserId(), newBoardName, currentUserId);
+        Board newBoard = createTransferBoard(request.getTargetUsername(), newBoardName, currentUsername);
 
         // 업무 이동
         List<Long> itemIds = request.getItemIds();
@@ -83,22 +83,22 @@ public class TransferService {
                 itemIds,
                 newBoard.getBoardId(),
                 boardId,
-                currentUserId
+                currentUsername
         );
 
         // 각 업무에 대한 이관 로그 기록
         for (Long itemId : itemIds) {
             auditLogService.logItemTransferred(
                     itemId,
-                    currentUserId,
-                    request.getTargetUserId(),
+                    currentUsername,
+                    request.getTargetUsername(),
                     originalBoard.getBoardName(),
                     newBoardName
             );
         }
 
         log.info("Transferred {} items from board {} to new board {} for user {}",
-                transferredCount, boardId, newBoard.getBoardId(), request.getTargetUserId());
+                transferredCount, boardId, newBoard.getBoardId(), request.getTargetUsername());
 
         return TransferResultResponse.builder()
                 .transferredCount(transferredCount)
@@ -111,14 +111,14 @@ public class TransferService {
     /**
      * 이관 보드 생성
      */
-    private Board createTransferBoard(Long targetUserId, String boardName, Long createdBy) {
+    private Board createTransferBoard(String targetUsername, String boardName, String createdBy) {
         // 최대 정렬 순서 조회
-        Integer maxSortOrder = boardMapper.getMaxSortOrder(targetUserId);
+        Integer maxSortOrder = boardMapper.getMaxSortOrder(targetUsername);
 
         Board board = Board.builder()
                 .boardName(boardName)
                 .description("이관받은 업무 보드")
-                .ownerId(targetUserId)
+                .ownerUsername(targetUsername)
                 .defaultView("TABLE")
                 .color("#FF9800")  // 오렌지 색상으로 구분
                 .sortOrder(maxSortOrder + 1)

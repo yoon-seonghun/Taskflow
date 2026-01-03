@@ -25,6 +25,16 @@ export const userApi = {
 
   changePassword(userId: number, data: PasswordChangeRequest) {
     return put<void>(`/users/${userId}/password`, data)
+  },
+
+  // 팀장 지정
+  setHead(username: string) {
+    return put<User>(`/users/${username}/head`)
+  },
+
+  // 팀장 해제
+  unsetHead(username: string) {
+    return del<User>(`/users/${username}/head`)
   }
 
   // 현재 사용자 정보는 authApi.getCurrentUser() 사용 (/auth/me)

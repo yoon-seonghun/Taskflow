@@ -54,20 +54,20 @@ public interface TaskTemplateService {
      * 템플릿 등록
      *
      * @param request   등록 요청
-     * @param createdBy 생성자 ID
+     * @param createdBy 생성자 USERNAME
      * @return 생성된 템플릿 응답
      */
-    TaskTemplateResponse createTemplate(TaskTemplateCreateRequest request, Long createdBy);
+    TaskTemplateResponse createTemplate(TaskTemplateCreateRequest request, String createdBy);
 
     /**
      * 템플릿 수정
      *
      * @param templateId 템플릿 ID
      * @param request    수정 요청
-     * @param updatedBy  수정자 ID
+     * @param updatedBy  수정자 USERNAME
      * @return 수정된 템플릿 응답
      */
-    TaskTemplateResponse updateTemplate(Long templateId, TaskTemplateUpdateRequest request, Long updatedBy);
+    TaskTemplateResponse updateTemplate(Long templateId, TaskTemplateUpdateRequest request, String updatedBy);
 
     /**
      * 템플릿 삭제

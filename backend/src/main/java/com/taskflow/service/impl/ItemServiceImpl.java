@@ -105,12 +105,12 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemResponse> getItemsByAssigneeId(Long assigneeId, Long boardId) {
+    public List<ItemResponse> getItemsByAssigneeUsername(String assigneeUsername, Long boardId) {
         // 사용자 존재 확인
-        userMapper.findById(assigneeId)
-                .orElseThrow(() -> BusinessException.userNotFound(assigneeId));
+        userMapper.findByUsername(assigneeUsername)
+                .orElseThrow(() -> BusinessException.userNotFound(assigneeUsername));
 
-        List<Item> items = itemMapper.findByAssigneeId(assigneeId, boardId);
+        List<Item> items = itemMapper.findByAssigneeUsername(assigneeUsername, boardId);
         loadItemPropertiesBatch(items);
 
         return ItemResponse.fromList(items);
@@ -122,7 +122,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemResponse createItem(Long boardId, ItemCreateRequest request, Long createdBy) {
+    public ItemResponse createItem(Long boardId, ItemCreateRequest request, String createdBy) {
         log.info("Creating item: boardId={}, title={}", boardId, request.getTitle());
 
         // 보드 존재 확인
@@ -136,9 +136,9 @@ public class ItemServiceImpl implements ItemService {
         }
 
         // 담당자 존재 확인
-        if (request.getAssigneeId() != null) {
-            userMapper.findById(request.getAssigneeId())
-                    .orElseThrow(() -> BusinessException.userNotFound(request.getAssigneeId()));
+        if (request.getAssigneeUsername() != null) {
+            userMapper.findByUsername(request.getAssigneeUsername())
+                    .orElseThrow(() -> BusinessException.userNotFound(request.getAssigneeUsername()));
         }
 
         // 기본값 설정
@@ -155,7 +155,7 @@ public class ItemServiceImpl implements ItemService {
                 .description(request.getDescription())
                 .status(status)
                 .priority(priority)
-                .assigneeId(request.getAssigneeId())
+                .assigneeUsername(request.getAssigneeUsername())
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .createdBy(createdBy)
@@ -180,7 +180,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemResponse updateItem(Long itemId, ItemUpdateRequest request, Long updatedBy) {
+    public ItemResponse updateItem(Long itemId, ItemUpdateRequest request, String updatedBy) {
         log.info("Updating item: id={}", itemId);
 
         // 아이템 존재 확인
@@ -194,10 +194,15 @@ public class ItemServiceImpl implements ItemService {
         }
 
         // 담당자 존재 확인
-        if (request.getAssigneeId() != null) {
-            userMapper.findById(request.getAssigneeId())
-                    .orElseThrow(() -> BusinessException.userNotFound(request.getAssigneeId()));
+        if (request.getAssigneeUsername() != null) {
+            userMapper.findByUsername(request.getAssigneeUsername())
+                    .orElseThrow(() -> BusinessException.userNotFound(request.getAssigneeUsername()));
         }
+
+        // clearFields 지원 - 명시적으로 null로 설정할 필드 목록
+        java.util.Set<String> clearFields = request.getClearFields() != null
+                ? request.getClearFields()
+                : java.util.Collections.emptySet();
 
         // 수정 - null이 아닌 필드만 업데이트 (partial update 지원)
         if (request.getTitle() != null) {
@@ -210,11 +215,16 @@ public class ItemServiceImpl implements ItemService {
         if (request.getDescription() != null) {
             item.setDescription(request.getDescription());
         }
-        // groupId, categoryId는 명시적으로 설정하려면 0이나 유효한 값 전송, 제거하려면 별도 API 필요
-        if (request.getGroupId() != null) {
+        // groupId - clearFields에 포함되면 null 설정
+        if (clearFields.contains("groupId")) {
+            item.setGroupId(null);
+        } else if (request.getGroupId() != null) {
             item.setGroupId(request.getGroupId());
         }
-        if (request.getCategoryId() != null) {
+        // categoryId - clearFields에 포함되면 null 설정
+        if (clearFields.contains("categoryId")) {
+            item.setCategoryId(null);
+        } else if (request.getCategoryId() != null) {
             item.setCategoryId(request.getCategoryId());
         }
         if (request.getStatus() != null) {
@@ -223,13 +233,22 @@ public class ItemServiceImpl implements ItemService {
         if (request.getPriority() != null) {
             item.setPriority(request.getPriority());
         }
-        if (request.getAssigneeId() != null) {
-            item.setAssigneeId(request.getAssigneeId());
+        // assigneeUsername - clearFields에 포함되면 null 설정
+        if (clearFields.contains("assigneeUsername")) {
+            item.setAssigneeUsername(null);
+        } else if (request.getAssigneeUsername() != null) {
+            item.setAssigneeUsername(request.getAssigneeUsername());
         }
-        if (request.getStartTime() != null) {
+        // startTime - clearFields에 포함되면 null 설정
+        if (clearFields.contains("startTime")) {
+            item.setStartTime(null);
+        } else if (request.getStartTime() != null) {
             item.setStartTime(request.getStartTime());
         }
-        if (request.getEndTime() != null) {
+        // endTime - clearFields에 포함되면 null 설정
+        if (clearFields.contains("endTime")) {
+            item.setEndTime(null);
+        } else if (request.getEndTime() != null) {
             item.setEndTime(request.getEndTime());
         }
         item.setUpdatedBy(updatedBy);
@@ -252,7 +271,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemResponse completeItem(Long itemId, Long completedBy) {
+    public ItemResponse completeItem(Long itemId, String completedBy) {
         log.info("Completing item: id={}", itemId);
 
         // 아이템 존재 확인
@@ -280,7 +299,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemResponse deleteItem(Long itemId, Long deletedBy) {
+    public ItemResponse deleteItem(Long itemId, String deletedBy) {
         log.info("Deleting item: id={}", itemId);
 
         // 아이템 존재 확인
@@ -305,7 +324,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemResponse restoreItem(Long itemId, Long updatedBy) {
+    public ItemResponse restoreItem(Long itemId, String updatedBy) {
         log.info("Restoring item: id={}", itemId);
 
         // 아이템 존재 확인
@@ -351,17 +370,17 @@ public class ItemServiceImpl implements ItemService {
     // =============================================
 
     @Override
-    public ItemPageResponse getOverdueItems(Long userId, CrossBoardSearchRequest request) {
-        log.debug("Get overdue items: userId={}, request={}", userId, request);
+    public ItemPageResponse getOverdueItems(String username, CrossBoardSearchRequest request) {
+        log.debug("Get overdue items: username={}, request={}", username, request);
 
         // 지연 아이템 목록 조회
-        List<Item> items = itemMapper.findOverdueItems(userId, request);
+        List<Item> items = itemMapper.findOverdueItems(username, request);
 
         // 동적 속성값 로드
         loadItemPropertiesBatch(items);
 
         // 총 개수 조회
-        long totalElements = itemMapper.countOverdueItems(userId, request);
+        long totalElements = itemMapper.countOverdueItems(username, request);
 
         // 응답 변환
         List<ItemResponse> content = ItemResponse.fromList(items);
@@ -370,17 +389,17 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemPageResponse getPendingItems(Long userId, CrossBoardSearchRequest request) {
-        log.debug("Get pending items: userId={}, request={}", userId, request);
+    public ItemPageResponse getPendingItems(String username, CrossBoardSearchRequest request) {
+        log.debug("Get pending items: username={}, request={}", username, request);
 
         // 보류 아이템 목록 조회
-        List<Item> items = itemMapper.findPendingItems(userId, request);
+        List<Item> items = itemMapper.findPendingItems(username, request);
 
         // 동적 속성값 로드
         loadItemPropertiesBatch(items);
 
         // 총 개수 조회
-        long totalElements = itemMapper.countPendingItems(userId, request);
+        long totalElements = itemMapper.countPendingItems(username, request);
 
         // 응답 변환
         List<ItemResponse> content = ItemResponse.fromList(items);
@@ -389,17 +408,17 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemPageResponse getActiveItemsCrossBoard(Long userId, CrossBoardSearchRequest request) {
-        log.debug("Get active items cross-board: userId={}, request={}", userId, request);
+    public ItemPageResponse getActiveItemsCrossBoard(String username, CrossBoardSearchRequest request) {
+        log.debug("Get active items cross-board: username={}, request={}", username, request);
 
         // 활성 아이템 목록 조회
-        List<Item> items = itemMapper.findActiveItemsCrossBoard(userId, request);
+        List<Item> items = itemMapper.findActiveItemsCrossBoard(username, request);
 
         // 동적 속성값 로드
         loadItemPropertiesBatch(items);
 
         // 총 개수 조회
-        long totalElements = itemMapper.countActiveItemsCrossBoard(userId, request);
+        long totalElements = itemMapper.countActiveItemsCrossBoard(username, request);
 
         // 응답 변환
         List<ItemResponse> content = ItemResponse.fromList(items);
@@ -408,30 +427,30 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Map<String, Object> getCrossBoardStats(Long userId) {
-        log.debug("Get cross-board stats: userId={}", userId);
+    public Map<String, Object> getCrossBoardStats(String username) {
+        log.debug("Get cross-board stats: username={}", username);
 
         CrossBoardSearchRequest emptyRequest = new CrossBoardSearchRequest();
         emptyRequest.setPage(0);
         emptyRequest.setSize(1); // 카운트만 필요하므로 1개만
 
         // 지연 업무 개수
-        long overdueCount = itemMapper.countOverdueItems(userId, emptyRequest);
+        long overdueCount = itemMapper.countOverdueItems(username, emptyRequest);
 
         // 보류 업무 개수
-        long pendingCount = itemMapper.countPendingItems(userId, emptyRequest);
+        long pendingCount = itemMapper.countPendingItems(username, emptyRequest);
 
         // 전체 활성 업무 개수
-        long activeCount = itemMapper.countActiveItemsCrossBoard(userId, emptyRequest);
+        long activeCount = itemMapper.countActiveItemsCrossBoard(username, emptyRequest);
 
         // 우선순위별 지연 업무 개수
         CrossBoardSearchRequest urgentRequest = new CrossBoardSearchRequest();
         urgentRequest.setPriority("URGENT");
-        long urgentOverdueCount = itemMapper.countOverdueItems(userId, urgentRequest);
+        long urgentOverdueCount = itemMapper.countOverdueItems(username, urgentRequest);
 
         CrossBoardSearchRequest highRequest = new CrossBoardSearchRequest();
         highRequest.setPriority("HIGH");
-        long highOverdueCount = itemMapper.countOverdueItems(userId, highRequest);
+        long highOverdueCount = itemMapper.countOverdueItems(username, highRequest);
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("overdueCount", overdueCount);
@@ -485,7 +504,7 @@ public class ItemServiceImpl implements ItemService {
     /**
      * 아이템의 동적 속성값 저장
      */
-    private void saveItemProperties(Long itemId, Long boardId, Map<Long, Object> propertyValues, Long userId) {
+    private void saveItemProperties(Long itemId, Long boardId, Map<Long, Object> propertyValues, String username) {
         for (Map.Entry<Long, Object> entry : propertyValues.entrySet()) {
             Long propertyId = entry.getKey();
             Object value = entry.getValue();
@@ -510,9 +529,9 @@ public class ItemServiceImpl implements ItemService {
 
             // 다중선택의 경우 특별 처리
             if (PropertyDef.TYPE_MULTI_SELECT.equals(propertyDef.getPropertyType())) {
-                saveMultiSelectProperty(itemId, propertyId, value, userId);
+                saveMultiSelectProperty(itemId, propertyId, value, username);
             } else {
-                saveSingleProperty(itemId, propertyId, propertyDef.getPropertyType(), value, userId);
+                saveSingleProperty(itemId, propertyId, propertyDef.getPropertyType(), value, username);
             }
         }
     }
@@ -520,12 +539,12 @@ public class ItemServiceImpl implements ItemService {
     /**
      * 단일 값 속성 저장
      */
-    private void saveSingleProperty(Long itemId, Long propertyId, String propertyType, Object value, Long userId) {
+    private void saveSingleProperty(Long itemId, Long propertyId, String propertyType, Object value, String username) {
         ItemProperty itemProperty = ItemProperty.builder()
                 .itemId(itemId)
                 .propertyId(propertyId)
-                .createdBy(userId)
-                .updatedBy(userId)
+                .createdBy(username)
+                .updatedBy(username)
                 .build();
 
         itemProperty.setValue(propertyType, value);
@@ -535,7 +554,7 @@ public class ItemServiceImpl implements ItemService {
     /**
      * 다중선택 속성값 저장
      */
-    private void saveMultiSelectProperty(Long itemId, Long propertyId, Object value, Long userId) {
+    private void saveMultiSelectProperty(Long itemId, Long propertyId, Object value, String username) {
         // 기존 값 삭제
         itemPropertyMapper.deleteMultiByItemIdAndPropertyId(itemId, propertyId);
 
@@ -562,7 +581,7 @@ public class ItemServiceImpl implements ItemService {
                     .itemId(itemId)
                     .propertyId(propertyId)
                     .optionId(optionId)
-                    .createdBy(userId)
+                    .createdBy(username)
                     .build();
             itemPropertyMapper.insertMulti(multi);
         }
@@ -576,8 +595,8 @@ public class ItemServiceImpl implements ItemService {
                 .itemId(itemId)
                 .propertyId(propertyId)
                 .valueText(textValue)
-                .createdBy(userId)
-                .updatedBy(userId)
+                .createdBy(username)
+                .updatedBy(username)
                 .build();
         itemPropertyMapper.upsert(itemProperty);
     }

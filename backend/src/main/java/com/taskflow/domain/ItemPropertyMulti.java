@@ -50,9 +50,9 @@ public class ItemPropertyMulti {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 JOIN으로 설정)

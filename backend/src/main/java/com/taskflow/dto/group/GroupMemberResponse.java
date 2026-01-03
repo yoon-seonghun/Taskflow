@@ -1,5 +1,6 @@
 package com.taskflow.dto.group;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.taskflow.domain.UserGroup;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,14 +27,15 @@ public class GroupMemberResponse {
     private Long userId;
 
     /**
-     * 사용자명
+     * 사용자 USERNAME
      */
-    private String userName;
+    private String username;
 
     /**
-     * 로그인 ID
+     * 사용자명
      */
-    private String loginId;
+    @JsonProperty("user_name")
+    private String userName;
 
     /**
      * 그룹 ID
@@ -51,8 +53,14 @@ public class GroupMemberResponse {
     private String groupCode;
 
     /**
-     * 등록일시
+     * 부서명
      */
+    private String departmentName;
+
+    /**
+     * 등록일시 (joinedAt으로 프론트엔드에 전달)
+     */
+    @JsonProperty("joined_at")
     private LocalDateTime createdAt;
 
     /**
@@ -66,11 +74,12 @@ public class GroupMemberResponse {
         return GroupMemberResponse.builder()
                 .userGroupId(userGroup.getUserGroupId())
                 .userId(userGroup.getUserId())
+                .username(userGroup.getUsername())
                 .userName(userGroup.getUserName())
-                .loginId(userGroup.getLoginId())
                 .groupId(userGroup.getGroupId())
                 .groupName(userGroup.getGroupName())
                 .groupCode(userGroup.getGroupCode())
+                .departmentName(userGroup.getDepartmentName())
                 .createdAt(userGroup.getCreatedAt())
                 .build();
     }

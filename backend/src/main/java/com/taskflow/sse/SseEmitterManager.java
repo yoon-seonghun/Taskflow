@@ -36,9 +36,9 @@ public class SseEmitterManager {
 
     /**
      * 사용자별 SSE 구독 정보
-     * Key: userId
+     * Key: username
      */
-    private final Map<Long, SseSubscription> subscriptions = new ConcurrentHashMap<>();
+    private final Map<String, SseSubscription> subscriptions = new ConcurrentHashMap<>();
 
     private final ObjectMapper objectMapper;
 
@@ -49,50 +49,50 @@ public class SseEmitterManager {
     /**
      * SSE 연결 생성
      *
-     * @param userId 사용자 ID
+     * @param username 사용자 USERNAME
      * @return SseEmitter
      */
-    public SseEmitter createEmitter(Long userId) {
-        log.info("Creating SSE emitter for user: {}", userId);
+    public SseEmitter createEmitter(String username) {
+        log.info("Creating SSE emitter for user: {}", username);
 
         // 기존 연결이 있으면 종료
-        removeEmitter(userId);
+        removeEmitter(username);
 
         // 새 Emitter 생성
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
 
         // 구독 정보 생성
         SseSubscription subscription = SseSubscription.builder()
-                .userId(userId)
+                .username(username)
                 .emitter(emitter)
                 .subscribedAt(LocalDateTime.now())
                 .lastActiveAt(LocalDateTime.now())
                 .build();
 
-        subscriptions.put(userId, subscription);
+        subscriptions.put(username, subscription);
 
         // 연결 완료 콜백
         emitter.onCompletion(() -> {
-            log.info("SSE connection completed for user: {}", userId);
-            removeEmitter(userId);
+            log.info("SSE connection completed for user: {}", username);
+            removeEmitter(username);
         });
 
         // 타임아웃 콜백
         emitter.onTimeout(() -> {
-            log.info("SSE connection timed out for user: {}", userId);
-            removeEmitter(userId);
+            log.info("SSE connection timed out for user: {}", username);
+            removeEmitter(username);
         });
 
         // 에러 콜백
         emitter.onError(throwable -> {
-            log.error("SSE connection error for user: {}", userId, throwable);
-            removeEmitter(userId);
+            log.error("SSE connection error for user: {}", username, throwable);
+            removeEmitter(username);
         });
 
         // 연결 완료 이벤트 전송
-        sendToUser(userId, SseEvent.connected());
+        sendToUser(username, SseEvent.connected());
 
-        log.info("SSE emitter created for user: {}, total connections: {}", userId, subscriptions.size());
+        log.info("SSE emitter created for user: {}, total connections: {}", username, subscriptions.size());
 
         return emitter;
     }
@@ -100,17 +100,17 @@ public class SseEmitterManager {
     /**
      * SSE 연결 제거
      *
-     * @param userId 사용자 ID
+     * @param username 사용자 USERNAME
      */
-    public void removeEmitter(Long userId) {
-        SseSubscription subscription = subscriptions.remove(userId);
+    public void removeEmitter(String username) {
+        SseSubscription subscription = subscriptions.remove(username);
         if (subscription != null) {
             try {
                 subscription.getEmitter().complete();
             } catch (Exception e) {
-                log.debug("Error completing emitter for user: {}", userId);
+                log.debug("Error completing emitter for user: {}", username);
             }
-            log.info("SSE emitter removed for user: {}, total connections: {}", userId, subscriptions.size());
+            log.info("SSE emitter removed for user: {}, total connections: {}", username, subscriptions.size());
         }
     }
 
@@ -121,28 +121,28 @@ public class SseEmitterManager {
     /**
      * 보드 구독
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param boardId 보드 ID
      */
-    public void subscribeBoard(Long userId, Long boardId) {
-        SseSubscription subscription = subscriptions.get(userId);
+    public void subscribeBoard(String username, Long boardId) {
+        SseSubscription subscription = subscriptions.get(username);
         if (subscription != null) {
             subscription.subscribeBoard(boardId);
-            log.debug("User {} subscribed to board {}", userId, boardId);
+            log.debug("User {} subscribed to board {}", username, boardId);
         }
     }
 
     /**
      * 보드 구독 해제
      *
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @param boardId 보드 ID
      */
-    public void unsubscribeBoard(Long userId, Long boardId) {
-        SseSubscription subscription = subscriptions.get(userId);
+    public void unsubscribeBoard(String username, Long boardId) {
+        SseSubscription subscription = subscriptions.get(username);
         if (subscription != null) {
             subscription.unsubscribeBoard(boardId);
-            log.debug("User {} unsubscribed from board {}", userId, boardId);
+            log.debug("User {} unsubscribed from board {}", username, boardId);
         }
     }
 
@@ -153,11 +153,11 @@ public class SseEmitterManager {
     /**
      * 특정 사용자에게 이벤트 전송
      *
-     * @param userId 사용자 ID
+     * @param username 사용자 USERNAME
      * @param event  이벤트
      */
-    public <T> void sendToUser(Long userId, SseEvent<T> event) {
-        SseSubscription subscription = subscriptions.get(userId);
+    public <T> void sendToUser(String username, SseEvent<T> event) {
+        SseSubscription subscription = subscriptions.get(username);
         if (subscription == null) {
             return;
         }
@@ -170,10 +170,10 @@ public class SseEmitterManager {
                             .data(jsonData)
             );
             subscription.updateLastActiveAt();
-            log.debug("Sent event {} to user {}", event.getType(), userId);
+            log.debug("Sent event {} to user {}", event.getType(), username);
         } catch (IOException e) {
-            log.error("Failed to send event to user: {}", userId, e);
-            removeEmitter(userId);
+            log.error("Failed to send event to user: {}", username, e);
+            removeEmitter(username);
         }
     }
 
@@ -190,7 +190,7 @@ public class SseEmitterManager {
 
         subscriptions.values().stream()
                 .filter(sub -> sub.isSubscribedTo(event.getBoardId()))
-                .filter(sub -> !sub.getUserId().equals(event.getTriggeredBy())) // 이벤트 발생자 제외
+                .filter(sub -> !sub.getUsername().equals(event.getTriggeredBy())) // 이벤트 발생자 제외
                 .forEach(sub -> {
                     try {
                         String jsonData = objectMapper.writeValueAsString(event);
@@ -201,10 +201,10 @@ public class SseEmitterManager {
                         );
                         sub.updateLastActiveAt();
                         log.debug("Sent event {} to user {} for board {}",
-                                event.getType(), sub.getUserId(), event.getBoardId());
+                                event.getType(), sub.getUsername(), event.getBoardId());
                     } catch (IOException e) {
-                        log.error("Failed to send event to user: {}", sub.getUserId(), e);
-                        removeEmitter(sub.getUserId());
+                        log.error("Failed to send event to user: {}", sub.getUsername(), e);
+                        removeEmitter(sub.getUsername());
                     }
                 });
     }
@@ -217,7 +217,7 @@ public class SseEmitterManager {
     public <T> void sendToAll(SseEvent<T> event) {
         subscriptions.values().forEach(sub -> {
             // 이벤트 발생자 제외
-            if (event.getTriggeredBy() != null && event.getTriggeredBy().equals(sub.getUserId())) {
+            if (event.getTriggeredBy() != null && event.getTriggeredBy().equals(sub.getUsername())) {
                 return;
             }
 
@@ -230,8 +230,8 @@ public class SseEmitterManager {
                 );
                 sub.updateLastActiveAt();
             } catch (IOException e) {
-                log.error("Failed to send event to user: {}", sub.getUserId(), e);
-                removeEmitter(sub.getUserId());
+                log.error("Failed to send event to user: {}", sub.getUsername(), e);
+                removeEmitter(sub.getUsername());
             }
         });
     }
@@ -262,8 +262,8 @@ public class SseEmitterManager {
                 );
                 sub.updateLastActiveAt();
             } catch (IOException e) {
-                log.debug("Heartbeat failed for user: {}, removing connection", sub.getUserId());
-                removeEmitter(sub.getUserId());
+                log.debug("Heartbeat failed for user: {}, removing connection", sub.getUsername());
+                removeEmitter(sub.getUsername());
             }
         });
     }
@@ -282,7 +282,7 @@ public class SseEmitterManager {
     /**
      * 사용자 연결 여부 확인
      */
-    public boolean isConnected(Long userId) {
-        return subscriptions.containsKey(userId);
+    public boolean isConnected(String username) {
+        return subscriptions.containsKey(username);
     }
 }

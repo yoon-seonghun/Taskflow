@@ -20,6 +20,7 @@ type SearchTab = 'department' | 'name'
 interface Props {
   modelValue?: number | null
   excludeUserIds?: number[]
+  excludeUsernames?: string[]
   placeholder?: string
   disabled?: boolean
   label?: string
@@ -29,6 +30,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   modelValue: null,
   excludeUserIds: () => [],
+  excludeUsernames: () => [],
   placeholder: '사용자를 선택하세요',
   disabled: false,
   required: false
@@ -53,6 +55,17 @@ const searchQuery = ref('')
 const selectedDepartmentId = ref<number | null>(null)
 const selectedUser = ref<User | null>(null)
 
+// 사용자가 제외 대상인지 확인
+function isUserExcluded(user: User): boolean {
+  if (props.excludeUserIds.includes(user.userId)) {
+    return true
+  }
+  if (props.excludeUsernames.includes(user.username)) {
+    return true
+  }
+  return false
+}
+
 // 필터링된 사용자 목록 (이름 검색)
 const filteredUsers = computed(() => {
   if (!searchQuery.value) {
@@ -63,23 +76,22 @@ const filteredUsers = computed(() => {
   return allUsers.value
     .filter(user => {
       // 제외 대상 필터
-      if (props.excludeUserIds.includes(user.userId)) {
+      if (isUserExcluded(user)) {
         return false
       }
-      // 이름, 부서명, 이메일로 검색
+      // 이름, 로그인ID, 부서명, 이메일로 검색
       const name = (user.name || user.userName || '').toLowerCase()
+      const loginId = (user.username || '').toLowerCase()
       const deptName = (user.departmentName || '').toLowerCase()
       const email = (user.email || '').toLowerCase()
-      return name.includes(query) || deptName.includes(query) || email.includes(query)
+      return name.includes(query) || loginId.includes(query) || deptName.includes(query) || email.includes(query)
     })
     .slice(0, 20) // 최대 20개만 표시
 })
 
 // 부서별 사용자 목록 (제외 대상 필터 적용)
 const displayDepartmentUsers = computed(() => {
-  return departmentUsers.value.filter(user =>
-    !props.excludeUserIds.includes(user.userId)
-  )
+  return departmentUsers.value.filter(user => !isUserExcluded(user))
 })
 
 // 선택된 사용자 표시 텍스트
@@ -111,7 +123,8 @@ async function loadInitialData() {
 
     // 전체 사용자 목록 로드 (이름 검색용)
     const userResponse = await userApi.getUsers({ useYn: 'Y' })
-    allUsers.value = userResponse.data || []
+    // 페이지네이션 응답에서 content 배열 추출
+    allUsers.value = userResponse.data?.content || []
 
     // 초기 선택값이 있으면 해당 사용자 찾기
     if (props.modelValue) {
@@ -127,12 +140,12 @@ async function loadInitialData() {
   }
 }
 
-// 부서 선택 시 사용자 목록 로드
+// 부서 선택 시 사용자 목록 로드 (departmentCode 기준)
 async function handleDepartmentSelect(department: Department) {
   selectedDepartmentId.value = department.departmentId
   loading.value = true
   try {
-    const response = await departmentApi.getDepartmentUsers(department.departmentId)
+    const response = await departmentApi.getDepartmentUsers(department.departmentCode)
     departmentUsers.value = response.data || []
   } catch (error) {
     console.error('Failed to load department users:', error)

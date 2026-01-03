@@ -41,9 +41,9 @@ public class ItemHistoryResponse {
     private String result;
 
     /**
-     * 작업자 ID
+     * 작업자 Username
      */
-    private Long workerId;
+    private String workerUsername;
 
     /**
      * 작업자 이름
@@ -90,7 +90,7 @@ public class ItemHistoryResponse {
                 .boardName(history.getBoardName())
                 .title(history.getTitle())
                 .result(history.getResult())
-                .workerId(history.getWorkerId())
+                .workerUsername(history.getWorkerUsername())
                 .workerName(history.getWorkerName())
                 .createdAt(history.getCreatedAt())
                 .createdByName(history.getCreatedByName())

@@ -62,9 +62,20 @@ public class UserCreateRequest {
     private String email;
 
     /**
-     * 소속 부서 ID
+     * 소속 부서 코드
      */
-    private Long departmentId;
+    private String departmentCode;
+
+    /**
+     * 직급 코드
+     */
+    private String positionCode;
+
+    /**
+     * 권한 (ADMIN, MANAGER, USER, GUEST)
+     * 대소문자 구분 없이 처리, 기본값: USER
+     */
+    private String role;
 
     /**
      * 소속 그룹 ID 목록

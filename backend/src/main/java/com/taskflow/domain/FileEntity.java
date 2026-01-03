@@ -7,6 +7,11 @@ import java.time.LocalDateTime;
 
 /**
  * 파일 메타데이터 엔티티
+ *
+ * 테이블: TB_FILE
+ *
+ * USERNAME 기반 FK 참조 시스템:
+ * - CREATED_BY, UPDATED_BY: USERNAME 참조
  */
 @Getter
 @Setter
@@ -98,9 +103,9 @@ public class FileEntity {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -108,9 +113,9 @@ public class FileEntity {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 조인 필드 (조회용)

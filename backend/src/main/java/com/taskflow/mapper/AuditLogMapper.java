@@ -49,8 +49,8 @@ public interface AuditLogMapper {
     /**
      * 수행자별 로그 조회
      */
-    List<AuditLog> selectByActorId(
-            @Param("actorId") Long actorId,
+    List<AuditLog> selectByActorUsername(
+            @Param("actorUsername") String actorUsername,
             @Param("offset") int offset,
             @Param("limit") int limit
     );

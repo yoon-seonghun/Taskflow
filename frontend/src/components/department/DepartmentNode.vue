@@ -13,10 +13,12 @@ import { useDepartmentStore } from '@/stores/department'
 interface Props {
   department: Department
   depth?: number
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  depth: 0
+  depth: 0,
+  readonly: false
 })
 
 const emit = defineEmits<{
@@ -155,12 +157,12 @@ function propagateEvent(eventName: string, ...args: any[]) {
         'inactive': isInactive
       }"
       :style="indentStyle"
-      draggable="true"
+      :draggable="!readonly"
       @click="handleSelect"
-      @contextmenu="handleContextMenu"
-      @dragstart="handleDragStart"
-      @dragover="handleDragOver"
-      @drop="handleDrop"
+      @contextmenu="!readonly && handleContextMenu($event)"
+      @dragstart="!readonly && handleDragStart($event)"
+      @dragover="!readonly && handleDragOver($event)"
+      @drop="!readonly && handleDrop($event)"
     >
       <!-- 확장/축소 토글 -->
       <button
@@ -211,8 +213,9 @@ function propagateEvent(eventName: string, ...args: any[]) {
       <!-- 비활성 뱃지 -->
       <span v-if="isInactive" class="inactive-badge">비활성</span>
 
-      <!-- 더보기 버튼 -->
+      <!-- 더보기 버튼 (readonly가 아닐 때만) -->
       <button
+        v-if="!readonly"
         type="button"
         class="more-btn"
         @click.stop="handleContextMenu"
@@ -231,6 +234,7 @@ function propagateEvent(eventName: string, ...args: any[]) {
         :key="child.departmentId"
         :department="child"
         :depth="depth + 1"
+        :readonly="readonly"
         @select="propagateEvent('select', $event)"
         @edit="propagateEvent('edit', $event)"
         @delete="propagateEvent('delete', $event)"
@@ -241,10 +245,10 @@ function propagateEvent(eventName: string, ...args: any[]) {
       />
     </div>
 
-    <!-- 컨텍스트 메뉴 -->
+    <!-- 컨텍스트 메뉴 (readonly가 아닐 때만) -->
     <Teleport to="body">
       <div
-        v-if="showContextMenu"
+        v-if="showContextMenu && !readonly"
         class="context-menu"
         :style="{
           left: contextMenuPosition.x + 'px',

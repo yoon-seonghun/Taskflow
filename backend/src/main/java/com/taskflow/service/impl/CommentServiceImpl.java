@@ -63,7 +63,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentResponse createComment(Long itemId, CommentCreateRequest request, Long createdBy) {
+    public CommentResponse createComment(Long itemId, CommentCreateRequest request, String createdBy) {
         log.info("Creating comment: itemId={}", itemId);
 
         // 아이템 존재 확인
@@ -83,7 +83,7 @@ public class CommentServiceImpl implements CommentService {
 
         CommentResponse response = getComment(comment.getCommentId());
 
-        // SSE 이벤트 발행
+        // SSE 이벤트 발행 (createdBy는 username)
         sseEventPublisher.publishCommentCreated(item.getBoardId(), response, createdBy);
 
         return response;
@@ -91,7 +91,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentResponse updateComment(Long commentId, CommentUpdateRequest request, Long updatedBy) {
+    public CommentResponse updateComment(Long commentId, CommentUpdateRequest request, String updatedBy) {
         log.info("Updating comment: id={}", commentId);
 
         // 댓글 존재 확인
@@ -115,7 +115,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public void deleteComment(Long commentId, Long deletedBy) {
+    public void deleteComment(Long commentId, String deletedBy) {
         log.info("Deleting comment: id={}", commentId);
 
         // 댓글 존재 확인

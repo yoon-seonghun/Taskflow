@@ -13,9 +13,8 @@ import java.time.LocalDateTime;
  *
  * 테이블: TB_PROPERTY_OPTION
  *
- * SELECT, MULTI_SELECT 타입 속성의 선택 옵션
- * - 속성별로 여러 옵션을 가질 수 있음
- * - 칸반 뷰, 태그 표시용 색상 지원
+ * USERNAME 기반 FK 참조 시스템:
+ * - CREATED_BY, UPDATED_BY: USERNAME 참조
  */
 @Getter
 @Setter
@@ -60,9 +59,9 @@ public class PropertyOption {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -70,9 +69,9 @@ public class PropertyOption {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 추가 필드 (Mapper에서 JOIN으로 설정)

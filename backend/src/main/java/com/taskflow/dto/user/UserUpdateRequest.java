@@ -36,9 +36,25 @@ public class UserUpdateRequest {
     private String password;
 
     /**
-     * 소속 부서 ID
+     * 소속 부서 코드
      */
-    private Long departmentId;
+    private String departmentCode;
+
+    /**
+     * 직급 코드
+     */
+    private String positionCode;
+
+    /**
+     * 권한 (ADMIN, MANAGER, USER, GUEST)
+     * 대소문자 구분 없이 처리
+     */
+    private String role;
+
+    /**
+     * 팀장 여부 (Y/N)
+     */
+    private String headYn;
 
     /**
      * 사용 여부 (Y/N)

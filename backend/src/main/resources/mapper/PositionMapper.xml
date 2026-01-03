@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.PositionMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- POSITION_CODE 기반 FK 참조 시스템 -->
+    <!-- ============================================= -->
+
+    <resultMap id="PositionResultMap" type="com.taskflow.domain.Position">
+        <id property="positionId" column="POSITION_ID"/>
+        <result property="positionCode" column="POSITION_CODE"/>
+        <result property="positionName" column="POSITION_NAME"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="lastSyncedAt" column="LAST_SYNCED_AT"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectPosition">
+        SELECT
+            p.POSITION_ID,
+            p.POSITION_CODE,
+            p.POSITION_NAME,
+            p.SORT_ORDER,
+            p.USE_YN,
+            p.LAST_SYNCED_AT,
+            p.CREATED_AT,
+            p.CREATED_BY,
+            p.UPDATED_AT,
+            p.UPDATED_BY
+        FROM TB_POSITION p
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 직급 ID로 조회 -->
+    <select id="findById" resultMap="PositionResultMap">
+        <include refid="selectPosition"/>
+        WHERE p.POSITION_ID = #{positionId}
+    </select>
+
+    <!-- 직급 코드로 조회 -->
+    <select id="findByCode" resultMap="PositionResultMap">
+        <include refid="selectPosition"/>
+        WHERE p.POSITION_CODE = #{positionCode}
+    </select>
+
+    <!-- 전체 직급 목록 조회 (정렬 순서대로) -->
+    <select id="findAll" resultMap="PositionResultMap">
+        <include refid="selectPosition"/>
+        <where>
+            <if test="useYn != null and useYn != ''">
+                p.USE_YN = #{useYn}
+            </if>
+        </where>
+        ORDER BY p.SORT_ORDER ASC
+    </select>
+
+    <!-- 직급 코드 중복 확인 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_POSITION WHERE POSITION_CODE = #{positionCode}
+        )
+    </select>
+
+    <!-- 직급 코드 중복 확인 (자신 제외) -->
+    <select id="existsByCodeAndIdNot" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_POSITION
+            WHERE POSITION_CODE = #{positionCode}
+              AND POSITION_ID != #{positionId}
+        )
+    </select>
+
+    <!-- 특정 직급을 사용 중인 사용자 수 조회 -->
+    <select id="countUsersByPositionCode" resultType="int">
+        SELECT COUNT(*) FROM TB_USER WHERE POSITION_CODE = #{positionCode}
+    </select>
+
+    <!-- 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0) FROM TB_POSITION
+    </select>
+
+    <!-- 모든 직급 코드 목록 조회 -->
+    <select id="findAllPositionCodes" resultType="java.lang.String">
+        SELECT POSITION_CODE FROM TB_POSITION ORDER BY SORT_ORDER
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 직급 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.Position" useGeneratedKeys="true" keyProperty="positionId">
+        INSERT INTO TB_POSITION (
+            POSITION_CODE,
+            POSITION_NAME,
+            SORT_ORDER,
+            USE_YN,
+            CREATED_BY
+        ) VALUES (
+            #{positionCode},
+            #{positionName},
+            #{sortOrder},
+            COALESCE(#{useYn}, 'Y'),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 직급 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.Position">
+        UPDATE TB_POSITION
+        SET
+            POSITION_NAME = #{positionName},
+            SORT_ORDER = #{sortOrder},
+            USE_YN = #{useYn},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE POSITION_ID = #{positionId}
+    </update>
+
+    <!-- 직급 순서 변경 -->
+    <update id="updateSortOrder">
+        UPDATE TB_POSITION
+        SET
+            SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE POSITION_CODE = #{positionCode}
+    </update>
+
+    <!-- 특정 순서 이상의 직급 정렬 순서를 1씩 증가 (중간 삽입용) -->
+    <update id="incrementSortOrdersFrom">
+        UPDATE TB_POSITION
+        SET
+            SORT_ORDER = SORT_ORDER + 1,
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE SORT_ORDER >= #{fromSortOrder}
+    </update>
+
+    <!-- 특정 순서가 이미 존재하는지 확인 -->
+    <select id="existsBySortOrder" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_POSITION WHERE SORT_ORDER = #{sortOrder}
+        )
+    </select>
+
+    <!-- 직급 삭제 (물리 삭제) -->
+    <delete id="delete">
+        DELETE FROM TB_POSITION
+        WHERE POSITION_CODE = #{positionCode}
+    </delete>
+
+    <!-- 직급 비활성화 (논리 삭제) -->
+    <update id="deactivate">
+        UPDATE TB_POSITION
+        SET
+            USE_YN = 'N',
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE POSITION_CODE = #{positionCode}
+    </update>
+
+    <!-- ============================================= -->
+    <!-- External 모드 동기화 (UPSERT 방식) -->
+    <!-- ============================================= -->
+
+    <!-- 직급 UPSERT (POSITION_CODE 기준) -->
+    <insert id="upsertByCode" parameterType="com.taskflow.domain.Position">
+        INSERT INTO TB_POSITION (
+            POSITION_CODE,
+            POSITION_NAME,
+            SORT_ORDER,
+            USE_YN,
+            LAST_SYNCED_AT,
+            CREATED_BY
+        ) VALUES (
+            #{positionCode},
+            #{positionName},
+            #{sortOrder},
+            COALESCE(#{useYn}, 'Y'),
+            CURRENT_TIMESTAMP,
+            #{createdBy}
+        )
+        ON DUPLICATE KEY UPDATE
+            POSITION_NAME = VALUES(POSITION_NAME),
+            SORT_ORDER = VALUES(SORT_ORDER),
+            USE_YN = VALUES(USE_YN),
+            LAST_SYNCED_AT = CURRENT_TIMESTAMP,
+            UPDATED_AT = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- 동기화 대상 외 직급 비활성화 -->
+    <update id="deactivatePositionsNotIn">
+        UPDATE TB_POSITION
+        SET
+            USE_YN = 'N',
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE POSITION_CODE NOT IN
+        <foreach collection="activeCodes" item="code" open="(" separator="," close=")">
+            #{code}
+        </foreach>
+    </update>
+
+</mapper>

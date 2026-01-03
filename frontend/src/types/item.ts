@@ -14,28 +14,25 @@ export interface Item {
   groupId?: number
   groupName?: string
   groupColor?: string
+  categoryId?: number
+  categoryName?: string
+  categoryColor?: string
   title: string
   content?: string
   description?: string  // 상세 내용 (마크다운)
   status: ItemStatus
   priority: Priority
-  assigneeId?: number
-  assigneeName?: string
+  assigneeUsername?: string   // 담당자 USERNAME (백엔드 FK 참조용)
+  assigneeName?: string       // 담당자 표시용 이름
   startTime?: string
-  endTime?: string
-  dueDate?: string        // DB에 없음, endTime으로 대체 (null 반환)
-  sortOrder?: number      // DB에 없음 (null 반환)
-  completedBy?: number
-  deletedAt?: string
-  deletedBy?: number
-  transferredFrom?: number  // 이관 원본 보드 ID
-  transferredAt?: string    // 이관 일시
+  endTime?: string        // 완료예정시간 (지연 판정에 사용)
+  sortOrder?: number
+  completedAt?: string    // 완료일시
+  deletedAt?: string      // 삭제일시
   commentCount?: number
   createdAt: string
-  createdBy?: number
   createdByName?: string
   updatedAt?: string
-  updatedBy?: number
   updatedByName?: string
   properties?: ItemProperty[]
   propertyValues?: Record<number, unknown>
@@ -48,13 +45,9 @@ export interface ItemProperty {
   propertyName?: string
   propertyCode?: string
   propertyType?: string
-  valueText?: string
-  valueNumber?: number
-  valueDate?: string
-  valueUserId?: number
-  valueUserName?: string
-  optionName?: string
-  optionColor?: string
+  value?: unknown           // 실제 값
+  displayValue?: string     // 표시용 값 (옵션명, 사용자명 등)
+  color?: string            // 옵션 색상
 }
 
 export interface ItemCreateRequest {
@@ -64,10 +57,10 @@ export interface ItemCreateRequest {
   status?: ItemStatus
   priority?: Priority
   groupId?: number
-  assigneeId?: number
+  categoryId?: number
+  assigneeUsername?: string   // 담당자 USERNAME
   startTime?: string
   endTime?: string
-  dueDate?: string
   sortOrder?: number
   properties?: Record<number, unknown>
 }
@@ -79,19 +72,21 @@ export interface ItemUpdateRequest {
   status?: ItemStatus
   priority?: Priority
   groupId?: number
-  assigneeId?: number
+  categoryId?: number
+  assigneeUsername?: string   // 담당자 USERNAME
   startTime?: string
   endTime?: string
-  dueDate?: string
   sortOrder?: number
   properties?: Record<number, unknown>
+  /** null로 설정할 필드 목록 (예: ['startTime', 'endTime']) - snake_case로 전송됨 */
+  clear_fields?: string[]
 }
 
 export interface ItemSearchRequest {
   keyword?: string
   status?: ItemStatus
   priority?: Priority
-  assigneeId?: number
+  assigneeUsername?: string   // 담당자 USERNAME
   groupId?: number
   startDate?: string
   endDate?: string
@@ -109,7 +104,7 @@ export interface CrossBoardSearchRequest {
   keyword?: string
   status?: ItemStatus
   priority?: Priority
-  assigneeId?: number
+  assigneeUsername?: string   // 담당자 USERNAME
   groupId?: number
   boardId?: number
   overdueOnly?: boolean
@@ -141,7 +136,7 @@ export interface CrossBoardStats {
  */
 export interface ItemTransferRequest {
   targetBoardId?: number
-  targetUserId?: number
+  targetUsername?: string   // 이관 대상 사용자 USERNAME
   reason?: string
 }
 
@@ -151,9 +146,8 @@ export interface ItemTransferRequest {
 export interface ItemShare {
   itemShareId: number
   itemId: number
-  userId: number
-  loginId?: string
-  userName?: string
+  username: string          // 공유 사용자 USERNAME
+  userName?: string         // 표시용 이름
   departmentName?: string
   permission: 'VIEW' | 'EDIT' | 'FULL'
   canView: boolean

@@ -48,7 +48,7 @@ public class FileService {
      * @param file        업로드할 파일
      * @param relatedType 연관 엔티티 타입 (ITEM, COMMENT 등)
      * @param relatedId   연관 엔티티 ID
-     * @param userId      업로드 사용자 ID
+     * @param username    업로드 사용자 USERNAME
      * @return 업로드 결과
      */
     @Transactional
@@ -56,7 +56,7 @@ public class FileService {
             MultipartFile file,
             String relatedType,
             Long relatedId,
-            Long userId
+            String username
     ) throws IOException {
         // 1. 유효성 검사
         validateFile(file);
@@ -85,12 +85,12 @@ public class FileService {
         fileEntity.setStoragePath(storagePath);
         fileEntity.setRelatedType(relatedType);
         fileEntity.setRelatedId(relatedId);
-        fileEntity.setCreatedBy(userId);
+        fileEntity.setCreatedBy(username);
 
         fileMapper.insert(fileEntity);
 
         log.info("File uploaded: id={}, name={}, size={}, user={}",
-                fileEntity.getFileId(), originalName, formatFileSize(fileSize), userId);
+                fileEntity.getFileId(), originalName, formatFileSize(fileSize), username);
 
         // 6. 응답 생성
         String url = "/api/files/" + fileEntity.getFileId();
@@ -146,27 +146,27 @@ public class FileService {
     /**
      * 파일 삭제 (논리 삭제 + 물리 삭제)
      *
-     * @param fileId 파일 ID
-     * @param userId 삭제 요청 사용자 ID
+     * @param fileId   파일 ID
+     * @param username 삭제 요청 사용자 USERNAME
      */
     @Transactional
-    public void deleteFile(Long fileId, Long userId) {
+    public void deleteFile(Long fileId, String username) {
         FileEntity file = fileMapper.findById(fileId)
                 .orElseThrow(() -> new BusinessException("파일을 찾을 수 없습니다."));
 
         // 권한 확인 (본인만 삭제 가능)
-        if (!file.getCreatedBy().equals(userId)) {
+        if (!file.getCreatedBy().equals(username)) {
             throw new BusinessException("파일 삭제 권한이 없습니다.");
         }
 
         // 논리 삭제
-        fileMapper.updateUseYn(fileId, "N", userId);
+        fileMapper.updateUseYn(fileId, "N", username);
 
         // 물리 파일 삭제
         boolean deleted = fileStorageService.delete(file.getStoragePath());
 
         log.info("File deleted: id={}, name={}, physicalDeleted={}, user={}",
-                fileId, file.getOriginalName(), deleted, userId);
+                fileId, file.getOriginalName(), deleted, username);
     }
 
     /**
@@ -186,8 +186,8 @@ public class FileService {
      * 연관 정보 업데이트
      */
     @Transactional
-    public void updateRelated(Long fileId, String relatedType, Long relatedId, Long userId) {
-        fileMapper.updateRelated(fileId, relatedType, relatedId, userId);
+    public void updateRelated(Long fileId, String relatedType, Long relatedId, String username) {
+        fileMapper.updateRelated(fileId, relatedType, relatedId, username);
     }
 
     /**

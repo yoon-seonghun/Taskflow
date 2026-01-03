@@ -82,11 +82,11 @@ public class AuditLogController {
     public ResponseEntity<ApiResponse<List<AuditLogResponse>>> getByBoard(
             @PathVariable("boardId") Long boardId
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
         log.debug("Get audit logs for board: boardId={}", boardId);
 
         // 접근 권한 확인
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }

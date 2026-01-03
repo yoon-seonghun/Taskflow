@@ -45,6 +45,11 @@ public class CrossBoardSearchRequest {
     private Long assigneeId;
 
     /**
+     * 담당자 USERNAME 필터
+     */
+    private String assigneeUsername;
+
+    /**
      * 그룹 ID 필터
      */
     private Long groupId;
@@ -159,5 +164,129 @@ public class CrossBoardSearchRequest {
         }
 
         return field + " " + safeDirection;
+    }
+
+    // ============================================
+    // Lombok 호환성을 위한 명시적 getter/setter
+    // ============================================
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public Long getAssigneeId() {
+        return assigneeId;
+    }
+
+    public void setAssigneeId(Long assigneeId) {
+        this.assigneeId = assigneeId;
+    }
+
+    public String getAssigneeUsername() {
+        return assigneeUsername;
+    }
+
+    public void setAssigneeUsername(String assigneeUsername) {
+        this.assigneeUsername = assigneeUsername;
+    }
+
+    public Long getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public Long getBoardId() {
+        return boardId;
+    }
+
+    public void setBoardId(Long boardId) {
+        this.boardId = boardId;
+    }
+
+    public Boolean getOverdueOnly() {
+        return overdueOnly;
+    }
+
+    public void setOverdueOnly(Boolean overdueOnly) {
+        this.overdueOnly = overdueOnly;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public Integer getPage() {
+        return page;
+    }
+
+    public void setPage(Integer page) {
+        this.page = page;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
+    }
+
+    public String getSortField() {
+        return sortField;
+    }
+
+    public void setSortField(String sortField) {
+        this.sortField = sortField;
+    }
+
+    public String getSortDirection() {
+        return sortDirection;
+    }
+
+    public void setSortDirection(String sortDirection) {
+        this.sortDirection = sortDirection;
     }
 }

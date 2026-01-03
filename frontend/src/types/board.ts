@@ -16,8 +16,8 @@ export interface BoardGroup {
 }
 
 export interface BoardSharedUser {
-  userId: number
-  userName: string
+  username: string      // 로그인 ID (백엔드 FK 참조용)
+  userName: string      // 표시용 이름
   departmentName?: string
 }
 
@@ -26,8 +26,8 @@ export interface Board {
   boardName: string
   boardDescription?: string
   description?: string  // API 응답 호환
-  ownerId: number
-  ownerName?: string
+  ownerUsername?: string   // 소유자 USERNAME
+  ownerName?: string       // 소유자 표시명
   defaultView: ViewType
   boardColor?: string
   color?: string  // API 응답 호환
@@ -42,9 +42,7 @@ export interface Board {
   groups?: BoardGroup[]
   sharedUsers?: BoardSharedUser[]
   createdAt: string
-  createdBy?: number
   updatedAt?: string
-  updatedBy?: number
 }
 
 export interface BoardCreateRequest {
@@ -66,17 +64,16 @@ export type BoardPermission = 'VIEW' | 'EDIT' | 'FULL' | 'OWNER'
 export interface BoardShare {
   boardShareId: number
   boardId: number
-  userId: number
-  userName?: string
-  loginId?: string
+  boardName?: string
+  username: string        // FK 참조용 USERNAME
+  userName?: string       // 표시용 이름
   departmentName?: string
   permission: BoardPermission
   createdAt: string
-  createdBy: number
 }
 
 export interface BoardShareRequest {
-  userId: number
+  username: string  // 백엔드 API는 username 필요
   permission: BoardPermission
 }
 
@@ -92,7 +89,7 @@ export interface BoardListResponse {
 }
 
 export interface BoardDeleteRequest {
-  targetUserId?: number
+  targetUsername?: string   // 이관 대상 사용자 USERNAME
   forceDelete?: boolean
 }
 
@@ -126,6 +123,6 @@ export interface TransferResultResponse {
  * 보드 소유권 이전 요청 DTO
  */
 export interface BoardTransferRequest {
-  targetUserId: number  // 이관받을 사용자 ID
-  reason?: string  // 이관 사유 (선택)
+  targetUsername: string  // 이관받을 사용자 USERNAME
+  reason?: string         // 이관 사유 (선택)
 }

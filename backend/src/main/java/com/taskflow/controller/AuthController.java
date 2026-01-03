@@ -114,8 +114,8 @@ public class AuthController {
      */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> getMe() {
-        Long userId = SecurityUtils.getCurrentUserId();
-        UserResponse user = userService.getUser(userId);
+        String username = SecurityUtils.getCurrentUsername();
+        UserResponse user = userService.getUserByUsername(username);
         return ResponseEntity.ok(ApiResponse.success(user));
     }
 

@@ -20,14 +20,9 @@ import java.time.LocalDateTime;
 public class ShareResponse {
 
     /**
-     * 사용자 ID
+     * 사용자 USERNAME
      */
-    private Long userId;
-
-    /**
-     * 로그인 ID
-     */
-    private String loginId;
+    private String username;
 
     /**
      * 사용자명

@@ -10,14 +10,119 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # 프로젝트 루트 디렉토리
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
-VERSION="${1:-1.0.0}"
+
+# ============================================
+# Help 함수
+# ============================================
+show_help() {
+    echo -e "${BLUE}============================================${NC}"
+    echo -e "${BLUE} TaskFlow 배포본 생성 스크립트${NC}"
+    echo -e "${BLUE}============================================${NC}"
+    echo ""
+    echo -e "${CYAN}사용법:${NC}"
+    echo -e "  $0 [옵션] [버전]"
+    echo ""
+    echo -e "${CYAN}옵션:${NC}"
+    echo -e "  ${GREEN}-h, --help${NC}      이 도움말을 표시합니다"
+    echo -e "  ${GREEN}-v, --version${NC}   스크립트 버전을 표시합니다"
+    echo -e "  ${GREEN}-c, --clean${NC}     빌드 전 dist 폴더 전체를 정리합니다"
+    echo -e "  ${GREEN}-s, --skip-npm${NC}  npm install을 건너뜁니다 (node_modules 존재 시)"
+    echo ""
+    echo -e "${CYAN}인자:${NC}"
+    echo -e "  ${GREEN}버전${NC}            배포본 버전 (기본값: 1.0.0)"
+    echo -e "                  예: 1.0.0, 2.0.0-beta, 2024.12.25"
+    echo ""
+    echo -e "${CYAN}예시:${NC}"
+    echo -e "  $0                    # 버전 1.0.0으로 빌드"
+    echo -e "  $0 2.0.0              # 버전 2.0.0으로 빌드"
+    echo -e "  $0 --clean 2.0.0      # dist 폴더 정리 후 버전 2.0.0으로 빌드"
+    echo -e "  $0 -s 1.5.0           # npm install 건너뛰고 버전 1.5.0으로 빌드"
+    echo ""
+    echo -e "${CYAN}출력:${NC}"
+    echo -e "  배포 디렉토리:  ${PROJECT_ROOT}/dist/taskflow-{버전}/"
+    echo -e "  압축 파일:      ${PROJECT_ROOT}/dist/taskflow-{버전}.tar.gz"
+    echo ""
+    echo -e "${CYAN}포함 내용:${NC}"
+    echo -e "  - Backend 소스 코드 (Gradle 빌드 파일 포함)"
+    echo -e "  - Frontend 소스 및 빌드 결과물"
+    echo -e "  - Docker 설정 파일 (docker-compose.yml)"
+    echo -e "  - MySQL 초기화 스크립트"
+    echo -e "  - 환경 설정 템플릿 (.env.example)"
+    echo ""
+    echo -e "${CYAN}배포 후 실행 방법:${NC}"
+    echo -e "  1. 서버로 압축 파일 전송"
+    echo -e "  2. tar -xzvf taskflow-{버전}.tar.gz"
+    echo -e "  3. cd taskflow-{버전}"
+    echo -e "  4. cp .env.example .env && vi .env"
+    echo -e "  5. docker compose up -d --build"
+    echo ""
+    echo -e "${CYAN}요구 사항:${NC}"
+    echo -e "  - Node.js 18+ (프론트엔드 빌드)"
+    echo -e "  - npm (패키지 관리)"
+    echo -e "  - tar (압축)"
+    echo ""
+}
+
+show_version() {
+    echo "TaskFlow Build Script v1.0.0"
+    echo "Copyright (c) 2024 TaskFlow Team"
+}
+
+# ============================================
+# 옵션 파싱
+# ============================================
+CLEAN_DIST=false
+SKIP_NPM=false
+VERSION=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -v|--version)
+            show_version
+            exit 0
+            ;;
+        -c|--clean)
+            CLEAN_DIST=true
+            shift
+            ;;
+        -s|--skip-npm)
+            SKIP_NPM=true
+            shift
+            ;;
+        -*)
+            echo -e "${RED}오류: 알 수 없는 옵션 '$1'${NC}"
+            echo "도움말을 보려면 '$0 --help'를 실행하세요."
+            exit 1
+            ;;
+        *)
+            VERSION="$1"
+            shift
+            ;;
+    esac
+done
+
+# 기본 버전 설정
+VERSION="${VERSION:-1.0.0}"
 DIST_NAME="taskflow-${VERSION}"
 DIST_DIR="${PROJECT_ROOT}/dist/${DIST_NAME}"
 ZIP_FILE="${PROJECT_ROOT}/dist/${DIST_NAME}.zip"
+
+# dist 폴더 전체 정리 (--clean 옵션)
+if [ "$CLEAN_DIST" = true ]; then
+    echo -e "${YELLOW}dist 폴더 전체 정리 중...${NC}"
+    rm -rf "${PROJECT_ROOT}/dist"
+    echo -e "${GREEN}  ✓ dist 폴더 정리 완료${NC}"
+    echo ""
+fi
 
 echo -e "${BLUE}============================================${NC}"
 echo -e "${BLUE} TaskFlow 배포본 생성${NC}"
@@ -29,8 +134,17 @@ echo ""
 echo -e "${YELLOW}[1/5] 프론트엔드 빌드 중...${NC}"
 cd "${PROJECT_ROOT}/frontend"
 if [ ! -d "node_modules" ]; then
+    if [ "$SKIP_NPM" = true ]; then
+        echo -e "${RED}  ✗ node_modules가 없습니다. --skip-npm 옵션을 제거하고 다시 실행하세요.${NC}"
+        exit 1
+    fi
     echo -e "${YELLOW}  - npm install 실행 중...${NC}"
     npm install
+elif [ "$SKIP_NPM" = false ]; then
+    echo -e "${YELLOW}  - npm install 실행 중...${NC}"
+    npm install
+else
+    echo -e "${YELLOW}  - npm install 건너뜀 (--skip-npm)${NC}"
 fi
 npm run build
 echo -e "${GREEN}  ✓ 프론트엔드 빌드 완료${NC}"

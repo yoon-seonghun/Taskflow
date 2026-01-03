@@ -7,7 +7,11 @@ import java.time.LocalDateTime;
 /**
  * 작업 템플릿 도메인
  *
- * 자주 사용하는 작업을 템플릿으로 등록하여 재사용
+ * 테이블: TB_TASK_TEMPLATE
+ *
+ * USERNAME 기반 FK 참조 시스템:
+ * - DEFAULT_ASSIGNEE_USERNAME: 기본 담당자 USERNAME 참조
+ * - CREATED_BY, UPDATED_BY: USERNAME 참조
  */
 @Getter
 @Setter
@@ -38,9 +42,9 @@ public class TaskTemplate {
     private String content;
 
     /**
-     * 기본 담당자 ID
+     * 기본 담당자 USERNAME (FK → TB_USER.USERNAME)
      */
-    private Long defaultAssigneeId;
+    private String defaultAssigneeUsername;
 
     /**
      * 기본 업무 상태 (NOT_STARTED, IN_PROGRESS, PENDING)
@@ -68,9 +72,9 @@ public class TaskTemplate {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -78,21 +82,21 @@ public class TaskTemplate {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
 
     // =============================================
     // 조인 필드
     // =============================================
 
     /**
-     * 생성자 이름
+     * 생성자 이름 (조인)
      */
     private String createdByName;
 
     /**
-     * 수정자 이름
+     * 수정자 이름 (조인)
      */
     private String updatedByName;
 

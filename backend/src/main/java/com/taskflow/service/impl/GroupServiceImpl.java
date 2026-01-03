@@ -51,7 +51,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     @Transactional
-    public GroupResponse createGroup(GroupCreateRequest request, Long createdBy) {
+    public GroupResponse createGroup(GroupCreateRequest request, String createdBy) {
         log.info("Creating group: code={}", request.getGroupCode());
 
         // 그룹 코드 중복 확인
@@ -85,7 +85,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     @Transactional
-    public GroupResponse updateGroup(Long groupId, GroupUpdateRequest request, Long updatedBy) {
+    public GroupResponse updateGroup(Long groupId, GroupUpdateRequest request, String updatedBy) {
         log.info("Updating group: id={}", groupId);
 
         // 그룹 존재 확인
@@ -112,7 +112,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     @Transactional
-    public GroupResponse updateGroupOrder(Long groupId, GroupOrderRequest request, Long updatedBy) {
+    public GroupResponse updateGroupOrder(Long groupId, GroupOrderRequest request, String updatedBy) {
         log.info("Updating group order: id={}, newOrder={}", groupId, request.getSortOrder());
 
         // 그룹 존재 확인
@@ -160,36 +160,36 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public List<GroupMemberResponse> getUserGroups(Long userId) {
+    public List<GroupMemberResponse> getUserGroups(String username) {
         // 사용자 존재 확인
-        userMapper.findById(userId)
-                .orElseThrow(() -> BusinessException.userNotFound(userId));
+        userMapper.findByUsername(username)
+                .orElseThrow(() -> BusinessException.userNotFound(username));
 
-        List<UserGroup> userGroups = userGroupMapper.findByUserId(userId);
+        List<UserGroup> userGroups = userGroupMapper.findByUsername(username);
         return GroupMemberResponse.fromList(userGroups);
     }
 
     @Override
     @Transactional
-    public GroupMemberResponse addGroupMember(Long groupId, GroupMemberRequest request, Long createdBy) {
-        log.info("Adding group member: groupId={}, userId={}", groupId, request.getUserId());
+    public GroupMemberResponse addGroupMember(Long groupId, GroupMemberRequest request, String createdBy) {
+        log.info("Adding group member: groupId={}, username={}", groupId, request.getUsername());
 
         // 그룹 존재 확인
         groupMapper.findById(groupId)
                 .orElseThrow(() -> BusinessException.groupNotFound(groupId));
 
         // 사용자 존재 확인
-        userMapper.findById(request.getUserId())
-                .orElseThrow(() -> BusinessException.userNotFound(request.getUserId()));
+        userMapper.findByUsername(request.getUsername())
+                .orElseThrow(() -> BusinessException.userNotFound(request.getUsername()));
 
         // 이미 멤버인지 확인
-        if (userGroupMapper.existsByUserIdAndGroupId(request.getUserId(), groupId)) {
+        if (userGroupMapper.existsByUsernameAndGroupId(request.getUsername(), groupId)) {
             throw BusinessException.conflict("이미 해당 그룹의 멤버입니다.");
         }
 
         // 멤버 추가
         UserGroup userGroup = UserGroup.builder()
-                .userId(request.getUserId())
+                .username(request.getUsername())
                 .groupId(groupId)
                 .createdBy(createdBy)
                 .build();
@@ -205,21 +205,21 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     @Transactional
-    public void removeGroupMember(Long groupId, Long userId) {
-        log.info("Removing group member: groupId={}, userId={}", groupId, userId);
+    public void removeGroupMember(Long groupId, String username) {
+        log.info("Removing group member: groupId={}, username={}", groupId, username);
 
         // 그룹 존재 확인
         groupMapper.findById(groupId)
                 .orElseThrow(() -> BusinessException.groupNotFound(groupId));
 
         // 멤버인지 확인
-        if (!userGroupMapper.existsByUserIdAndGroupId(userId, groupId)) {
+        if (!userGroupMapper.existsByUsernameAndGroupId(username, groupId)) {
             throw BusinessException.notFound("해당 사용자가 그룹의 멤버가 아닙니다.");
         }
 
         // 멤버 제거
-        userGroupMapper.deleteByGroupIdAndUserId(groupId, userId);
-        log.info("Group member removed: groupId={}, userId={}", groupId, userId);
+        userGroupMapper.deleteByGroupIdAndUsername(groupId, username);
+        log.info("Group member removed: groupId={}, username={}", groupId, username);
     }
 
     // =============================================

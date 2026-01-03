@@ -52,7 +52,7 @@ public class ItemController {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "priority", required = false) String priority,
-            @RequestParam(value = "assigneeId", required = false) Long assigneeId,
+            @RequestParam(value = "assigneeUsername", required = false) String assigneeUsername,
             @RequestParam(value = "groupId", required = false) Long groupId,
             @RequestParam(value = "startDate", required = false) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) LocalDate endDate,
@@ -63,8 +63,8 @@ public class ItemController {
             @RequestParam(value = "sort", required = false, defaultValue = "createdAt,desc") String sort
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
@@ -79,7 +79,7 @@ public class ItemController {
         request.setKeyword(keyword);
         request.setStatus(status);
         request.setPriority(priority);
-        request.setAssigneeId(assigneeId);
+        request.setAssigneeUsername(assigneeUsername);
         request.setGroupId(groupId);
         request.setStartDate(startDate);
         request.setEndDate(endDate);
@@ -105,15 +105,15 @@ public class ItemController {
             @Valid @RequestBody ItemCreateRequest request
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
 
         log.info("Create item: boardId={}, title={}", boardId, request.getTitle());
 
-        ItemResponse response = itemService.createItem(boardId, request, currentUserId);
+        ItemResponse response = itemService.createItem(boardId, request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "아이템이 생성되었습니다"));
@@ -128,8 +128,8 @@ public class ItemController {
             @PathVariable("id") Long itemId
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
@@ -157,15 +157,15 @@ public class ItemController {
             @Valid @RequestBody ItemUpdateRequest request
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
 
         log.info("Update item: id={}", itemId);
 
-        ItemResponse response = itemService.updateItem(itemId, request, currentUserId);
+        ItemResponse response = itemService.updateItem(itemId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "아이템이 수정되었습니다"));
     }
@@ -179,15 +179,15 @@ public class ItemController {
             @PathVariable("id") Long itemId
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
 
         log.info("Delete item: id={}", itemId);
 
-        ItemResponse response = itemService.deleteItem(itemId, currentUserId);
+        ItemResponse response = itemService.deleteItem(itemId, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "아이템이 삭제되었습니다"));
     }
@@ -205,15 +205,15 @@ public class ItemController {
             @PathVariable("id") Long itemId
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
 
         log.info("Complete item: id={}", itemId);
 
-        ItemResponse response = itemService.completeItem(itemId, currentUserId);
+        ItemResponse response = itemService.completeItem(itemId, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "아이템이 완료되었습니다"));
     }
@@ -227,15 +227,15 @@ public class ItemController {
             @PathVariable("id") Long itemId
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
 
         log.info("Restore item: id={}", itemId);
 
-        ItemResponse response = itemService.restoreItem(itemId, currentUserId);
+        ItemResponse response = itemService.restoreItem(itemId, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "아이템이 복원되었습니다"));
     }
@@ -252,8 +252,8 @@ public class ItemController {
             @PathVariable("boardId") Long boardId
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
@@ -273,8 +273,8 @@ public class ItemController {
             @PathVariable("boardId") Long boardId
     ) {
         // 접근 권한 확인
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        if (!boardService.hasAccess(boardId, currentUserId)) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
         }
@@ -301,17 +301,17 @@ public class ItemController {
             @PathVariable("id") Long itemId,
             @Valid @RequestBody ItemTransferRequest request
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        log.info("Transfer item: itemId={}, targetBoardId={}, targetUserId={}",
-                itemId, request.getTargetBoardId(), request.getTargetUserId());
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        log.info("Transfer item: itemId={}, targetBoardId={}, targetUsername={}",
+                itemId, request.getTargetBoardId(), request.getTargetUsername());
 
         // 이관 권한 확인
-        if (!itemShareService.canTransfer(itemId, currentUserId)) {
+        if (!itemShareService.canTransfer(itemId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("업무를 이관할 권한이 없습니다"));
         }
 
-        ItemResponse response = itemShareService.transferItem(itemId, request, currentUserId);
+        ItemResponse response = itemShareService.transferItem(itemId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "업무가 이관되었습니다"));
     }
@@ -324,9 +324,9 @@ public class ItemController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("id") Long itemId
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        boolean canTransfer = itemShareService.canTransfer(itemId, currentUserId);
+        boolean canTransfer = itemShareService.canTransfer(itemId, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(canTransfer));
     }
@@ -339,9 +339,9 @@ public class ItemController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("id") Long itemId
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        boolean canShare = itemShareService.canShareItem(itemId, currentUserId);
+        boolean canShare = itemShareService.canShareItem(itemId, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(canShare));
     }
@@ -354,9 +354,9 @@ public class ItemController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("id") Long itemId
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
 
-        String permission = itemShareService.getItemPermission(itemId, currentUserId);
+        String permission = itemShareService.getItemPermission(itemId, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(permission));
     }

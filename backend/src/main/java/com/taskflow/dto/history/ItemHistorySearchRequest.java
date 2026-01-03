@@ -23,9 +23,14 @@ public class ItemHistorySearchRequest {
     private String result;
 
     /**
-     * 작업자 ID
+     * 작업자 ID (레거시 호환)
      */
     private Long workerId;
+
+    /**
+     * 작업자 USERNAME
+     */
+    private String workerUsername;
 
     /**
      * 검색 시작일
@@ -91,5 +96,97 @@ public class ItemHistorySearchRequest {
                               "asc".equalsIgnoreCase(sortDirection) ? "ASC" : "DESC";
 
         return field + " " + safeDirection;
+    }
+
+    // ============================================
+    // Lombok 호환성을 위한 명시적 getter/setter
+    // ============================================
+
+    public Long getBoardId() {
+        return boardId;
+    }
+
+    public void setBoardId(Long boardId) {
+        this.boardId = boardId;
+    }
+
+    public String getResult() {
+        return result;
+    }
+
+    public void setResult(String result) {
+        this.result = result;
+    }
+
+    public Long getWorkerId() {
+        return workerId;
+    }
+
+    public void setWorkerId(Long workerId) {
+        this.workerId = workerId;
+    }
+
+    public String getWorkerUsername() {
+        return workerUsername;
+    }
+
+    public void setWorkerUsername(String workerUsername) {
+        this.workerUsername = workerUsername;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
+    }
+
+    public Integer getPage() {
+        return page;
+    }
+
+    public void setPage(Integer page) {
+        this.page = page;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
+    }
+
+    public String getSortField() {
+        return sortField;
+    }
+
+    public void setSortField(String sortField) {
+        this.sortField = sortField;
+    }
+
+    public String getSortDirection() {
+        return sortDirection;
+    }
+
+    public void setSortDirection(String sortDirection) {
+        this.sortDirection = sortDirection;
     }
 }

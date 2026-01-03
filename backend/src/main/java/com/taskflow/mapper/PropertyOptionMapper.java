@@ -111,7 +111,16 @@ public interface PropertyOptionMapper {
     int update(PropertyOption option);
 
     /**
-     * 옵션 삭제
+     * 옵션 논리 삭제 (USE_YN = 'N')
+     *
+     * @param optionId  옵션 ID
+     * @param updatedBy 수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int softDelete(@Param("optionId") Long optionId, @Param("updatedBy") String updatedBy);
+
+    /**
+     * 옵션 물리 삭제 (사용 금지 - 논리 삭제만 사용 권장)
      *
      * @param optionId 옵션 ID
      * @return 영향받은 행 수
@@ -130,26 +139,26 @@ public interface PropertyOptionMapper {
      * 카테고리 속성 기본 옵션 생성
      *
      * @param propertyId 속성 정의 ID
-     * @param createdBy  생성자 ID
+     * @param createdBy  생성자 USERNAME
      * @return 영향받은 행 수
      */
-    int insertCategoryOptions(@Param("propertyId") Long propertyId, @Param("createdBy") Long createdBy);
+    int insertCategoryOptions(@Param("propertyId") Long propertyId, @Param("createdBy") String createdBy);
 
     /**
      * 상태 속성 기본 옵션 생성
      *
      * @param propertyId 속성 정의 ID
-     * @param createdBy  생성자 ID
+     * @param createdBy  생성자 USERNAME
      * @return 영향받은 행 수
      */
-    int insertStatusOptions(@Param("propertyId") Long propertyId, @Param("createdBy") Long createdBy);
+    int insertStatusOptions(@Param("propertyId") Long propertyId, @Param("createdBy") String createdBy);
 
     /**
      * 우선순위 속성 기본 옵션 생성
      *
      * @param propertyId 속성 정의 ID
-     * @param createdBy  생성자 ID
+     * @param createdBy  생성자 USERNAME
      * @return 영향받은 행 수
      */
-    int insertPriorityOptions(@Param("propertyId") Long propertyId, @Param("createdBy") Long createdBy);
+    int insertPriorityOptions(@Param("propertyId") Long propertyId, @Param("createdBy") String createdBy);
 }

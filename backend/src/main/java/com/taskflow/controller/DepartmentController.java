@@ -78,38 +78,38 @@ public class DepartmentController {
     ) {
         log.info("Create department: code={}", request.getDepartmentCode());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        DepartmentResponse response = departmentService.createDepartment(request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        DepartmentResponse response = departmentService.createDepartment(request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "부서가 등록되었습니다"));
     }
 
     /**
-     * 부서 조회
+     * 부서 조회 (코드 기반)
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{code}")
     public ResponseEntity<ApiResponse<DepartmentResponse>> getDepartment(
-            @PathVariable("id") Long departmentId
+            @PathVariable("code") String departmentCode
     ) {
-        log.debug("Get department: id={}", departmentId);
+        log.debug("Get department: code={}", departmentCode);
 
-        DepartmentResponse response = departmentService.getDepartment(departmentId);
+        DepartmentResponse response = departmentService.getDepartment(departmentCode);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
      * 부서 수정
      */
-    @PutMapping("/{id}")
+    @PutMapping("/{code}")
     public ResponseEntity<ApiResponse<DepartmentResponse>> updateDepartment(
-            @PathVariable("id") Long departmentId,
+            @PathVariable("code") String departmentCode,
             @Valid @RequestBody DepartmentUpdateRequest request
     ) {
-        log.info("Update department: id={}", departmentId);
+        log.info("Update department: code={}", departmentCode);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        DepartmentResponse response = departmentService.updateDepartment(departmentId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        DepartmentResponse response = departmentService.updateDepartment(departmentCode, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "부서 정보가 수정되었습니다"));
     }
@@ -117,28 +117,28 @@ public class DepartmentController {
     /**
      * 부서 삭제
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{code}")
     public ResponseEntity<ApiResponse<Void>> deleteDepartment(
-            @PathVariable("id") Long departmentId
+            @PathVariable("code") String departmentCode
     ) {
-        log.info("Delete department: id={}", departmentId);
+        log.info("Delete department: code={}", departmentCode);
 
-        departmentService.deleteDepartment(departmentId);
+        departmentService.deleteDepartment(departmentCode);
         return ResponseEntity.ok(ApiResponse.successWithMessage("부서가 삭제되었습니다"));
     }
 
     /**
      * 부서 순서 변경
      */
-    @PutMapping("/{id}/order")
+    @PutMapping("/{code}/order")
     public ResponseEntity<ApiResponse<DepartmentResponse>> updateDepartmentOrder(
-            @PathVariable("id") Long departmentId,
+            @PathVariable("code") String departmentCode,
             @Valid @RequestBody DepartmentOrderRequest request
     ) {
-        log.info("Update department order: id={}, order={}", departmentId, request.getSortOrder());
+        log.info("Update department order: code={}, order={}", departmentCode, request.getSortOrder());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        DepartmentResponse response = departmentService.updateDepartmentOrder(departmentId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        DepartmentResponse response = departmentService.updateDepartmentOrder(departmentCode, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "부서 순서가 변경되었습니다"));
     }
@@ -146,26 +146,26 @@ public class DepartmentController {
     /**
      * 부서별 사용자 목록 조회
      */
-    @GetMapping("/{id}/users")
+    @GetMapping("/{code}/users")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getDepartmentUsers(
-            @PathVariable("id") Long departmentId
+            @PathVariable("code") String departmentCode
     ) {
-        log.debug("Get department users: departmentId={}", departmentId);
+        log.debug("Get department users: departmentCode={}", departmentCode);
 
-        List<UserResponse> response = departmentService.getDepartmentUsers(departmentId);
+        List<UserResponse> response = departmentService.getDepartmentUsers(departmentCode);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
      * 하위 부서 목록 조회
      */
-    @GetMapping("/{id}/children")
+    @GetMapping("/{code}/children")
     public ResponseEntity<ApiResponse<List<DepartmentResponse>>> getChildDepartments(
-            @PathVariable("id") Long departmentId
+            @PathVariable("code") String departmentCode
     ) {
-        log.debug("Get child departments: parentId={}", departmentId);
+        log.debug("Get child departments: parentCode={}", departmentCode);
 
-        List<DepartmentResponse> response = departmentService.getChildDepartments(departmentId);
+        List<DepartmentResponse> response = departmentService.getChildDepartments(departmentCode);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

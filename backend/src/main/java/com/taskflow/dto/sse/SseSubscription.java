@@ -16,9 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SseSubscription {
 
     /**
-     * 사용자 ID
+     * 사용자 USERNAME
      */
-    private Long userId;
+    private String username;
 
     /**
      * SSE Emitter

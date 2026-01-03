@@ -29,7 +29,7 @@ const emit = defineEmits<{
 const statusConfig: Record<ItemStatus, { label: string; color: string; bg: string }> = {
   NOT_STARTED: { label: '시작전', color: 'text-gray-600', bg: 'bg-gray-100' },
   IN_PROGRESS: { label: '진행중', color: 'text-blue-600', bg: 'bg-blue-100' },
-  PENDING: { label: '대기', color: 'text-yellow-700', bg: 'bg-yellow-100' },
+  PENDING: { label: '보류', color: 'text-yellow-700', bg: 'bg-yellow-100' },
   COMPLETED: { label: '완료', color: 'text-green-600', bg: 'bg-green-100' },
   DELETED: { label: '삭제', color: 'text-red-600', bg: 'bg-red-100' }
 }
@@ -157,9 +157,9 @@ function handleDelete(event: Event) {
           {{ item.assigneeName }}
         </span>
 
-        <!-- 마감일 -->
-        <span v-if="item.dueDate" class="text-[12px] text-gray-400">
-          {{ formatDate(item.dueDate) }}
+        <!-- 완료예정 -->
+        <span v-if="item.endTime" class="text-[12px] text-gray-400">
+          {{ formatDate(item.endTime) }}
         </span>
 
         <!-- 댓글 -->

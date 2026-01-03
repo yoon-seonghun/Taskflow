@@ -163,11 +163,11 @@ export const useGroupStore = defineStore('group', () => {
   /**
    * 그룹 멤버 추가
    */
-  async function addGroupMember(groupId: number, userId: number): Promise<boolean> {
+  async function addGroupMember(groupId: number, username: string): Promise<boolean> {
     error.value = null
 
     try {
-      const response = await groupApi.addGroupMember(groupId, { userId })
+      const response = await groupApi.addGroupMember(groupId, { username })
       if (response.success) {
         // 멤버 목록 새로고침
         await fetchGroupMembers(groupId)
@@ -186,14 +186,14 @@ export const useGroupStore = defineStore('group', () => {
   /**
    * 그룹 멤버 제거
    */
-  async function removeGroupMember(groupId: number, userId: number): Promise<boolean> {
+  async function removeGroupMember(groupId: number, username: string): Promise<boolean> {
     error.value = null
 
     try {
-      const response = await groupApi.removeGroupMember(groupId, userId)
+      const response = await groupApi.removeGroupMember(groupId, username)
       if (response.success) {
         // 멤버 목록에서 제거
-        groupMembers.value = groupMembers.value.filter(m => m.userId !== userId)
+        groupMembers.value = groupMembers.value.filter(m => m.username !== username)
         // 그룹 목록도 새로고침 (멤버 수 갱신)
         await fetchGroups()
         return true

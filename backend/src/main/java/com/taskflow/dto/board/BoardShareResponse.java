@@ -1,8 +1,10 @@
 package com.taskflow.dto.board;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.taskflow.domain.BoardShare;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,6 +13,7 @@ import java.util.stream.Collectors;
 /**
  * 보드 공유 응답 DTO
  */
+@Slf4j
 @Getter
 @Builder
 public class BoardShareResponse {
@@ -31,19 +34,15 @@ public class BoardShareResponse {
     private String boardName;
 
     /**
-     * 사용자 ID
+     * 사용자 USERNAME
      */
-    private Long userId;
+    private String username;
 
     /**
      * 사용자명
      */
+    @JsonProperty("user_name")
     private String userName;
-
-    /**
-     * 로그인 ID
-     */
-    private String loginId;
 
     /**
      * 부서명
@@ -68,13 +67,16 @@ public class BoardShareResponse {
             return null;
         }
 
+        String userName = boardShare.getUserName();
+        log.debug("BoardShareResponse.from() - username: {}, userName: {}",
+                  boardShare.getUsername(), userName);
+
         return BoardShareResponse.builder()
                 .boardShareId(boardShare.getBoardShareId())
                 .boardId(boardShare.getBoardId())
                 .boardName(boardShare.getBoardName())
-                .userId(boardShare.getUserId())
-                .userName(boardShare.getUserName())
-                .loginId(boardShare.getLoginId())
+                .username(boardShare.getUsername())
+                .userName(userName)
                 .departmentName(boardShare.getDepartmentName())
                 .permission(boardShare.getPermission())
                 .createdAt(boardShare.getCreatedAt())

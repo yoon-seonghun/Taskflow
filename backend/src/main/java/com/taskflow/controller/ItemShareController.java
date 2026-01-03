@@ -39,11 +39,11 @@ public class ItemShareController {
     public ResponseEntity<ApiResponse<List<ShareResponse>>> getShares(
             @PathVariable("itemId") Long itemId
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
+        String currentUsername = SecurityUtils.getCurrentUsername();
         log.debug("Get item shares: itemId={}", itemId);
 
         // 접근 권한 확인
-        if (!itemShareService.hasAccess(itemId, currentUserId)) {
+        if (!itemShareService.hasAccess(itemId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("업무에 접근 권한이 없습니다"));
         }
@@ -60,16 +60,16 @@ public class ItemShareController {
             @PathVariable("itemId") Long itemId,
             @Valid @RequestBody ShareRequest request
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        log.info("Add item share: itemId={}, userId={}", itemId, request.getUserId());
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        log.info("Add item share: itemId={}, username={}", itemId, request.getUsername());
 
         // 수정 권한 확인
-        if (!itemShareService.canEdit(itemId, currentUserId)) {
+        if (!itemShareService.canEdit(itemId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("업무 공유 권한이 없습니다"));
         }
 
-        itemShareService.addShare(itemId, request, currentUserId);
+        itemShareService.addShare(itemId, request, currentUsername);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.successWithMessage("공유가 추가되었습니다"));
     }
@@ -77,44 +77,44 @@ public class ItemShareController {
     /**
      * 공유 권한 변경
      */
-    @PutMapping("/{userId}")
+    @PutMapping("/{username}")
     public ResponseEntity<ApiResponse<Void>> updatePermission(
             @PathVariable("itemId") Long itemId,
-            @PathVariable("userId") Long userId,
+            @PathVariable("username") String username,
             @Valid @RequestBody ShareUpdateRequest request
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        log.info("Update item share permission: itemId={}, userId={}, permission={}",
-                itemId, userId, request.getPermission());
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        log.info("Update item share permission: itemId={}, username={}, permission={}",
+                itemId, username, request.getPermission());
 
         // 수정 권한 확인
-        if (!itemShareService.canEdit(itemId, currentUserId)) {
+        if (!itemShareService.canEdit(itemId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("권한 변경 권한이 없습니다"));
         }
 
-        itemShareService.updatePermission(itemId, userId, request.getPermission(), currentUserId);
+        itemShareService.updatePermission(itemId, username, request.getPermission(), currentUsername);
         return ResponseEntity.ok(ApiResponse.successWithMessage("권한이 변경되었습니다"));
     }
 
     /**
      * 업무 공유 제거
      */
-    @DeleteMapping("/{userId}")
+    @DeleteMapping("/{username}")
     public ResponseEntity<ApiResponse<Void>> removeShare(
             @PathVariable("itemId") Long itemId,
-            @PathVariable("userId") Long userId
+            @PathVariable("username") String username
     ) {
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        log.info("Remove item share: itemId={}, userId={}", itemId, userId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        log.info("Remove item share: itemId={}, username={}", itemId, username);
 
         // 삭제 권한 확인
-        if (!itemShareService.canEdit(itemId, currentUserId)) {
+        if (!itemShareService.canEdit(itemId, currentUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("공유 제거 권한이 없습니다"));
         }
 
-        itemShareService.removeShare(itemId, userId, currentUserId);
+        itemShareService.removeShare(itemId, username, currentUsername);
         return ResponseEntity.ok(ApiResponse.successWithMessage("공유가 해제되었습니다"));
     }
 }

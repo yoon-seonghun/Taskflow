@@ -5,10 +5,13 @@ spring:
   application:
     name: taskflow-backend
 
+  main:
+    allow-bean-definition-overriding: true
+
   jackson:
+    property-naming-strategy: SNAKE_CASE
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Seoul
-    property-naming-strategy: SNAKE_CASE
     serialization:
       write-dates-as-timestamps: false
 
@@ -19,6 +22,24 @@ spring:
     resources:
       add-mappings: false
 
+# TaskFlow 사용자 관리 설정
+# mode: internal (기본 관리) | external (외부 DB 연동)
+taskflow:
+  user-management:
+    mode: ${USER_MANAGEMENT_MODE:internal}
+    internal:
+      password-encoder: bcrypt
+      bcrypt-strength: 10
+      user-crud-enabled: true
+      department-crud-enabled: true
+    external:
+      password-encoder: sha256
+      sha256-use-salt: false
+      user-crud-enabled: false
+      department-crud-enabled: false
+      user-table: ${EXTERNAL_USER_TABLE:VW_TASKFLOW_USER}
+      department-table: ${EXTERNAL_DEPARTMENT_TABLE:VW_TASKFLOW_DEPARTMENT}
+
 server:
   port: 8080
   servlet:
@@ -28,8 +49,11 @@ server:
       force: true
 
 # MyBatis Configuration
+# 주의: mapper-locations는 MyBatisConfig.java에서 재정의됨
+# - Primary: classpath:mapper/*.xml (external 폴더 제외)
+# - External: classpath:mapper/external/**/*.xml (external 모드에서만)
 mybatis:
-  mapper-locations: classpath:mapper/**/*.xml
+  mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.taskflow.domain
   configuration:
     map-underscore-to-camel-case: true
@@ -58,15 +82,24 @@ spring:
       on-profile: local
 
   datasource:
-    url: jdbc:mysql://localhost:3306/taskflow?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    jdbc-url: jdbc:mysql://localhost:3306/taskflow?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: taskflow
     password: taskflow123
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      idle-timeout: 30000
-      connection-timeout: 20000
+    maximum-pool-size: 10
+    minimum-idle: 5
+    idle-timeout: 30000
+    connection-timeout: 20000
+    # External DataSource (external 모드 시 활성화)
+    # 로컬 테스트 시 환경변수 또는 아래 값 직접 설정
+    external:
+      jdbc-url: ${EXTERNAL_DB_URL:}
+      username: ${EXTERNAL_DB_USERNAME:}
+      password: ${EXTERNAL_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      maximum-pool-size: 5
+      minimum-idle: 2
+      read-only: true
 
 # JWT Configuration (Base64 encoded secret - 최소 256비트)
 jwt:
@@ -119,15 +152,23 @@ spring:
       on-profile: docker
 
   datasource:
-    url: jdbc:mysql://mysql:3306/taskflow?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    jdbc-url: jdbc:mysql://mysql:3306/taskflow?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: taskflow
     password: taskflow123
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 10
-      idle-timeout: 30000
-      connection-timeout: 20000
+    maximum-pool-size: 20
+    minimum-idle: 10
+    idle-timeout: 30000
+    connection-timeout: 20000
+    # External DataSource (외부 DB 연동 모드)
+    external:
+      jdbc-url: ${EXTERNAL_DB_URL:}
+      username: ${EXTERNAL_DB_USERNAME:}
+      password: ${EXTERNAL_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      maximum-pool-size: 5
+      minimum-idle: 2
+      read-only: true
 
 jwt:
   secret: ${JWT_SECRET:ZG9ja2VyLWp3dC1zZWNyZXQta2V5LW11c3QtYmUtYXQtbGVhc3QtMjU2LWJpdHMtbG9uZy1mb3ItaHMyNTY=}
@@ -179,15 +220,23 @@ spring:
       on-profile: prod
 
   datasource:
-    url: ${DB_URL}
+    jdbc-url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 30
-      minimum-idle: 10
-      idle-timeout: 30000
-      connection-timeout: 20000
+    maximum-pool-size: 30
+    minimum-idle: 10
+    idle-timeout: 30000
+    connection-timeout: 20000
+    # External DataSource (외부 DB 연동 모드)
+    external:
+      jdbc-url: ${EXTERNAL_DB_URL:}
+      username: ${EXTERNAL_DB_USERNAME:}
+      password: ${EXTERNAL_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      maximum-pool-size: 10
+      minimum-idle: 2
+      read-only: true
 
 jwt:
   secret: ${JWT_SECRET}

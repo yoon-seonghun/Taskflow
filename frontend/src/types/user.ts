@@ -2,6 +2,11 @@
  * 사용자 타입 정의
  */
 
+/**
+ * 사용자 권한 타입
+ */
+export type UserRole = 'ADMIN' | 'MANAGER' | 'USER' | 'GUEST'
+
 export interface User {
   userId: number
   username: string
@@ -11,6 +16,11 @@ export interface User {
   departmentId?: number
   departmentName?: string
   departmentCode?: string
+  positionCode?: string  // 직급 코드
+  positionName?: string  // 직급명
+  positionSortOrder?: number  // 직급 정렬 순서
+  role?: UserRole  // 권한 (ADMIN, MANAGER, USER, GUEST)
+  headYn?: string  // 팀장 여부 (Y/N)
   groupIds?: number[]
   groups?: UserGroup[]
   useYn: string
@@ -33,7 +43,9 @@ export interface UserCreateRequest {
   passwordConfirm: string
   userName: string
   email?: string  // 이메일 주소
-  departmentId?: number
+  departmentCode?: string  // 부서 코드
+  positionCode?: string  // 직급 코드
+  role?: UserRole  // 권한 (ADMIN, MANAGER, USER, GUEST)
   groupIds?: number[]
 }
 
@@ -41,7 +53,10 @@ export interface UserUpdateRequest {
   userName?: string
   email?: string  // 이메일 주소
   password?: string
-  departmentId?: number
+  departmentCode?: string  // 부서 코드
+  positionCode?: string  // 직급 코드
+  role?: UserRole  // 권한 (ADMIN, MANAGER, USER, GUEST)
+  headYn?: string  // 팀장 여부 (Y/N)
   groupIds?: number[]
   useYn?: string
 }

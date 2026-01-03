@@ -100,7 +100,7 @@ function handleRemove(share: BoardShare) {
               </div>
               <div>
                 <div class="font-medium text-gray-900">{{ share.userName || '-' }}</div>
-                <div class="text-xs text-gray-500">ID: {{ share.userId }}</div>
+                <div class="text-xs text-gray-500">{{ share.username }}</div>
               </div>
             </div>
           </td>

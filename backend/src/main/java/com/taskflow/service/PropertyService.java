@@ -47,27 +47,28 @@ public interface PropertyService {
      *
      * @param boardId   보드 ID
      * @param request   등록 요청
-     * @param createdBy 생성자 ID
+     * @param createdBy 생성자 USERNAME
      * @return 생성된 속성 정의 응답
      */
-    PropertyResponse createProperty(Long boardId, PropertyCreateRequest request, Long createdBy);
+    PropertyResponse createProperty(Long boardId, PropertyCreateRequest request, String createdBy);
 
     /**
      * 속성 정의 수정
      *
      * @param propertyId 속성 정의 ID
      * @param request    수정 요청
-     * @param updatedBy  수정자 ID
+     * @param updatedBy  수정자 USERNAME
      * @return 수정된 속성 정의 응답
      */
-    PropertyResponse updateProperty(Long propertyId, PropertyUpdateRequest request, Long updatedBy);
+    PropertyResponse updateProperty(Long propertyId, PropertyUpdateRequest request, String updatedBy);
 
     /**
-     * 속성 정의 삭제
+     * 속성 정의 논리 삭제
      *
      * @param propertyId 속성 정의 ID
+     * @param deletedBy  삭제자 USERNAME
      */
-    void deleteProperty(Long propertyId);
+    void deleteProperty(Long propertyId, String deletedBy);
 
     // =============================================
     // 옵션 조회
@@ -99,25 +100,26 @@ public interface PropertyService {
      *
      * @param propertyId 속성 정의 ID
      * @param request    등록 요청
-     * @param createdBy  생성자 ID
+     * @param createdBy  생성자 USERNAME
      * @return 생성된 옵션 응답
      */
-    OptionDetailResponse createOption(Long propertyId, OptionCreateRequest request, Long createdBy);
+    OptionDetailResponse createOption(Long propertyId, OptionCreateRequest request, String createdBy);
 
     /**
      * 옵션 수정
      *
      * @param optionId  옵션 ID
      * @param request   수정 요청
-     * @param updatedBy 수정자 ID
+     * @param updatedBy 수정자 USERNAME
      * @return 수정된 옵션 응답
      */
-    OptionDetailResponse updateOption(Long optionId, OptionUpdateRequest request, Long updatedBy);
+    OptionDetailResponse updateOption(Long optionId, OptionUpdateRequest request, String updatedBy);
 
     /**
-     * 옵션 삭제
+     * 옵션 논리 삭제
      *
-     * @param optionId 옵션 ID
+     * @param optionId  옵션 ID
+     * @param deletedBy 삭제자 USERNAME
      */
-    void deleteOption(Long optionId);
+    void deleteOption(Long optionId, String deletedBy);
 }

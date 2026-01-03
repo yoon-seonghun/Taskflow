@@ -110,7 +110,16 @@ public interface PropertyDefMapper {
     int update(PropertyDef propertyDef);
 
     /**
-     * 속성 정의 삭제
+     * 속성 정의 논리 삭제 (USE_YN = 'N')
+     *
+     * @param propertyId 속성 정의 ID
+     * @param updatedBy  수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int softDelete(@Param("propertyId") Long propertyId, @Param("updatedBy") String updatedBy);
+
+    /**
+     * 속성 정의 물리 삭제 (사용 금지 - 논리 삭제만 사용 권장)
      *
      * @param propertyId 속성 정의 ID
      * @return 영향받은 행 수
@@ -127,13 +136,14 @@ public interface PropertyDefMapper {
 
     /**
      * 신규 보드용 기본 속성 정의 일괄 생성
-     * (카테고리, 상태, 우선순위, 담당자, 시작일, 마감일)
+     * (카테고리만 - 담당자/요청일/마감일은 TB_ITEM 고정 컬럼으로 관리)
+     * 상태/우선순위도 TB_ITEM 고정 컬럼으로 관리됨
      *
      * @param boardId   보드 ID
-     * @param createdBy 생성자 ID
+     * @param createdBy 생성자 USERNAME
      * @return 영향받은 행 수
      */
-    int insertDefaultProperties(@Param("boardId") Long boardId, @Param("createdBy") Long createdBy);
+    int insertDefaultProperties(@Param("boardId") Long boardId, @Param("createdBy") String createdBy);
 
     /**
      * 보드의 속성 정의 목록 조회 (이름으로 조회용)
@@ -142,4 +152,13 @@ public interface PropertyDefMapper {
      * @return 속성 정의 목록
      */
     List<PropertyDef> findAllByBoardId(@Param("boardId") Long boardId);
+
+    /**
+     * 보드별 전체 속성 정의 목록 조회 (삭제된 속성 포함 - 관리용)
+     *
+     * @param boardId 보드 ID
+     * @param useYn   사용 여부 필터 (null = 전체)
+     * @return 속성 정의 목록 (옵션 포함)
+     */
+    List<PropertyDef> findAllByBoardIdIncludingDeleted(@Param("boardId") Long boardId, @Param("useYn") String useYn);
 }

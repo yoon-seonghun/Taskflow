@@ -30,13 +30,13 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param item        생성된 아이템
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishItemCreated(Long boardId, ItemResponse item, Long triggeredBy) {
+    public void publishItemCreated(Long boardId, ItemResponse item, String triggeredByUsername) {
         log.debug("Publishing item:created event for board {}, item {}", boardId, item.getItemId());
 
-        SseEvent<ItemResponse> event = SseEvent.itemCreated(boardId, item, triggeredBy);
+        SseEvent<ItemResponse> event = SseEvent.itemCreated(boardId, item, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 
@@ -45,13 +45,13 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param item        수정된 아이템
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishItemUpdated(Long boardId, ItemResponse item, Long triggeredBy) {
+    public void publishItemUpdated(Long boardId, ItemResponse item, String triggeredByUsername) {
         log.debug("Publishing item:updated event for board {}, item {}", boardId, item.getItemId());
 
-        SseEvent<ItemResponse> event = SseEvent.itemUpdated(boardId, item, triggeredBy);
+        SseEvent<ItemResponse> event = SseEvent.itemUpdated(boardId, item, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 
@@ -60,13 +60,13 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param item        삭제된 아이템
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishItemDeleted(Long boardId, ItemResponse item, Long triggeredBy) {
+    public void publishItemDeleted(Long boardId, ItemResponse item, String triggeredByUsername) {
         log.debug("Publishing item:deleted event for board {}, item {}", boardId, item.getItemId());
 
-        SseEvent<ItemResponse> event = SseEvent.itemDeleted(boardId, item, triggeredBy);
+        SseEvent<ItemResponse> event = SseEvent.itemDeleted(boardId, item, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 
@@ -75,13 +75,13 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param item        완료된 아이템
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishItemCompleted(Long boardId, ItemResponse item, Long triggeredBy) {
+    public void publishItemCompleted(Long boardId, ItemResponse item, String triggeredByUsername) {
         log.debug("Publishing item:updated (completed) event for board {}, item {}", boardId, item.getItemId());
 
-        SseEvent<ItemResponse> event = SseEvent.itemUpdated(boardId, item, triggeredBy);
+        SseEvent<ItemResponse> event = SseEvent.itemUpdated(boardId, item, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 
@@ -90,13 +90,13 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param item        복원된 아이템
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishItemRestored(Long boardId, ItemResponse item, Long triggeredBy) {
+    public void publishItemRestored(Long boardId, ItemResponse item, String triggeredByUsername) {
         log.debug("Publishing item:updated (restored) event for board {}, item {}", boardId, item.getItemId());
 
-        SseEvent<ItemResponse> event = SseEvent.itemUpdated(boardId, item, triggeredBy);
+        SseEvent<ItemResponse> event = SseEvent.itemUpdated(boardId, item, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 
@@ -109,13 +109,13 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param property    변경된 속성
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishPropertyUpdated(Long boardId, PropertyResponse property, Long triggeredBy) {
+    public void publishPropertyUpdated(Long boardId, PropertyResponse property, String triggeredByUsername) {
         log.debug("Publishing property:updated event for board {}, property {}", boardId, property.getPropertyId());
 
-        SseEvent<PropertyResponse> event = SseEvent.propertyUpdated(boardId, property, triggeredBy);
+        SseEvent<PropertyResponse> event = SseEvent.propertyUpdated(boardId, property, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 
@@ -124,13 +124,13 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param property    생성된 속성
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishPropertyCreated(Long boardId, PropertyResponse property, Long triggeredBy) {
+    public void publishPropertyCreated(Long boardId, PropertyResponse property, String triggeredByUsername) {
         log.debug("Publishing property:updated (created) event for board {}, property {}", boardId, property.getPropertyId());
 
-        SseEvent<PropertyResponse> event = SseEvent.propertyUpdated(boardId, property, triggeredBy);
+        SseEvent<PropertyResponse> event = SseEvent.propertyUpdated(boardId, property, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 
@@ -139,10 +139,10 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param propertyId  삭제된 속성 ID
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishPropertyDeleted(Long boardId, Long propertyId, Long triggeredBy) {
+    public void publishPropertyDeleted(Long boardId, Long propertyId, String triggeredByUsername) {
         log.debug("Publishing property:updated (deleted) event for board {}, property {}", boardId, propertyId);
 
         // 삭제된 속성 정보 (ID만 포함)
@@ -152,7 +152,7 @@ public class SseEventPublisher {
                 .deleted(true)
                 .build();
 
-        SseEvent<PropertyResponse> event = SseEvent.propertyUpdated(boardId, deletedProperty, triggeredBy);
+        SseEvent<PropertyResponse> event = SseEvent.propertyUpdated(boardId, deletedProperty, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 
@@ -165,13 +165,13 @@ public class SseEventPublisher {
      *
      * @param boardId     보드 ID
      * @param comment     생성된 댓글
-     * @param triggeredBy 이벤트 발생자 ID
+     * @param triggeredByUsername 이벤트 발생자 USERNAME
      */
     @Async
-    public void publishCommentCreated(Long boardId, CommentResponse comment, Long triggeredBy) {
+    public void publishCommentCreated(Long boardId, CommentResponse comment, String triggeredByUsername) {
         log.debug("Publishing comment:created event for board {}, comment {}", boardId, comment.getCommentId());
 
-        SseEvent<CommentResponse> event = SseEvent.commentCreated(boardId, comment, triggeredBy);
+        SseEvent<CommentResponse> event = SseEvent.commentCreated(boardId, comment, triggeredByUsername);
         emitterManager.sendToBoard(event);
     }
 }

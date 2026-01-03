@@ -45,9 +45,9 @@ public class ItemCreateRequest {
     private Long categoryId;
 
     /**
-     * 상태 (NOT_STARTED, IN_PROGRESS, COMPLETED, DELETED)
+     * 상태 (NOT_STARTED, IN_PROGRESS, PENDING, COMPLETED, DELETED)
      */
-    @Pattern(regexp = "^(NOT_STARTED|IN_PROGRESS|COMPLETED|DELETED)$",
+    @Pattern(regexp = "^(NOT_STARTED|IN_PROGRESS|PENDING|COMPLETED|DELETED)$",
             message = "유효하지 않은 상태입니다")
     private String status;
 
@@ -59,9 +59,9 @@ public class ItemCreateRequest {
     private String priority;
 
     /**
-     * 담당자 ID
+     * 담당자 아이디
      */
-    private Long assigneeId;
+    private String assigneeUsername;
 
     /**
      * 시작 시간

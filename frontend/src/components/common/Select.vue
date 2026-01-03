@@ -5,7 +5,8 @@
  * - 검색 기능
  * Compact UI: height 32px, font 13px
  */
-import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { computed, ref, nextTick } from 'vue'
+import { useDropdownManager } from '@/composables/useDropdownManager'
 
 export interface SelectOption {
   value: string | number
@@ -51,12 +52,15 @@ const emit = defineEmits<{
   (e: 'change', value: string | number | null): void
 }>()
 
-const isOpen = ref(false)
-const searchQuery = ref('')
-const highlightedIndex = ref(-1)
+// 컨테이너 ref (드롭다운 관리자에 전달)
 const containerRef = ref<HTMLElement | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
+
+// 전역 드롭다운 관리자 사용 (외부 클릭 감지 포함)
+const { isOpen, openDropdown, closeDropdown: closeFromManager } = useDropdownManager(containerRef)
+const searchQuery = ref('')
+const highlightedIndex = ref(-1)
 
 // 선택된 옵션
 const selectedOption = computed(() =>
@@ -112,8 +116,12 @@ const triggerClasses = computed(() => {
 // 드롭다운 열기/닫기
 function toggleDropdown() {
   if (props.disabled) return
-  isOpen.value = !isOpen.value
+
   if (isOpen.value) {
+    closeFromManager()
+    searchQuery.value = ''
+  } else {
+    openDropdown()
     searchQuery.value = ''
     highlightedIndex.value = -1
     nextTick(() => {
@@ -123,7 +131,7 @@ function toggleDropdown() {
 }
 
 function closeDropdown() {
-  isOpen.value = false
+  closeFromManager()
   searchQuery.value = ''
 }
 
@@ -186,21 +194,6 @@ function handleKeydown(event: KeyboardEvent) {
       break
   }
 }
-
-// 외부 클릭 감지
-function handleClickOutside(event: MouseEvent) {
-  if (containerRef.value && !containerRef.value.contains(event.target as Node)) {
-    closeDropdown()
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
 
 // 옵션 색상 스타일
 function getOptionColorStyle(color?: string) {
@@ -277,7 +270,7 @@ function getOptionColorStyle(color?: string) {
       <div
         v-if="isOpen"
         ref="dropdownRef"
-        class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden"
+        class="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden"
       >
         <!-- Search Input -->
         <div v-if="searchable" class="p-2 border-b border-gray-100">

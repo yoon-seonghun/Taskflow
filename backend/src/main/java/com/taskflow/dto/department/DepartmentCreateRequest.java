@@ -29,9 +29,9 @@ public class DepartmentCreateRequest {
     private String departmentName;
 
     /**
-     * 상위 부서 ID (NULL = 최상위)
+     * 상위 부서 코드 (NULL = 최상위)
      */
-    private Long parentId;
+    private String parentCode;
 
     /**
      * 정렬 순서

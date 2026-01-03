@@ -3,7 +3,8 @@
  * 날짜/시간 선택 컴포넌트
  * Compact UI: height 32px, font 13px
  */
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref } from 'vue'
+import { useDropdownManager } from '@/composables/useDropdownManager'
 
 export type DatePickerSize = 'sm' | 'md' | 'lg'
 export type DatePickerMode = 'date' | 'datetime' | 'time'
@@ -39,8 +40,11 @@ const emit = defineEmits<{
   (e: 'change', value: string | null): void
 }>()
 
-const isOpen = ref(false)
+// 컨테이너 ref (드롭다운 관리자에 전달)
 const containerRef = ref<HTMLElement | null>(null)
+
+// 전역 드롭다운 관리자 사용 (외부 클릭 감지 포함)
+const { isOpen, openDropdown, closeDropdown: closeFromManager } = useDropdownManager(containerRef)
 
 // 현재 표시 중인 년/월
 const currentYear = ref(new Date().getFullYear())
@@ -171,17 +175,22 @@ function isDateDisabled(date: Date): boolean {
 
 function toggleDropdown() {
   if (props.disabled) return
-  isOpen.value = !isOpen.value
-  if (isOpen.value && selectedDate.value) {
-    currentYear.value = selectedDate.value.getFullYear()
-    currentMonth.value = selectedDate.value.getMonth()
-    hours.value = String(selectedDate.value.getHours()).padStart(2, '0')
-    minutes.value = String(selectedDate.value.getMinutes()).padStart(2, '0')
+
+  if (isOpen.value) {
+    closeFromManager()
+  } else {
+    openDropdown()
+    if (selectedDate.value) {
+      currentYear.value = selectedDate.value.getFullYear()
+      currentMonth.value = selectedDate.value.getMonth()
+      hours.value = String(selectedDate.value.getHours()).padStart(2, '0')
+      minutes.value = String(selectedDate.value.getMinutes()).padStart(2, '0')
+    }
   }
 }
 
 function closeDropdown() {
-  isOpen.value = false
+  closeFromManager()
 }
 
 function prevMonth() {
@@ -202,17 +211,28 @@ function nextMonth() {
   }
 }
 
+// 로컬 시간대 유지하는 ISO 형식 변환 (UTC 변환 방지)
+function toLocalISOString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  const second = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+}
+
 function selectDate(day: typeof calendarDays.value[0]) {
   if (day.isDisabled) return
 
   const date = new Date(day.date)
 
   if (props.mode === 'datetime') {
-    date.setHours(parseInt(hours.value), parseInt(minutes.value))
+    date.setHours(parseInt(hours.value), parseInt(minutes.value), 0, 0)
   }
 
   const value = props.mode === 'datetime'
-    ? date.toISOString()
+    ? toLocalISOString(date)
     : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
   emit('update:modelValue', value)
@@ -227,21 +247,21 @@ function updateTime() {
   if (!selectedDate.value) return
 
   const date = new Date(selectedDate.value)
-  date.setHours(parseInt(hours.value), parseInt(minutes.value))
+  date.setHours(parseInt(hours.value), parseInt(minutes.value), 0, 0)
 
-  emit('update:modelValue', date.toISOString())
-  emit('change', date.toISOString())
+  const value = toLocalISOString(date)
+  emit('update:modelValue', value)
+  emit('change', value)
 }
 
 function selectToday() {
   const today = new Date()
-  if (props.mode === 'datetime') {
-    emit('update:modelValue', today.toISOString())
-  } else {
-    const value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-    emit('update:modelValue', value)
-  }
-  emit('change', props.modelValue)
+  const value = props.mode === 'datetime'
+    ? toLocalISOString(today)
+    : `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+  emit('update:modelValue', value)
+  emit('change', value)
   closeDropdown()
 }
 
@@ -250,25 +270,10 @@ function clearValue(event: Event) {
   emit('update:modelValue', null)
   emit('change', null)
 }
-
-// 외부 클릭 감지
-function handleClickOutside(event: MouseEvent) {
-  if (containerRef.value && !containerRef.value.contains(event.target as Node)) {
-    closeDropdown()
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
 </script>
 
 <template>
-  <div ref="containerRef" class="relative w-full">
+  <div ref="containerRef" class="relative w-full" :class="{ 'z-[200]': isOpen }">
     <!-- Label -->
     <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1">
       {{ label }}
@@ -314,7 +319,7 @@ onUnmounted(() => {
     >
       <div
         v-if="isOpen"
-        class="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3"
+        class="absolute z-[100] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3"
         :class="mode === 'time' ? 'w-40' : 'w-72'"
       >
         <!-- Time Only Mode -->

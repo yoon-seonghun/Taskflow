@@ -5,16 +5,15 @@
 export type SharePermission = 'VIEW' | 'EDIT' | 'FULL'
 
 export interface Share {
-  userId: number
-  loginId?: string
-  userName?: string
+  username: string           // 공유 사용자 USERNAME
+  userName?: string          // 표시용 이름
   departmentName?: string
   permission: SharePermission
   createdAt?: string
 }
 
 export interface ShareRequest {
-  userId: number
+  username: string           // 공유 대상 사용자 USERNAME
   permission: SharePermission
 }
 
@@ -32,18 +31,18 @@ export interface AuditLog {
   targetId: number
   targetName?: string
   action: AuditAction
-  actorId: number
-  actorName?: string
+  actorUsername?: string      // 수행자 USERNAME
+  actorName?: string          // 수행자 표시명
   description?: string
-  relatedUserId?: number
-  relatedUserName?: string
+  relatedUsername?: string    // 관련 사용자 USERNAME (공유/이관 대상)
+  relatedUserName?: string    // 관련 사용자 표시명
   createdAt: string
 }
 
 export interface AuditLogSearchRequest {
   targetType?: AuditTargetType
   action?: AuditAction
-  actorId?: number
+  actorId?: number            // 백엔드 검색용 (Long 타입 유지)
   startDate?: string
   endDate?: string
   page?: number

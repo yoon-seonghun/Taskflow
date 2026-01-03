@@ -69,8 +69,8 @@ public class PropertyController {
     ) {
         log.info("Create property: boardId={}, name={}", boardId, request.getPropertyName());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        PropertyResponse response = propertyService.createProperty(boardId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        PropertyResponse response = propertyService.createProperty(boardId, request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "속성이 생성되었습니다"));
@@ -99,22 +99,23 @@ public class PropertyController {
     ) {
         log.info("Update property: id={}", propertyId);
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        PropertyResponse response = propertyService.updateProperty(propertyId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        PropertyResponse response = propertyService.updateProperty(propertyId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(response, "속성이 수정되었습니다"));
     }
 
     /**
-     * 속성 정의 삭제
+     * 속성 정의 논리 삭제
      */
     @DeleteMapping("/properties/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteProperty(
             @PathVariable("id") Long propertyId
     ) {
-        log.info("Delete property: id={}", propertyId);
+        log.info("Soft delete property: id={}", propertyId);
 
-        propertyService.deleteProperty(propertyId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        propertyService.deleteProperty(propertyId, currentUsername);
         return ResponseEntity.ok(ApiResponse.successWithMessage("속성이 삭제되었습니다"));
     }
 
@@ -146,8 +147,8 @@ public class PropertyController {
     ) {
         log.info("Create option: propertyId={}, name={}", propertyId, request.getOptionName());
 
-        Long currentUserId = SecurityUtils.getCurrentUserId();
-        OptionDetailResponse response = propertyService.createOption(propertyId, request, currentUserId);
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        OptionDetailResponse response = propertyService.createOption(propertyId, request, currentUsername);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "옵션이 추가되었습니다"));

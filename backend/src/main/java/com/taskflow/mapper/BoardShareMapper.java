@@ -36,28 +36,28 @@ public interface BoardShareMapper {
     /**
      * 사용자별 공유받은 보드 목록 조회
      *
-     * @param userId 사용자 ID
+     * @param username 사용자 USERNAME
      * @return 공유받은 보드 목록
      */
-    List<BoardShare> findByUserId(@Param("userId") Long userId);
+    List<BoardShare> findByUsername(@Param("username") String username);
 
     /**
      * 특정 사용자가 특정 보드에 공유되어 있는지 확인
      *
      * @param boardId 보드 ID
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @return 공유 여부
      */
-    boolean existsByBoardIdAndUserId(@Param("boardId") Long boardId, @Param("userId") Long userId);
+    boolean existsByBoardIdAndUsername(@Param("boardId") Long boardId, @Param("username") String username);
 
     /**
      * 특정 사용자의 특정 보드에 대한 공유 정보 조회
      *
      * @param boardId 보드 ID
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @return 공유 정보 (Optional)
      */
-    Optional<BoardShare> findByBoardIdAndUserId(@Param("boardId") Long boardId, @Param("userId") Long userId);
+    Optional<BoardShare> findByBoardIdAndUsername(@Param("boardId") Long boardId, @Param("username") String username);
 
     /**
      * 보드에 공유된 사용자가 있는지 확인
@@ -97,25 +97,35 @@ public interface BoardShareMapper {
     int updatePermission(@Param("boardShareId") Long boardShareId, @Param("permission") String permission);
 
     /**
-     * 보드 공유 권한 수정 (보드ID/사용자ID 기준)
+     * 보드 공유 권한 수정 (보드ID/사용자USERNAME 기준)
      *
      * @param boardId    보드 ID
-     * @param userId     사용자 ID
+     * @param username     사용자 USERNAME
      * @param permission 권한 레벨
-     * @param updatedBy  수정자 ID
+     * @param updatedBy  수정자 USERNAME
      * @return 영향받은 행 수
      */
-    int updatePermissionByBoardAndUser(@Param("boardId") Long boardId, @Param("userId") Long userId,
-                                        @Param("permission") String permission, @Param("updatedBy") Long updatedBy);
+    int updatePermissionByBoardAndUser(@Param("boardId") Long boardId, @Param("username") String username,
+                                        @Param("permission") String permission, @Param("updatedBy") String updatedBy);
+
+    /**
+     * 공유 보드 정렬 순서 변경
+     *
+     * @param boardId   보드 ID
+     * @param username    사용자 USERNAME
+     * @param sortOrder 정렬 순서
+     * @return 영향받은 행 수
+     */
+    int updateSortOrder(@Param("boardId") Long boardId, @Param("username") String username, @Param("sortOrder") Integer sortOrder);
 
     /**
      * 보드 공유 제거 (특정 사용자)
      *
      * @param boardId 보드 ID
-     * @param userId  사용자 ID
+     * @param username  사용자 USERNAME
      * @return 영향받은 행 수
      */
-    int deleteByBoardIdAndUserId(@Param("boardId") Long boardId, @Param("userId") Long userId);
+    int deleteByBoardIdAndUsername(@Param("boardId") Long boardId, @Param("username") String username);
 
     /**
      * 보드의 모든 공유 제거
@@ -128,8 +138,8 @@ public interface BoardShareMapper {
     /**
      * 사용자의 모든 공유 제거
      *
-     * @param userId 사용자 ID
+     * @param username 사용자 USERNAME
      * @return 영향받은 행 수
      */
-    int deleteByUserId(@Param("userId") Long userId);
+    int deleteByUsername(@Param("username") String username);
 }

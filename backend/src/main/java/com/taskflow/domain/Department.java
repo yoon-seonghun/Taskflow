@@ -14,7 +14,11 @@ import java.util.List;
  * 부서 엔티티
  *
  * 테이블: TB_DEPARTMENT
- * 계층형 구조 지원 (자기참조 FK)
+ *
+ * DEPARTMENT_CODE 기반 FK 참조 시스템:
+ * - DEPARTMENT_ID: 내부 식별자
+ * - DEPARTMENT_CODE: FK 참조 키 (UNIQUE)
+ * - PARENT_CODE: 상위 부서 코드 참조
  */
 @Getter
 @Setter
@@ -24,12 +28,12 @@ import java.util.List;
 public class Department {
 
     /**
-     * 부서 ID (PK)
+     * 부서 ID (PK) - 내부 식별자
      */
     private Long departmentId;
 
     /**
-     * 부서 코드 (UNIQUE)
+     * 부서 코드 (UNIQUE) - FK 참조 키
      */
     private String departmentCode;
 
@@ -39,9 +43,9 @@ public class Department {
     private String departmentName;
 
     /**
-     * 상위 부서 ID (FK, NULL = 최상위)
+     * 상위 부서 코드 (FK → TB_DEPARTMENT.DEPARTMENT_CODE, NULL = 최상위)
      */
-    private Long parentId;
+    private String parentCode;
 
     /**
      * 정렬 순서
@@ -59,9 +63,9 @@ public class Department {
     private LocalDateTime createdAt;
 
     /**
-     * 생성자 ID
+     * 생성자 USERNAME
      */
-    private Long createdBy;
+    private String createdBy;
 
     /**
      * 수정일시
@@ -69,9 +73,14 @@ public class Department {
     private LocalDateTime updatedAt;
 
     /**
-     * 수정자 ID
+     * 수정자 USERNAME
      */
-    private Long updatedBy;
+    private String updatedBy;
+
+    /**
+     * 마지막 동기화 일시 (External 모드)
+     */
+    private LocalDateTime lastSyncedAt;
 
     // =============================================
     // 계층 구조 필드 (Mapper/Service에서 설정)
@@ -83,7 +92,7 @@ public class Department {
     private Integer level;
 
     /**
-     * 경로 (예: "1/2/3")
+     * 경로 (예: "ROOT/DEV/DEV1")
      */
     private String path;
 
@@ -123,7 +132,7 @@ public class Department {
      * 최상위 부서 여부
      */
     public boolean isRoot() {
-        return parentId == null;
+        return parentCode == null;
     }
 
     /**

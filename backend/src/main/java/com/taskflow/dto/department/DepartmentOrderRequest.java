@@ -18,7 +18,7 @@ public class DepartmentOrderRequest {
     private Integer sortOrder;
 
     /**
-     * 새로운 상위 부서 ID (NULL = 최상위로 이동)
+     * 새로운 상위 부서 코드 (NULL = 최상위로 이동)
      */
-    private Long parentId;
+    private String parentCode;
 }
