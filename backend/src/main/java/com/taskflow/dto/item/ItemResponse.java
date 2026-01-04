@@ -5,6 +5,7 @@ import com.taskflow.domain.ItemProperty;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -89,19 +90,14 @@ public class ItemResponse {
     private String assigneeName;
 
     /**
-     * 시작 시간
+     * 요청일
      */
-    private LocalDateTime startTime;
-
-    /**
-     * 완료 시간
-     */
-    private LocalDateTime endTime;
+    private LocalDate requestDate;
 
     /**
      * 마감일
      */
-    private LocalDateTime dueDate;
+    private LocalDate dueDate;
 
     /**
      * 정렬 순서
@@ -193,8 +189,8 @@ public class ItemResponse {
                 .priority(item.getPriority())
                 .assigneeUsername(item.getAssigneeUsername())
                 .assigneeName(item.getAssigneeName())
-                .startTime(item.getStartTime())
-                .endTime(item.getEndTime())
+                .requestDate(item.getRequestDate())
+                .dueDate(item.getDueDate())
                 .deletedAt(item.getDeletedAt())
                 .commentCount(item.getCommentCount())
                 .createdByName(item.getCreatedByName())

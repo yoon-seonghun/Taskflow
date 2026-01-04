@@ -78,8 +78,8 @@ const defaultColumnWidths = {
   title: 250,
   status: 96,
   priority: 96,
-  startTime: 128,
-  endTime: 128,
+  requestDate: 128,
+  dueDate: 128,
   assignee: 96,
   comments: 64,
   actions: 80

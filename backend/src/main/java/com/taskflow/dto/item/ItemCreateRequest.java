@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -64,19 +64,14 @@ public class ItemCreateRequest {
     private String assigneeUsername;
 
     /**
-     * 시작 시간
+     * 요청일
      */
-    private LocalDateTime startTime;
-
-    /**
-     * 완료 시간
-     */
-    private LocalDateTime endTime;
+    private LocalDate requestDate;
 
     /**
      * 마감일
      */
-    private LocalDateTime dueDate;
+    private LocalDate dueDate;
 
     /**
      * 정렬 순서

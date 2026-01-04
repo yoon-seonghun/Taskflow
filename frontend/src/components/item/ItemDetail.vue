@@ -411,29 +411,29 @@ onMounted(() => {
             <span class="text-[13px] text-gray-700">{{ item.assigneeName || '-' }}</span>
           </div>
 
-          <!-- 시작시간 -->
+          <!-- 요청일 -->
           <div class="flex items-center">
-            <span class="w-24 text-[13px] text-gray-500">시작시간</span>
+            <span class="w-24 text-[13px] text-gray-500">요청일</span>
             <DatePicker
-              :model-value="item.startTime"
-              mode="datetime"
+              :model-value="item.requestDate"
+              mode="date"
               size="sm"
               placeholder="선택"
               class="flex-1"
-              @update:model-value="updateField('startTime', $event)"
+              @update:model-value="updateField('requestDate', $event)"
             />
           </div>
 
-          <!-- 완료시간 -->
+          <!-- 마감일 -->
           <div class="flex items-center">
-            <span class="w-24 text-[13px] text-gray-500">완료시간</span>
+            <span class="w-24 text-[13px] text-gray-500">마감일</span>
             <DatePicker
-              :model-value="item.endTime"
-              mode="datetime"
+              :model-value="item.dueDate"
+              mode="date"
               size="sm"
               placeholder="선택"
               class="flex-1"
-              @update:model-value="updateField('endTime', $event)"
+              @update:model-value="updateField('dueDate', $event)"
             />
           </div>
 

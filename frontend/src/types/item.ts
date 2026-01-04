@@ -24,8 +24,8 @@ export interface Item {
   priority: Priority
   assigneeUsername?: string   // 담당자 USERNAME (백엔드 FK 참조용)
   assigneeName?: string       // 담당자 표시용 이름
-  startTime?: string
-  endTime?: string        // 완료예정시간 (지연 판정에 사용)
+  requestDate?: string        // 요청일
+  dueDate?: string            // 마감일 (지연 판정에 사용)
   sortOrder?: number
   completedAt?: string    // 완료일시
   deletedAt?: string      // 삭제일시
@@ -59,8 +59,8 @@ export interface ItemCreateRequest {
   groupId?: number
   categoryId?: number
   assigneeUsername?: string   // 담당자 USERNAME
-  startTime?: string
-  endTime?: string
+  requestDate?: string        // 요청일
+  dueDate?: string            // 마감일
   sortOrder?: number
   properties?: Record<number, unknown>
 }
@@ -74,11 +74,11 @@ export interface ItemUpdateRequest {
   groupId?: number
   categoryId?: number
   assigneeUsername?: string   // 담당자 USERNAME
-  startTime?: string
-  endTime?: string
+  requestDate?: string        // 요청일
+  dueDate?: string            // 마감일
   sortOrder?: number
   properties?: Record<number, unknown>
-  /** null로 설정할 필드 목록 (예: ['startTime', 'endTime']) - snake_case로 전송됨 */
+  /** null로 설정할 필드 목록 (예: ['requestDate', 'dueDate']) - snake_case로 전송됨 */
   clear_fields?: string[]
 }
 

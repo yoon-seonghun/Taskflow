@@ -84,11 +84,11 @@ public class ItemHistorySearchRequest {
             case "result" -> "RESULT";
             case "workerName" -> "WORKER_NAME";
             case "createdAt" -> "i.CREATED_AT";
-            case "startTime" -> "i.START_TIME";
-            case "completedAt", "endTime" -> "i.END_TIME";
+            case "requestDate" -> "i.REQUEST_DATE";
+            case "completedAt" -> "i.UPDATED_AT";
             case "updatedAt" -> "i.UPDATED_AT";
             case "deletedAt" -> "i.DELETED_AT";
-            default -> "COALESCE(i.END_TIME, i.DELETED_AT)";
+            default -> "COALESCE(i.UPDATED_AT, i.DELETED_AT)";
         };
 
         // 정렬 방향 검증 (ASC/DESC만 허용)

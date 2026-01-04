@@ -100,8 +100,8 @@ public class ItemSearchRequest {
             case "assigneeUsername" -> "i.ASSIGNEE_USERNAME";
             case "groupId" -> "i.GROUP_ID";
             case "categoryId" -> "i.CATEGORY_ID";
-            case "startTime" -> "i.START_TIME";
-            case "endTime", "dueDate" -> "i.END_TIME";
+            case "requestDate" -> "i.REQUEST_DATE";
+            case "dueDate" -> "i.DUE_DATE";
             case "createdAt" -> "i.CREATED_AT";
             case "updatedAt" -> "i.UPDATED_AT";
             default -> "i.CREATED_AT";

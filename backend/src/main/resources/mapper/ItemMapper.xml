@@ -18,8 +18,8 @@
         <result property="status" column="STATUS"/>
         <result property="priority" column="PRIORITY"/>
         <result property="assigneeUsername" column="ASSIGNEE_USERNAME"/>
-        <result property="startTime" column="START_TIME"/>
-        <result property="endTime" column="END_TIME"/>
+        <result property="requestDate" column="REQUEST_DATE"/>
+        <result property="dueDate" column="DUE_DATE"/>
         <result property="previousStatus" column="PREVIOUS_STATUS"/>
         <result property="completedBy" column="COMPLETED_BY"/>
         <result property="deletedAt" column="DELETED_AT"/>
@@ -58,8 +58,8 @@
             i.STATUS,
             i.PRIORITY,
             i.ASSIGNEE_USERNAME,
-            i.START_TIME,
-            i.END_TIME,
+            i.REQUEST_DATE,
+            i.DUE_DATE,
             i.PREVIOUS_STATUS,
             i.COMPLETED_BY,
             i.DELETED_AT,
@@ -181,11 +181,11 @@
         <include refid="selectItem"/>
         WHERE i.BOARD_ID = #{boardId}
           AND (
-              (i.STATUS = 'COMPLETED' AND DATE(i.END_TIME) = CURDATE())
+              (i.STATUS = 'COMPLETED' AND DATE(i.UPDATED_AT) = CURDATE())
               OR (i.STATUS = 'DELETED' AND DATE(i.DELETED_AT) = CURDATE())
           )
         ORDER BY
-            CASE WHEN i.STATUS = 'COMPLETED' THEN i.END_TIME ELSE i.DELETED_AT END DESC
+            CASE WHEN i.STATUS = 'COMPLETED' THEN i.UPDATED_AT ELSE i.DELETED_AT END DESC
     </select>
 
     <!-- 보드 내 최대 정렬 순서 조회 (SORT_ORDER 컬럼이 DB에 없어 0 반환) -->
@@ -208,8 +208,8 @@
             STATUS,
             PRIORITY,
             ASSIGNEE_USERNAME,
-            START_TIME,
-            END_TIME,
+            REQUEST_DATE,
+            DUE_DATE,
             CREATED_BY
         ) VALUES (
             #{boardId},
@@ -220,8 +220,8 @@
             COALESCE(#{status}, 'NOT_STARTED'),
             COALESCE(#{priority}, 'NORMAL'),
             #{assigneeUsername},
-            #{startTime},
-            #{endTime},
+            #{requestDate},
+            #{dueDate},
             #{createdBy}
         )
     </insert>
@@ -237,8 +237,8 @@
             STATUS = #{status},
             PRIORITY = #{priority},
             ASSIGNEE_USERNAME = #{assigneeUsername},
-            START_TIME = #{startTime},
-            END_TIME = #{endTime},
+            REQUEST_DATE = #{requestDate},
+            DUE_DATE = #{dueDate},
             UPDATED_BY = #{updatedBy},
             UPDATED_AT = CURRENT_TIMESTAMP
         WHERE ITEM_ID = #{itemId}
@@ -260,7 +260,6 @@
         SET
             PREVIOUS_STATUS = STATUS,
             STATUS = 'COMPLETED',
-            END_TIME = CASE WHEN END_TIME IS NULL THEN CURRENT_TIMESTAMP ELSE END_TIME END,
             COMPLETED_BY = #{completedBy},
             UPDATED_BY = #{completedBy},
             UPDATED_AT = CURRENT_TIMESTAMP
@@ -289,7 +288,6 @@
             DELETED_AT = NULL,
             DELETED_BY = NULL,
             COMPLETED_BY = NULL,
-            END_TIME = CASE WHEN PREVIOUS_STATUS = 'COMPLETED' THEN END_TIME ELSE NULL END,
             UPDATED_BY = #{updatedBy},
             UPDATED_AT = CURRENT_TIMESTAMP
         WHERE ITEM_ID = #{itemId}
@@ -351,11 +349,11 @@
         </if>
     </sql>
 
-    <!-- 지연 아이템 목록 조회 (Cross-board) - END_TIME 기준 -->
+    <!-- 지연 아이템 목록 조회 (Cross-board) - DUE_DATE 기준 -->
     <select id="findOverdueItems" resultMap="ItemResultMap">
         <include refid="selectItem"/>
-        WHERE i.END_TIME IS NOT NULL
-          AND i.END_TIME &lt; CURRENT_TIMESTAMP
+        WHERE i.DUE_DATE IS NOT NULL
+          AND i.DUE_DATE &lt; CURDATE()
           AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
         <include refid="accessibleBoardCondition"/>
         <include refid="crossBoardFilterConditions"/>
@@ -363,13 +361,13 @@
         LIMIT #{request.size} OFFSET #{request.offset}
     </select>
 
-    <!-- 지연 아이템 총 개수 조회 (Cross-board) - END_TIME 기준 -->
+    <!-- 지연 아이템 총 개수 조회 (Cross-board) - DUE_DATE 기준 -->
     <select id="countOverdueItems" resultType="long">
         SELECT COUNT(*)
         FROM TB_ITEM i
         INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
-        WHERE i.END_TIME IS NOT NULL
-          AND i.END_TIME &lt; CURRENT_TIMESTAMP
+        WHERE i.DUE_DATE IS NOT NULL
+          AND i.DUE_DATE &lt; CURDATE()
           AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
         <include refid="accessibleBoardCondition"/>
         <include refid="crossBoardFilterConditions"/>
@@ -405,8 +403,8 @@
             AND i.STATUS = #{request.status}
         </if>
         <if test="request.overdueOnly != null and request.overdueOnly == true">
-            AND i.END_TIME IS NOT NULL
-            AND i.END_TIME &lt; CURRENT_TIMESTAMP
+            AND i.DUE_DATE IS NOT NULL
+            AND i.DUE_DATE &lt; CURDATE()
         </if>
         ORDER BY ${request.orderBy}
         LIMIT #{request.size} OFFSET #{request.offset}
@@ -424,8 +422,8 @@
             AND i.STATUS = #{request.status}
         </if>
         <if test="request.overdueOnly != null and request.overdueOnly == true">
-            AND i.END_TIME IS NOT NULL
-            AND i.END_TIME &lt; CURRENT_TIMESTAMP
+            AND i.DUE_DATE IS NOT NULL
+            AND i.DUE_DATE &lt; CURDATE()
         </if>
     </select>
 

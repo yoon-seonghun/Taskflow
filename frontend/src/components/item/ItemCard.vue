@@ -167,12 +167,12 @@ function handleClick() {
 
         <!-- 우측 정보 -->
         <div class="flex items-center gap-2">
-          <!-- 완료예정 -->
-          <span v-if="item.endTime" class="text-[11px] text-gray-500 flex items-center gap-0.5">
+          <!-- 마감일 -->
+          <span v-if="item.dueDate" class="text-[11px] text-gray-500 flex items-center gap-0.5">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            {{ formatDate(item.endTime) }}
+            {{ formatDate(item.dueDate) }}
           </span>
 
           <!-- 댓글 수 -->

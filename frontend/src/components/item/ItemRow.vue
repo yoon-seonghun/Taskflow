@@ -130,11 +130,11 @@ function startEdit(field: string) {
     case 'priority':
       editValue.value = props.item.priority
       break
-    case 'startTime':
-      editValue.value = props.item.startTime
+    case 'requestDate':
+      editValue.value = props.item.requestDate
       break
-    case 'endTime':
-      editValue.value = props.item.endTime
+    case 'dueDate':
+      editValue.value = props.item.dueDate
       break
     case 'assigneeUsername':
       editValue.value = props.item.assigneeUsername
@@ -196,8 +196,8 @@ function getFieldValue(field: string): unknown {
     case 'title': return props.item.title
     case 'status': return props.item.status
     case 'priority': return props.item.priority
-    case 'startTime': return props.item.startTime
-    case 'endTime': return props.item.endTime
+    case 'requestDate': return props.item.requestDate
+    case 'dueDate': return props.item.dueDate
     case 'assigneeUsername': return props.item.assigneeUsername
     default: return null
   }
@@ -413,12 +413,12 @@ function handleRowClick() {
       @click.stop
     >
       <DatePicker
-        :model-value="item.startTime"
+        :model-value="item.requestDate"
         size="sm"
         placeholder="-"
         clearable
         class="w-full"
-        @update:model-value="handleSelectChange('startTime', $event)"
+        @update:model-value="handleSelectChange('requestDate', $event)"
       />
     </div>
 
@@ -428,12 +428,12 @@ function handleRowClick() {
       @click.stop
     >
       <DatePicker
-        :model-value="item.endTime"
+        :model-value="item.dueDate"
         size="sm"
         placeholder="-"
         clearable
         class="w-full"
-        @update:model-value="handleSelectChange('endTime', $event)"
+        @update:model-value="handleSelectChange('dueDate', $event)"
       />
     </div>
 

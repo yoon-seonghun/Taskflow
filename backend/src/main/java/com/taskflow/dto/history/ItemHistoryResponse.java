@@ -4,6 +4,7 @@ import com.taskflow.domain.ItemHistory;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -61,9 +62,9 @@ public class ItemHistoryResponse {
     private String createdByName;
 
     /**
-     * 시작시간
+     * 요청일
      */
-    private LocalDateTime startTime;
+    private LocalDate requestDate;
 
     /**
      * 완료시간
@@ -94,7 +95,7 @@ public class ItemHistoryResponse {
                 .workerName(history.getWorkerName())
                 .createdAt(history.getCreatedAt())
                 .createdByName(history.getCreatedByName())
-                .startTime(history.getStartTime())
+                .requestDate(history.getRequestDate())
                 .completedAt(history.getCompletedAt())
                 .updatedAt(history.getUpdatedAt())
                 .deletedAt(history.getDeletedAt())

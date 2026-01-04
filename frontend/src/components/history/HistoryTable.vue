@@ -27,7 +27,7 @@ const emit = defineEmits<{
   (e: 'openItem', itemId: number, boardId: number): void
 }>()
 
-// 날짜 포맷팅
+// 날짜 포맷팅 (날짜+시간)
 function formatDateTime(dateStr?: string): string {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
@@ -39,6 +39,19 @@ function formatDateTime(dateStr?: string): string {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
+  })
+}
+
+// 날짜 포맷팅 (날짜만)
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  // 유효하지 않은 날짜 처리
+  if (isNaN(date.getTime())) return '-'
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
   })
 }
 
@@ -189,7 +202,7 @@ const emptyMessage = computed(() => {
           </td>
           <td>{{ item.workerName || '-' }}</td>
           <td>{{ formatDateTime(item.createdAt) }}</td>
-          <td>{{ formatDateTime(item.startTime) }}</td>
+          <td>{{ formatDate(item.requestDate) }}</td>
           <td>{{ formatDateTime(item.completedAt) }}</td>
           <td>{{ formatDateTime(item.updatedAt) }}</td>
           <td>{{ formatDateTime(item.deletedAt) }}</td>

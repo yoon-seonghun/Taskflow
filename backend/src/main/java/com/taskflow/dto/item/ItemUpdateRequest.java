@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Set;
 
@@ -63,19 +63,14 @@ public class ItemUpdateRequest {
     private String assigneeUsername;
 
     /**
-     * 시작 시간
+     * 요청일
      */
-    private LocalDateTime startTime;
-
-    /**
-     * 완료 시간
-     */
-    private LocalDateTime endTime;
+    private LocalDate requestDate;
 
     /**
      * 마감일
      */
-    private LocalDateTime dueDate;
+    private LocalDate dueDate;
 
     /**
      * 정렬 순서
@@ -90,7 +85,7 @@ public class ItemUpdateRequest {
     /**
      * null로 설정할 필드 목록
      * 프론트엔드에서 특정 필드를 명시적으로 null로 설정할 때 사용
-     * 예: ["startTime", "endTime", "assigneeUsername", "groupId"]
+     * 예: ["requestDate", "dueDate", "assigneeUsername", "groupId"]
      */
     private Set<String> clearFields;
 }

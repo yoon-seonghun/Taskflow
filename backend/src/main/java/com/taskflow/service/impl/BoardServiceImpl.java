@@ -225,7 +225,7 @@ public class BoardServiceImpl implements BoardService {
      *
      * 변경 이력:
      * - 카테고리: TB_CATEGORY 테이블로 전역 관리 (보드별 생성 불필요)
-     * - 담당자/요청일/마감일: TB_ITEM 고정 컬럼으로 관리 (ASSIGNEE_USERNAME, START_TIME, END_TIME)
+     * - 담당자/요청일/마감일: TB_ITEM 고정 컬럼으로 관리 (ASSIGNEE_USERNAME, REQUEST_DATE, DUE_DATE)
      * - 상태/우선순위: TB_ITEM 고정 컬럼으로 관리 (STATUS, PRIORITY)
      *
      * 추가 동적 속성이 필요한 경우 이 메서드를 활용할 수 있음

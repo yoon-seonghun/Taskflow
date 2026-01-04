@@ -148,18 +148,18 @@ public class CrossBoardSearchRequest {
             case "assigneeId" -> "i.ASSIGNEE_ID";
             case "groupId" -> "i.GROUP_ID";
             case "categoryId" -> "i.CATEGORY_ID";
-            case "startTime" -> "i.START_TIME";
-            case "endTime", "dueDate" -> "i.END_TIME";
-            case "overdueDays" -> "DATEDIFF(CURDATE(), i.END_TIME)";
+            case "requestDate" -> "i.REQUEST_DATE";
+            case "dueDate" -> "i.DUE_DATE";
+            case "overdueDays" -> "DATEDIFF(CURDATE(), i.DUE_DATE)";
             case "pendingDays" -> "DATEDIFF(CURDATE(), i.UPDATED_AT)";
             case "createdAt" -> "i.CREATED_AT";
             case "updatedAt" -> "i.UPDATED_AT";
             case "boardName" -> "b.BOARD_NAME";
-            default -> "i.END_TIME";
+            default -> "i.DUE_DATE";
         };
 
         // NULL 처리 (NULLS LAST)
-        if ("endTime".equals(safeSortField) || "dueDate".equals(safeSortField) || "overdueDays".equals(safeSortField)) {
+        if ("dueDate".equals(safeSortField) || "overdueDays".equals(safeSortField)) {
             return field + " IS NULL, " + field + " " + safeDirection;
         }
 

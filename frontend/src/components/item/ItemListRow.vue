@@ -157,9 +157,9 @@ function handleDelete(event: Event) {
           {{ item.assigneeName }}
         </span>
 
-        <!-- 완료예정 -->
-        <span v-if="item.endTime" class="text-[12px] text-gray-400">
-          {{ formatDate(item.endTime) }}
+        <!-- 마감일 -->
+        <span v-if="item.dueDate" class="text-[12px] text-gray-400">
+          {{ formatDate(item.dueDate) }}
         </span>
 
         <!-- 댓글 -->

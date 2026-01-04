@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 지연 업무 메뉴
- * - 완료예정시간(endTime)이 지난 업무 목록 표시 (Cross-board)
+ * - 마감일(dueDate)이 지난 업무 목록 표시 (Cross-board)
  * - 서버 사이드 필터링/페이징
  * - 지연 일수 표시
  * - 우선순위/담당자별 필터
@@ -69,7 +69,7 @@ async function loadData() {
       priority: priorityFilter.value !== 'all' ? priorityFilter.value : undefined,
       page: currentPage.value,
       size: pageSize.value,
-      sort: 'endTime,asc'
+      sort: 'dueDate,asc'
     }
 
     const response = await itemApi.getOverdueItems(params)
@@ -144,14 +144,14 @@ async function handlePriorityChange(item: Item, priority: Priority) {
   }
 }
 
-// 지연 일수 계산 (endTime 기준)
+// 지연 일수 계산 (dueDate 기준)
 function getOverdueDays(item: Item): number {
-  if (!item.endTime) return 0
-  const endTime = new Date(item.endTime)
+  if (!item.dueDate) return 0
+  const dueDate = new Date(item.dueDate)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  endTime.setHours(0, 0, 0, 0)
-  const diff = today.getTime() - endTime.getTime()
+  dueDate.setHours(0, 0, 0, 0)
+  const diff = today.getTime() - dueDate.getTime()
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
 }
 
@@ -358,9 +358,9 @@ onMounted(() => {
                   </div>
                 </td>
 
-                <!-- 완료예정일 -->
+                <!-- 마감일 -->
                 <td class="px-4 h-12 text-[13px] text-red-600 font-medium whitespace-nowrap">
-                  {{ formatDate(item.endTime) }}
+                  {{ formatDate(item.dueDate) }}
                 </td>
 
                 <!-- 우선순위 -->

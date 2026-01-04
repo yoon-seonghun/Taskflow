@@ -54,7 +54,7 @@ export const useItemStore = defineStore('item', () => {
     items.value.filter(item => item.status === 'PENDING')
   )
 
-  // 지연된 아이템 (endTime 기준, 완료/삭제 제외)
+  // 지연된 아이템 (dueDate 기준, 완료/삭제 제외)
   const overdueItems = computed(() =>
     items.value.filter(item => isItemOverdue(item))
   )

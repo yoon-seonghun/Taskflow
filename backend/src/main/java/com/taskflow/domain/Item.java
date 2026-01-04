@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -79,14 +80,14 @@ public class Item {
     private String assigneeUsername;
 
     /**
-     * 시작 시간
+     * 요청일 (DB: REQUEST_DATE)
      */
-    private LocalDateTime startTime;
+    private LocalDate requestDate;
 
     /**
-     * 완료 시간
+     * 마감일 (DB: DUE_DATE)
      */
-    private LocalDateTime endTime;
+    private LocalDate dueDate;
 
     /**
      * 이전 상태 (삭제/복원 전 상태)

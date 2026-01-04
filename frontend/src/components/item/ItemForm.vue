@@ -64,8 +64,8 @@ const formData = ref<ItemUpdateRequest>({
   groupId: props.item.groupId,
   categoryId: props.item.categoryId,
   assigneeUsername: props.item.assigneeUsername,
-  startTime: props.item.startTime,
-  endTime: props.item.endTime,
+  requestDate: props.item.requestDate,
+  dueDate: props.item.dueDate,
   properties: props.item.propertyValues || {},
   clear_fields: []
 })
@@ -80,8 +80,8 @@ watch(() => props.item, (newItem) => {
     groupId: newItem.groupId,
     categoryId: newItem.categoryId,
     assigneeUsername: newItem.assigneeUsername,
-    startTime: newItem.startTime,
-    endTime: newItem.endTime,
+    requestDate: newItem.requestDate,
+    dueDate: newItem.dueDate,
     properties: newItem.propertyValues || {},
     clear_fields: []
   }
@@ -173,7 +173,7 @@ function handleAssigneeChange(value: string | number | null) {
 }
 
 // 날짜 변경 (null로 클리어 지원)
-function handleDateChange(field: 'startTime' | 'endTime', value: string | null) {
+function handleDateChange(field: 'requestDate' | 'dueDate', value: string | null) {
   if (value === null || value === undefined || value === '') {
     // null로 설정 요청 - clear_fields에 추가
     if (!formData.value.clear_fields) {
@@ -287,29 +287,29 @@ function getPropertyValue(propertyId: number): unknown {
         />
       </div>
 
-      <!-- 요청일 (기본속성 startTime) -->
+      <!-- 요청일 (기본속성 requestDate) -->
       <div class="form-section">
         <label class="form-label">요청일</label>
         <DatePicker
-          :model-value="formData.startTime"
+          :model-value="formData.requestDate"
           :disabled="disabled"
-          mode="datetime"
+          mode="date"
           placeholder="요청일 선택"
           clearable
-          @update:model-value="handleDateChange('startTime', $event)"
+          @update:model-value="handleDateChange('requestDate', $event)"
         />
       </div>
 
-      <!-- 마감일 (기본속성 endTime) -->
+      <!-- 마감일 (기본속성 dueDate) -->
       <div class="form-section">
         <label class="form-label">마감일</label>
         <DatePicker
-          :model-value="formData.endTime"
+          :model-value="formData.dueDate"
           :disabled="disabled"
-          mode="datetime"
+          mode="date"
           placeholder="마감일 선택"
           clearable
-          @update:model-value="handleDateChange('endTime', $event)"
+          @update:model-value="handleDateChange('dueDate', $event)"
         />
       </div>
     </div>

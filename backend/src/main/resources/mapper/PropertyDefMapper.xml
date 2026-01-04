@@ -217,7 +217,7 @@
 
     <!-- 신규 보드용 기본 속성 정의 일괄 생성 (현재 미사용) -->
     <!-- 변경 이력: 카테고리는 TB_CATEGORY 테이블로 전역 관리 -->
-    <!-- 기본속성(TB_ITEM 고정컬럼): 담당자(ASSIGNEE_USERNAME), 요청일(START_TIME), 마감일(END_TIME), 카테고리(CATEGORY_ID) -->
+    <!-- 기본속성(TB_ITEM 고정컬럼): 담당자(ASSIGNEE_USERNAME), 요청일(REQUEST_DATE), 마감일(DUE_DATE), 카테고리(CATEGORY_ID) -->
     <!-- 추가 동적 속성이 필요한 경우 이 쿼리를 활용 가능 -->
     <insert id="insertDefaultProperties">
         <!-- 현재 기본 속성 정의 없음 -->

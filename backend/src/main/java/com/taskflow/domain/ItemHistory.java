@@ -2,6 +2,7 @@ package com.taskflow.domain;
 
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -58,9 +59,9 @@ public class ItemHistory {
     private LocalDateTime createdAt;
 
     /**
-     * 시작시간
+     * 요청일
      */
-    private LocalDateTime startTime;
+    private LocalDate requestDate;
 
     /**
      * 완료시간

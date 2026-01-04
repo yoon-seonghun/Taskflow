@@ -156,8 +156,8 @@ public class ItemServiceImpl implements ItemService {
                 .status(status)
                 .priority(priority)
                 .assigneeUsername(request.getAssigneeUsername())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+                .requestDate(request.getRequestDate())
+                .dueDate(request.getDueDate())
                 .createdBy(createdBy)
                 .build();
 
@@ -239,17 +239,17 @@ public class ItemServiceImpl implements ItemService {
         } else if (request.getAssigneeUsername() != null) {
             item.setAssigneeUsername(request.getAssigneeUsername());
         }
-        // startTime - clearFields에 포함되면 null 설정
-        if (clearFields.contains("startTime")) {
-            item.setStartTime(null);
-        } else if (request.getStartTime() != null) {
-            item.setStartTime(request.getStartTime());
+        // requestDate - clearFields에 포함되면 null 설정
+        if (clearFields.contains("requestDate")) {
+            item.setRequestDate(null);
+        } else if (request.getRequestDate() != null) {
+            item.setRequestDate(request.getRequestDate());
         }
-        // endTime - clearFields에 포함되면 null 설정
-        if (clearFields.contains("endTime")) {
-            item.setEndTime(null);
-        } else if (request.getEndTime() != null) {
-            item.setEndTime(request.getEndTime());
+        // dueDate - clearFields에 포함되면 null 설정
+        if (clearFields.contains("dueDate")) {
+            item.setDueDate(null);
+        } else if (request.getDueDate() != null) {
+            item.setDueDate(request.getDueDate());
         }
         item.setUpdatedBy(updatedBy);
 
