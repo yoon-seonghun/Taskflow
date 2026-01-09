@@ -270,7 +270,9 @@ function getOptionColorStyle(color?: string) {
       <div
         v-if="isOpen"
         ref="dropdownRef"
+        data-popover
         class="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden"
+        style="min-width: 120px;"
       >
         <!-- Search Input -->
         <div v-if="searchable" class="p-2 border-b border-gray-100">
@@ -306,7 +308,7 @@ function getOptionColorStyle(color?: string) {
             />
 
             <!-- Label -->
-            <span class="truncate flex-1">{{ option.label }}</span>
+            <span class="truncate flex-1" :title="option.label">{{ option.label }}</span>
 
             <!-- Check Icon -->
             <svg

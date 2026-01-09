@@ -40,27 +40,28 @@ public class JwtTokenProvider {
     /**
      * Access Token 생성
      */
-    public String createAccessToken(Long userId, String username) {
-        return createToken(userId, username, accessTokenValidity, "ACCESS");
+    public String createAccessToken(Long userId, String username, String role) {
+        return createToken(userId, username, role, accessTokenValidity, "ACCESS");
     }
 
     /**
      * Refresh Token 생성
      */
-    public String createRefreshToken(Long userId, String username) {
-        return createToken(userId, username, refreshTokenValidity, "REFRESH");
+    public String createRefreshToken(Long userId, String username, String role) {
+        return createToken(userId, username, role, refreshTokenValidity, "REFRESH");
     }
 
     /**
      * JWT 토큰 생성
      */
-    private String createToken(Long userId, String username, long validity, String tokenType) {
+    private String createToken(Long userId, String username, String role, long validity, String tokenType) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + validity);
 
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
+                .claim("role", role)
                 .claim("type", tokenType)
                 .issuedAt(now)
                 .expiration(expiration)
@@ -75,14 +76,16 @@ public class JwtTokenProvider {
         Claims claims = parseClaims(token);
         String username = claims.getSubject();
         Long userId = claims.get("userId", Long.class);
+        String role = claims.get("role", String.class);
 
-        // UserPrincipal 생성 (JWT에서 추출 가능한 정보만 사용)
+        // UserPrincipal 생성 (JWT에서 추출 가능한 정보 사용)
         UserPrincipal userPrincipal = new UserPrincipal(
                 userId,
                 username,
                 "",           // password는 인증에 필요없음
                 username,     // name은 username으로 대체
-                null,         // departmentId
+                null,         // departmentCode
+                role,         // role
                 true          // enabled
         );
 

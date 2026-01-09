@@ -179,18 +179,23 @@ async function handleCreateOption(optionName: string) {
 
     <!-- SELECT 타입 -->
     <template v-else-if="property.propertyType === 'SELECT'">
-      <Select
-        :model-value="internalValue as number"
-        :options="options"
-        :disabled="disabled"
-        :size="compact ? 'sm' : 'md'"
-        :placeholder="property.propertyName"
-        searchable
-        clearable
-        allow-create
-        @update:model-value="handleSelectChange"
-        @create="handleCreateOption"
-      />
+      <template v-if="options.length > 0">
+        <Select
+          :model-value="internalValue as number"
+          :options="options"
+          :disabled="disabled"
+          :size="compact ? 'sm' : 'md'"
+          :placeholder="property.propertyName"
+          searchable
+          clearable
+          allow-create
+          @update:model-value="handleSelectChange"
+          @create="handleCreateOption"
+        />
+      </template>
+      <span v-else class="text-[12px] text-gray-400">
+        옵션 없음
+      </span>
     </template>
 
     <!-- MULTI_SELECT 타입 -->

@@ -27,6 +27,7 @@ export { default as Pagination } from './Pagination.vue'
 export { default as MarkdownEditor } from './MarkdownEditor.vue'
 export { default as DepartmentTree } from './DepartmentTree.vue'
 export { default as UserSearchSelector } from './UserSearchSelector.vue'
+export { default as EntityEditModal } from './EntityEditModal.vue'
 
 // 타입 내보내기
 export type { ButtonVariant, ButtonSize } from './Button.vue'

@@ -319,4 +319,166 @@ public class BoardController {
 
         return ResponseEntity.ok(ApiResponse.successWithMessage("공유가 해제되었습니다"));
     }
+
+    // =============================================
+    // v2.0: 보드 카테고리 관리
+    // =============================================
+
+    /**
+     * 보드에 연결된 카테고리 목록 조회
+     */
+    @GetMapping("/{id}/categories")
+    public ResponseEntity<ApiResponse<List<BoardCategoryResponse>>> getBoardCategories(
+            @PathVariable("id") Long boardId
+    ) {
+        log.debug("Get board categories: boardId={}", boardId);
+
+        List<BoardCategoryResponse> categories = boardService.getBoardCategories(boardId);
+        return ResponseEntity.ok(ApiResponse.success(categories));
+    }
+
+    /**
+     * 보드에 카테고리 추가
+     */
+    @PostMapping("/{id}/categories/{categoryId}")
+    public ResponseEntity<ApiResponse<Void>> addBoardCategory(
+            @PathVariable("id") Long boardId,
+            @PathVariable("categoryId") Long categoryId
+    ) {
+        log.info("Add category to board: boardId={}, categoryId={}", boardId, categoryId);
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boardService.addBoardCategory(boardId, categoryId, currentUsername);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.successWithMessage("카테고리가 추가되었습니다"));
+    }
+
+    /**
+     * 보드에서 카테고리 제거
+     */
+    @DeleteMapping("/{id}/categories/{categoryId}")
+    public ResponseEntity<ApiResponse<Void>> removeBoardCategory(
+            @PathVariable("id") Long boardId,
+            @PathVariable("categoryId") Long categoryId
+    ) {
+        log.info("Remove category from board: boardId={}, categoryId={}", boardId, categoryId);
+
+        boardService.removeBoardCategory(boardId, categoryId);
+
+        return ResponseEntity.ok(ApiResponse.successWithMessage("카테고리가 제거되었습니다"));
+    }
+
+    /**
+     * 보드의 기본 카테고리 설정
+     */
+    @PatchMapping("/{id}/categories/{categoryId}/default")
+    public ResponseEntity<ApiResponse<Void>> setDefaultCategory(
+            @PathVariable("id") Long boardId,
+            @PathVariable("categoryId") Long categoryId
+    ) {
+        log.info("Set default category: boardId={}, categoryId={}", boardId, categoryId);
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boardService.setDefaultCategory(boardId, categoryId, currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.successWithMessage("기본 카테고리가 설정되었습니다"));
+    }
+
+    // =============================================
+    // v2.0: 보드 속성 관리
+    // =============================================
+
+    /**
+     * 보드에 선택된 속성 목록 조회
+     */
+    @GetMapping("/{id}/properties")
+    public ResponseEntity<ApiResponse<List<BoardPropertyResponse>>> getBoardProperties(
+            @PathVariable("id") Long boardId
+    ) {
+        log.debug("Get board properties: boardId={}", boardId);
+
+        // 접근 권한 확인
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+        }
+
+        List<BoardPropertyResponse> response = boardService.getBoardProperties(boardId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 보드에 속성 추가
+     */
+    @PostMapping("/{id}/properties/{propertyId}")
+    public ResponseEntity<ApiResponse<Void>> addBoardProperty(
+            @PathVariable("id") Long boardId,
+            @PathVariable("propertyId") Long propertyId,
+            @RequestBody(required = false) BoardPropertyRequest request
+    ) {
+        log.info("Add board property: boardId={}, propertyId={}", boardId, propertyId);
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+
+        // 소유자만 속성 추가 가능
+        if (!boardService.isOwner(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드 소유자만 속성을 추가할 수 있습니다"));
+        }
+
+        BoardPropertyRequest req = request != null ? request : new BoardPropertyRequest();
+        boardService.addBoardProperty(boardId, propertyId, req, currentUsername);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.successWithMessage("속성이 추가되었습니다"));
+    }
+
+    /**
+     * 보드에서 속성 제거
+     */
+    @DeleteMapping("/{id}/properties/{propertyId}")
+    public ResponseEntity<ApiResponse<Void>> removeBoardProperty(
+            @PathVariable("id") Long boardId,
+            @PathVariable("propertyId") Long propertyId
+    ) {
+        log.info("Remove board property: boardId={}, propertyId={}", boardId, propertyId);
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+
+        // 소유자만 속성 제거 가능
+        if (!boardService.isOwner(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드 소유자만 속성을 제거할 수 있습니다"));
+        }
+
+        boardService.removeBoardProperty(boardId, propertyId);
+
+        return ResponseEntity.ok(ApiResponse.successWithMessage("속성이 제거되었습니다"));
+    }
+
+    /**
+     * 보드 속성 설정 수정 (필수여부, 기본값 등)
+     */
+    @PutMapping("/{id}/properties/{propertyId}")
+    public ResponseEntity<ApiResponse<Void>> updateBoardProperty(
+            @PathVariable("id") Long boardId,
+            @PathVariable("propertyId") Long propertyId,
+            @Valid @RequestBody BoardPropertyRequest request
+    ) {
+        log.info("Update board property: boardId={}, propertyId={}", boardId, propertyId);
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+
+        // 소유자만 수정 가능
+        if (!boardService.isOwner(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드 소유자만 속성 설정을 수정할 수 있습니다"));
+        }
+
+        boardService.updateBoardProperty(boardId, propertyId, request, currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.successWithMessage("속성 설정이 수정되었습니다"));
+    }
 }

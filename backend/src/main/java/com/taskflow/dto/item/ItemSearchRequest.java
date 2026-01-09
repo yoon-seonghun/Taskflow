@@ -43,6 +43,12 @@ public class ItemSearchRequest {
     private Long categoryId;
 
     /**
+     * 부서 코드 필터 (담당자 소속 부서 기준)
+     * 외부 연동 키 정책: departmentId 대신 departmentCode 사용
+     */
+    private String departmentCode;
+
+    /**
      * 시작일 (생성일 기준)
      */
     private LocalDate startDate;

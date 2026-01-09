@@ -132,9 +132,24 @@ const assigneeOptions = computed((): SelectOption[] => {
   }))
 })
 
-// 동적 속성 목록 (시스템 속성 제외, 정렬순서대로)
+// 동적 속성 목록 (해당 아이템에 선택된 속성만)
+// v2.0 수정: item.properties에서 직접 속성 정보 사용 (propertyStore 의존성 제거)
+// - 글로벌/매니저 속성은 boardId가 없어 propertyStore에 로드되지 않음
+// - item.properties에는 백엔드에서 JOIN된 propertyName, propertyType 포함
 const customProperties = computed(() => {
-  return propertyStore.sortedProperties.filter(p => p.systemYn !== 'Y')
+  if (!props.item.properties || props.item.properties.length === 0) {
+    return []
+  }
+
+  // item.properties에서 직접 PropertyDef 형태로 변환
+  // TB_ITEM_PROPERTY에 저장된 속성만 포함 (시스템 속성은 TB_ITEM 컬럼에 직접 저장되므로 미포함)
+  return props.item.properties.map(p => ({
+    propertyId: p.propertyId,
+    propertyName: p.propertyName || `속성 ${p.propertyId}`,
+    propertyType: p.propertyType || 'TEXT',
+    requiredYn: 'N',  // item.properties에 미포함, 기본값 사용
+    options: []  // 옵션은 PropertyEditor에서 별도 로드
+  }))
 })
 
 // 필드 변경 핸들러

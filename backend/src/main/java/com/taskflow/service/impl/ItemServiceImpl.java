@@ -11,10 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +35,11 @@ public class ItemServiceImpl implements ItemService {
     private final UserMapper userMapper;
     private final PropertyDefMapper propertyDefMapper;
     private final SseEventPublisher sseEventPublisher;
+
+    // v2.0: 카테고리 기반 속성 상속용 Mapper
+    private final BoardCategoryMapper boardCategoryMapper;
+    private final CategoryPropertyMapper categoryPropertyMapper;
+    private final BoardPropertyMapper boardPropertyMapper;
 
     // =============================================
     // 아이템 조회
@@ -141,6 +148,16 @@ public class ItemServiceImpl implements ItemService {
                     .orElseThrow(() -> BusinessException.userNotFound(request.getAssigneeUsername()));
         }
 
+        // v2.0: 카테고리 결정 (요청에 없으면 보드의 기본 카테고리 사용)
+        Long categoryId = request.getCategoryId();
+        if (categoryId == null) {
+            Optional<BoardCategory> defaultCategory = boardCategoryMapper.findDefaultByBoardId(boardId);
+            if (defaultCategory.isPresent()) {
+                categoryId = defaultCategory.get().getCategoryId();
+                log.debug("Using default category: boardId={}, categoryId={}", boardId, categoryId);
+            }
+        }
+
         // 기본값 설정
         String status = request.getStatus() != null ? request.getStatus() : Item.STATUS_NOT_STARTED;
         String priority = request.getPriority() != null ? request.getPriority() : Item.PRIORITY_NORMAL;
@@ -149,7 +166,7 @@ public class ItemServiceImpl implements ItemService {
         Item item = Item.builder()
                 .boardId(boardId)
                 .groupId(request.getGroupId())
-                .categoryId(request.getCategoryId())
+                .categoryId(categoryId)
                 .title(request.getTitle())
                 .content(request.getContent())
                 .description(request.getDescription())
@@ -165,7 +182,12 @@ public class ItemServiceImpl implements ItemService {
         itemMapper.insert(item);
         log.info("Item created: id={}", item.getItemId());
 
-        // 동적 속성값 저장
+        // v2.0: 카테고리 속성 상속 (기본값 적용)
+        if (categoryId != null) {
+            inheritCategoryProperties(item.getItemId(), boardId, categoryId, request.getProperties(), createdBy);
+        }
+
+        // 동적 속성값 저장 (사용자가 명시적으로 지정한 속성값 - 상속값을 덮어씀)
         if (request.getProperties() != null && !request.getProperties().isEmpty()) {
             saveItemProperties(item.getItemId(), boardId, request.getProperties(), createdBy);
         }
@@ -203,6 +225,19 @@ public class ItemServiceImpl implements ItemService {
         java.util.Set<String> clearFields = request.getClearFields() != null
                 ? request.getClearFields()
                 : java.util.Collections.emptySet();
+
+        // v2.0: 카테고리 변경 감지 (기존 categoryId 저장)
+        Long oldCategoryId = item.getCategoryId();
+        Long newCategoryId = null;
+        boolean categoryChanged = false;
+
+        if (clearFields.contains("categoryId")) {
+            newCategoryId = null;
+            categoryChanged = (oldCategoryId != null);
+        } else if (request.getCategoryId() != null) {
+            newCategoryId = request.getCategoryId();
+            categoryChanged = !request.getCategoryId().equals(oldCategoryId);
+        }
 
         // 수정 - null이 아닌 필드만 업데이트 (partial update 지원)
         if (request.getTitle() != null) {
@@ -256,7 +291,13 @@ public class ItemServiceImpl implements ItemService {
         itemMapper.update(item);
         log.info("Item updated: id={}", itemId);
 
-        // 동적 속성값 저장
+        // v2.0: 카테고리 변경 시 속성값 처리
+        if (categoryChanged) {
+            handleCategoryChange(itemId, item.getBoardId(), oldCategoryId, newCategoryId,
+                                 request.getProperties(), updatedBy);
+        }
+
+        // 동적 속성값 저장 (카테고리 변경 처리 후 사용자 지정값 적용)
         if (request.getProperties() != null) {
             saveItemProperties(itemId, item.getBoardId(), request.getProperties(), updatedBy);
         }
@@ -503,6 +544,11 @@ public class ItemServiceImpl implements ItemService {
 
     /**
      * 아이템의 동적 속성값 저장
+     *
+     * v2.0: 글로벌/매니저 속성 지원
+     * - GLOBAL 속성: boardId가 null, 모든 보드에서 사용 가능
+     * - MANAGER 속성: boardId가 null, 소유자/부서 기준으로 사용 가능
+     * - BOARD 속성: boardId가 지정됨, 해당 보드에서만 사용 가능
      */
     private void saveItemProperties(Long itemId, Long boardId, Map<Long, Object> propertyValues, String username) {
         for (Map.Entry<Long, Object> entry : propertyValues.entrySet()) {
@@ -513,13 +559,20 @@ public class ItemServiceImpl implements ItemService {
             PropertyDef propertyDef = propertyDefMapper.findById(propertyId)
                     .orElseThrow(() -> BusinessException.propertyNotFound(propertyId));
 
-            // 보드 일치 확인
-            if (!boardId.equals(propertyDef.getBoardId())) {
-                throw BusinessException.badRequest("속성이 해당 보드에 속하지 않습니다: " + propertyId);
+            // v2.0: 속성 사용 권한 확인
+            // - GLOBAL, MANAGER, USER 타입: boardId 무관하게 사용 가능
+            // - 레거시(boardId가 있는 속성): 보드 일치 확인
+            String ownerType = propertyDef.getOwnerType();
+            if (ownerType == null && propertyDef.getBoardId() != null) {
+                // ownerType이 없고 boardId가 있는 레거시 속성: 보드 일치 확인
+                if (!boardId.equals(propertyDef.getBoardId())) {
+                    throw BusinessException.badRequest("속성이 해당 보드에 속하지 않습니다: " + propertyId);
+                }
             }
+            // GLOBAL, MANAGER, USER 속성은 boardId와 무관하게 사용 가능 (카테고리를 통해 보드에 연결됨)
 
-            // 값이 null이면 삭제
-            if (value == null || (value instanceof String && ((String) value).isEmpty())) {
+            // 값이 null이면 삭제 (빈 문자열은 "선택됨" 상태로 INSERT/UPDATE)
+            if (value == null) {
                 itemPropertyMapper.deleteByItemIdAndPropertyId(itemId, propertyId);
                 if (PropertyDef.TYPE_MULTI_SELECT.equals(propertyDef.getPropertyType())) {
                     itemPropertyMapper.deleteMultiByItemIdAndPropertyId(itemId, propertyId);
@@ -599,5 +652,235 @@ public class ItemServiceImpl implements ItemService {
                 .updatedBy(username)
                 .build();
         itemPropertyMapper.upsert(itemProperty);
+    }
+
+    // =============================================
+    // v2.0: 카테고리 기반 속성 상속
+    // =============================================
+
+    /**
+     * 카테고리 속성 상속
+     *
+     * 카테고리에 정의된 속성들의 기본값을 업무에 자동 적용합니다.
+     * - BoardProperty가 있으면 BoardProperty의 설정(기본값, 필수여부) 우선 적용
+     * - BoardProperty가 없으면 CategoryProperty의 설정 적용
+     * - 사용자가 명시적으로 지정한 속성값은 나중에 덮어씀 (saveItemProperties에서 처리)
+     *
+     * @param itemId          업무 ID
+     * @param boardId         보드 ID
+     * @param categoryId      카테고리 ID
+     * @param userProperties  사용자가 명시적으로 지정한 속성값 (null이면 모든 기본값 적용)
+     * @param createdBy       생성자
+     */
+    private void inheritCategoryProperties(Long itemId, Long boardId, Long categoryId,
+                                           Map<Long, Object> userProperties, String createdBy) {
+        log.debug("Inheriting category properties: itemId={}, boardId={}, categoryId={}",
+                itemId, boardId, categoryId);
+
+        // 1. 카테고리에 정의된 속성 목록 조회
+        List<CategoryProperty> categoryProperties = categoryPropertyMapper.findByCategoryId(categoryId);
+        if (categoryProperties.isEmpty()) {
+            log.debug("No properties defined for category: categoryId={}", categoryId);
+            return;
+        }
+
+        // 2. 보드별 속성 설정 조회 (BoardProperty - 기본값, 필수여부 재정의)
+        List<BoardProperty> boardProperties = boardPropertyMapper.findByBoardId(boardId);
+        Map<Long, BoardProperty> boardPropertyMap = boardProperties.stream()
+                .collect(Collectors.toMap(BoardProperty::getPropertyId, bp -> bp, (a, b) -> a));
+
+        // 3. 사용자가 명시적으로 지정한 속성 ID 집합
+        java.util.Set<Long> userSpecifiedPropertyIds = (userProperties != null)
+                ? userProperties.keySet()
+                : java.util.Collections.emptySet();
+
+        int inheritedCount = 0;
+
+        // 4. 각 카테고리 속성에 대해 기본값 적용
+        for (CategoryProperty cp : categoryProperties) {
+            Long propertyId = cp.getPropertyId();
+
+            // 사용자가 명시적으로 값을 지정한 경우 상속하지 않음 (나중에 saveItemProperties에서 적용됨)
+            if (userSpecifiedPropertyIds.contains(propertyId)) {
+                log.debug("Skipping property (user specified): propertyId={}", propertyId);
+                continue;
+            }
+
+            // BoardProperty가 있으면 해당 설정 사용, 없으면 CategoryProperty 설정 사용
+            String defaultValue;
+            BoardProperty bp = boardPropertyMap.get(propertyId);
+            if (bp != null && bp.getDefaultValue() != null && !bp.getDefaultValue().isEmpty()) {
+                defaultValue = bp.getDefaultValue();
+                log.debug("Using BoardProperty defaultValue: propertyId={}, value={}", propertyId, defaultValue);
+            } else {
+                defaultValue = cp.getDefaultValue();
+                log.debug("Using CategoryProperty defaultValue: propertyId={}, value={}", propertyId, defaultValue);
+            }
+
+            // 기본값이 없으면 건너뜀
+            if (defaultValue == null || defaultValue.isEmpty()) {
+                continue;
+            }
+
+            // 속성 정의 조회
+            Optional<PropertyDef> propertyDefOpt = propertyDefMapper.findById(propertyId);
+            if (propertyDefOpt.isEmpty()) {
+                log.warn("Property definition not found: propertyId={}", propertyId);
+                continue;
+            }
+
+            PropertyDef propertyDef = propertyDefOpt.get();
+
+            // 속성값 저장
+            try {
+                if (PropertyDef.TYPE_MULTI_SELECT.equals(propertyDef.getPropertyType())) {
+                    saveMultiSelectProperty(itemId, propertyId, defaultValue, createdBy);
+                } else {
+                    saveSingleProperty(itemId, propertyId, propertyDef.getPropertyType(), defaultValue, createdBy);
+                }
+                inheritedCount++;
+            } catch (Exception e) {
+                log.warn("Failed to inherit property default value: propertyId={}, value={}, error={}",
+                        propertyId, defaultValue, e.getMessage());
+            }
+        }
+
+        log.info("Category properties inherited: itemId={}, categoryId={}, inheritedCount={}",
+                itemId, categoryId, inheritedCount);
+    }
+
+    /**
+     * 카테고리 변경 시 속성값 처리
+     *
+     * v2.0: 업무 카테고리 변경 시 기존 속성값을 정리하고 새 카테고리 속성을 상속합니다.
+     * - 기존 카테고리 전용 속성값은 폐기 (새 카테고리에 없는 속성)
+     * - 동일 속성명을 가진 속성은 값 유지 (사용자 편의)
+     * - 새 카테고리 속성의 기본값 상속
+     *
+     * @param itemId          업무 ID
+     * @param boardId         보드 ID
+     * @param oldCategoryId   기존 카테고리 ID (null 가능)
+     * @param newCategoryId   새 카테고리 ID (null 가능)
+     * @param userProperties  사용자가 명시적으로 지정한 속성값 (null 가능)
+     * @param updatedBy       수정자
+     */
+    private void handleCategoryChange(Long itemId, Long boardId, Long oldCategoryId, Long newCategoryId,
+                                       Map<Long, Object> userProperties, String updatedBy) {
+        log.info("Handling category change: itemId={}, oldCategoryId={}, newCategoryId={}",
+                itemId, oldCategoryId, newCategoryId);
+
+        // 1. 기존 카테고리 속성 목록 조회
+        List<CategoryProperty> oldCategoryProperties = (oldCategoryId != null)
+                ? categoryPropertyMapper.findByCategoryId(oldCategoryId)
+                : new ArrayList<>();
+
+        // 2. 새 카테고리 속성 목록 조회
+        List<CategoryProperty> newCategoryProperties = (newCategoryId != null)
+                ? categoryPropertyMapper.findByCategoryId(newCategoryId)
+                : new ArrayList<>();
+
+        // 3. 새 카테고리 속성명 맵 생성 (속성명 → 속성ID)
+        Map<String, Long> newPropertyNameToId = new HashMap<>();
+        for (CategoryProperty cp : newCategoryProperties) {
+            if (cp.getPropertyName() != null) {
+                newPropertyNameToId.put(cp.getPropertyName(), cp.getPropertyId());
+            }
+        }
+
+        // 4. 새 카테고리 속성 ID 집합
+        java.util.Set<Long> newPropertyIds = newCategoryProperties.stream()
+                .map(CategoryProperty::getPropertyId)
+                .collect(Collectors.toSet());
+
+        // 5. 기존 속성값 중 새 카테고리에 없는 것은 삭제 (동일 속성명이면 유지)
+        int deletedCount = 0;
+        int preservedCount = 0;
+
+        for (CategoryProperty oldCp : oldCategoryProperties) {
+            Long oldPropertyId = oldCp.getPropertyId();
+            String oldPropertyName = oldCp.getPropertyName();
+
+            // 새 카테고리에 동일 속성 ID가 있으면 유지
+            if (newPropertyIds.contains(oldPropertyId)) {
+                preservedCount++;
+                continue;
+            }
+
+            // 새 카테고리에 동일 속성명이 있으면 값 이전 시도
+            Long matchingNewPropertyId = newPropertyNameToId.get(oldPropertyName);
+            if (matchingNewPropertyId != null) {
+                // 기존 속성값 조회
+                Optional<ItemProperty> existingValue = itemPropertyMapper.findByItemIdAndPropertyId(itemId, oldPropertyId);
+                if (existingValue.isPresent()) {
+                    ItemProperty oldValue = existingValue.get();
+
+                    // 새 속성 정의 조회
+                    Optional<PropertyDef> newPropDefOpt = propertyDefMapper.findById(matchingNewPropertyId);
+                    if (newPropDefOpt.isPresent()) {
+                        PropertyDef newPropDef = newPropDefOpt.get();
+
+                        // 기존 값으로 새 속성에 저장 (타입 호환 시)
+                        try {
+                            String valueToTransfer = getTransferableValue(oldValue);
+                            if (valueToTransfer != null && !valueToTransfer.isEmpty()) {
+                                saveSingleProperty(itemId, matchingNewPropertyId,
+                                        newPropDef.getPropertyType(), valueToTransfer, updatedBy);
+                                log.debug("Property value transferred by name: '{}' ({} -> {})",
+                                        oldPropertyName, oldPropertyId, matchingNewPropertyId);
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to transfer property value: {} -> {}, error={}",
+                                    oldPropertyId, matchingNewPropertyId, e.getMessage());
+                        }
+                    }
+                }
+                preservedCount++;
+            }
+
+            // 기존 속성값 삭제 (새 카테고리에 없거나 이전 완료된 경우)
+            itemPropertyMapper.deleteByItemIdAndPropertyId(itemId, oldPropertyId);
+
+            // 다중선택인 경우 멀티 테이블도 삭제
+            Optional<PropertyDef> oldPropDefOpt = propertyDefMapper.findById(oldPropertyId);
+            if (oldPropDefOpt.isPresent()
+                    && PropertyDef.TYPE_MULTI_SELECT.equals(oldPropDefOpt.get().getPropertyType())) {
+                itemPropertyMapper.deleteMultiByItemIdAndPropertyId(itemId, oldPropertyId);
+            }
+
+            deletedCount++;
+        }
+
+        log.info("Old category properties processed: deleted={}, preserved={}",
+                deletedCount, preservedCount);
+
+        // 6. 새 카테고리 속성 상속 (기본값 적용)
+        if (newCategoryId != null) {
+            inheritCategoryProperties(itemId, boardId, newCategoryId, userProperties, updatedBy);
+        }
+    }
+
+    /**
+     * ItemProperty에서 이전 가능한 값 추출
+     */
+    private String getTransferableValue(ItemProperty itemProperty) {
+        if (itemProperty == null) {
+            return null;
+        }
+
+        // 값 우선순위: TEXT > NUMBER > DATE > SELECT
+        if (itemProperty.getValueText() != null && !itemProperty.getValueText().isEmpty()) {
+            return itemProperty.getValueText();
+        }
+        if (itemProperty.getValueNumber() != null) {
+            return itemProperty.getValueNumber().toString();
+        }
+        if (itemProperty.getValueDate() != null) {
+            return itemProperty.getValueDate().toString();
+        }
+        if (itemProperty.getValueOptionId() != null) {
+            return itemProperty.getValueOptionId().toString();
+        }
+
+        return null;
     }
 }

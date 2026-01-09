@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.ItemScoreMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="ItemScoreResultMap" type="com.taskflow.domain.ItemScore">
+        <id property="scoreId" column="SCORE_ID"/>
+        <result property="itemId" column="ITEM_ID"/>
+        <result property="itemTitle" column="ITEM_TITLE"/>
+        <result property="assigneeUsername" column="ASSIGNEE_USERNAME"/>
+        <result property="assigneeName" column="ASSIGNEE_NAME"/>
+        <result property="baseGrade" column="BASE_GRADE"/>
+        <result property="baseScore" column="BASE_SCORE"/>
+        <result property="difficulty" column="DIFFICULTY"/>
+        <result property="scopeChange" column="SCOPE_CHANGE"/>
+        <result property="riskHandling" column="RISK_HANDLING"/>
+        <result property="weightFactor" column="WEIGHT_FACTOR"/>
+        <result property="finalScore" column="FINAL_SCORE"/>
+        <result property="approvalStatus" column="APPROVAL_STATUS"/>
+        <result property="approvedBy" column="APPROVED_BY"/>
+        <result property="approvedAt" column="APPROVED_AT"/>
+        <result property="requestDate" column="REQUEST_DATE"/>
+        <result property="dueDate" column="DUE_DATE"/>
+        <result property="completedAt" column="COMPLETED_AT"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+    </resultMap>
+
+    <resultMap id="ScoreSummaryResultMap" type="com.taskflow.dto.score.ScoreSummaryResponse">
+        <result property="assigneeUsername" column="ASSIGNEE_USERNAME"/>
+        <result property="assigneeName" column="ASSIGNEE_NAME"/>
+        <result property="completedCount" column="COMPLETED_COUNT"/>
+        <result property="totalScore" column="TOTAL_SCORE"/>
+        <result property="averageScore" column="AVERAGE_SCORE"/>
+        <result property="perfectCount" column="PERFECT_COUNT"/>
+        <result property="excellentCount" column="EXCELLENT_COUNT"/>
+        <result property="goodCount" column="GOOD_COUNT"/>
+        <result property="fairCount" column="FAIR_COUNT"/>
+        <result property="poorCount" column="POOR_COUNT"/>
+        <result property="averageDifficulty" column="AVERAGE_DIFFICULTY"/>
+        <result property="averageWeightFactor" column="AVERAGE_WEIGHT_FACTOR"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectItemScore">
+        SELECT
+            s.SCORE_ID,
+            s.ITEM_ID,
+            i.CONTENT AS ITEM_TITLE,
+            s.ASSIGNEE_USERNAME,
+            u.NAME AS ASSIGNEE_NAME,
+            s.BASE_GRADE,
+            s.BASE_SCORE,
+            s.DIFFICULTY,
+            s.SCOPE_CHANGE,
+            s.RISK_HANDLING,
+            s.WEIGHT_FACTOR,
+            s.FINAL_SCORE,
+            s.APPROVAL_STATUS,
+            s.APPROVED_BY,
+            s.APPROVED_AT,
+            s.REQUEST_DATE,
+            s.DUE_DATE,
+            s.COMPLETED_AT,
+            s.CREATED_AT,
+            s.CREATED_BY
+        FROM TB_ITEM_SCORE s
+        LEFT JOIN TB_ITEM i ON s.ITEM_ID = i.ITEM_ID
+        LEFT JOIN TB_USER u ON s.ASSIGNEE_USERNAME = u.USERNAME
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- ID로 점수 조회 -->
+    <select id="findById" resultMap="ItemScoreResultMap">
+        <include refid="selectItemScore"/>
+        WHERE s.SCORE_ID = #{scoreId}
+    </select>
+
+    <!-- 업무 ID로 점수 조회 -->
+    <select id="findByItemId" resultMap="ItemScoreResultMap">
+        <include refid="selectItemScore"/>
+        WHERE s.ITEM_ID = #{itemId}
+    </select>
+
+    <!-- 담당자별 점수 목록 조회 -->
+    <select id="findByAssignee" resultMap="ItemScoreResultMap">
+        <include refid="selectItemScore"/>
+        WHERE s.ASSIGNEE_USERNAME = #{assigneeUsername}
+        <if test="startDate != null">
+            AND s.COMPLETED_AT >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND s.COMPLETED_AT &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+        </if>
+        ORDER BY s.COMPLETED_AT DESC
+    </select>
+
+    <!-- 검색 조건으로 점수 목록 조회 -->
+    <select id="search" parameterType="com.taskflow.dto.score.ScoreSearchRequest" resultMap="ItemScoreResultMap">
+        <include refid="selectItemScore"/>
+        <where>
+            <if test="assigneeUsername != null and assigneeUsername != ''">
+                AND s.ASSIGNEE_USERNAME = #{assigneeUsername}
+            </if>
+            <if test="deptCode != null and deptCode != ''">
+                AND u.DEPARTMENT_CODE = #{deptCode}
+            </if>
+            <if test="boardId != null">
+                AND i.BOARD_ID = #{boardId}
+            </if>
+            <if test="startDate != null">
+                AND s.COMPLETED_AT >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND s.COMPLETED_AT &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+            </if>
+            <if test="approvalStatus != null and approvalStatus != ''">
+                AND s.APPROVAL_STATUS = #{approvalStatus}
+            </if>
+            <if test="baseGrade != null and baseGrade != ''">
+                AND s.BASE_GRADE = #{baseGrade}
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'finalScore'">s.FINAL_SCORE</when>
+            <when test="sortBy == 'baseGrade'">
+                CASE s.BASE_GRADE
+                    WHEN 'PERFECT' THEN 1
+                    WHEN 'EXCELLENT' THEN 2
+                    WHEN 'GOOD' THEN 3
+                    WHEN 'FAIR' THEN 4
+                    WHEN 'POOR' THEN 5
+                END
+            </when>
+            <otherwise>s.COMPLETED_AT</otherwise>
+        </choose>
+        <if test="sortDirection == 'ASC'">ASC</if>
+        <if test="sortDirection != 'ASC'">DESC</if>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 검색 결과 총 개수 -->
+    <select id="countBySearch" parameterType="com.taskflow.dto.score.ScoreSearchRequest" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_ITEM_SCORE s
+        LEFT JOIN TB_ITEM i ON s.ITEM_ID = i.ITEM_ID
+        LEFT JOIN TB_USER u ON s.ASSIGNEE_USERNAME = u.USERNAME
+        <where>
+            <if test="assigneeUsername != null and assigneeUsername != ''">
+                AND s.ASSIGNEE_USERNAME = #{assigneeUsername}
+            </if>
+            <if test="deptCode != null and deptCode != ''">
+                AND u.DEPARTMENT_CODE = #{deptCode}
+            </if>
+            <if test="boardId != null">
+                AND i.BOARD_ID = #{boardId}
+            </if>
+            <if test="startDate != null">
+                AND s.COMPLETED_AT >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND s.COMPLETED_AT &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+            </if>
+            <if test="approvalStatus != null and approvalStatus != ''">
+                AND s.APPROVAL_STATUS = #{approvalStatus}
+            </if>
+            <if test="baseGrade != null and baseGrade != ''">
+                AND s.BASE_GRADE = #{baseGrade}
+            </if>
+        </where>
+    </select>
+
+    <!-- 담당자별 점수 요약 조회 -->
+    <select id="getSummaryByAssignee" resultMap="ScoreSummaryResultMap">
+        SELECT
+            s.ASSIGNEE_USERNAME,
+            u.NAME AS ASSIGNEE_NAME,
+            COUNT(*) AS COMPLETED_COUNT,
+            SUM(s.FINAL_SCORE) AS TOTAL_SCORE,
+            AVG(s.FINAL_SCORE) AS AVERAGE_SCORE,
+            SUM(CASE WHEN s.BASE_GRADE = 'PERFECT' THEN 1 ELSE 0 END) AS PERFECT_COUNT,
+            SUM(CASE WHEN s.BASE_GRADE = 'EXCELLENT' THEN 1 ELSE 0 END) AS EXCELLENT_COUNT,
+            SUM(CASE WHEN s.BASE_GRADE = 'GOOD' THEN 1 ELSE 0 END) AS GOOD_COUNT,
+            SUM(CASE WHEN s.BASE_GRADE = 'FAIR' THEN 1 ELSE 0 END) AS FAIR_COUNT,
+            SUM(CASE WHEN s.BASE_GRADE = 'POOR' THEN 1 ELSE 0 END) AS POOR_COUNT,
+            AVG(s.DIFFICULTY) AS AVERAGE_DIFFICULTY,
+            AVG(s.WEIGHT_FACTOR) AS AVERAGE_WEIGHT_FACTOR
+        FROM TB_ITEM_SCORE s
+        LEFT JOIN TB_USER u ON s.ASSIGNEE_USERNAME = u.USERNAME
+        WHERE s.ASSIGNEE_USERNAME = #{assigneeUsername}
+        <if test="startDate != null">
+            AND s.COMPLETED_AT >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND s.COMPLETED_AT &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+        </if>
+        GROUP BY s.ASSIGNEE_USERNAME, u.NAME
+    </select>
+
+    <!-- 부서별 점수 요약 목록 조회 -->
+    <select id="getSummaryByDepartment" resultMap="ScoreSummaryResultMap">
+        SELECT
+            s.ASSIGNEE_USERNAME,
+            u.NAME AS ASSIGNEE_NAME,
+            COUNT(*) AS COMPLETED_COUNT,
+            SUM(s.FINAL_SCORE) AS TOTAL_SCORE,
+            AVG(s.FINAL_SCORE) AS AVERAGE_SCORE,
+            SUM(CASE WHEN s.BASE_GRADE = 'PERFECT' THEN 1 ELSE 0 END) AS PERFECT_COUNT,
+            SUM(CASE WHEN s.BASE_GRADE = 'EXCELLENT' THEN 1 ELSE 0 END) AS EXCELLENT_COUNT,
+            SUM(CASE WHEN s.BASE_GRADE = 'GOOD' THEN 1 ELSE 0 END) AS GOOD_COUNT,
+            SUM(CASE WHEN s.BASE_GRADE = 'FAIR' THEN 1 ELSE 0 END) AS FAIR_COUNT,
+            SUM(CASE WHEN s.BASE_GRADE = 'POOR' THEN 1 ELSE 0 END) AS POOR_COUNT,
+            AVG(s.DIFFICULTY) AS AVERAGE_DIFFICULTY,
+            AVG(s.WEIGHT_FACTOR) AS AVERAGE_WEIGHT_FACTOR
+        FROM TB_ITEM_SCORE s
+        LEFT JOIN TB_USER u ON s.ASSIGNEE_USERNAME = u.USERNAME
+        WHERE u.DEPARTMENT_CODE = #{deptCode}
+        <if test="startDate != null">
+            AND s.COMPLETED_AT >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND s.COMPLETED_AT &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+        </if>
+        GROUP BY s.ASSIGNEE_USERNAME, u.NAME
+        ORDER BY TOTAL_SCORE DESC
+    </select>
+
+    <!-- 승인 대기 점수 목록 조회 -->
+    <select id="findPendingApproval" resultMap="ItemScoreResultMap">
+        <include refid="selectItemScore"/>
+        WHERE s.APPROVAL_STATUS = 'PENDING'
+        <if test="deptCode != null and deptCode != ''">
+            AND u.DEPARTMENT_CODE = #{deptCode}
+        </if>
+        ORDER BY s.CREATED_AT ASC
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 점수 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.ItemScore" useGeneratedKeys="true" keyProperty="scoreId">
+        INSERT INTO TB_ITEM_SCORE (
+            ITEM_ID,
+            ASSIGNEE_USERNAME,
+            BASE_GRADE,
+            BASE_SCORE,
+            DIFFICULTY,
+            SCOPE_CHANGE,
+            RISK_HANDLING,
+            WEIGHT_FACTOR,
+            FINAL_SCORE,
+            APPROVAL_STATUS,
+            REQUEST_DATE,
+            DUE_DATE,
+            COMPLETED_AT,
+            CREATED_BY
+        ) VALUES (
+            #{itemId},
+            #{assigneeUsername},
+            #{baseGrade},
+            #{baseScore},
+            COALESCE(#{difficulty}, 1),
+            COALESCE(#{scopeChange}, 0),
+            COALESCE(#{riskHandling}, 0),
+            #{weightFactor},
+            #{finalScore},
+            COALESCE(#{approvalStatus}, 'APPROVED'),
+            #{requestDate},
+            #{dueDate},
+            #{completedAt},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 점수 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.ItemScore">
+        UPDATE TB_ITEM_SCORE
+        SET
+            BASE_GRADE = #{baseGrade},
+            BASE_SCORE = #{baseScore},
+            DIFFICULTY = #{difficulty},
+            SCOPE_CHANGE = #{scopeChange},
+            RISK_HANDLING = #{riskHandling},
+            WEIGHT_FACTOR = #{weightFactor},
+            FINAL_SCORE = #{finalScore}
+        WHERE SCORE_ID = #{scoreId}
+    </update>
+
+    <!-- 승인 상태 업데이트 -->
+    <update id="updateApprovalStatus">
+        UPDATE TB_ITEM_SCORE
+        SET
+            APPROVAL_STATUS = #{status},
+            APPROVED_BY = #{approvedBy},
+            APPROVED_AT = CURRENT_TIMESTAMP
+        WHERE SCORE_ID = #{scoreId}
+    </update>
+
+    <!-- 가중치 요소 업데이트 -->
+    <update id="updateWeightFactors">
+        UPDATE TB_ITEM_SCORE
+        SET
+            DIFFICULTY = #{difficulty},
+            SCOPE_CHANGE = #{scopeChange},
+            RISK_HANDLING = #{riskHandling},
+            WEIGHT_FACTOR = #{weightFactor},
+            FINAL_SCORE = #{finalScore}
+        WHERE SCORE_ID = #{scoreId}
+    </update>
+
+    <!-- 점수 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_ITEM_SCORE
+        WHERE SCORE_ID = #{scoreId}
+    </delete>
+
+    <!-- 업무별 점수 삭제 -->
+    <delete id="deleteByItemId">
+        DELETE FROM TB_ITEM_SCORE
+        WHERE ITEM_ID = #{itemId}
+    </delete>
+
+</mapper>

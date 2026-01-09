@@ -30,6 +30,7 @@ public class UserPrincipal implements UserDetails {
             String password,
             String name,
             String departmentCode,
+            String role,
             boolean enabled
     ) {
         this.userId = userId;
@@ -38,7 +39,9 @@ public class UserPrincipal implements UserDetails {
         this.name = name;
         this.departmentCode = departmentCode;
         this.enabled = enabled;
-        this.authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        // 역할에 ROLE_ 접두사 추가 (Spring Security 규칙)
+        String roleWithPrefix = role != null && !role.startsWith("ROLE_") ? "ROLE_" + role : role;
+        this.authorities = Collections.singletonList(new SimpleGrantedAuthority(roleWithPrefix != null ? roleWithPrefix : "ROLE_USER"));
     }
 
     public static UserPrincipal of(
@@ -47,6 +50,7 @@ public class UserPrincipal implements UserDetails {
             String password,
             String name,
             String departmentCode,
+            String role,
             String useYn
     ) {
         return new UserPrincipal(
@@ -55,6 +59,7 @@ public class UserPrincipal implements UserDetails {
                 password,
                 name,
                 departmentCode,
+                role,
                 "Y".equals(useYn)
         );
     }

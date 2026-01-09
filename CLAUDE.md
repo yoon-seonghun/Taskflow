@@ -72,6 +72,279 @@ Notion 스타일의 업무 관리 시스템으로, 팀 구성원 간 업무 현�
 ```
 ---
 
+## 디버깅 및 수정 원칙 (⚠️ 필수 준수)
+
+### 기능 보존 원칙
+```
+⚠️ 절대 금지 사항
+1. 기능 삭제로 오류 해결 금지
+2. 기능 축소로 오류 해결 금지
+3. 역할/책임 감소로 오류 해결 금지
+
+✅ 필수 준수 사항
+1. 오류는 근본 원인을 찾아 정상 수정할 것
+2. 기능 축소/삭제가 불가피한 경우 → 반드시 승인 요청
+3. 수정 전 영향 범위 분석 필수
+```
+
+### DB 스키마 일관성 원칙
+```
+📁 관련 파일
+- docker/mysql/init/01_schema.sql  (테이블 생성)
+- docker/mysql/init/02_init_data.sql  (초기 데이터)
+- backend/src/main/resources/mapper/*.xml  (MyBatis Mapper)
+
+✅ DB 수정 시 필수 체크리스트
+1. 현재 운영 DB 스키마와 초기 구축 스크립트 일치 여부 확인
+2. 컬럼 추가/변경 시 → 01_schema.sql 동기화
+3. 코드/옵션 추가 시 → 02_init_data.sql 동기화
+4. 테이블 구조 변경 시 → 관련 Mapper XML 동시 수정
+5. DTO/Domain 클래스 필드 동기화
+
+🔄 수정 순서
+1. ERD/테이블 정의서 확인
+2. 01_schema.sql 수정
+3. 02_init_data.sql 수정 (필요시)
+4. Mapper XML 수정
+5. Domain/DTO 클래스 수정
+6. 전체 정합성 검증
+```
+
+---
+
+## 파일 수정 시 내용 보존 원칙 (⚠️ 최우선 규칙)
+
+### 🚨 절대 금지 사항
+```
+1. 기존 내용을 임의로 삭제하거나 축소 금지
+2. "정리", "간소화", "최적화" 목적의 내용 제거 금지
+3. 관련 없어 보여도 완료되지 않은 항목 제거 금지
+4. 수정 범위 외의 섹션 임의 변경 금지
+5. 전체 파일 재작성 방식의 수정 금지 (부분 수정만 허용)
+```
+
+### ✅ 필수 준수 사항
+```
+1. 수정 전: 원본 파일 전체 구조 파악 (섹션 수, 라인 수)
+2. 수정 중: 해당 부분만 최소 범위로 수정
+3. 수정 후: 기존 내용 누락 여부 반드시 검증
+4. 제거 필요 시: 반드시 목록 제시 후 승인 요청
+```
+
+### 📋 수정 시 필수 보고 형식
+```
+## 파일 수정 보고
+
+### 수정 파일: [파일명]
+
+### 변경 내역
+| 구분 | 항목 |
+|-----|------|
+| ➕ 추가 | [새로 추가된 내용] |
+| ✏️ 변경 | [변경된 내용: 전 → 후] |
+| ➖ 제거 | [제거 항목] ⚠️ 승인 필요 |
+
+### 보존 검증
+- 수정 전 섹션 수: [N개]
+- 수정 후 섹션 수: [M개]
+- 누락 항목: [없음 / 있음]
+
+### 제거 승인 요청 (해당 시)
+- 제거 대상: [항목]
+- 제거 사유: [사유]
+```
+
+### 🔴 위반 시 처리
+```
+- 승인 없이 내용이 제거된 경우 → 즉시 원본 복구
+- 반복 위반 시 → 전체 작업 중단 후 검토
+```
+
+---
+
+## 기능 완료 승인 및 지침 정리 규칙
+
+### 기능 상태 정의
+| 상태 | 표시 | 설명 | CLAUDE.md 지침 |
+|-----|------|------|---------------|
+| 진행중 | 🔵 | 개발 진행 중 | **상세 유지 (삭제 금지)** |
+| 검토중 | 🟡 | 구현 완료, 검증 대기 | **상세 유지** |
+| 완료 | 🟢 | 최종 승인 완료 | **요약으로 축소 가능** |
+| 보류 | ⚪ | 일시 중단 | **상세 유지** |
+
+### 지침 삭제/축소 조건
+```
+⚠️ 지침 삭제/축소는 오직 다음 조건에서만 가능:
+
+1. 해당 기능이 🟢 완료 상태일 것
+2. 완료 검증 체크리스트 모두 통과
+3. 개발자의 명시적 완료 승인
+4. 상세 내용은 docs/archive/로 아카이브
+
+위 조건을 충족하지 않는 지침 삭제 = 규칙 위반
+```
+
+### 완료 승인 필수 체크리스트
+```
+□ 요구사항 100% 충족 확인
+□ 테스트 통과 (단위/통합)
+□ 런타임 에러 없음
+□ 연관 기능 영향 없음
+□ API 문서 반영 완료
+□ 사용자 가이드 반영 완료
+```
+
+### 완료 승인 요청 형식
+```
+"[기능명] 완료 승인 요청합니다."
+
+→ project-sync 에이전트가 검증 후 승인 요청서 생성
+→ 개발자 승인 후 지침 아카이브 진행
+```
+
+### 아카이브 구조
+```
+docs/archive/
+├── README.md           # 아카이브 인덱스 (완료된 기능 목록)
+├── auth.md             # 인증 기능 상세 지침
+├── user.md             # 사용자 관리 상세 지침
+└── ...
+```
+
+### 아카이브 후 CLAUDE.md 잔여 형식
+```markdown
+### [기능명] 🟢
+- 완료일: YYYY-MM-DD
+- API: /api/xxx/*
+- 테이블: TB_XXX
+- 상세: docs/archive/xxx.md
+```
+
+### 절대 아카이브 불가 항목
+```
+다음 항목은 완료 여부와 관계없이 CLAUDE.md에 항상 유지:
+
+1. 전역 개발 규칙 (설계 우선 원칙, JPA 금지 등)
+2. 기술 스택 개요
+3. 네이밍 컨벤션 (테이블, 클래스, API)
+4. 보안 정책
+5. 디버깅/수정 원칙
+6. 파일 수정 시 내용 보존 원칙
+7. 본 규칙 (기능 완료 승인 규칙)
+```
+
+---
+
+## 기능 개발 현황
+
+### 🟢 완료된 기능
+| 기능 | 완료일 | 아카이브 |
+|-----|--------|---------|
+| | | |
+
+### 🔵 진행중인 기능
+| 기능 | 시작일 | 진행률 | 담당 지침 섹션 |
+|-----|--------|--------|--------------|
+| | | | |
+
+### 🟡 검토중인 기능
+| 기능 | 구현완료일 | 검증 대기 항목 |
+|-----|----------|--------------|
+| | | |
+
+### ⚪ 보류된 기능
+| 기능 | 보류일 | 사유 |
+|-----|--------|------|
+| | | |
+
+---
+
+## 수정 시 제출 형식 (종합)
+```
+📋 변경 보고서
+- 수정 대상: [파일 목록]
+- 변경 내용: [상세 내용]
+- DB 영향: [스키마/데이터 변경 여부]
+- 연관 파일: [Mapper, DTO, Service 등]
+- 제거 항목: [없음 / 목록 - 승인 필요]
+- 보존 검증: [섹션 수 변화, 누락 여부]
+- 테스트 방법: [검증 절차]
+```
+
+---
+
+## 지침 변경 이력 관리 규칙
+
+### 이력 관리 대상
+| 대상 | 파일 | 이력 기록 위치 |
+|-----|------|--------------|
+| 프로젝트 지침 | CLAUDE.md | docs/changelog/claude_md_history.md |
+| 서브 에이전트 | .claude/agents/*.md | docs/changelog/agents_history.md |
+| 전체 요약 | - | docs/changelog/CHANGELOG.md |
+
+### 버전 관리 규칙
+```
+버전 형식: vX.Y.Z (Semantic Versioning)
+
+X (Major): 구조 변경, 대규모 규칙 변경
+Y (Minor): 기능/섹션 추가
+Z (Patch): 오타 수정, 버그 수정
+
+예시:
+- v1.0.0 → v1.1.0: 새 섹션 추가
+- v1.1.0 → v1.1.1: 오타 수정
+- v1.1.1 → v2.0.0: 전체 구조 개편
+```
+
+### 변경 시 필수 기록 항목
+```
+□ 버전 번호 (vX.Y.Z)
+□ 변경 일자 (YYYY-MM-DD)
+□ 변경 유형 (Added/Changed/Removed/Fixed)
+□ 변경 내용 상세
+□ 변경 사유
+□ 변경자/승인자
+□ 영향 범위
+```
+
+### 변경 유형 표기
+| 아이콘 | 유형 | 설명 |
+|-------|------|------|
+| 🆕 | Added | 새로운 기능/섹션 추가 |
+| ✏️ | Changed | 기존 내용 변경 |
+| 🗑️ | Removed | 기존 내용 제거 (승인 필수) |
+| 🐛 | Fixed | 버그/오류 수정 |
+| 📚 | Archived | 완료 기능 아카이브 |
+
+### 이력 보존 정책
+```
+1. 모든 변경 이력은 영구 보존
+2. 이력 파일 삭제 금지
+3. 이력 내용 수정 금지 (추가만 가능)
+4. Git 커밋과 연동하여 추적 가능하게 유지
+```
+
+### 이력 파일 구조
+```
+docs/changelog/
+├── CHANGELOG.md           # 전체 변경 요약 (최신순)
+├── claude_md_history.md   # CLAUDE.md 상세 이력
+└── agents_history.md      # 에이전트 상세 이력
+```
+
+### 변경 이력 조회 명령
+```bash
+# 전체 이력 조회
+cat docs/changelog/CHANGELOG.md
+
+# CLAUDE.md 특정 버전 이력
+grep -A 30 "\[v1.2.0\]" docs/changelog/claude_md_history.md
+
+# 특정 에이전트 이력
+grep -A 20 "## debugger.md" docs/changelog/agents_history.md
+```
+---
+
 ## 데이터베이스 컨벤션
 
 ### 테이블 명명 규칙
@@ -83,9 +356,46 @@ Notion 스타일의 업무 관리 시스템으로, 팀 구성원 간 업무 현�
 모든 테이블에 아래 컬럼 필수 포함:
 ```sql
 CREATED_AT DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-CREATED_BY BIGINT NOT NULL,
+CREATED_BY VARCHAR(50) NOT NULL COMMENT '생성자 USERNAME',
 UPDATED_AT DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
-UPDATED_BY BIGINT NULL
+UPDATED_BY VARCHAR(50) NULL COMMENT '수정자 USERNAME'
+```
+
+### 외부 연동 키 정책 (⚠️ 필수 준수)
+```
+📌 적용 대상 테이블
+- TB_USER (사용자)
+- TB_DEPARTMENT (부서)
+- TB_POSITION (직급)
+
+⚠️ 핵심 원칙
+외부 시스템(인사 시스템, AD 등) 연동 시 BIGINT 타입 ID의 불일치 문제를
+방지하기 위해 코드형 컬럼을 FK 참조 키로 사용합니다.
+
+✅ FK 참조 키 정책
+| 테이블 | 내부 PK (사용 금지) | FK 참조 키 (사용) |
+|--------|---------------------|-------------------|
+| TB_USER | USER_ID (BIGINT) | USERNAME (VARCHAR) |
+| TB_DEPARTMENT | DEPARTMENT_ID (BIGINT) | DEPARTMENT_CODE (VARCHAR) |
+| TB_POSITION | POSITION_ID (BIGINT) | POSITION_CODE (VARCHAR) |
+
+✅ API/쿼리 파라미터 규칙
+| 잘못된 사용 | 올바른 사용 |
+|------------|------------|
+| userId (Long) | username (String) |
+| assigneeId (Long) | assigneeUsername (String) |
+| departmentId (Long) | departmentCode (String) |
+| positionId (Long) | positionCode (String) |
+
+✅ 적용 예시
+- 업무 담당자 지정: assigneeUsername 사용
+- 부서별 필터링: departmentCode 사용
+- 공유 사용자 지정: username 사용
+- 작성자/수정자 기록: CREATED_BY, UPDATED_BY에 USERNAME 저장
+
+⚠️ 예외 사항
+- JWT 토큰 내부: USER_ID 사용 가능 (내부 처리용)
+- 그 외 모든 FK 참조, API 파라미터: 코드형 키 사용
 ```
 
 ### 핵심 테이블 구조
@@ -94,6 +404,17 @@ UPDATED_BY BIGINT NULL
 - 속성 옵션(선택값) 관리
 - 코드 테이블 분리
 - 감사 로그 (TB_AUDIT_LOG)
+
+### v2.0 신규 테이블
+| 테이블 | 설명 |
+|--------|------|
+| TB_CATEGORY | 카테고리 (속성 그룹 컨테이너) |
+| TB_CATEGORY_SHARE | 카테고리 공유 (USER/DEPARTMENT) |
+| TB_CATEGORY_PROPERTY | 카테고리-속성 매핑 |
+| TB_BOARD_CATEGORY | 보드-카테고리 매핑 |
+| TB_BOARD_PROPERTY | 보드-속성 매핑 (선택된 속성) |
+| TB_ITEM_PROPERTY_HISTORY | 업무 속성 변경 이력 |
+| TB_ITEM_SCORE | 업무 성과 점수 |
 
 ### TB_AUDIT_LOG (감사 로그)
 | 컬럼 | 타입 | 설명 |
@@ -195,11 +516,41 @@ POST   /api/items/{itemId}/comments     # 댓글 등록
 PUT    /api/comments/{id}               # 댓글 수정
 DELETE /api/comments/{id}               # 댓글 삭제
 
-# 속성 정의
+# 속성 정의 (기존 - 보드 귀속)
 GET    /api/boards/{boardId}/properties      # 속성 정의 목록
 POST   /api/boards/{boardId}/properties      # 속성 정의 생성
 PUT    /api/properties/{id}                  # 속성 정의 수정
 DELETE /api/properties/{id}                  # 속성 정의 삭제
+
+# 글로벌/매니저 속성 (v2.0)
+GET    /api/properties/global              # 글로벌 속성 목록
+POST   /api/properties/global              # 글로벌 속성 생성 (ADMIN)
+PUT    /api/properties/global/{id}         # 글로벌 속성 수정
+DELETE /api/properties/global/{id}         # 글로벌 속성 삭제
+GET    /api/properties/manager             # 매니저 속성 목록
+POST   /api/properties/manager             # 매니저 속성 생성 (MANAGER)
+PUT    /api/properties/manager/{id}        # 매니저 속성 수정
+DELETE /api/properties/manager/{id}        # 매니저 속성 삭제
+GET    /api/properties/available           # 사용 가능한 전체 속성 조회
+
+# 카테고리 (v2.0)
+GET    /api/categories                     # 카테고리 목록
+POST   /api/categories                     # 카테고리 생성
+GET    /api/categories/{id}                # 카테고리 상세
+PUT    /api/categories/{id}                # 카테고리 수정
+DELETE /api/categories/{id}                # 카테고리 삭제
+GET    /api/categories/{id}/properties     # 카테고리 속성 목록
+POST   /api/categories/{id}/properties     # 카테고리에 속성 추가
+DELETE /api/categories/{id}/properties/{propId}  # 카테고리에서 속성 제거
+GET    /api/categories/{id}/shares         # 카테고리 공유 목록
+POST   /api/categories/{id}/shares         # 카테고리 공유 추가
+DELETE /api/categories/{id}/shares/{shareId}  # 카테고리 공유 해제
+
+# 성과 점수 (v2.0)
+GET    /api/items/{itemId}/score          # 업무 성과 점수 조회
+POST   /api/items/{itemId}/score/calculate  # 성과 점수 계산
+PUT    /api/items/{itemId}/score/weights   # 가중치 수정
+POST   /api/items/{itemId}/score/approve   # 승인 처리 (PM)
 
 # 속성 옵션 (코드 항목)
 GET    /api/properties/{propId}/options      # 옵션 목록
@@ -234,12 +585,12 @@ GET    /api/sse/subscribe               # SSE 연결
 # 정렬
 ?sort=createdAt,desc
 
-# 필터
+# 필터 (⚠️ 외부 연동 키 정책 적용)
 ?status=IN_PROGRESS
 ?priority=HIGH
-?assigneeId=1
+?assigneeUsername=admin        # 담당자 (USERNAME 사용)
 ?groupId=1
-?departmentId=1
+?departmentCode=DEV           # 부서 (DEPARTMENT_CODE 사용)
 ?startDate=2024-01-01&endDate=2024-12-31
 
 # 검색
@@ -408,6 +759,16 @@ PC (>= 768px):
 ---
 
 ## 동적 속성 시스템
+
+### 속성 소유 유형 (v2.0)
+| 유형 | 생성 권한 | 적용 범위 | 삭제 시 동작 |
+|------|----------|----------|-------------|
+| **기본 속성** | 시스템 | 전체 (필수) | 삭제 불가 |
+| **글로벌 속성** | ADMIN | 전체 사용자 | 기존 업무 값 유지 |
+| **매니저 속성** | MANAGER | 본인+하위부서 | 기존 업무 값 유지 |
+| **사용자 속성** | USER | 본인 (카테고리 그룹화) | 기존 업무 값 유지 |
+
+> 사용자 속성은 카테고리에 그룹화되어 보드/업무에 활용됩니다.
 
 ### 속성 타입
 | 타입 | 설명 | 저장 방식 |
@@ -615,8 +976,8 @@ PC (>= 768px):
 | 컬럼 | 설명 | 인라인 편집 |
 |------|------|-------------|
 | 업무내용 | 작업 제목/내용 | ✅ |
-| 시작시간 | 작업 시작 시간 | ✅ (DateTimePicker) |
-| 완료시간 | 작업 완료 시간 | ✅ (DateTimePicker) |
+| 요청일 | 업무 요청 일자 | ✅ (DatePicker) |
+| 마감일 | 업무 마감 일자 | ✅ (DatePicker) |
 | 담당자 | 작업 담당자 | ✅ (사용자 선택) |
 | 카테고리 | 분류 | ✅ (단일선택) |
 | 상태 | 시작전/진행중/완료/삭제 | ✅ (단일선택) |
@@ -712,8 +1073,9 @@ PC (>= 768px):
 | 작업 결과 | SELECT | 완료/삭제 |
 | 작업자 | USER | 처리한 담당자 |
 | 등록시간 | DATETIME | 최초 등록 시간 |
-| 시작시간 | DATETIME | 작업 시작 시간 |
-| 완료시간 | DATETIME | 작업 완료 시간 |
+| 요청일 | DATE | 업무 요청 일자 |
+| 마감일 | DATE | 업무 마감 일자 |
+| 완료시간 | DATETIME | 완료 처리 시간 |
 | 수정시간 | DATETIME | 마지막 수정 시간 |
 | 삭제시간 | DATETIME | 삭제 처리 시간 (삭제된 경우) |
 

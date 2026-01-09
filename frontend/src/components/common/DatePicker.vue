@@ -319,6 +319,7 @@ function clearValue(event: Event) {
     >
       <div
         v-if="isOpen"
+        data-popover
         class="absolute z-[100] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3"
         :class="mode === 'time' ? 'w-40' : 'w-72'"
       >

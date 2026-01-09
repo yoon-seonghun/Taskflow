@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 속성 관리 컴포넌트 (설정 페이지 내 탭용)
- * - 보드의 추가 속성 관리
+ * - v2.0: 글로벌/매니저/사용자 속성 관리
  * - 속성 추가/수정/삭제 (논리 삭제)
  * - 사용 중인 속성의 타입 변경 불가
  */
@@ -10,8 +10,13 @@ import { propertyApi } from '@/api/property'
 import { boardApi } from '@/api/board'
 import type { PropertyDef, PropertyCreateRequest, PropertyUpdateRequest, PropertyType } from '@/types/property'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 
 const uiStore = useUiStore()
+const authStore = useAuthStore()
+
+// 관리자 여부
+const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
 
 // 상태
 const loading = ref(false)
@@ -19,13 +24,33 @@ const saving = ref(false)
 const properties = ref<PropertyDef[]>([])
 const defaultBoardId = ref<number | null>(null)
 
+// 소유 유형 (v2.0)
+type OwnerType = 'GLOBAL' | 'MANAGER' | 'USER'
+const selectedOwnerType = ref<OwnerType>('USER')
+
+// 소유 유형 옵션
+const ownerTypeOptions = computed(() => {
+  const options: { value: OwnerType; label: string; description: string }[] = []
+
+  // 관리자만 글로벌 속성 생성 가능
+  if (isAdmin.value) {
+    options.push({ value: 'GLOBAL', label: '글로벌', description: '모든 사용자가 사용 가능' })
+    options.push({ value: 'MANAGER', label: '매니저', description: '본인 및 하위 부서에서 사용' })
+  }
+
+  // 모든 사용자가 개인 속성 생성 가능
+  options.push({ value: 'USER', label: '개인', description: '본인만 사용 가능' })
+
+  return options
+})
+
 // 편집 상태
 const editingProperty = ref<PropertyDef | null>(null)
 const showAddForm = ref(false)
 const newProperty = ref<PropertyCreateRequest>({
   propertyName: '',
   propertyType: 'TEXT',
-  requiredYn: 'N',
+  ownerType: 'USER',
   visibleYn: 'Y'
 })
 
@@ -54,26 +79,23 @@ function isPropertyInUse(property: PropertyDef): boolean {
   return false
 }
 
-// 속성 목록 조회
+// 속성 목록 조회 (v2.0: 접근 가능한 모든 속성)
 async function loadProperties() {
   loading.value = true
   try {
-    // 기본 보드 조회
-    const boardsRes = await boardApi.getBoards()
-    if (boardsRes.data.length === 0) {
-      uiStore.showWarning('보드가 없습니다. 먼저 보드를 생성해주세요.')
-      return
-    }
-
-    defaultBoardId.value = boardsRes.data[0].boardId
-
-    // 속성 정의 조회
-    const propsRes = await propertyApi.getProperties(defaultBoardId.value)
+    // v2.0: 사용자의 접근 가능한 속성 조회 (글로벌 + 매니저 + 본인 속성)
+    const propsRes = await propertyApi.getAccessibleProperties()
 
     // 기본 속성 제외하고 필터링
     properties.value = propsRes.data.filter(
       p => !defaultPropertyNames.includes(p.propertyName)
     )
+
+    // 기본 보드 ID 설정 (속성 추가 시 필요)
+    const boardsRes = await boardApi.getBoards()
+    if (boardsRes.data.length > 0) {
+      defaultBoardId.value = boardsRes.data[0].boardId
+    }
   } catch (error) {
     console.error('Failed to load properties:', error)
     uiStore.showError('속성 정보를 불러오는데 실패했습니다.')
@@ -85,6 +107,8 @@ async function loadProperties() {
 // 속성 추가 폼 표시
 function handleShowAddForm() {
   showAddForm.value = true
+  // 관리자가 아니면 기본값을 USER로
+  selectedOwnerType.value = isAdmin.value ? 'GLOBAL' : 'USER'
   newProperty.value = {
     propertyName: '',
     propertyType: 'TEXT',
@@ -98,9 +122,8 @@ function handleCancelAdd() {
   showAddForm.value = false
 }
 
-// 속성 추가
+// 속성 추가 (v2.0: 소유 유형별 API 호출)
 async function handleAddProperty() {
-  if (!defaultBoardId.value) return
   if (!newProperty.value.propertyName.trim()) {
     uiStore.showWarning('속성명을 입력해주세요.')
     return
@@ -114,8 +137,22 @@ async function handleAddProperty() {
 
   saving.value = true
   try {
-    await propertyApi.createProperty(defaultBoardId.value, newProperty.value)
-    uiStore.showSuccess('속성이 추가되었습니다.')
+    // v2.0: 소유 유형에 따라 다른 API 호출
+    switch (selectedOwnerType.value) {
+      case 'GLOBAL':
+        await propertyApi.createGlobalProperty(newProperty.value)
+        break
+      case 'MANAGER':
+        await propertyApi.createManagerProperty(newProperty.value)
+        break
+      case 'USER':
+      default:
+        await propertyApi.createUserProperty(newProperty.value)
+        break
+    }
+
+    const typeLabel = ownerTypeOptions.value.find(o => o.value === selectedOwnerType.value)?.label || '속성'
+    uiStore.showSuccess(`${typeLabel} 속성이 추가되었습니다.`)
     handleCancelAdd()
     await loadProperties()
   } catch (error: any) {
@@ -198,6 +235,32 @@ function getPropertyTypeLabel(type: PropertyType): string {
   return option?.label || type
 }
 
+// 소유 유형 라벨 가져오기
+function getOwnerTypeLabel(ownerType?: string): string {
+  switch (ownerType) {
+    case 'GLOBAL':
+      return '글로벌'
+    case 'MANAGER':
+      return '매니저'
+    case 'USER':
+    default:
+      return '개인'
+  }
+}
+
+// 소유 유형별 배지 색상
+function getOwnerTypeBadgeClass(ownerType?: string): string {
+  switch (ownerType) {
+    case 'GLOBAL':
+      return 'owner-global'
+    case 'MANAGER':
+      return 'owner-manager'
+    case 'USER':
+    default:
+      return 'owner-user'
+  }
+}
+
 // 초기 로드
 onMounted(() => {
   loadProperties()
@@ -209,7 +272,7 @@ onMounted(() => {
     <!-- 설명 -->
     <div class="mb-4">
       <p class="text-sm text-gray-500">
-        업무에 사용되는 추가 속성을 관리합니다. 기본 속성(카테고리, 담당자, 요청일, 마감일)은 이 목록에 포함되지 않습니다.
+        내가 생성한 속성을 관리합니다. 생성된 속성은 카테고리/보드에 연결하여 사용할 수 있습니다.
       </p>
       <p class="mt-1 text-xs text-amber-600">
         주의: 사용 중인 속성의 타입은 변경할 수 없습니다.
@@ -247,6 +310,27 @@ onMounted(() => {
         <div v-if="showAddForm" class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <h4 class="text-sm font-medium text-gray-900 mb-3">새 속성 추가</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 소유 유형 선택 (첫 번째 필드) -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-medium text-gray-500 mb-2">소유 유형 *</label>
+              <div class="flex flex-wrap gap-2">
+                <label
+                  v-for="opt in ownerTypeOptions"
+                  :key="opt.value"
+                  class="owner-type-option"
+                  :class="{ 'selected': selectedOwnerType === opt.value }"
+                >
+                  <input
+                    v-model="selectedOwnerType"
+                    type="radio"
+                    :value="opt.value"
+                    class="sr-only"
+                  />
+                  <span class="owner-type-label">{{ opt.label }}</span>
+                  <span class="owner-type-desc">{{ opt.description }}</span>
+                </label>
+              </div>
+            </div>
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">속성명 *</label>
               <input
@@ -294,6 +378,7 @@ onMounted(() => {
           <thead>
             <tr>
               <th>속성명</th>
+              <th class="w-[80px]">소유</th>
               <th class="w-[120px]">타입</th>
               <th class="w-[80px]">필수</th>
               <th class="w-[80px]">표시</th>
@@ -311,6 +396,12 @@ onMounted(() => {
                     type="text"
                     class="form-input"
                   />
+                </td>
+                <td>
+                  <!-- 소유 유형은 변경 불가 -->
+                  <span class="owner-badge" :class="getOwnerTypeBadgeClass(property.ownerType)">
+                    {{ getOwnerTypeLabel(property.ownerType) }}
+                  </span>
                 </td>
                 <td>
                   <select
@@ -357,6 +448,11 @@ onMounted(() => {
               <template v-else>
                 <td class="font-medium text-gray-900">
                   {{ property.propertyName }}
+                </td>
+                <td>
+                  <span class="owner-badge" :class="getOwnerTypeBadgeClass(property.ownerType)">
+                    {{ getOwnerTypeLabel(property.ownerType) }}
+                  </span>
                 </td>
                 <td>
                   <span class="type-badge">
@@ -504,5 +600,48 @@ onMounted(() => {
 
 .icon-btn {
   @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-50;
+}
+
+/* 소유 유형 선택 옵션 */
+.owner-type-option {
+  @apply flex flex-col p-3 rounded-lg border-2 border-gray-200 cursor-pointer
+         transition-all duration-150 hover:border-gray-300 hover:bg-gray-50;
+}
+
+.owner-type-option.selected {
+  @apply border-primary-500 bg-primary-50;
+}
+
+.owner-type-label {
+  @apply text-sm font-medium text-gray-900;
+}
+
+.owner-type-desc {
+  @apply text-xs text-gray-500 mt-0.5;
+}
+
+.owner-type-option.selected .owner-type-label {
+  @apply text-primary-700;
+}
+
+.owner-type-option.selected .owner-type-desc {
+  @apply text-primary-600;
+}
+
+/* 소유 유형 배지 */
+.owner-badge {
+  @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded;
+}
+
+.owner-badge.owner-global {
+  @apply bg-purple-100 text-purple-700;
+}
+
+.owner-badge.owner-manager {
+  @apply bg-amber-100 text-amber-700;
+}
+
+.owner-badge.owner-user {
+  @apply bg-gray-100 text-gray-600;
 }
 </style>

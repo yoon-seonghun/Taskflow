@@ -11,6 +11,10 @@ import java.util.stream.Collectors;
 
 /**
  * 속성 정의 응답 DTO
+ *
+ * v2.0 변경사항:
+ * - requiredYn 필드 제거 (CategoryProperty/BoardProperty에서 관리)
+ * - ownerType, ownerUsername, ownerDeptCode 필드 추가
  */
 @Getter
 @Builder
@@ -22,9 +26,24 @@ public class PropertyResponse {
     private Long propertyId;
 
     /**
-     * 보드 ID
+     * 보드 ID (BOARD 타입만 사용)
      */
     private Long boardId;
+
+    /**
+     * 소유 유형 (GLOBAL, MANAGER, BOARD)
+     */
+    private String ownerType;
+
+    /**
+     * 소유자 USERNAME (MANAGER 타입)
+     */
+    private String ownerUsername;
+
+    /**
+     * 매니저 속성의 부서 코드
+     */
+    private String ownerDeptCode;
 
     /**
      * 속성명
@@ -35,11 +54,6 @@ public class PropertyResponse {
      * 속성 타입
      */
     private String propertyType;
-
-    /**
-     * 필수 여부
-     */
-    private String requiredYn;
 
     /**
      * 표시 순서
@@ -89,9 +103,11 @@ public class PropertyResponse {
         return PropertyResponse.builder()
                 .propertyId(propertyDef.getPropertyId())
                 .boardId(propertyDef.getBoardId())
+                .ownerType(propertyDef.getOwnerType())
+                .ownerUsername(propertyDef.getOwnerUsername())
+                .ownerDeptCode(propertyDef.getOwnerDeptCode())
                 .propertyName(propertyDef.getPropertyName())
                 .propertyType(propertyDef.getPropertyType())
-                .requiredYn(propertyDef.getRequiredYn())
                 .sortOrder(propertyDef.getSortOrder())
                 .visibleYn(propertyDef.getVisibleYn())
                 .options(optionResponses)

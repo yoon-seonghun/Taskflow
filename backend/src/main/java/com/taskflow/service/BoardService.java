@@ -243,4 +243,82 @@ public interface BoardService {
      * @return 이전된 보드 응답
      */
     BoardResponse transferBoardOwnership(Long boardId, BoardTransferRequest request, String currentUsername);
+
+    // =============================================
+    // v2.0: 보드 카테고리 관리
+    // =============================================
+
+    /**
+     * 보드에 연결된 카테고리 목록 조회
+     *
+     * @param boardId 보드 ID
+     * @return 보드 카테고리 목록
+     */
+    List<BoardCategoryResponse> getBoardCategories(Long boardId);
+
+    /**
+     * 보드에 카테고리 추가
+     *
+     * @param boardId    보드 ID
+     * @param categoryId 카테고리 ID
+     * @param createdBy  생성자 Username
+     */
+    void addBoardCategory(Long boardId, Long categoryId, String createdBy);
+
+    /**
+     * 보드에서 카테고리 제거
+     *
+     * @param boardId    보드 ID
+     * @param categoryId 카테고리 ID
+     */
+    void removeBoardCategory(Long boardId, Long categoryId);
+
+    /**
+     * 보드의 기본 카테고리 설정
+     *
+     * @param boardId    보드 ID
+     * @param categoryId 카테고리 ID
+     * @param username   요청 사용자 Username
+     */
+    void setDefaultCategory(Long boardId, Long categoryId, String username);
+
+    // =============================================
+    // v2.0: 보드 속성 관리
+    // =============================================
+
+    /**
+     * 보드에 선택된 속성 목록 조회
+     *
+     * @param boardId 보드 ID
+     * @return 보드 속성 목록
+     */
+    List<BoardPropertyResponse> getBoardProperties(Long boardId);
+
+    /**
+     * 보드에 속성 추가
+     *
+     * @param boardId    보드 ID
+     * @param propertyId 속성 ID
+     * @param request    속성 설정 요청 (필수여부, 기본값 등)
+     * @param createdBy  생성자 Username
+     */
+    void addBoardProperty(Long boardId, Long propertyId, BoardPropertyRequest request, String createdBy);
+
+    /**
+     * 보드에서 속성 제거
+     *
+     * @param boardId    보드 ID
+     * @param propertyId 속성 ID
+     */
+    void removeBoardProperty(Long boardId, Long propertyId);
+
+    /**
+     * 보드 속성 설정 수정 (필수여부, 기본값 등)
+     *
+     * @param boardId    보드 ID
+     * @param propertyId 속성 ID
+     * @param request    수정 요청
+     * @param updatedBy  수정자 Username
+     */
+    void updateBoardProperty(Long boardId, Long propertyId, BoardPropertyRequest request, String updatedBy);
 }

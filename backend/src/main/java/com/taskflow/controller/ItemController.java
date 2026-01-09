@@ -54,6 +54,7 @@ public class ItemController {
             @RequestParam(value = "priority", required = false) String priority,
             @RequestParam(value = "assigneeUsername", required = false) String assigneeUsername,
             @RequestParam(value = "groupId", required = false) Long groupId,
+            @RequestParam(value = "departmentCode", required = false) String departmentCode,
             @RequestParam(value = "startDate", required = false) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) LocalDate endDate,
             @RequestParam(value = "includeCompleted", required = false, defaultValue = "false") Boolean includeCompleted,
@@ -81,6 +82,7 @@ public class ItemController {
         request.setPriority(priority);
         request.setAssigneeUsername(assigneeUsername);
         request.setGroupId(groupId);
+        request.setDepartmentCode(departmentCode);
         request.setStartDate(startDate);
         request.setEndDate(endDate);
         request.setIncludeCompleted(includeCompleted);

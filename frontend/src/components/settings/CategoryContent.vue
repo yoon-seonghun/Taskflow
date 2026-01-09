@@ -3,11 +3,13 @@
  * 카테고리 관리 컴포넌트 (설정 페이지 내 탭용)
  * - 전역 카테고리 관리 (TB_CATEGORY)
  * - 카테고리 추가/수정/삭제 (논리 삭제)
+ * - 카테고리 공유/속성 관리 (상세 모달)
  */
 import { ref, onMounted } from 'vue'
 import { categoryApi } from '@/api/category'
 import type { Category, CategoryCreateRequest, CategoryUpdateRequest } from '@/types/category'
 import { useUiStore } from '@/stores/ui'
+import CategoryDetailModal from './CategoryDetailModal.vue'
 
 const uiStore = useUiStore()
 
@@ -16,12 +18,17 @@ const loading = ref(false)
 const saving = ref(false)
 const categories = ref<Category[]>([])
 
+// 상세 모달 상태
+const showDetailModal = ref(false)
+const selectedCategoryId = ref<number | null>(null)
+
 // 편집 상태
 const editingCategory = ref<Category | null>(null)
 const showAddForm = ref(false)
 const newCategory = ref<CategoryCreateRequest>({
+  categoryCode: '',
   categoryName: '',
-  color: '#3B82F6',
+  categoryColor: '#3B82F6',
   sortOrder: 0
 })
 
@@ -51,6 +58,12 @@ async function loadCategories() {
   }
 }
 
+// 카테고리 코드 자동 생성
+function generateCategoryCode(): string {
+  const timestamp = Date.now().toString(36).toUpperCase()
+  return `CAT_${timestamp}`
+}
+
 // 추가 폼 표시
 function handleShowAddForm() {
   showAddForm.value = true
@@ -58,8 +71,9 @@ function handleShowAddForm() {
     ? Math.max(...categories.value.map(c => c.sortOrder || 0))
     : 0
   newCategory.value = {
+    categoryCode: generateCategoryCode(),
     categoryName: '',
-    color: '#3B82F6',
+    categoryColor: '#3B82F6',
     sortOrder: maxSort + 1
   }
 }
@@ -67,7 +81,7 @@ function handleShowAddForm() {
 // 추가 취소
 function handleCancelAdd() {
   showAddForm.value = false
-  newCategory.value = { categoryName: '', color: '#3B82F6', sortOrder: 0 }
+  newCategory.value = { categoryCode: '', categoryName: '', categoryColor: '#3B82F6', sortOrder: 0 }
 }
 
 // 카테고리 추가
@@ -114,7 +128,7 @@ async function handleSaveCategory() {
   try {
     const updateData: CategoryUpdateRequest = {
       categoryName: editingCategory.value.categoryName.trim(),
-      color: editingCategory.value.color,
+      categoryColor: editingCategory.value.categoryColor,
       sortOrder: editingCategory.value.sortOrder,
       useYn: editingCategory.value.useYn
     }
@@ -191,6 +205,17 @@ async function handleMoveDown(category: Category, index: number) {
   }
 }
 
+// 상세 모달 열기
+function handleOpenDetail(category: Category) {
+  selectedCategoryId.value = category.categoryId
+  showDetailModal.value = true
+}
+
+// 상세 모달에서 업데이트 시 목록 갱신
+function handleDetailUpdated() {
+  loadCategories()
+}
+
 // 초기 로드
 onMounted(() => {
   loadCategories()
@@ -251,7 +276,7 @@ onMounted(() => {
               <div class="flex items-center gap-2">
                 <div
                   class="w-8 h-8 rounded-lg border border-gray-200"
-                  :style="{ backgroundColor: newCategory.color }"
+                  :style="{ backgroundColor: newCategory.categoryColor }"
                 ></div>
                 <div class="flex flex-wrap gap-1">
                   <button
@@ -259,9 +284,9 @@ onMounted(() => {
                     :key="color"
                     type="button"
                     class="w-5 h-5 rounded border border-gray-200 hover:scale-110 transition-transform"
-                    :class="{ 'ring-2 ring-primary-500': newCategory.color === color }"
+                    :class="{ 'ring-2 ring-primary-500': newCategory.categoryColor === color }"
                     :style="{ backgroundColor: color }"
-                    @click="newCategory.color = color"
+                    @click="newCategory.categoryColor = color"
                   ></button>
                 </div>
               </div>
@@ -294,7 +319,7 @@ onMounted(() => {
               <th class="w-[60px]">색상</th>
               <th>카테고리명</th>
               <th class="w-[80px]">상태</th>
-              <th class="w-[150px]">관리</th>
+              <th class="w-[180px]">관리</th>
             </tr>
           </thead>
           <tbody>
@@ -313,9 +338,9 @@ onMounted(() => {
                   <div class="flex items-center gap-1">
                     <div
                       class="w-6 h-6 rounded border border-gray-200"
-                      :style="{ backgroundColor: editingCategory.color }"
+                      :style="{ backgroundColor: editingCategory.categoryColor }"
                     ></div>
-                    <select v-model="editingCategory.color" class="form-input w-20 text-xs">
+                    <select v-model="editingCategory.categoryColor" class="form-input w-20 text-xs">
                       <option v-for="color in colorOptions" :key="color" :value="color">
                         {{ color }}
                       </option>
@@ -383,7 +408,7 @@ onMounted(() => {
                 <td>
                   <div
                     class="w-6 h-6 rounded-lg border border-gray-200"
-                    :style="{ backgroundColor: category.color || '#6B7280' }"
+                    :style="{ backgroundColor: category.categoryColor || '#6B7280' }"
                   ></div>
                 </td>
                 <td class="font-medium text-gray-900">
@@ -399,6 +424,12 @@ onMounted(() => {
                 </td>
                 <td>
                   <div class="flex items-center gap-1">
+                    <button type="button" class="icon-btn text-primary-600" title="공유/속성 관리" @click="handleOpenDetail(category)">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                      </svg>
+                    </button>
                     <button type="button" class="icon-btn" title="수정" @click="handleEditCategory(category)">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -435,6 +466,13 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- 카테고리 상세 모달 (공유/속성 관리) -->
+    <CategoryDetailModal
+      v-model="showDetailModal"
+      :category-id="selectedCategoryId"
+      @updated="handleDetailUpdated"
+    />
   </div>
 </template>
 

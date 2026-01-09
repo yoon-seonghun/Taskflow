@@ -6,27 +6,53 @@
  * - 행 클릭 시 상세 패널 오픈
  * Compact UI: height 36px, font 13px
  */
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Select, DatePicker, Badge, UserSelect } from '@/components/common'
 import type { UserOption, DepartmentOption } from '@/components/common'
-import { useCategoryStore } from '@/stores/category'
 import { isItemOverdue, getOverdueDays } from '@/utils/item'
 import type { Item, ItemStatus, Priority } from '@/types/item'
 import type { PropertyDef, PropertyOption } from '@/types/property'
+import type { BoardCategory } from '@/types/board'
+
+interface ColumnWidths {
+  title: number
+  status: number
+  priority: number
+  assignee: number
+  requestDate: number
+  dueDate: number
+  category: number
+  comments: number
+  actions: number
+}
 
 interface Props {
   item: Item
   properties: PropertyDef[]
   propertyWidths: Record<number, number>
+  columnWidths?: ColumnWidths
   sharedUsers?: UserOption[]
   departments?: DepartmentOption[]
+  boardCategories?: BoardCategory[]
   selected?: boolean
   isEditing?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selected: false,
-  isEditing: false
+  isEditing: false,
+  boardCategories: () => [],
+  columnWidths: () => ({
+    title: 250,
+    status: 70,
+    priority: 60,
+    assignee: 70,
+    requestDate: 90,
+    dueDate: 90,
+    category: 80,
+    comments: 50,
+    actions: 70
+  })
 })
 
 const emit = defineEmits<{
@@ -36,17 +62,15 @@ const emit = defineEmits<{
   (e: 'complete', itemId: number): void
   (e: 'delete', itemId: number): void
   (e: 'restore', itemId: number): void
+  (e: 'categoryChange', item: Item, newCategoryId: number | null): void  // v2.0: 카테고리 변경 시 모달 오픈
 }>()
 
-// 카테고리 스토어
-const categoryStore = useCategoryStore()
-
-// 카테고리 옵션
+// 카테고리 옵션 (보드에 연결된 카테고리만 사용)
 const categoryOptions = computed(() => {
-  return categoryStore.activeCategories.map(c => ({
+  return props.boardCategories.map(c => ({
     value: c.categoryId,
     label: c.categoryName,
-    color: c.color
+    color: c.categoryColor
   }))
 })
 
@@ -108,9 +132,18 @@ const rowClasses = computed(() => [
   isInactive.value ? 'opacity-60' : ''
 ])
 
-// 셀 클릭 핸들러
+// 셀 클릭 핸들러 (토글 지원)
 function handleCellClick(event: Event, field: string) {
   event.stopPropagation()
+
+  // 같은 필드 클릭 시 토글
+  if (editingField.value === field) {
+    editingField.value = null
+    editValue.value = null
+    return
+  }
+
+  // 다른 필드 클릭 시 기존 편집 종료 후 새 편집 시작
   startEdit(field)
 }
 
@@ -210,6 +243,11 @@ function handleSelectChange(field: string, value: string | number | null) {
   editingField.value = null
 }
 
+// v2.0: 카테고리 변경 핸들러 (속성편집 모달 오픈)
+function handleCategoryChange(value: string | number | null) {
+  emit('categoryChange', props.item, value as number | null)
+}
+
 // 날짜 변경 핸들러
 function handleDateChange(field: string, value: string | null) {
   editValue.value = value
@@ -283,7 +321,7 @@ function getPropertyOptions(property: PropertyDef): Array<{ value: string | numb
     }))
 }
 
-// 날짜 포맷
+// 날짜 포맷 (상세)
 function formatDate(dateStr?: string): string {
   if (!dateStr) return '-'
   const date = new Date(dateStr)
@@ -293,6 +331,17 @@ function formatDate(dateStr?: string): string {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// 날짜 포맷 (간략 - 테이블 셀용)
+function formatDateShort(dateStr?: string): string {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).replace(/\. /g, '-').replace('.', '')
 }
 
 // 완료 처리
@@ -314,13 +363,61 @@ function handleRestore() {
 function handleRowClick() {
   emit('click', props.item)
 }
+
+// 행 ref (외부 클릭 감지용)
+const rowRef = ref<HTMLElement | null>(null)
+
+// 외부 클릭 감지 (팝오버 내 요소 클릭은 무시)
+function handleDocumentClick(event: MouseEvent) {
+  if (!rowRef.value) return
+  if (!editingField.value && !editingPropertyId.value) return
+
+  const target = event.target as HTMLElement
+
+  // 행 내부 클릭이면 무시
+  if (rowRef.value.contains(target)) return
+
+  // closest로 팝오버/드롭다운 요소 확인 (DOM에서 제거되기 전에 확인)
+  try {
+    if (target.closest('[data-item-popover], [data-popover]')) {
+      return
+    }
+  } catch {
+    // DOM에서 이미 제거된 경우 무시
+  }
+
+  // 현재 값 저장 (다른 핸들러에서 변경했는지 확인용)
+  const currentField = editingField.value
+  const currentPropertyId = editingPropertyId.value
+
+  // 외부 클릭 - 편집 모드 종료 (다른 핸들러가 먼저 처리했으면 무시)
+  setTimeout(() => {
+    // handleSelectChange 등에서 이미 처리했으면 무시
+    if (editingField.value !== currentField || editingPropertyId.value !== currentPropertyId) {
+      return
+    }
+    editingField.value = null
+    editingPropertyId.value = null
+  }, 100)
+}
+
+onMounted(() => {
+  // capture 사용 - 다른 행 클릭 시에도 현재 행의 팝오버를 닫기 위함
+  // capture 단계에서 먼저 실행되어 .stop으로 막힌 이벤트도 감지 가능
+  document.addEventListener('click', handleDocumentClick, true)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick, true)
+})
 </script>
 
 <template>
-  <div :class="rowClasses" @click="handleRowClick">
-    <!-- 제목 컬럼 (고정) -->
+  <div ref="rowRef" :class="rowClasses" @click="handleRowClick">
+    <!-- 제목 컬럼 -->
     <div
-      class="group/title flex-1 min-w-[200px] px-2 flex items-center gap-2 h-full border-r border-gray-200 relative"
+      class="group/title px-2 flex items-center gap-2 h-full border-r border-gray-200 relative"
+      :style="{ width: `${columnWidths.title}px`, minWidth: '150px' }"
       @click.stop="handleCellClick($event, 'title')"
     >
       <!-- 인라인 편집 -->
@@ -360,97 +457,170 @@ function handleRowClick() {
       </template>
     </div>
 
-    <!-- 상태 컬럼 (고정) -->
+    <!-- 상태 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="w-24 min-w-[96px] px-2 flex items-center h-full border-r border-gray-200"
-      @click.stop
+      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      :style="{ width: `${columnWidths.status}px`, minWidth: '50px' }"
+      @click.stop="handleCellClick($event, 'status')"
     >
-      <Select
-        :model-value="item.status"
-        :options="statusOptions"
-        size="sm"
-        placeholder="-"
-        class="w-full"
-        @update:model-value="handleSelectChange('status', $event)"
-      />
+      <!-- 텍스트 라벨 (기본 표시) -->
+      <span
+        v-if="editingField !== 'status'"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate"
+        :style="{ color: statusOptions.find(o => o.value === item.status)?.color }"
+        :title="statusOptions.find(o => o.value === item.status)?.label"
+      >
+        {{ statusOptions.find(o => o.value === item.status)?.label || '-' }}
+      </span>
+      <!-- 팝오버 에디터 -->
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 100px;">
+        <Select
+          :model-value="item.status"
+          :options="statusOptions"
+          size="sm"
+          placeholder="-"
+          class="w-full"
+          @update:model-value="handleSelectChange('status', $event)"
+        />
+      </div>
     </div>
 
-    <!-- 우선순위 컬럼 (고정) -->
+    <!-- 우선순위 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="w-24 min-w-[96px] px-2 flex items-center h-full border-r border-gray-200"
-      @click.stop
+      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      :style="{ width: `${columnWidths.priority}px`, minWidth: '50px' }"
+      @click.stop="handleCellClick($event, 'priority')"
     >
-      <Select
-        :model-value="item.priority"
-        :options="priorityOptions"
-        size="sm"
-        placeholder="-"
-        class="w-full"
-        @update:model-value="handleSelectChange('priority', $event)"
-      />
+      <!-- 텍스트 라벨 (기본 표시) -->
+      <span
+        v-if="editingField !== 'priority'"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate"
+        :style="{ color: priorityOptions.find(o => o.value === item.priority)?.color }"
+        :title="priorityOptions.find(o => o.value === item.priority)?.label"
+      >
+        {{ priorityOptions.find(o => o.value === item.priority)?.label || '-' }}
+      </span>
+      <!-- 팝오버 에디터 -->
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 90px;">
+        <Select
+          :model-value="item.priority"
+          :options="priorityOptions"
+          size="sm"
+          placeholder="-"
+          class="w-28"
+          @update:model-value="handleSelectChange('priority', $event)"
+        />
+      </div>
     </div>
 
-    <!-- 담당자 컬럼 (고정) -->
+    <!-- 담당자 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="w-24 min-w-[96px] px-2 flex items-center h-full border-r border-gray-200"
-      @click.stop
+      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      :style="{ width: `${columnWidths.assignee}px`, minWidth: '50px' }"
+      @click.stop="handleCellClick($event, 'assigneeUsername')"
     >
-      <UserSelect
-        :model-value="item.assigneeUsername"
-        :users="sharedUsers || []"
-        :departments="departments || []"
-        size="sm"
-        placeholder="-"
-        clearable
-        class="w-full"
-        @update:model-value="handleSelectChange('assigneeUsername', $event)"
-      />
+      <!-- 텍스트 라벨 (기본 표시) -->
+      <span
+        v-if="editingField !== 'assigneeUsername'"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700"
+        :title="sharedUsers?.find(u => u.username === item.assigneeUsername)?.userName || item.assigneeName"
+      >
+        {{ sharedUsers?.find(u => u.username === item.assigneeUsername)?.userName || item.assigneeName || '-' }}
+      </span>
+      <!-- 팝오버 에디터 -->
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 180px;">
+        <UserSelect
+          :model-value="item.assigneeUsername"
+          :users="sharedUsers || []"
+          :departments="departments || []"
+          size="sm"
+          placeholder="-"
+          clearable
+          class="w-36"
+          @update:model-value="handleSelectChange('assigneeUsername', $event)"
+        />
+      </div>
     </div>
 
-    <!-- 요청일 컬럼 (고정) -->
+    <!-- 요청일 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="w-32 min-w-[128px] px-2 flex items-center h-full border-r border-gray-200"
-      @click.stop
+      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      :style="{ width: `${columnWidths.requestDate}px`, minWidth: '80px' }"
+      @click.stop="handleCellClick($event, 'requestDate')"
     >
-      <DatePicker
-        :model-value="item.requestDate"
-        size="sm"
-        placeholder="-"
-        clearable
-        class="w-full"
-        @update:model-value="handleSelectChange('requestDate', $event)"
-      />
+      <!-- 텍스트 라벨 (기본 표시) -->
+      <span
+        v-if="editingField !== 'requestDate'"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700"
+      >
+        {{ formatDateShort(item.requestDate) }}
+      </span>
+      <!-- 팝오버 에디터 -->
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 160px;">
+        <DatePicker
+          :model-value="item.requestDate"
+          size="sm"
+          placeholder="-"
+          clearable
+          class="w-36"
+          @update:model-value="handleSelectChange('requestDate', $event)"
+        />
+      </div>
     </div>
 
-    <!-- 마감일 컬럼 (고정) -->
+    <!-- 마감일 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="w-32 min-w-[128px] px-2 flex items-center h-full border-r border-gray-200"
-      @click.stop
+      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      :style="{ width: `${columnWidths.dueDate}px`, minWidth: '80px' }"
+      @click.stop="handleCellClick($event, 'dueDate')"
     >
-      <DatePicker
-        :model-value="item.dueDate"
-        size="sm"
-        placeholder="-"
-        clearable
-        class="w-full"
-        @update:model-value="handleSelectChange('dueDate', $event)"
-      />
+      <!-- 텍스트 라벨 (기본 표시) -->
+      <span
+        v-if="editingField !== 'dueDate'"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700"
+      >
+        {{ formatDateShort(item.dueDate) }}
+      </span>
+      <!-- 팝오버 에디터 -->
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 160px;">
+        <DatePicker
+          :model-value="item.dueDate"
+          size="sm"
+          placeholder="-"
+          clearable
+          class="w-36"
+          @update:model-value="handleSelectChange('dueDate', $event)"
+        />
+      </div>
     </div>
 
-    <!-- 카테고리 컬럼 (고정) -->
+    <!-- 카테고리 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="w-24 min-w-[96px] px-2 flex items-center h-full border-r border-gray-200"
-      @click.stop
+      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      :style="{ width: `${columnWidths.category}px`, minWidth: '60px' }"
+      @click.stop="handleCellClick($event, 'categoryId')"
     >
-      <Select
-        :model-value="item.categoryId"
-        :options="categoryOptions"
-        size="sm"
-        placeholder="-"
-        clearable
-        class="w-full"
-        @update:model-value="handleSelectChange('categoryId', $event)"
-      />
+      <!-- 텍스트 라벨 (기본 표시) -->
+      <span
+        v-if="editingField !== 'categoryId'"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate"
+        :style="{ color: categoryOptions.find(o => o.value === item.categoryId)?.color }"
+        :title="categoryOptions.find(o => o.value === item.categoryId)?.label"
+      >
+        {{ categoryOptions.find(o => o.value === item.categoryId)?.label || '-' }}
+      </span>
+      <!-- 팝오버 에디터 -->
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 120px;">
+        <Select
+          :model-value="item.categoryId"
+          :options="categoryOptions"
+          size="sm"
+          placeholder="-"
+          clearable
+          class="w-28"
+          @update:model-value="handleCategoryChange($event)"
+        />
+      </div>
     </div>
 
     <!-- 동적 속성 컬럼들 -->
@@ -577,7 +747,10 @@ function handleRowClick() {
     </template>
 
     <!-- 댓글 수 컬럼 -->
-    <div class="w-16 min-w-[64px] px-2 flex items-center justify-center h-full border-r border-gray-200">
+    <div
+      class="px-2 flex items-center justify-center h-full border-r border-gray-200"
+      :style="{ width: `${columnWidths.comments}px`, minWidth: '40px' }"
+    >
       <div class="flex items-center gap-1 text-[13px] text-gray-500">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -587,7 +760,10 @@ function handleRowClick() {
     </div>
 
     <!-- 액션 버튼 컬럼 -->
-    <div class="w-20 min-w-[80px] px-2 flex items-center justify-center gap-1 h-full">
+    <div
+      class="px-2 flex items-center justify-center gap-1 h-full"
+      :style="{ width: `${columnWidths.actions}px`, minWidth: '60px' }"
+    >
       <template v-if="isInactive">
         <!-- 복원 버튼 -->
         <button

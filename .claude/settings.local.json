@@ -4,7 +4,12 @@
       "Bash(./mvnw compile:*)",
       "Bash(curl:*)",
       "Bash(docker exec taskflow-mysql mysql:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwidHlwZSI6IkFDQ0VTUyIsImlhdCI6MTc2NzU3NTYyNywiZXhwIjoxNzY3NTc3NDI3fQ.GolcIkF22YSI2HXiQtcrIkn3jSWk72foBgBpWqxeshk\")",
+      "Bash(echo {\"\"username\"\":\"\"admin\"\",\"\"password\"\":\"\"admin123\"\"} curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d @/tmp/login.json cat /tmp/login_response.json)",
+      "Bash(cat:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInVzZXJJZCI6MSwicm9sZSI6IkFETUlOIiwidHlwZSI6IkFDQ0VTUyIsImlhdCI6MTc2NzYxNDIxNiwiZXhwIjoxNzY3NjE2MDE2fQ.jKxe5vzdCDXM1O5Qzt6YgcZJPb7wSxMiBhbyqobQQ3Y\")",
+      "Bash(__NEW_LINE__ echo \"=== 1. 사용자 공유 추가 \\(user1에게 카테고리 1 공유\\) ===\")"
     ]
   }
 }

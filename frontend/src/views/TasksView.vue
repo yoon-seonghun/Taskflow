@@ -6,12 +6,15 @@
  * - 테이블/칸반/리스트 뷰 표시
  * - 신규 업무 등록
  * - 슬라이드오버 패널로 상세 보기
+ * - v2.0: 보드 속성 패널 항상 표시
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useBoardStore } from '@/stores/board'
 import { useItemStore } from '@/stores/item'
+import { useCategoryStore } from '@/stores/category'
 import { useToast } from '@/composables/useToast'
-import { Button, Select, Spinner } from '@/components/common'
+import { boardApi } from '@/api/board'
+import { Button, Select, Spinner, EntityEditModal } from '@/components/common'
 import ItemTable from '@/components/item/ItemTable.vue'
 import ItemKanban from '@/components/item/ItemKanban.vue'
 import ItemList from '@/components/item/ItemList.vue'
@@ -19,13 +22,50 @@ import NewItemInput from '@/components/item/NewItemInput.vue'
 import CompletedItemsCollapse from '@/components/item/CompletedItemsCollapse.vue'
 import { isItemOverdue } from '@/utils/item'
 import type { Item } from '@/types/item'
+import type { BoardCategory, BoardProperty } from '@/types/board'
+import type { Category } from '@/types/category'
 
 const boardStore = useBoardStore()
 const itemStore = useItemStore()
+const categoryStore = useCategoryStore()
 const toast = useToast()
 
 // 상태
 const isLoading = ref(false)
+
+// 보드 수정 모달 상태
+const showBoardEditModal = ref(false)
+const categories = ref<Category[]>([])
+const existingBoardCategories = ref<BoardCategory[]>([])
+const existingBoardProperties = ref<BoardProperty[]>([])
+const boardFormData = ref({
+  boardName: '',
+  description: '',
+  color: '#3B82F6',
+  categoryIds: [] as number[],
+  propertyIds: [] as number[],
+  propertyDefaults: {} as Record<number, string>
+})
+
+// 색상 옵션
+const colorOptions = [
+  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+  '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#6B7280'
+]
+
+// v2.0: 보드 카테고리
+const boardCategories = ref<BoardCategory[]>([])
+
+// 현재 보드의 기본 카테고리 정보
+const currentCategory = computed(() => {
+  if (boardCategories.value.length === 0) return null
+  // 기본 카테고리가 있으면 사용, 없으면 첫 번째 카테고리 사용
+  const defaultCat = boardCategories.value.find(c => c.isDefault)
+  return defaultCat || boardCategories.value[0]
+})
+
+const currentCategoryName = computed(() => currentCategory.value?.categoryName || '')
+const currentCategoryColor = computed(() => currentCategory.value?.categoryColor || '#6B7280')
 
 // 필터 타입
 type StatusFilter = 'all' | 'not_started' | 'in_progress' | 'overdue' | 'pending'
@@ -112,6 +152,20 @@ async function selectBoard(boardId: number) {
   if (board) {
     boardStore.setCurrentBoard(board)
     await boardStore.fetchBoard(boardId)
+    // v2.0: 보드 카테고리 로드
+    await loadBoardCategories(boardId)
+  }
+}
+
+// v2.0: 보드 카테고리 로드
+async function loadBoardCategories(boardId: number) {
+  try {
+    const response = await boardApi.getBoardCategories(boardId)
+    if (response.success && response.data) {
+      boardCategories.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to load board categories:', error)
   }
 }
 
@@ -144,9 +198,157 @@ function handleFilterChange(filter: StatusFilter) {
   statusFilter.value = filter
 }
 
+// 카테고리 목록 로드
+async function loadCategories() {
+  try {
+    await categoryStore.fetchAccessibleCategories()
+    categories.value = categoryStore.activeAccessibleCategories
+  } catch (error) {
+    console.error('Failed to load categories:', error)
+  }
+}
+
+// 보드 수정 모달 열기
+async function openBoardEditModal() {
+  const board = boardStore.currentBoard
+  if (!board) return
+
+  boardFormData.value = {
+    boardName: board.boardName,
+    description: board.description || '',
+    color: board.color || '#3B82F6',
+    categoryIds: [],
+    propertyIds: [],
+    propertyDefaults: {}
+  }
+  showBoardEditModal.value = true
+
+  // 기존 카테고리와 속성 로드
+  try {
+    const [catRes, propRes] = await Promise.all([
+      boardApi.getBoardCategories(board.boardId),
+      boardApi.getBoardProperties(board.boardId)
+    ])
+
+    if (catRes.success && catRes.data) {
+      existingBoardCategories.value = catRes.data
+      boardFormData.value.categoryIds = catRes.data.map(c => c.categoryId)
+    } else {
+      existingBoardCategories.value = []
+      boardFormData.value.categoryIds = []
+    }
+
+    if (propRes.success && propRes.data) {
+      existingBoardProperties.value = propRes.data
+      boardFormData.value.propertyIds = propRes.data.map(p => p.propertyId)
+      propRes.data.forEach(p => {
+        if (p.defaultValue) {
+          boardFormData.value.propertyDefaults[p.propertyId] = p.defaultValue
+        }
+      })
+    } else {
+      existingBoardProperties.value = []
+      boardFormData.value.propertyIds = []
+    }
+  } catch (error) {
+    console.error('Failed to load board categories/properties:', error)
+    existingBoardCategories.value = []
+    existingBoardProperties.value = []
+  }
+}
+
+// 보드 수정 저장 (EntityEditModal에서 호출)
+async function handleBoardUpdateSave(data: {
+  name: string
+  description: string
+  color: string
+  categoryIds: number[]
+  categoryId: number | null
+  propertyIds: number[]
+  propertyDefaults: Record<number, string>
+}) {
+  const board = boardStore.currentBoard
+  if (!board) return
+  if (!data.name.trim()) {
+    toast.error('보드 이름을 입력해주세요.')
+    return
+  }
+
+  const boardId = board.boardId
+
+  try {
+    // 1. 기본 정보 수정
+    const success = await boardStore.updateBoard(boardId, {
+      boardName: data.name,
+      boardDescription: data.description,
+      color: data.color
+    })
+
+    if (!success) {
+      toast.error(boardStore.error || '보드 수정에 실패했습니다.')
+      return
+    }
+
+    // 2. 카테고리 변경 처리
+    const existingCatIds = new Set(existingBoardCategories.value.map(c => c.categoryId))
+    const newCatIds = new Set(data.categoryIds)
+    const catsToRemove = [...existingCatIds].filter(id => !newCatIds.has(id))
+    const catsToAdd = [...newCatIds].filter(id => !existingCatIds.has(id))
+
+    await Promise.all([
+      ...catsToRemove.map(catId => boardApi.removeBoardCategory(boardId, catId)),
+      ...catsToAdd.map(catId => boardApi.addBoardCategory(boardId, catId))
+    ])
+
+    // 3. 속성 변경 처리
+    const existingPropIds = new Set(existingBoardProperties.value.map(p => p.propertyId))
+    const newPropIds = new Set(data.propertyIds)
+    const propsToRemove = [...existingPropIds].filter(id => !newPropIds.has(id))
+    const propsToAdd = [...newPropIds].filter(id => !existingPropIds.has(id))
+
+    await Promise.all([
+      ...propsToRemove.map(propId => boardApi.removeBoardProperty(boardId, propId)),
+      ...propsToAdd.map(propId => boardApi.addBoardProperty(boardId, propId, {
+        defaultValue: data.propertyDefaults[propId] || undefined
+      }))
+    ])
+
+    // 4. 기존 속성 기본값 업데이트
+    const existingProps = existingBoardProperties.value.filter(p => newPropIds.has(p.propertyId))
+    await Promise.all(
+      existingProps
+        .filter(p => p.defaultValue !== data.propertyDefaults[p.propertyId])
+        .map(p => boardApi.updateBoardProperty(boardId, p.propertyId, {
+          defaultValue: data.propertyDefaults[p.propertyId] || undefined
+        }))
+    )
+
+    toast.success('보드가 수정되었습니다.')
+    showBoardEditModal.value = false
+
+    // 보드 카테고리 다시 로드
+    await loadBoardCategories(boardId)
+    // 보드 정보 갱신
+    await boardStore.fetchBoard(boardId)
+  } catch (error) {
+    console.error('Failed to update board:', error)
+    toast.error('보드 수정에 실패했습니다.')
+  }
+}
+
+// 보드 변경 시 카테고리 로드
+watch(currentBoardId, async (newBoardId) => {
+  if (newBoardId) {
+    await loadBoardCategories(newBoardId)
+  } else {
+    boardCategories.value = []
+  }
+}, { immediate: true })
+
 onMounted(() => {
   boardStore.loadViewType()
   loadBoards()
+  loadCategories()
 })
 </script>
 
@@ -165,6 +367,39 @@ onMounted(() => {
             class="w-48"
             @update:model-value="handleBoardChange"
           />
+
+          <!-- v2.0: 카테고리명 + 변경 버튼 그룹 -->
+          <div v-if="currentBoardId" class="flex items-center gap-2 flex-shrink-0">
+            <!-- 카테고리 라벨 -->
+            <div
+              v-if="currentCategoryName"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border flex-shrink-0"
+              :style="{
+                backgroundColor: currentCategoryColor + '15',
+                borderColor: currentCategoryColor + '40'
+              }"
+            >
+              <div
+                class="w-3 h-3 rounded flex-shrink-0"
+                :style="{ backgroundColor: currentCategoryColor }"
+              />
+              <span
+                class="text-sm font-medium whitespace-nowrap"
+                :style="{ color: currentCategoryColor }"
+              >
+                {{ currentCategoryName }}
+              </span>
+            </div>
+
+            <!-- 변경 버튼 -->
+            <button
+              type="button"
+              class="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap flex-shrink-0"
+              @click="openBoardEditModal"
+            >
+              변경
+            </button>
+          </div>
 
           <!-- 뷰 타입 선택 -->
           <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
@@ -308,5 +543,23 @@ onMounted(() => {
     <div v-if="currentBoardId && !isLoading && statusFilter === 'all'" class="flex-shrink-0">
       <CompletedItemsCollapse />
     </div>
+
+    <!-- v2.0: 보드 수정 모달 -->
+    <EntityEditModal
+      v-model="showBoardEditModal"
+      mode="board"
+      title="보드 수정"
+      :categories="categories"
+      :color-options="colorOptions"
+      name-label="보드 이름"
+      :initial-name="boardFormData.boardName"
+      :initial-description="boardFormData.description"
+      :initial-color="boardFormData.color"
+      :initial-category-ids="boardFormData.categoryIds"
+      :initial-property-ids="boardFormData.propertyIds"
+      :initial-property-defaults="boardFormData.propertyDefaults"
+      @save="handleBoardUpdateSave"
+      @cancel="showBoardEditModal = false"
+    />
   </div>
 </template>

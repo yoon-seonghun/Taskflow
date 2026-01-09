@@ -147,14 +147,29 @@ grep -rn "ResponseEntity\|@ResponseStatus" backend/src/**/controller/*.java
 ```
 ?status=IN_PROGRESS
 ?priority=HIGH
-?assigneeId=1
+?assigneeUsername=admin        # ⚠️ assigneeId 아님 (외부 연동 키 정책)
 ?groupId=1
-?departmentId=1
+?departmentCode=DEV            # ⚠️ departmentId 아님 (외부 연동 키 정책)
 ?startDate=2024-01-01&endDate=2024-12-31
 ?keyword=검색어
 ?includeCompleted=false
 ?includeDeleted=false
 ?useYn=Y
+```
+
+#### ⚠️ 외부 연동 키 정책
+```
+TB_USER, TB_DEPARTMENT, TB_POSITION 테이블은 외부 시스템(인사 시스템, AD 등)
+연동 시 BIGINT ID의 불일치 문제를 방지하기 위해 코드형 컬럼을 FK 참조 키로 사용합니다.
+
+| 테이블 | 내부 PK (사용 금지) | FK 참조 키 (사용) |
+|--------|---------------------|-------------------|
+| TB_USER | USER_ID (BIGINT) | USERNAME (VARCHAR) |
+| TB_DEPARTMENT | DEPARTMENT_ID (BIGINT) | DEPARTMENT_CODE (VARCHAR) |
+| TB_POSITION | POSITION_ID (BIGINT) | POSITION_CODE (VARCHAR) |
+
+❌ 잘못된 사용: assigneeId, departmentId, positionId
+✅ 올바른 사용: assigneeUsername, departmentCode, positionCode
 ```
 
 ```bash

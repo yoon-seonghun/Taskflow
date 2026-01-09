@@ -109,7 +109,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Access Token 생성 (내부 USER_ID 사용)
-        String accessToken = jwtTokenProvider.createAccessToken(internalUserId, user.getUsername());
+        String accessToken = jwtTokenProvider.createAccessToken(internalUserId, user.getUsername(), internalUser.getRole());
 
         log.info("Login successful: internalUserId={}, username={}",
                 internalUserId, LogMaskUtils.maskUsername(user.getUsername()));
@@ -151,7 +151,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 새로운 Access Token 생성
-        String newAccessToken = jwtTokenProvider.createAccessToken(userId, username);
+        String newAccessToken = jwtTokenProvider.createAccessToken(userId, username, user.getRole());
 
         log.info("Token refreshed: userId={}", userId);
 
@@ -166,7 +166,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String createRefreshToken(Long userId, String username) {
-        return jwtTokenProvider.createRefreshToken(userId, username);
+    public String createRefreshToken(Long userId, String username, String role) {
+        return jwtTokenProvider.createRefreshToken(userId, username, role);
     }
 }

@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 /**
  * 보드 생성 요청 DTO
  */
@@ -42,4 +44,9 @@ public class BoardCreateRequest {
      * 정렬 순서
      */
     private Integer sortOrder;
+
+    /**
+     * 연결할 카테고리 ID 목록
+     */
+    private List<Long> categoryIds;
 }

@@ -266,6 +266,7 @@ onUnmounted(() => {
     >
       <div
         v-if="isOpen"
+        data-popover
         class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
         style="min-width: 240px;"
       >
@@ -325,8 +326,8 @@ onUnmounted(() => {
 
             <!-- User Info -->
             <div class="flex-1 min-w-0">
-              <div class="truncate font-medium">{{ user.userName }}</div>
-              <div v-if="user.departmentName" class="truncate text-[11px] text-gray-400">
+              <div class="truncate font-medium" :title="user.userName">{{ user.userName }}</div>
+              <div v-if="user.departmentName" class="truncate text-[11px] text-gray-400" :title="user.departmentName">
                 {{ user.departmentName }}
               </div>
             </div>

@@ -6,7 +6,7 @@
  * - 인라인 편집 지원
  * - 최소 15개 항목 표시 (Compact UI)
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useItemStore } from '@/stores/item'
 import { usePropertyStore } from '@/stores/property'
 import { useBoardStore } from '@/stores/board'
@@ -15,13 +15,16 @@ import { useSlideOver } from '@/composables/useSlideOver'
 import type { UserOption, DepartmentOption } from '@/components/common'
 import { useToast } from '@/composables/useToast'
 import { userApi } from '@/api/user'
+import { boardApi } from '@/api/board'
 import type { User } from '@/types/user'
+import type { BoardCategory } from '@/types/board'
 import { useConfirm } from '@/composables/useConfirm'
 import { Spinner, EmptyState } from '@/components/common'
 import PropertyHeader from '@/components/property/PropertyHeader.vue'
 import ItemRow from './ItemRow.vue'
+import SimpleCategoryModal from './SimpleCategoryModal.vue'
 import { isItemOverdue } from '@/utils/item'
-import type { Item } from '@/types/item'
+import type { Item, ItemUpdateRequest } from '@/types/item'
 import type { PropertyDef } from '@/types/property'
 
 type StatusFilter = 'all' | 'not_started' | 'in_progress' | 'overdue' | 'pending'
@@ -50,6 +53,9 @@ const confirm = useConfirm()
 // 모든 활성 사용자 목록
 const allUsers = ref<User[]>([])
 
+// 보드 카테고리 목록 (v2.0)
+const boardCategories = ref<BoardCategory[]>([])
+
 // 담당자 선택용 사용자 목록 (모든 활성 사용자)
 const sharedUsers = computed<UserOption[]>(() => {
   return allUsers.value.map(u => ({
@@ -72,18 +78,120 @@ const departments = computed<DepartmentOption[]>(() => {
 const selectedItemId = ref<number | null>(null)
 const isLoading = ref(false)
 
+// v2.0: 카테고리 변경 시 속성편집 모달 상태
+const showPropertyModal = ref(false)
+const modalTargetItem = ref<Item | null>(null)
+const pendingCategoryId = ref<number | null>(null)
+
 // 컬럼 너비 (기본값)
 const propertyWidths = ref<Record<number, number>>({})
-const defaultColumnWidths = {
+
+// 고정 컬럼 너비 관리 (localStorage 저장)
+const COLUMN_WIDTHS_KEY = 'taskflow_column_widths'
+const columnWidths = ref({
   title: 250,
-  status: 96,
-  priority: 96,
-  requestDate: 128,
-  dueDate: 128,
-  assignee: 96,
-  comments: 64,
-  actions: 80
+  status: 70,
+  priority: 60,
+  assignee: 70,
+  requestDate: 90,
+  dueDate: 90,
+  category: 80,
+  comments: 50,
+  actions: 70
+})
+
+// 최소/최대 컬럼 너비
+const columnMinWidths = {
+  title: 150,
+  status: 50,
+  priority: 50,
+  assignee: 50,
+  requestDate: 80,
+  dueDate: 80,
+  category: 60,
+  comments: 40,
+  actions: 60
 }
+
+// 리사이즈 상태
+const isResizing = ref(false)
+const resizingColumn = ref<string | null>(null)
+const startX = ref(0)
+const startWidth = ref(0)
+
+// 컬럼 폭 로드 (localStorage)
+function loadColumnWidths() {
+  try {
+    const saved = localStorage.getItem(COLUMN_WIDTHS_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      columnWidths.value = { ...columnWidths.value, ...parsed }
+    }
+  } catch (e) {
+    console.error('Failed to load column widths:', e)
+  }
+}
+
+// 컬럼 폭 저장 (localStorage)
+function saveColumnWidths() {
+  try {
+    localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(columnWidths.value))
+  } catch (e) {
+    console.error('Failed to save column widths:', e)
+  }
+}
+
+// 리사이즈 시작
+function startResize(event: MouseEvent, column: string) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  isResizing.value = true
+  resizingColumn.value = column
+  startX.value = event.clientX
+  startWidth.value = columnWidths.value[column as keyof typeof columnWidths.value]
+
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', stopResize)
+}
+
+// 리사이즈 중
+function handleResize(event: MouseEvent) {
+  if (!isResizing.value || !resizingColumn.value) return
+
+  const diff = event.clientX - startX.value
+  const newWidth = Math.max(
+    columnMinWidths[resizingColumn.value as keyof typeof columnMinWidths] || 50,
+    startWidth.value + diff
+  )
+
+  columnWidths.value[resizingColumn.value as keyof typeof columnWidths.value] = newWidth
+}
+
+// 리사이즈 종료
+function stopResize() {
+  isResizing.value = false
+  resizingColumn.value = null
+
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
+
+  saveColumnWidths()
+}
+
+// 컴포넌트 마운트 시 컬럼 폭 로드
+onMounted(() => {
+  loadColumnWidths()
+})
+
+// 기존 defaultColumnWidths (호환성 유지)
+const defaultColumnWidths = columnWidths
 
 // 아이템 목록 (필터 적용)
 const items = computed(() => {
@@ -106,8 +214,16 @@ const items = computed(() => {
 // 완료/삭제된 아이템 (당일)
 const todayCompletedItems = computed(() => itemStore.todayCompletedItems)
 
-// 표시할 속성 목록
-const visibleProperties = computed(() => propertyStore.sortedProperties)
+// 표시할 속성 목록 (v2.0: 기본 속성만 표시, GLOBAL/MANAGER/USER 속성 제외)
+const visibleProperties = computed(() => {
+  return propertyStore.sortedProperties.filter(prop => {
+    // ownerType이 GLOBAL, MANAGER, USER인 경우 제외
+    if (prop.ownerType === 'GLOBAL' || prop.ownerType === 'MANAGER' || prop.ownerType === 'USER') {
+      return false
+    }
+    return true
+  })
+})
 
 // 로딩 상태
 const loading = computed(() => itemStore.loading || isLoading.value)
@@ -120,6 +236,12 @@ async function loadData() {
     const userResponse = await userApi.getUsers({ useYn: 'Y', size: 1000 })
     if (userResponse.success && userResponse.data?.content) {
       allUsers.value = userResponse.data.content
+    }
+
+    // 보드 카테고리 로드 (v2.0)
+    const categoryResponse = await boardApi.getBoardCategories(props.boardId)
+    if (categoryResponse.success && categoryResponse.data) {
+      boardCategories.value = categoryResponse.data
     }
 
     await Promise.all([
@@ -282,6 +404,46 @@ function handleSort(propertyId: number, direction: 'asc' | 'desc') {
   toast.info(`정렬: ${direction} - 추후 구현`)
 }
 
+// v2.0: 카테고리 변경 핸들러 (모달 오픈 또는 직접 클리어)
+async function handleCategoryChange(item: Item, newCategoryId: number | null) {
+  if (newCategoryId === null) {
+    // null인 경우 바로 클리어 (모달 없이)
+    await handleItemUpdate(item.itemId, 'categoryId', null)
+    toast.success('카테고리가 해제되었습니다.')
+    return
+  }
+  // 카테고리 선택 시 모달 열기
+  modalTargetItem.value = item
+  pendingCategoryId.value = newCategoryId
+  showPropertyModal.value = true
+}
+
+// v2.0: 간단한 카테고리 모달에서 적용
+async function handleCategoryApply(categoryId: number | null) {
+  if (!modalTargetItem.value) return
+
+  const updateData: ItemUpdateRequest = {
+    categoryId: categoryId ?? undefined
+  }
+
+  const result = await itemStore.updateItem(props.boardId, modalTargetItem.value.itemId, updateData)
+  if (result) {
+    toast.success('카테고리가 수정되었습니다.')
+  } else {
+    toast.error('수정에 실패했습니다.')
+  }
+
+  // 모달 상태 초기화
+  modalTargetItem.value = null
+  pendingCategoryId.value = null
+}
+
+// v2.0: 카테고리 모달 취소
+function handleCategoryCancel() {
+  modalTargetItem.value = null
+  pendingCategoryId.value = null
+}
+
 // boardId 변경 시 데이터 재로드
 watch(() => props.boardId, () => {
   loadData()
@@ -310,44 +472,99 @@ watch(() => props.boardId, () => {
       <div class="flex-1 overflow-auto">
         <!-- 테이블 헤더 -->
         <div class="sticky top-0 z-10 flex bg-gray-50 border-b border-gray-200">
-          <!-- 제목 헤더 (고정) -->
+          <!-- 제목 헤더 -->
           <div
-            class="flex-1 min-w-[200px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200"
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 relative group"
+            :style="{ width: `${columnWidths.title}px`, minWidth: `${columnMinWidths.title}px` }"
           >
-            <svg class="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 mr-1.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
             </svg>
-            업무내용
+            <span class="truncate">업무내용</span>
+            <!-- 리사이즈 핸들 -->
+            <div
+              class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+              :class="{ 'bg-primary-400': resizingColumn === 'title' }"
+              @mousedown="startResize($event, 'title')"
+            />
           </div>
 
-          <!-- 상태 헤더 (고정) -->
-          <div class="w-24 min-w-[96px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
-            상태
+          <!-- 상태 헤더 -->
+          <div
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            :style="{ width: `${columnWidths.status}px`, minWidth: `${columnMinWidths.status}px` }"
+          >
+            <span class="truncate">상태</span>
+            <div
+              class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+              :class="{ 'bg-primary-400': resizingColumn === 'status' }"
+              @mousedown="startResize($event, 'status')"
+            />
           </div>
 
-          <!-- 우선순위 헤더 (고정) -->
-          <div class="w-24 min-w-[96px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
-            우선순위
+          <!-- 우선순위 헤더 -->
+          <div
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            :style="{ width: `${columnWidths.priority}px`, minWidth: `${columnMinWidths.priority}px` }"
+          >
+            <span class="truncate">우선순위</span>
+            <div
+              class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+              :class="{ 'bg-primary-400': resizingColumn === 'priority' }"
+              @mousedown="startResize($event, 'priority')"
+            />
           </div>
 
-          <!-- 담당자 헤더 (고정) -->
-          <div class="w-24 min-w-[96px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
-            담당자
+          <!-- 담당자 헤더 -->
+          <div
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            :style="{ width: `${columnWidths.assignee}px`, minWidth: `${columnMinWidths.assignee}px` }"
+          >
+            <span class="truncate">담당자</span>
+            <div
+              class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+              :class="{ 'bg-primary-400': resizingColumn === 'assignee' }"
+              @mousedown="startResize($event, 'assignee')"
+            />
           </div>
 
-          <!-- 요청일 헤더 (고정) -->
-          <div class="w-32 min-w-[128px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
-            요청일
+          <!-- 요청일 헤더 -->
+          <div
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            :style="{ width: `${columnWidths.requestDate}px`, minWidth: `${columnMinWidths.requestDate}px` }"
+          >
+            <span class="truncate">요청일</span>
+            <div
+              class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+              :class="{ 'bg-primary-400': resizingColumn === 'requestDate' }"
+              @mousedown="startResize($event, 'requestDate')"
+            />
           </div>
 
-          <!-- 마감일 헤더 (고정) -->
-          <div class="w-32 min-w-[128px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
-            마감일
+          <!-- 마감일 헤더 -->
+          <div
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            :style="{ width: `${columnWidths.dueDate}px`, minWidth: `${columnMinWidths.dueDate}px` }"
+          >
+            <span class="truncate">마감일</span>
+            <div
+              class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+              :class="{ 'bg-primary-400': resizingColumn === 'dueDate' }"
+              @mousedown="startResize($event, 'dueDate')"
+            />
           </div>
 
-          <!-- 카테고리 헤더 (고정) -->
-          <div class="w-24 min-w-[96px] px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
-            카테고리
+          <!-- 카테고리 헤더 -->
+          <div
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            :style="{ width: `${columnWidths.category}px`, minWidth: `${columnMinWidths.category}px` }"
+          >
+            <span class="truncate">카테고리</span>
+            <div
+              class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+              :class="{ 'bg-primary-400': resizingColumn === 'category' }"
+              @mousedown="startResize($event, 'category')"
+            />
           </div>
 
           <!-- 동적 속성 헤더 -->
@@ -367,14 +584,25 @@ watch(() => props.boardId, () => {
           />
 
           <!-- 댓글 헤더 -->
-          <div class="w-16 min-w-[64px] px-2 h-8 flex items-center justify-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
+          <div
+            class="px-2 h-8 flex items-center justify-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative"
+            :style="{ width: `${columnWidths.comments}px`, minWidth: `${columnMinWidths.comments}px` }"
+          >
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
+            <div
+              class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-400 transition-colors"
+              :class="{ 'bg-primary-400': resizingColumn === 'comments' }"
+              @mousedown="startResize($event, 'comments')"
+            />
           </div>
 
           <!-- 액션 헤더 -->
-          <div class="w-20 min-w-[80px] px-2 h-8 flex items-center justify-center text-[13px] font-medium text-gray-600 bg-gray-50">
+          <div
+            class="px-2 h-8 flex items-center justify-center text-[13px] font-medium text-gray-600 bg-gray-50"
+            :style="{ width: `${columnWidths.actions}px`, minWidth: `${columnMinWidths.actions}px` }"
+          >
             액션
           </div>
         </div>
@@ -387,8 +615,10 @@ watch(() => props.boardId, () => {
             :item="item"
             :properties="visibleProperties"
             :property-widths="propertyWidths"
+            :column-widths="columnWidths"
             :shared-users="sharedUsers"
             :departments="departments"
+            :board-categories="boardCategories"
             :selected="selectedItemId === item.itemId"
             @click="handleItemClick"
             @update="handleItemUpdate"
@@ -396,6 +626,7 @@ watch(() => props.boardId, () => {
             @complete="handleComplete"
             @delete="handleDelete"
             @restore="handleRestore"
+            @category-change="handleCategoryChange"
           />
         </div>
 
@@ -420,8 +651,10 @@ watch(() => props.boardId, () => {
                 :item="item"
                 :properties="visibleProperties"
                 :property-widths="propertyWidths"
+                :column-widths="columnWidths"
                 :shared-users="sharedUsers"
                 :departments="departments"
+                :board-categories="boardCategories"
                 :selected="selectedItemId === item.itemId"
                 @click="handleItemClick"
                 @update="handleItemUpdate"
@@ -429,11 +662,23 @@ watch(() => props.boardId, () => {
                 @complete="handleComplete"
                 @delete="handleDelete"
                 @restore="handleRestore"
+                @category-change="handleCategoryChange"
               />
             </div>
           </details>
         </div>
       </div>
     </template>
+
+    <!-- v2.0: 간단한 카테고리 변경 모달 (cap_3.jpg 스타일) -->
+    <SimpleCategoryModal
+      v-if="modalTargetItem"
+      v-model="showPropertyModal"
+      :board-id="boardId"
+      :initial-category-id="pendingCategoryId"
+      :item-title="modalTargetItem.title"
+      @apply="handleCategoryApply"
+      @cancel="handleCategoryCancel"
+    />
   </div>
 </template>

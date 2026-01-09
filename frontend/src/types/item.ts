@@ -62,6 +62,7 @@ export interface ItemCreateRequest {
   requestDate?: string        // 요청일
   dueDate?: string            // 마감일
   sortOrder?: number
+  propertyIds?: number[]      // v2.0: 선택된 속성 ID 목록
   properties?: Record<number, unknown>
 }
 
@@ -77,6 +78,7 @@ export interface ItemUpdateRequest {
   requestDate?: string        // 요청일
   dueDate?: string            // 마감일
   sortOrder?: number
+  propertyIds?: number[]      // v2.0: 선택된 속성 ID 목록
   properties?: Record<number, unknown>
   /** null로 설정할 필드 목록 (예: ['requestDate', 'dueDate']) - snake_case로 전송됨 */
   clear_fields?: string[]
@@ -88,6 +90,7 @@ export interface ItemSearchRequest {
   priority?: Priority
   assigneeUsername?: string   // 담당자 USERNAME
   groupId?: number
+  departmentCode?: string     // 부서 CODE (외부 연동 키 정책)
   startDate?: string
   endDate?: string
   includeCompleted?: boolean
@@ -106,6 +109,7 @@ export interface CrossBoardSearchRequest {
   priority?: Priority
   assigneeUsername?: string   // 담당자 USERNAME
   groupId?: number
+  departmentCode?: string     // 부서 CODE (외부 연동 키 정책)
   boardId?: number
   overdueOnly?: boolean
   startDate?: string

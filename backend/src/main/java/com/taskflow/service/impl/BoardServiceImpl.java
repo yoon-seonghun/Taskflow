@@ -12,6 +12,10 @@ import com.taskflow.dto.transfer.TransferRequest;
 import com.taskflow.dto.transfer.TransferResultResponse;
 import com.taskflow.exception.BusinessException;
 import com.taskflow.domain.PropertyDef;
+import com.taskflow.domain.BoardCategory;
+import com.taskflow.domain.BoardProperty;
+import com.taskflow.mapper.BoardCategoryMapper;
+import com.taskflow.mapper.BoardPropertyMapper;
 import com.taskflow.mapper.BoardMapper;
 import com.taskflow.mapper.BoardShareMapper;
 import com.taskflow.mapper.GroupMapper;
@@ -43,6 +47,8 @@ public class BoardServiceImpl implements BoardService {
 
     private final BoardMapper boardMapper;
     private final BoardShareMapper boardShareMapper;
+    private final BoardCategoryMapper boardCategoryMapper;
+    private final BoardPropertyMapper boardPropertyMapper;
     private final GroupMapper groupMapper;
     private final UserMapper userMapper;
     private final PropertyDefMapper propertyDefMapper;
@@ -210,9 +216,25 @@ public class BoardServiceImpl implements BoardService {
         boardMapper.insert(board);
         log.info("Board created: id={}, name={}", board.getBoardId(), board.getBoardName());
 
-        // 카테고리는 TB_CATEGORY 테이블로 전역 관리됨 (보드별 생성 불필요)
-        // 기타 추가 속성 정의가 필요한 경우 아래 메서드 호출
-        // createDefaultProperties(board.getBoardId(), createdBy);
+        // 카테고리 연결 (v2.0)
+        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+            List<BoardCategory> boardCategories = new ArrayList<>();
+            int order = 1;
+            for (Long categoryId : request.getCategoryIds()) {
+                BoardCategory bc = BoardCategory.builder()
+                        .boardId(board.getBoardId())
+                        .categoryId(categoryId)
+                        .sortOrder(order)
+                        .defaultYn(order == 1 ? "Y" : "N")  // 첫 번째 카테고리를 기본으로
+                        .createdBy(createdBy)
+                        .build();
+                boardCategories.add(bc);
+                order++;
+            }
+            boardCategoryMapper.insertBatch(boardCategories);
+            log.info("Board-Category links created: boardId={}, categoryCount={}",
+                    board.getBoardId(), boardCategories.size());
+        }
 
         // 감사 로그 기록
         auditLogService.logBoardCreated(board.getBoardId(), createdBy, board.getBoardName());
@@ -795,5 +817,216 @@ public class BoardServiceImpl implements BoardService {
                 boardId, originalOwnerUsername, request.getTargetUsername());
 
         return getBoard(boardId);
+    }
+
+    // =============================================
+    // v2.0: 보드 카테고리 관리
+    // =============================================
+
+    @Override
+    public List<BoardCategoryResponse> getBoardCategories(Long boardId) {
+        log.debug("Getting board categories: boardId={}", boardId);
+
+        // 보드 존재 확인
+        boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        List<BoardCategory> categories = boardCategoryMapper.findByBoardId(boardId);
+        return BoardCategoryResponse.fromList(categories);
+    }
+
+    @Override
+    @Transactional
+    public void addBoardCategory(Long boardId, Long categoryId, String createdBy) {
+        log.info("Adding category to board: boardId={}, categoryId={}", boardId, categoryId);
+
+        // 보드 존재 확인
+        Board board = boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        // 소유자 확인
+        if (!board.isOwner(createdBy)) {
+            throw BusinessException.accessDenied("보드 소유자만 카테고리를 추가할 수 있습니다.");
+        }
+
+        // 중복 확인
+        if (boardCategoryMapper.exists(boardId, categoryId)) {
+            throw BusinessException.conflict("이미 추가된 카테고리입니다.");
+        }
+
+        // 정렬 순서 설정
+        Integer sortOrder = boardCategoryMapper.getMaxSortOrder(boardId) + 1;
+
+        // 첫 번째 카테고리인 경우 기본으로 설정
+        boolean isFirst = sortOrder == 1;
+
+        BoardCategory bc = BoardCategory.builder()
+                .boardId(boardId)
+                .categoryId(categoryId)
+                .sortOrder(sortOrder)
+                .defaultYn(isFirst ? "Y" : "N")
+                .createdBy(createdBy)
+                .build();
+
+        boardCategoryMapper.insert(bc);
+        log.info("Category added to board: boardId={}, categoryId={}, isDefault={}", boardId, categoryId, isFirst);
+    }
+
+    @Override
+    @Transactional
+    public void removeBoardCategory(Long boardId, Long categoryId) {
+        log.info("Removing category from board: boardId={}, categoryId={}", boardId, categoryId);
+
+        // 연결 존재 확인
+        if (!boardCategoryMapper.exists(boardId, categoryId)) {
+            throw BusinessException.notFound("보드에 해당 카테고리가 없습니다.");
+        }
+
+        // 기본 카테고리인지 확인
+        BoardCategory bc = boardCategoryMapper.findByIds(boardId, categoryId).orElse(null);
+        boolean wasDefault = bc != null && "Y".equals(bc.getDefaultYn());
+
+        // 삭제
+        boardCategoryMapper.delete(boardId, categoryId);
+
+        // 기본 카테고리가 삭제된 경우 다른 카테고리를 기본으로 설정
+        if (wasDefault) {
+            List<BoardCategory> remaining = boardCategoryMapper.findByBoardId(boardId);
+            if (!remaining.isEmpty()) {
+                boardCategoryMapper.updateDefaultYn(boardId, remaining.get(0).getCategoryId(), "Y");
+                log.info("New default category set: boardId={}, categoryId={}", boardId, remaining.get(0).getCategoryId());
+            }
+        }
+
+        log.info("Category removed from board: boardId={}, categoryId={}", boardId, categoryId);
+    }
+
+    @Override
+    @Transactional
+    public void setDefaultCategory(Long boardId, Long categoryId, String username) {
+        log.info("Setting default category: boardId={}, categoryId={}", boardId, categoryId);
+
+        // 보드 존재 확인
+        Board board = boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        // 소유자 확인
+        if (!board.isOwner(username)) {
+            throw BusinessException.accessDenied("보드 소유자만 기본 카테고리를 설정할 수 있습니다.");
+        }
+
+        // 연결 존재 확인
+        if (!boardCategoryMapper.exists(boardId, categoryId)) {
+            throw BusinessException.notFound("보드에 해당 카테고리가 없습니다.");
+        }
+
+        // 기존 기본 카테고리 해제
+        boardCategoryMapper.clearDefaultCategory(boardId);
+
+        // 새 기본 카테고리 설정
+        boardCategoryMapper.updateDefaultYn(boardId, categoryId, "Y");
+
+        log.info("Default category set: boardId={}, categoryId={}", boardId, categoryId);
+    }
+
+    // =============================================
+    // v2.0: 보드 속성 관리
+    // =============================================
+
+    @Override
+    public List<BoardPropertyResponse> getBoardProperties(Long boardId) {
+        log.debug("Getting board properties: boardId={}", boardId);
+
+        // 보드 존재 확인
+        boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        List<BoardProperty> properties = boardPropertyMapper.findByBoardId(boardId);
+        return BoardPropertyResponse.fromList(properties);
+    }
+
+    @Override
+    @Transactional
+    public void addBoardProperty(Long boardId, Long propertyId, BoardPropertyRequest request, String createdBy) {
+        log.info("Adding property to board: boardId={}, propertyId={}", boardId, propertyId);
+
+        // 보드 존재 확인
+        boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        // 속성 존재 확인
+        PropertyDef propertyDef = propertyDefMapper.findById(propertyId)
+                .orElseThrow(() -> BusinessException.propertyNotFound(propertyId));
+
+        // 중복 확인
+        if (boardPropertyMapper.exists(boardId, propertyId)) {
+            throw BusinessException.conflict("이미 보드에 추가된 속성입니다.");
+        }
+
+        // 정렬 순서 자동 설정
+        Integer sortOrder = request.getSortOrder();
+        if (sortOrder == null) {
+            Integer maxOrder = boardPropertyMapper.getMaxSortOrder(boardId);
+            sortOrder = (maxOrder != null ? maxOrder : 0) + 1;
+        }
+
+        // BoardProperty 생성
+        BoardProperty boardProperty = BoardProperty.builder()
+                .boardId(boardId)
+                .propertyId(propertyId)
+                .requiredYn(request.getRequiredYn() != null ? request.getRequiredYn() : "N")
+                .visibleYn(request.getVisibleYn() != null ? request.getVisibleYn() : "Y")
+                .sortOrder(sortOrder)
+                .defaultValue(request.getDefaultValue())
+                .createdBy(createdBy)
+                .build();
+
+        boardPropertyMapper.insert(boardProperty);
+
+        log.info("Property added to board: boardId={}, propertyId={}, name={}",
+                boardId, propertyId, propertyDef.getPropertyName());
+    }
+
+    @Override
+    @Transactional
+    public void removeBoardProperty(Long boardId, Long propertyId) {
+        log.info("Removing property from board: boardId={}, propertyId={}", boardId, propertyId);
+
+        // 존재 확인
+        if (!boardPropertyMapper.exists(boardId, propertyId)) {
+            throw BusinessException.notFound("보드에 해당 속성이 없습니다.");
+        }
+
+        boardPropertyMapper.delete(boardId, propertyId);
+
+        log.info("Property removed from board: boardId={}, propertyId={}", boardId, propertyId);
+    }
+
+    @Override
+    @Transactional
+    public void updateBoardProperty(Long boardId, Long propertyId, BoardPropertyRequest request, String updatedBy) {
+        log.info("Updating board property: boardId={}, propertyId={}", boardId, propertyId);
+
+        // 존재 확인
+        BoardProperty existing = boardPropertyMapper.findByIds(boardId, propertyId)
+                .orElseThrow(() -> BusinessException.notFound("보드에 해당 속성이 없습니다."));
+
+        // 업데이트
+        if (request.getRequiredYn() != null) {
+            existing.setRequiredYn(request.getRequiredYn());
+        }
+        if (request.getVisibleYn() != null) {
+            existing.setVisibleYn(request.getVisibleYn());
+        }
+        if (request.getSortOrder() != null) {
+            existing.setSortOrder(request.getSortOrder());
+        }
+        if (request.getDefaultValue() != null) {
+            existing.setDefaultValue(request.getDefaultValue());
+        }
+
+        boardPropertyMapper.update(existing);
+
+        log.info("Board property updated: boardId={}, propertyId={}", boardId, propertyId);
     }
 }

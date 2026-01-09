@@ -9,6 +9,9 @@ import java.util.Optional;
 
 /**
  * 속성 정의 Mapper 인터페이스
+ *
+ * v2.0 변경사항:
+ * - 소유 유형별 조회 (GLOBAL, MANAGER, USER) 메서드 추가
  */
 @Mapper
 public interface PropertyDefMapper {
@@ -161,4 +164,50 @@ public interface PropertyDefMapper {
      * @return 속성 정의 목록 (옵션 포함)
      */
     List<PropertyDef> findAllByBoardIdIncludingDeleted(@Param("boardId") Long boardId, @Param("useYn") String useYn);
+
+    // =============================================
+    // v2.0 소유 유형별 조회
+    // =============================================
+
+    /**
+     * 글로벌 속성 목록 조회 (옵션 포함)
+     */
+    List<PropertyDef> findGlobalProperties();
+
+    /**
+     * 매니저 속성 목록 조회 (본인 소유 + 상위 부서 속성)
+     *
+     * @param username 사용자 USERNAME
+     * @param departmentCodes 접근 가능한 부서 코드 목록
+     * @return 매니저 속성 목록
+     */
+    List<PropertyDef> findManagerProperties(@Param("username") String username,
+                                             @Param("departmentCodes") List<String> departmentCodes);
+
+    /**
+     * 소유 유형별 속성 목록 조회
+     *
+     * @param ownerType 소유 유형 (GLOBAL/MANAGER/USER)
+     * @return 속성 목록
+     */
+    List<PropertyDef> findByOwnerType(@Param("ownerType") String ownerType);
+
+    /**
+     * 사용자 속성 목록 조회 (본인이 생성한 속성)
+     *
+     * @param username 사용자 USERNAME
+     * @return 사용자 속성 목록
+     */
+    List<PropertyDef> findUserProperties(@Param("username") String username);
+
+    /**
+     * 사용자가 접근 가능한 모든 속성 조회 (글로벌 + 매니저 + 본인 속성)
+     * 카테고리/보드에서 속성 선택 시 사용
+     *
+     * @param username 사용자 USERNAME
+     * @param departmentCodes 접근 가능한 부서 코드 목록
+     * @return 접근 가능한 속성 목록
+     */
+    List<PropertyDef> findAccessibleProperties(@Param("username") String username,
+                                                @Param("departmentCodes") List<String> departmentCodes);
 }

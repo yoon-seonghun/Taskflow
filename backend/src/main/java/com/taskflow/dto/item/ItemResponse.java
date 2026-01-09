@@ -55,6 +55,16 @@ public class ItemResponse {
     private Long categoryId;
 
     /**
+     * 카테고리명
+     */
+    private String categoryName;
+
+    /**
+     * 카테고리 색상
+     */
+    private String categoryColor;
+
+    /**
      * 제목
      */
     private String title;
@@ -182,6 +192,8 @@ public class ItemResponse {
                 .groupName(item.getGroupName())
                 .groupColor(item.getGroupColor())
                 .categoryId(item.getCategoryId())
+                .categoryName(item.getCategoryName())
+                .categoryColor(item.getCategoryColor())
                 .title(item.getTitle())
                 .content(item.getContent())
                 .description(item.getDescription())

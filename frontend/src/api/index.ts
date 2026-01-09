@@ -15,6 +15,7 @@ export { historyApi } from './history'
 export { itemShareApi, auditLogApi } from './share'
 export { fileApi } from './file'
 export { categoryApi } from './category'
+export { scoreApi } from './score'
 
 // HTTP 클라이언트도 내보내기
 export { get, post, put, del, client } from './client'

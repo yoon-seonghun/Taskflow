@@ -8,6 +8,10 @@ import lombok.Setter;
 
 /**
  * 속성 정의 생성 요청 DTO
+ *
+ * v2.0 변경사항:
+ * - requiredYn 필드 제거 (CategoryProperty/BoardProperty로 이동)
+ * - ownerType, ownerUsername, ownerDeptCode 필드 추가
  */
 @Getter
 @Setter
@@ -29,10 +33,26 @@ public class PropertyCreateRequest {
     private String propertyType;
 
     /**
-     * 필수 여부 (Y/N)
+     * 소유 유형 (GLOBAL, MANAGER, USER)
+     * - GLOBAL: 전역 속성 (관리자만 생성 가능)
+     * - MANAGER: 매니저 속성 (생성자 본인/하위 부서에서 사용)
+     * - USER: 사용자 속성 (기본값, 카테고리에 그룹화되어 보드/업무에 활용)
      */
-    @Pattern(regexp = "^[YN]$", message = "필수 여부는 Y 또는 N이어야 합니다")
-    private String requiredYn = "N";
+    @Pattern(regexp = "^(GLOBAL|MANAGER|USER)$",
+            message = "소유 유형은 GLOBAL, MANAGER, USER 중 하나여야 합니다")
+    private String ownerType = "USER";
+
+    /**
+     * 소유자 USERNAME (MANAGER 타입 시 자동 설정)
+     */
+    @Size(max = 50, message = "소유자 USERNAME은 50자 이내여야 합니다")
+    private String ownerUsername;
+
+    /**
+     * 매니저 속성의 부서 코드 (적용 범위)
+     */
+    @Size(max = 20, message = "부서 코드는 20자 이내여야 합니다")
+    private String ownerDeptCode;
 
     /**
      * 표시 순서

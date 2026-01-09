@@ -25,7 +25,16 @@ backend/src/main/resources/mapper/
 ├── PropertyOptionMapper.xml
 ├── CommentMapper.xml
 ├── TaskTemplateMapper.xml
-└── ItemHistoryMapper.xml
+├── ItemHistoryMapper.xml
+│
+│   # v2.0 신규 Mapper
+├── CategoryMapper.xml              # 카테고리 CRUD
+├── CategoryShareMapper.xml         # 카테고리 공유
+├── CategoryPropertyMapper.xml      # 카테고리-속성 매핑
+├── BoardCategoryMapper.xml         # 보드-카테고리 매핑
+├── BoardPropertyMapper.xml         # 보드-속성 매핑
+├── ItemPropertyHistoryMapper.xml   # 속성 변경 이력
+└── ItemScoreMapper.xml             # 성과 점수
 ```
 
 ## 검증 프로세스

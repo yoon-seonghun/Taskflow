@@ -8,15 +8,18 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useItemStore } from '@/stores/item'
 import { useBoardStore } from '@/stores/board'
+import { usePropertyStore } from '@/stores/property'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
-import { Button, Spinner, MarkdownEditor } from '@/components/common'
+import { boardApi } from '@/api/board'
+import { Button, Spinner, MarkdownEditor, EntityEditModal } from '@/components/common'
 import { FileAttachment } from '@/components/file'
 import ItemForm from './ItemForm.vue'
 import ItemTransferModal from './ItemTransferModal.vue'
 import ItemShareModal from './ItemShareModal.vue'
 import { CommentList } from '@/components/comment'
 import type { Item, ItemUpdateRequest } from '@/types/item'
+import type { Category } from '@/types/category'
 
 interface Props {
   itemId: number
@@ -33,6 +36,7 @@ const emit = defineEmits<{
 
 const itemStore = useItemStore()
 const boardStore = useBoardStore()
+const propertyStore = usePropertyStore()
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -50,8 +54,14 @@ const editorContent = ref('')
 // 모달 상태
 const showTransferModal = ref(false)
 const showShareModal = ref(false)
+const showPropertyModal = ref(false)  // v2.0: 속성 선택 모달
 const canTransfer = ref(false)
 const canShare = ref(false)
+
+// v2.0: 속성 선택 모달용 상태
+const boardCategories = ref<Category[]>([])
+const selectedPropertyIds = ref<number[]>([])
+const selectedPropertyDefaults = ref<Record<number, string>>({})
 
 // 컬럼 폭 상태 (리사이즈용)
 const PROP_WIDTH_KEY = 'taskflow_prop_width'
@@ -154,6 +164,9 @@ async function loadItem() {
       editorContent.value = result.description || ''
       itemStore.startEditing(props.itemId, result)
 
+      // v2.0: 현재 아이템의 속성 정보 초기화 (모달용)
+      initializePropertySelection(result)
+
       // 권한 확인
       checkPermissions()
     } else {
@@ -166,6 +179,46 @@ async function loadItem() {
   } finally {
     isLoading.value = false
   }
+}
+
+// v2.0: 아이템의 현재 속성 정보를 모달 초기값으로 설정
+// CONCEPT_NOTE 원칙: 모달 초기값 = TB_ITEM_PROPERTY에 저장된 속성만 (보드 전체 속성 X)
+function initializePropertySelection(itemData: Item) {
+  // 1. 아이템에 실제 저장된 속성 ID 목록 (TB_ITEM_PROPERTY 기준)
+  const itemPropertyIds: number[] = []
+
+  // 2. 아이템에 저장된 속성 값 (TB_ITEM_PROPERTY)
+  const defaults: Record<number, string> = {}
+
+  // item.properties에서 속성 ID 및 값 추출 (TB_ITEM_PROPERTY 데이터)
+  if (itemData.properties && itemData.properties.length > 0) {
+    for (const prop of itemData.properties) {
+      // 속성 ID 수집 (값 유무와 관계없이 TB_ITEM_PROPERTY에 레코드가 있으면 "선택됨")
+      itemPropertyIds.push(prop.propertyId)
+      // 값 추출
+      if (prop.value !== null && prop.value !== undefined) {
+        defaults[prop.propertyId] = String(prop.value)
+      }
+    }
+  }
+
+  // propertyValues에서도 값 추출 (대안 - properties에 없는 경우)
+  if (itemData.propertyValues) {
+    for (const [propId, value] of Object.entries(itemData.propertyValues)) {
+      const propertyId = Number(propId)
+      // propertyValues에만 있고 properties에 없는 경우 추가
+      if (!itemPropertyIds.includes(propertyId)) {
+        itemPropertyIds.push(propertyId)
+      }
+      if (value !== null && value !== undefined) {
+        defaults[propertyId] = String(value)
+      }
+    }
+  }
+
+  // 3. 선택된 속성 ID = 아이템에 실제 저장된 속성만 (TB_ITEM_PROPERTY 기준)
+  selectedPropertyIds.value = itemPropertyIds
+  selectedPropertyDefaults.value = defaults
 }
 
 // 이관/공유 권한 확인
@@ -188,6 +241,114 @@ function handleTransferred(transferredItem: Item) {
 // 공유 업데이트 핸들러
 function handleShareUpdated() {
   // 필요시 아이템 새로고침
+}
+
+// v2.0: 보드 카테고리 로드
+async function loadBoardCategories() {
+  if (!props.boardId) {
+    boardCategories.value = []
+    return
+  }
+  try {
+    const response = await boardApi.getBoardCategories(props.boardId)
+    if (response.success && response.data) {
+      // BoardCategory를 Category 형태로 변환
+      // 외부 연동 키 정책: ownerId 대신 ownerUsername 사용
+      boardCategories.value = response.data.map(bc => ({
+        categoryId: bc.categoryId,
+        categoryCode: bc.categoryCode || '',
+        categoryName: bc.categoryName,
+        categoryColor: bc.categoryColor,
+        description: bc.description || '',
+        ownerType: bc.ownerType || 'USER',
+        ownerUsername: bc.ownerUsername || '',
+        sortOrder: bc.sortOrder || 0,
+        useYn: 'Y'
+      }))
+    }
+  } catch (error) {
+    console.error('Failed to load board categories:', error)
+  }
+}
+
+// v2.0: 속성 선택 모달에서 저장 핸들러
+async function handlePropertySave(data: {
+  name: string
+  description: string
+  color: string
+  categoryIds: number[]
+  categoryId: number | null
+  propertyIds: number[]
+  propertyDefaults: Record<number, string>
+}) {
+  if (!item.value || !props.boardId) return
+
+  isSaving.value = true
+  try {
+    // 1. 기존 아이템에 저장된 속성 ID 목록
+    const existingPropertyIds = new Set<number>(
+      item.value.properties?.map(p => p.propertyId) || []
+    )
+
+    // 2. 새로 선택된 속성 ID 목록
+    const newPropertyIds = new Set<number>(data.propertyIds)
+
+    // DEBUG: 데이터 흐름 확인
+    console.log('[handlePropertySave] item.value.properties:', item.value.properties)
+    console.log('[handlePropertySave] existingPropertyIds:', Array.from(existingPropertyIds))
+    console.log('[handlePropertySave] newPropertyIds (from modal):', Array.from(newPropertyIds))
+
+    // 3. properties 맵 생성
+    const properties: Record<number, unknown> = {}
+
+    // 3-1. 선택된 속성: 값이 있으면 해당 값, 없으면 빈 문자열로 INSERT 요청
+    // (빈 문자열이라도 TB_ITEM_PROPERTY에 레코드 생성하여 "선택됨" 상태 유지)
+    for (const propId of data.propertyIds) {
+      if (data.propertyDefaults[propId] !== undefined && data.propertyDefaults[propId] !== '') {
+        properties[propId] = data.propertyDefaults[propId]
+      } else {
+        // 값이 없어도 빈 문자열로 설정하여 DB에 레코드 생성
+        properties[propId] = ''
+      }
+    }
+
+    // 3-2. 선택 해제된 속성: null로 설정하여 삭제 요청
+    for (const existingPropId of existingPropertyIds) {
+      if (!newPropertyIds.has(existingPropId)) {
+        properties[existingPropId] = null
+        console.log('[handlePropertySave] 삭제 대상 속성:', existingPropId)
+      }
+    }
+
+    console.log('[handlePropertySave] 최종 properties 맵:', properties)
+
+    // 제목, 설명, 카테고리 및 속성 업데이트
+    const updateData: ItemUpdateRequest = {
+      title: data.name || undefined,
+      description: data.description || undefined,
+      categoryId: data.categoryId ?? undefined,
+      properties: Object.keys(properties).length > 0 ? properties : undefined
+    }
+
+    console.log('[handlePropertySave] API 전송 데이터:', updateData)
+
+    const result = await itemStore.updateItem(props.boardId, item.value.itemId, updateData)
+    console.log('[handlePropertySave] API 응답 result:', result)
+    console.log('[handlePropertySave] result.properties:', result?.properties)
+    if (result) {
+      // 아이템 다시 로드하여 최신 properties 반영 (API 응답에 완전한 properties 배열 포함)
+      await loadItem()
+      emit('updated', item.value!)
+      toast.success('속성이 수정되었습니다.')
+      showPropertyModal.value = false
+    } else {
+      toast.error('속성 수정에 실패했습니다.')
+    }
+  } catch (error) {
+    toast.error('속성 수정에 실패했습니다.')
+  } finally {
+    isSaving.value = false
+  }
 }
 
 // 아이템 업데이트 (속성 변경) - description은 별도 저장 (병합하지 않음)
@@ -323,6 +484,11 @@ function handleResize() {
   isMobile.value = window.innerWidth < 768
 }
 
+// v2.0: boardId 변경 시 카테고리 로드
+watch(() => props.boardId, () => {
+  loadBoardCategories()
+}, { immediate: true })
+
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   loadColumnWidths()
@@ -381,6 +547,21 @@ onUnmounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
             공유
+          </Button>
+
+          <!-- v2.0: 속성수정 버튼 -->
+          <Button
+            v-if="item && item.status !== 'DELETED'"
+            variant="ghost"
+            size="sm"
+            title="속성 수정"
+            @click="showPropertyModal = true"
+          >
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            속성수정
           </Button>
 
           <Button
@@ -596,6 +777,23 @@ onUnmounted(() => {
       :board-id="boardId"
       @close="showShareModal = false"
       @updated="handleShareUpdated"
+    />
+
+    <!-- v2.0: 속성 선택 모달 (EntityEditModal 사용) -->
+    <EntityEditModal
+      v-if="item"
+      v-model="showPropertyModal"
+      mode="item"
+      title="업무 속성 수정"
+      :categories="boardCategories"
+      :show-color="false"
+      name-label="업무명"
+      :initial-name="item.title"
+      :initial-description="item.description || ''"
+      :initial-category-id="item.categoryId"
+      :initial-property-ids="selectedPropertyIds"
+      :initial-property-defaults="selectedPropertyDefaults"
+      @save="handlePropertySave"
     />
   </div>
 </template>

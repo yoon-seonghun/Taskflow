@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useBoardStore } from '@/stores/board'
 import type { Board } from '@/types/board'
@@ -17,27 +17,35 @@ const route = useRoute()
 const router = useRouter()
 const boardStore = useBoardStore()
 
-// 보드 목록 로드
+// 보드 목록 로드 (마운트 시 항상 로드)
 onMounted(() => {
-  if (boardStore.boards.length === 0) {
-    boardStore.fetchBoards()
-  }
+  boardStore.fetchBoards()
 })
 
-// 보드 분류
+// 라우트 변경 시 보드 목록 갱신 (Tasks 페이지 진입 시)
+watch(
+  () => route.name,
+  (newRouteName) => {
+    if (newRouteName === 'Tasks' || newRouteName === 'Boards') {
+      boardStore.fetchBoards()
+    }
+  }
+)
+
+// 보드 분류 (삭제된 보드 useYn !== 'Y' 제외)
 // 내 보드 (공유하지 않은)
 const myPrivateBoards = computed(() =>
-  boardStore.boards.filter(b => b.isOwner === true && (b.shareCount || 0) === 0)
+  boardStore.boards.filter(b => b.useYn === 'Y' && b.isOwner === true && (b.shareCount || 0) === 0)
 )
 
 // 공유해준 보드 (내 보드인데 다른 사람에게 공유)
 const mySharedBoards = computed(() =>
-  boardStore.boards.filter(b => b.isOwner === true && (b.shareCount || 0) > 0)
+  boardStore.boards.filter(b => b.useYn === 'Y' && b.isOwner === true && (b.shareCount || 0) > 0)
 )
 
 // 공유받은 보드 (다른 사람이 나에게 공유)
 const receivedBoards = computed(() =>
-  boardStore.boards.filter(b => b.isOwner !== true)
+  boardStore.boards.filter(b => b.useYn === 'Y' && b.isOwner !== true)
 )
 
 // 현재 선택된 보드 ID
@@ -181,8 +189,8 @@ const menuItems = [
         </RouterLink>
       </template>
 
-      <!-- 보드 목록 섹션 -->
-      <div v-if="boardStore.boards.length > 0" class="mt-1">
+      <!-- 보드 목록 섹션 (활성 보드만 표시) -->
+      <div v-if="myPrivateBoards.length > 0 || mySharedBoards.length > 0 || receivedBoards.length > 0" class="mt-1">
         <div class="my-2 border-t border-gray-100" />
 
         <!-- 내 보드 섹션 -->

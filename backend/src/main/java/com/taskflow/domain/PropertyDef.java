@@ -15,6 +15,11 @@ import java.util.List;
  *
  * 테이블: TB_PROPERTY_DEF
  *
+ * v2.0 변경사항:
+ * - OWNER_TYPE, OWNER_USERNAME, OWNER_DEPT_CODE 필드 추가
+ * - 글로벌/매니저/사용자 속성 소유 구조
+ * - USER 타입: 개인이 생성한 속성, 카테고리에 그룹화되어 보드/업무에 활용
+ *
  * USERNAME 기반 FK 참조 시스템:
  * - CREATED_BY, UPDATED_BY: USERNAME 참조
  */
@@ -31,9 +36,24 @@ public class PropertyDef {
     private Long propertyId;
 
     /**
-     * 보드 ID (FK)
+     * 보드 ID (FK) - NULL이면 보드 미귀속 속성 (글로벌/매니저)
      */
     private Long boardId;
+
+    /**
+     * 소유 유형 (GLOBAL, MANAGER, BOARD)
+     */
+    private String ownerType;
+
+    /**
+     * 소유자 USERNAME (GLOBAL은 NULL)
+     */
+    private String ownerUsername;
+
+    /**
+     * 매니저 속성의 부서 코드 (적용 범위)
+     */
+    private String ownerDeptCode;
 
     /**
      * 속성명
@@ -45,11 +65,6 @@ public class PropertyDef {
      * TEXT, NUMBER, DATE, SELECT, MULTI_SELECT, CHECKBOX, USER
      */
     private String propertyType;
-
-    /**
-     * 필수 여부 (Y/N)
-     */
-    private String requiredYn;
 
     /**
      * 표시 순서
@@ -109,15 +124,16 @@ public class PropertyDef {
     public static final String TYPE_USER = "USER";
 
     // =============================================
-    // 편의 메서드
+    // 상수: 소유 유형
     // =============================================
 
-    /**
-     * 필수 속성 여부
-     */
-    public boolean isRequired() {
-        return "Y".equals(requiredYn);
-    }
+    public static final String OWNER_TYPE_GLOBAL = "GLOBAL";
+    public static final String OWNER_TYPE_MANAGER = "MANAGER";
+    public static final String OWNER_TYPE_USER = "USER";
+
+    // =============================================
+    // 편의 메서드
+    // =============================================
 
     /**
      * 표시 속성 여부
@@ -148,5 +164,26 @@ public class PropertyDef {
             options = new ArrayList<>();
         }
         options.add(option);
+    }
+
+    /**
+     * 글로벌 속성 여부
+     */
+    public boolean isGlobal() {
+        return OWNER_TYPE_GLOBAL.equals(ownerType);
+    }
+
+    /**
+     * 매니저 속성 여부
+     */
+    public boolean isManager() {
+        return OWNER_TYPE_MANAGER.equals(ownerType);
+    }
+
+    /**
+     * 사용자 속성 여부
+     */
+    public boolean isUser() {
+        return OWNER_TYPE_USER.equals(ownerType);
     }
 }

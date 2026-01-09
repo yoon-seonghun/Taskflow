@@ -74,7 +74,7 @@
             g.GROUP_NAME,
             g.GROUP_COLOR,
             cat.CATEGORY_NAME,
-            cat.COLOR AS CATEGORY_COLOR,
+            cat.CATEGORY_COLOR,
             ua.NAME AS ASSIGNEE_NAME,
             uc.NAME AS CREATED_BY_NAME,
             uu.NAME AS UPDATED_BY_NAME,
@@ -107,6 +107,9 @@
         </if>
         <if test="request.categoryId != null">
             AND i.CATEGORY_ID = #{request.categoryId}
+        </if>
+        <if test="request.departmentCode != null and request.departmentCode != ''">
+            AND ua.DEPARTMENT_CODE = #{request.departmentCode}
         </if>
         <if test="request.startDate != null">
             AND DATE(i.CREATED_AT) >= #{request.startDate}

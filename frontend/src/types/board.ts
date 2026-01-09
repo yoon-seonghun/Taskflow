@@ -50,6 +50,7 @@ export interface BoardCreateRequest {
   boardDescription?: string
   defaultView?: ViewType
   color?: string
+  categoryIds?: number[]  // 연결할 카테고리 ID 목록
 }
 
 export interface BoardUpdateRequest {
@@ -125,4 +126,55 @@ export interface TransferResultResponse {
 export interface BoardTransferRequest {
   targetUsername: string  // 이관받을 사용자 USERNAME
   reason?: string         // 이관 사유 (선택)
+}
+
+// =============================================
+// v2.0: 보드-속성 매핑
+// =============================================
+
+/**
+ * 보드 속성 응답 DTO
+ */
+export interface BoardProperty {
+  boardPropertyId: number
+  boardId: number
+  propertyId: number
+  propertyName: string
+  propertyType: string
+  ownerType?: string  // GLOBAL/MANAGER/USER
+  requiredYn?: string
+  visibleYn?: string
+  sortOrder?: number
+  defaultValue?: string
+  createdAt?: string
+  createdBy?: string
+}
+
+/**
+ * 보드 속성 설정 요청 DTO
+ */
+export interface BoardPropertyRequest {
+  requiredYn?: string
+  visibleYn?: string
+  defaultValue?: string
+  sortOrder?: number
+}
+
+/**
+ * 보드 카테고리 응답 DTO
+ */
+export interface BoardCategory {
+  boardCategoryId: number
+  boardId: number
+  categoryId: number
+  categoryCode?: string
+  categoryName: string
+  categoryColor?: string
+  description?: string
+  ownerType?: string  // GLOBAL, MANAGER, USER
+  ownerUsername?: string
+  ownerId?: number  // deprecated: 외부 연동 키 정책에 따라 ownerUsername 사용 권장
+  sortOrder?: number
+  isDefault?: boolean
+  createdAt?: string
 }

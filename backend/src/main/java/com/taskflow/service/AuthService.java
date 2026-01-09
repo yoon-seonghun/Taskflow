@@ -37,7 +37,8 @@ public interface AuthService {
      *
      * @param userId 사용자 ID
      * @param username 로그인 아이디
+     * @param role 사용자 역할
      * @return Refresh Token
      */
-    String createRefreshToken(Long userId, String username);
+    String createRefreshToken(Long userId, String username, String role);
 }

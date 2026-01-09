@@ -66,7 +66,8 @@ public class AuthController {
         // Refresh Token 생성 및 Cookie 설정
         String refreshToken = authService.createRefreshToken(
                 loginResponse.getUser().getUserId(),
-                loginResponse.getUser().getUsername()
+                loginResponse.getUser().getUsername(),
+                loginResponse.getUser().getRole()
         );
         setRefreshTokenCookie(response, refreshToken);
 

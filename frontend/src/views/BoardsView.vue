@@ -5,22 +5,28 @@
  * - 보드 CRUD
  * - 보드 삭제 시 업무 이관
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useBoardStore } from '@/stores/board'
+import { useCategoryStore } from '@/stores/category'
 import { useUiStore } from '@/stores/ui'
 import { userApi } from '@/api/user'
+import { boardApi } from '@/api/board'
 import ShareUserSearch from '@/components/share/ShareUserSearch.vue'
 import ShareUserList from '@/components/share/ShareUserList.vue'
-import type { Board, BoardListResponse, BoardCreateRequest, TransferPreviewResponse, BoardShare, BoardShareRequest } from '@/types/board'
+import { EntityEditModal } from '@/components/common'
+import type { Board, BoardListResponse, BoardCreateRequest, TransferPreviewResponse, BoardShare, BoardShareRequest, BoardProperty, BoardCategory } from '@/types/board'
 import type { User } from '@/types/user'
+import type { Category } from '@/types/category'
 
 const boardStore = useBoardStore()
+const categoryStore = useCategoryStore()
 const uiStore = useUiStore()
 
 // 상태
 const loading = ref(false)
 const boardList = ref<BoardListResponse | null>(null)
 const users = ref<User[]>([])
+const categories = ref<Category[]>([])
 
 // 드래그 앤 드롭 상태
 const draggedBoard = ref<Board | null>(null)
@@ -43,8 +49,15 @@ const shareAdding = ref(false)
 const formData = ref({
   boardName: '',
   description: '',
-  color: '#3B82F6'
+  color: '#3B82F6',
+  categoryIds: [] as number[],
+  propertyIds: [] as number[],
+  propertyDefaults: {} as Record<number, string>
 })
+
+// 기존 보드의 카테고리/속성 (수정 시 사용)
+const existingBoardCategories = ref<BoardCategory[]>([])
+const existingBoardProperties = ref<BoardProperty[]>([])
 
 // 삭제 폼
 const deleteFormData = ref({
@@ -70,6 +83,7 @@ const colorOptions = [
 onMounted(async () => {
   await loadBoards()
   await loadUsers()
+  await loadCategories()
 })
 
 // 보드 목록 로드
@@ -97,25 +111,80 @@ async function loadUsers() {
   }
 }
 
+// 카테고리 목록 로드
+async function loadCategories() {
+  try {
+    await categoryStore.fetchAccessibleCategories()
+    categories.value = categoryStore.activeAccessibleCategories
+  } catch (error) {
+    console.error('Failed to load categories:', error)
+  }
+}
+
 // 보드 생성 모달 열기
 function openCreateModal() {
   formData.value = {
     boardName: '',
     description: '',
-    color: '#3B82F6'
+    color: '#3B82F6',
+    categoryIds: [],
+    propertyIds: [],
+    propertyDefaults: {}
   }
+  existingBoardCategories.value = []
+  existingBoardProperties.value = []
   showCreateModal.value = true
 }
 
 // 보드 수정 모달 열기
-function openEditModal(board: Board) {
+async function openEditModal(board: Board) {
   selectedBoard.value = board
   formData.value = {
     boardName: board.boardName,
     description: board.description || '',
-    color: board.color || '#3B82F6'
+    color: board.color || '#3B82F6',
+    categoryIds: [],
+    propertyIds: [],
+    propertyDefaults: {}
   }
   showEditModal.value = true
+
+  // 기존 카테고리와 속성 로드
+  try {
+    const [catRes, propRes] = await Promise.all([
+      boardApi.getBoardCategories(board.boardId),
+      boardApi.getBoardProperties(board.boardId)
+    ])
+
+    // 카테고리 로드 결과 처리
+    if (catRes.success && catRes.data) {
+      existingBoardCategories.value = catRes.data
+      formData.value.categoryIds = catRes.data.map(c => c.categoryId)
+    } else {
+      existingBoardCategories.value = []
+      formData.value.categoryIds = []
+    }
+
+    // 속성 로드 결과 처리
+    if (propRes.success && propRes.data) {
+      existingBoardProperties.value = propRes.data
+      formData.value.propertyIds = propRes.data.map(p => p.propertyId)
+      // 기본값 설정
+      propRes.data.forEach(p => {
+        if (p.defaultValue) {
+          formData.value.propertyDefaults[p.propertyId] = p.defaultValue
+        }
+      })
+    } else {
+      existingBoardProperties.value = []
+      formData.value.propertyIds = []
+    }
+  } catch (error) {
+    console.error('Failed to load board categories/properties:', error)
+    // 로드 실패 시 기본값 설정
+    existingBoardCategories.value = []
+    existingBoardProperties.value = []
+  }
 }
 
 // 보드 삭제 모달 열기
@@ -137,22 +206,42 @@ async function openDeleteModal(board: Board) {
   showDeleteModal.value = true
 }
 
-// 보드 생성
-async function handleCreate() {
-  if (!formData.value.boardName.trim()) {
+// 보드 생성 (EntityEditModal에서 호출)
+async function handleCreateSave(data: {
+  name: string
+  description: string
+  color: string
+  categoryIds: number[]
+  categoryId: number | null
+  propertyIds: number[]
+  propertyDefaults: Record<number, string>
+}) {
+  if (!data.name.trim()) {
     uiStore.showError('보드 이름을 입력해주세요.')
     return
   }
 
   try {
     const request: BoardCreateRequest = {
-      boardName: formData.value.boardName,
-      boardDescription: formData.value.description,
-      color: formData.value.color
+      boardName: data.name,
+      boardDescription: data.description,
+      color: data.color,
+      categoryIds: data.categoryIds.length > 0 ? data.categoryIds : undefined
     }
 
     const result = await boardStore.createBoard(request)
     if (result) {
+      // 속성 추가
+      if (data.propertyIds.length > 0) {
+        await Promise.all(
+          data.propertyIds.map(propertyId =>
+            boardApi.addBoardProperty(result.boardId, propertyId, {
+              defaultValue: data.propertyDefaults[propertyId] || undefined
+            })
+          )
+        )
+      }
+
       uiStore.showSuccess('보드가 생성되었습니다.')
       showCreateModal.value = false
       await loadBoards()
@@ -165,28 +254,80 @@ async function handleCreate() {
   }
 }
 
-// 보드 수정
-async function handleUpdate() {
+// 보드 수정 (EntityEditModal에서 호출)
+async function handleUpdateSave(data: {
+  name: string
+  description: string
+  color: string
+  categoryIds: number[]
+  categoryId: number | null
+  propertyIds: number[]
+  propertyDefaults: Record<number, string>
+}) {
   if (!selectedBoard.value) return
-  if (!formData.value.boardName.trim()) {
+  if (!data.name.trim()) {
     uiStore.showError('보드 이름을 입력해주세요.')
     return
   }
 
+  const boardId = selectedBoard.value.boardId
+
   try {
-    const success = await boardStore.updateBoard(selectedBoard.value.boardId, {
-      boardName: formData.value.boardName,
-      boardDescription: formData.value.description,
-      color: formData.value.color
+    // 1. 기본 정보 수정
+    const success = await boardStore.updateBoard(boardId, {
+      boardName: data.name,
+      boardDescription: data.description,
+      color: data.color
     })
 
-    if (success) {
-      uiStore.showSuccess('보드가 수정되었습니다.')
-      showEditModal.value = false
-      await loadBoards()
-    } else {
+    if (!success) {
       uiStore.showError(boardStore.error || '보드 수정에 실패했습니다.')
+      return
     }
+
+    // 2. 카테고리 변경 처리
+    const existingCatIds = new Set(existingBoardCategories.value.map(c => c.categoryId))
+    const newCatIds = new Set(data.categoryIds)
+
+    // 제거할 카테고리
+    const catsToRemove = [...existingCatIds].filter(id => !newCatIds.has(id))
+    // 추가할 카테고리
+    const catsToAdd = [...newCatIds].filter(id => !existingCatIds.has(id))
+
+    await Promise.all([
+      ...catsToRemove.map(catId => boardApi.removeBoardCategory(boardId, catId)),
+      ...catsToAdd.map(catId => boardApi.addBoardCategory(boardId, catId))
+    ])
+
+    // 3. 속성 변경 처리
+    const existingPropIds = new Set(existingBoardProperties.value.map(p => p.propertyId))
+    const newPropIds = new Set(data.propertyIds)
+
+    // 제거할 속성
+    const propsToRemove = [...existingPropIds].filter(id => !newPropIds.has(id))
+    // 추가할 속성
+    const propsToAdd = [...newPropIds].filter(id => !existingPropIds.has(id))
+
+    await Promise.all([
+      ...propsToRemove.map(propId => boardApi.removeBoardProperty(boardId, propId)),
+      ...propsToAdd.map(propId => boardApi.addBoardProperty(boardId, propId, {
+        defaultValue: data.propertyDefaults[propId] || undefined
+      }))
+    ])
+
+    // 4. 기존 속성 기본값 업데이트
+    const existingProps = existingBoardProperties.value.filter(p => newPropIds.has(p.propertyId))
+    await Promise.all(
+      existingProps
+        .filter(p => p.defaultValue !== data.propertyDefaults[p.propertyId])
+        .map(p => boardApi.updateBoardProperty(boardId, p.propertyId, {
+          defaultValue: data.propertyDefaults[p.propertyId] || undefined
+        }))
+    )
+
+    uiStore.showSuccess('보드가 수정되었습니다.')
+    showEditModal.value = false
+    await loadBoards()
   } catch (error) {
     console.error('Failed to update board:', error)
     uiStore.showError('보드 수정에 실패했습니다.')
@@ -608,124 +749,34 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
     </template>
 
     <!-- 보드 생성 모달 -->
-    <Teleport to="body">
-      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="fixed inset-0 bg-black/50" @click="showCreateModal = false" />
-        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">새 보드 만들기</h3>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">보드 이름 *</label>
-              <input
-                v-model="formData.boardName"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="보드 이름을 입력하세요"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">설명</label>
-              <textarea
-                v-model="formData.description"
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="보드 설명을 입력하세요"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">색상</label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="color in colorOptions"
-                  :key="color"
-                  @click="formData.color = color"
-                  class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
-                  :class="formData.color === color ? 'border-gray-900 scale-110' : 'border-transparent'"
-                  :style="{ backgroundColor: color }"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-3 mt-6">
-            <button
-              @click="showCreateModal = false"
-              class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-            >
-              취소
-            </button>
-            <button
-              @click="handleCreate"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
-            >
-              생성
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <EntityEditModal
+      v-model="showCreateModal"
+      mode="board"
+      title="새 보드 만들기"
+      :categories="categories"
+      :color-options="colorOptions"
+      name-label="보드 이름"
+      @save="handleCreateSave"
+      @cancel="showCreateModal = false"
+    />
 
     <!-- 보드 수정 모달 -->
-    <Teleport to="body">
-      <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="fixed inset-0 bg-black/50" @click="showEditModal = false" />
-        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">보드 수정</h3>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">보드 이름 *</label>
-              <input
-                v-model="formData.boardName"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">설명</label>
-              <textarea
-                v-model="formData.description"
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">색상</label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="color in colorOptions"
-                  :key="color"
-                  @click="formData.color = color"
-                  class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
-                  :class="formData.color === color ? 'border-gray-900 scale-110' : 'border-transparent'"
-                  :style="{ backgroundColor: color }"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-3 mt-6">
-            <button
-              @click="showEditModal = false"
-              class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-            >
-              취소
-            </button>
-            <button
-              @click="handleUpdate"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
-            >
-              저장
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <EntityEditModal
+      v-model="showEditModal"
+      mode="board"
+      title="보드 수정"
+      :categories="categories"
+      :color-options="colorOptions"
+      name-label="보드 이름"
+      :initial-name="formData.boardName"
+      :initial-description="formData.description"
+      :initial-color="formData.color"
+      :initial-category-ids="formData.categoryIds"
+      :initial-property-ids="formData.propertyIds"
+      :initial-property-defaults="formData.propertyDefaults"
+      @save="handleUpdateSave"
+      @cancel="showEditModal = false"
+    />
 
     <!-- 보드 삭제 모달 -->
     <Teleport to="body">

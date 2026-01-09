@@ -1,4 +1,4 @@
-import { get, post, put, del } from './client'
+import { get, post, put, del, patch } from './client'
 import type {
   Board,
   BoardCreateRequest,
@@ -11,7 +11,10 @@ import type {
   BoardOrderRequest,
   TransferPreviewResponse,
   TransferResultResponse,
-  BoardTransferRequest
+  BoardTransferRequest,
+  BoardProperty,
+  BoardPropertyRequest,
+  BoardCategory
 } from '@/types/board'
 
 export const boardApi = {
@@ -90,5 +93,45 @@ export const boardApi = {
 
   removeBoardShare(boardId: number, username: string) {
     return del<void>(`/boards/${boardId}/shares/${username}`)
+  },
+
+  // =============================================
+  // v2.0: 보드 카테고리 관리
+  // =============================================
+
+  getBoardCategories(boardId: number) {
+    return get<BoardCategory[]>(`/boards/${boardId}/categories`)
+  },
+
+  addBoardCategory(boardId: number, categoryId: number) {
+    return post<void>(`/boards/${boardId}/categories/${categoryId}`)
+  },
+
+  removeBoardCategory(boardId: number, categoryId: number) {
+    return del<void>(`/boards/${boardId}/categories/${categoryId}`)
+  },
+
+  setDefaultCategory(boardId: number, categoryId: number) {
+    return patch<void>(`/boards/${boardId}/categories/${categoryId}/default`)
+  },
+
+  // =============================================
+  // v2.0: 보드 속성 관리
+  // =============================================
+
+  getBoardProperties(boardId: number) {
+    return get<BoardProperty[]>(`/boards/${boardId}/properties`)
+  },
+
+  addBoardProperty(boardId: number, propertyId: number, data?: BoardPropertyRequest) {
+    return post<void>(`/boards/${boardId}/properties/${propertyId}`, data)
+  },
+
+  removeBoardProperty(boardId: number, propertyId: number) {
+    return del<void>(`/boards/${boardId}/properties/${propertyId}`)
+  },
+
+  updateBoardProperty(boardId: number, propertyId: number, data: BoardPropertyRequest) {
+    return put<void>(`/boards/${boardId}/properties/${propertyId}`, data)
   }
 }

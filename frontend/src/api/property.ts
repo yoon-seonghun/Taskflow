@@ -18,7 +18,10 @@ export interface GetOptionsParams {
 }
 
 export const propertyApi = {
-  // 속성 정의
+  // =============================================
+  // 보드별 속성 정의 (레거시)
+  // =============================================
+
   getProperties(boardId: number, params?: GetPropertiesParams) {
     const queryParams = new URLSearchParams()
     if (params?.useYn) queryParams.append('useYn', params.useYn)
@@ -43,7 +46,89 @@ export const propertyApi = {
     return del<void>(`/properties/${propertyId}`)
   },
 
+  // =============================================
+  // v2.0: 소유 유형별 속성 API
+  // =============================================
+
+  /**
+   * 글로벌 속성 목록 조회
+   */
+  getGlobalProperties() {
+    return get<PropertyDef[]>('/properties/global')
+  },
+
+  /**
+   * 글로벌 속성 생성 (관리자 전용)
+   */
+  createGlobalProperty(data: PropertyCreateRequest) {
+    return post<PropertyDef>('/properties/global', data)
+  },
+
+  /**
+   * 매니저 속성 목록 조회 (본인 소유 + 상위 부서)
+   */
+  getManagerProperties() {
+    return get<PropertyDef[]>('/properties/manager')
+  },
+
+  /**
+   * 매니저 속성 생성
+   */
+  createManagerProperty(data: PropertyCreateRequest) {
+    return post<PropertyDef>('/properties/manager', data)
+  },
+
+  /**
+   * 사용자 속성 목록 조회 (본인이 생성한 속성)
+   */
+  getUserProperties() {
+    return get<PropertyDef[]>('/properties/user')
+  },
+
+  /**
+   * 사용자 속성 생성 (개인 속성)
+   */
+  createUserProperty(data: PropertyCreateRequest) {
+    return post<PropertyDef>('/properties/user', data)
+  },
+
+  /**
+   * 사용자가 접근 가능한 모든 속성 조회 (글로벌 + 매니저 + 본인)
+   * 카테고리/보드에서 속성 선택 시 사용
+   */
+  getAccessibleProperties() {
+    return get<PropertyDef[]>('/properties/accessible')
+  },
+
+  // =============================================
+  // v2.0: 속성 이관 API
+  // =============================================
+
+  /**
+   * 속성 소유권 이전
+   */
+  transferProperty(propertyId: number, newOwnerUsername: string) {
+    return post<PropertyDef>(`/properties/${propertyId}/transfer?newOwner=${encodeURIComponent(newOwnerUsername)}`)
+  },
+
+  /**
+   * 속성 복사 (다른 사용자에게)
+   */
+  copyPropertyToUser(propertyId: number, newOwnerUsername: string) {
+    return post<PropertyDef>(`/properties/${propertyId}/copy?newOwner=${encodeURIComponent(newOwnerUsername)}`)
+  },
+
+  /**
+   * 속성 일괄 이전
+   */
+  transferProperties(propertyIds: number[], newOwnerUsername: string) {
+    return post<PropertyDef[]>(`/properties/transfer-batch?newOwner=${encodeURIComponent(newOwnerUsername)}`, propertyIds)
+  },
+
+  // =============================================
   // 속성 옵션
+  // =============================================
+
   getOptions(propertyId: number, params?: GetOptionsParams) {
     const queryParams = new URLSearchParams()
     if (params?.useYn) queryParams.append('useYn', params.useYn)

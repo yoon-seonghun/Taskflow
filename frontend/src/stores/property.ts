@@ -28,10 +28,26 @@ export const usePropertyStore = defineStore('property', () => {
     activeProperties.value.filter(p => p.visibleYn === 'Y' || (p.visibleYn === undefined && p.hiddenYn !== 'Y'))
   )
 
-  // 정렬 순서대로 정렬된 속성 (sortOrder가 null이면 0으로 처리)
-  const sortedProperties = computed(() =>
-    [...visibleProperties.value].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-  )
+  // 정렬 순서대로 정렬된 속성
+  // 1차: ownerType (GLOBAL → MANAGER → USER)
+  // 2차: sortOrder (null이면 0으로 처리)
+  const sortedProperties = computed(() => {
+    const ownerTypeOrder: Record<string, number> = {
+      'GLOBAL': 0,
+      'MANAGER': 1,
+      'USER': 2
+    }
+    return [...visibleProperties.value].sort((a, b) => {
+      // 1차 정렬: ownerType
+      const ownerOrderA = ownerTypeOrder[a.ownerType || 'USER'] ?? 2
+      const ownerOrderB = ownerTypeOrder[b.ownerType || 'USER'] ?? 2
+      if (ownerOrderA !== ownerOrderB) {
+        return ownerOrderA - ownerOrderB
+      }
+      // 2차 정렬: sortOrder
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+    })
+  })
 
   // 시스템 속성 (상태, 우선순위 등) - systemYn이 없으면 일반 속성으로 간주
   const systemProperties = computed(() =>

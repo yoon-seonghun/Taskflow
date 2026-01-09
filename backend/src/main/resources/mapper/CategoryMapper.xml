@@ -9,14 +9,28 @@
 
     <resultMap id="CategoryResultMap" type="com.taskflow.domain.Category">
         <id property="categoryId" column="CATEGORY_ID"/>
+        <result property="categoryCode" column="CATEGORY_CODE"/>
         <result property="categoryName" column="CATEGORY_NAME"/>
-        <result property="color" column="COLOR"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="categoryColor" column="CATEGORY_COLOR"/>
+        <result property="ownerUsername" column="OWNER_USERNAME"/>
+        <result property="ownerName" column="OWNER_NAME"/>
         <result property="sortOrder" column="SORT_ORDER"/>
         <result property="useYn" column="USE_YN"/>
+        <result property="propertyCount" column="PROPERTY_COUNT"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
         <result property="updatedBy" column="UPDATED_BY"/>
+    </resultMap>
+
+    <resultMap id="CategoryWithDetailsResultMap" type="com.taskflow.domain.Category" extends="CategoryResultMap">
+        <collection property="properties" ofType="com.taskflow.domain.CategoryProperty"
+                    select="com.taskflow.mapper.CategoryPropertyMapper.findByCategoryId"
+                    column="CATEGORY_ID"/>
+        <collection property="shares" ofType="com.taskflow.domain.CategoryShare"
+                    select="com.taskflow.mapper.CategoryShareMapper.findByCategoryId"
+                    column="CATEGORY_ID"/>
     </resultMap>
 
     <!-- ============================================= -->
@@ -26,15 +40,21 @@
     <sql id="selectCategory">
         SELECT
             c.CATEGORY_ID,
+            c.CATEGORY_CODE,
             c.CATEGORY_NAME,
-            c.COLOR,
+            c.DESCRIPTION,
+            c.CATEGORY_COLOR,
+            c.OWNER_USERNAME,
+            u.NAME AS OWNER_NAME,
             c.SORT_ORDER,
             c.USE_YN,
+            (SELECT COUNT(*) FROM TB_CATEGORY_PROPERTY WHERE CATEGORY_ID = c.CATEGORY_ID) AS PROPERTY_COUNT,
             c.CREATED_AT,
             c.CREATED_BY,
             c.UPDATED_AT,
             c.UPDATED_BY
         FROM TB_CATEGORY c
+        LEFT JOIN TB_USER u ON c.OWNER_USERNAME = u.USERNAME
     </sql>
 
     <!-- ============================================= -->
@@ -45,6 +65,69 @@
     <select id="findById" resultMap="CategoryResultMap">
         <include refid="selectCategory"/>
         WHERE c.CATEGORY_ID = #{categoryId}
+    </select>
+
+    <!-- 카테고리 ID로 조회 (속성/공유 목록 포함) -->
+    <select id="findByIdWithDetails" resultMap="CategoryWithDetailsResultMap">
+        <include refid="selectCategory"/>
+        WHERE c.CATEGORY_ID = #{categoryId}
+    </select>
+
+    <!-- 카테고리 코드로 조회 -->
+    <select id="findByCode" resultMap="CategoryResultMap">
+        <include refid="selectCategory"/>
+        WHERE c.CATEGORY_CODE = #{categoryCode}
+          AND c.USE_YN = 'Y'
+    </select>
+
+    <!-- 소유자별 카테고리 목록 조회 -->
+    <select id="findByOwner" resultMap="CategoryResultMap">
+        <include refid="selectCategory"/>
+        WHERE c.OWNER_USERNAME = #{ownerUsername}
+          AND c.USE_YN = 'Y'
+        ORDER BY c.SORT_ORDER, c.CATEGORY_NAME
+    </select>
+
+    <!-- 공유받은 카테고리 목록 조회 (사용자) -->
+    <select id="findSharedWithUser" resultMap="CategoryResultMap">
+        <include refid="selectCategory"/>
+        WHERE c.USE_YN = 'Y'
+          AND c.CATEGORY_ID IN (
+              SELECT cs.CATEGORY_ID
+              FROM TB_CATEGORY_SHARE cs
+              WHERE cs.SHARE_TYPE = 'USER'
+                AND cs.SHARE_TARGET = #{username}
+          )
+        ORDER BY c.SORT_ORDER, c.CATEGORY_NAME
+    </select>
+
+    <!-- 공유받은 카테고리 목록 조회 (부서) -->
+    <select id="findSharedWithDepartment" resultMap="CategoryResultMap">
+        <include refid="selectCategory"/>
+        WHERE c.USE_YN = 'Y'
+          AND c.CATEGORY_ID IN (
+              SELECT cs.CATEGORY_ID
+              FROM TB_CATEGORY_SHARE cs
+              WHERE cs.SHARE_TYPE = 'DEPARTMENT'
+                AND cs.SHARE_TARGET = #{deptCode}
+          )
+        ORDER BY c.SORT_ORDER, c.CATEGORY_NAME
+    </select>
+
+    <!-- 사용 가능한 카테고리 목록 조회 (소유 + 공유받은) -->
+    <select id="findAccessible" resultMap="CategoryResultMap">
+        <include refid="selectCategory"/>
+        WHERE c.USE_YN = 'Y'
+          AND (
+              c.OWNER_USERNAME = #{username}
+              OR c.CATEGORY_ID IN (
+                  SELECT cs.CATEGORY_ID
+                  FROM TB_CATEGORY_SHARE cs
+                  WHERE (cs.SHARE_TYPE = 'USER' AND cs.SHARE_TARGET = #{username})
+                     OR (cs.SHARE_TYPE = 'DEPARTMENT' AND cs.SHARE_TARGET = #{deptCode})
+              )
+          )
+        ORDER BY c.OWNER_USERNAME = #{username} DESC, c.SORT_ORDER, c.CATEGORY_NAME
     </select>
 
     <!-- 전체 카테고리 목록 조회 (활성만) -->
@@ -69,6 +152,7 @@
     <select id="findByName" resultMap="CategoryResultMap">
         <include refid="selectCategory"/>
         WHERE c.CATEGORY_NAME = #{categoryName}
+          AND c.USE_YN = 'Y'
     </select>
 
     <!-- 카테고리명 중복 확인 -->
@@ -90,16 +174,42 @@
         )
     </select>
 
+    <!-- 카테고리 코드 중복 확인 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_CATEGORY
+            WHERE CATEGORY_CODE = #{categoryCode}
+              AND USE_YN = 'Y'
+        )
+    </select>
+
+    <!-- 카테고리 코드 중복 확인 (자신 제외) -->
+    <select id="existsByCodeAndIdNot" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_CATEGORY
+            WHERE CATEGORY_CODE = #{categoryCode}
+              AND CATEGORY_ID != #{categoryId}
+              AND USE_YN = 'Y'
+        )
+    </select>
+
     <!-- 최대 정렬 순서 조회 -->
     <select id="getMaxSortOrder" resultType="java.lang.Integer">
         SELECT COALESCE(MAX(SORT_ORDER), 0)
         FROM TB_CATEGORY
     </select>
 
-    <!-- 카테고리 사용 여부 확인 (아이템에서 사용 중인지) -->
-    <select id="hasItems" resultType="boolean">
+    <!-- 소유자별 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrderByOwner" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0)
+        FROM TB_CATEGORY
+        WHERE OWNER_USERNAME = #{ownerUsername}
+    </select>
+
+    <!-- 카테고리 사용 여부 확인 (보드에서 사용 중인지) -->
+    <select id="hasBoards" resultType="boolean">
         SELECT EXISTS (
-            SELECT 1 FROM TB_ITEM
+            SELECT 1 FROM TB_BOARD_CATEGORY
             WHERE CATEGORY_ID = #{categoryId}
         )
     </select>
@@ -111,14 +221,20 @@
     <!-- 카테고리 등록 -->
     <insert id="insert" parameterType="com.taskflow.domain.Category" useGeneratedKeys="true" keyProperty="categoryId">
         INSERT INTO TB_CATEGORY (
+            CATEGORY_CODE,
             CATEGORY_NAME,
-            COLOR,
+            DESCRIPTION,
+            CATEGORY_COLOR,
+            OWNER_USERNAME,
             SORT_ORDER,
             USE_YN,
             CREATED_BY
         ) VALUES (
+            #{categoryCode},
             #{categoryName},
-            COALESCE(#{color}, '#6B7280'),
+            #{description},
+            COALESCE(#{categoryColor}, '#6B7280'),
+            #{ownerUsername},
             #{sortOrder},
             COALESCE(#{useYn}, 'Y'),
             #{createdBy}
@@ -129,8 +245,10 @@
     <update id="update" parameterType="com.taskflow.domain.Category">
         UPDATE TB_CATEGORY
         SET
+            CATEGORY_CODE = #{categoryCode},
             CATEGORY_NAME = #{categoryName},
-            COLOR = #{color},
+            DESCRIPTION = #{description},
+            CATEGORY_COLOR = #{categoryColor},
             SORT_ORDER = #{sortOrder},
             USE_YN = #{useYn},
             UPDATED_BY = #{updatedBy},
@@ -148,7 +266,7 @@
         WHERE CATEGORY_ID = #{categoryId}
     </update>
 
-    <!-- 카테고리 물리 삭제 (사용 금지 - 논리 삭제만 사용) -->
+    <!-- 카테고리 물리 삭제 -->
     <delete id="delete">
         DELETE FROM TB_CATEGORY
         WHERE CATEGORY_ID = #{categoryId}
