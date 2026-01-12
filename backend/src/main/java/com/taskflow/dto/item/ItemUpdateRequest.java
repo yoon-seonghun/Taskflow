@@ -83,6 +83,11 @@ public class ItemUpdateRequest {
     private Map<Long, Object> properties;
 
     /**
+     * 속성 정렬 순서 (propertyId -> sortOrder)
+     */
+    private Map<Long, Integer> propertySortOrders;
+
+    /**
      * null로 설정할 필드 목록
      * 프론트엔드에서 특정 필드를 명시적으로 null로 설정할 때 사용
      * 예: ["requestDate", "dueDate", "assigneeUsername", "groupId"]

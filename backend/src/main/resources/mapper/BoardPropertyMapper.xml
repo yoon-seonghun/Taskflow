@@ -22,6 +22,8 @@
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
         <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
     </resultMap>
 
     <!-- ============================================= -->
@@ -43,7 +45,9 @@
             bp.CREATED_AT,
             bp.CREATED_BY,
             bp.UPDATED_AT,
-            bp.UPDATED_BY
+            bp.UPDATED_BY,
+            bp.DELETED_AT,
+            bp.DELETED_BY
         FROM TB_BOARD_PROPERTY bp
         LEFT JOIN TB_PROPERTY_DEF pd ON bp.PROPERTY_ID = pd.PROPERTY_ID
     </sql>

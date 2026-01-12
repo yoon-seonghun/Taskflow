@@ -28,6 +28,8 @@
         <result property="completedAt" column="COMPLETED_AT"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
     </resultMap>
 
     <resultMap id="ScoreSummaryResultMap" type="com.taskflow.dto.score.ScoreSummaryResponse">
@@ -70,7 +72,9 @@
             s.DUE_DATE,
             s.COMPLETED_AT,
             s.CREATED_AT,
-            s.CREATED_BY
+            s.CREATED_BY,
+            s.DELETED_AT,
+            s.DELETED_BY
         FROM TB_ITEM_SCORE s
         LEFT JOIN TB_ITEM i ON s.ITEM_ID = i.ITEM_ID
         LEFT JOIN TB_USER u ON s.ASSIGNEE_USERNAME = u.USERNAME

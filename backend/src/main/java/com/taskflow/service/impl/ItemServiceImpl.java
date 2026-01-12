@@ -189,7 +189,8 @@ public class ItemServiceImpl implements ItemService {
 
         // 동적 속성값 저장 (사용자가 명시적으로 지정한 속성값 - 상속값을 덮어씀)
         if (request.getProperties() != null && !request.getProperties().isEmpty()) {
-            saveItemProperties(item.getItemId(), boardId, request.getProperties(), createdBy);
+            saveItemProperties(item.getItemId(), boardId, request.getProperties(),
+                    request.getPropertySortOrders(), createdBy);
         }
 
         ItemResponse response = getItem(item.getItemId());
@@ -298,8 +299,9 @@ public class ItemServiceImpl implements ItemService {
         }
 
         // 동적 속성값 저장 (카테고리 변경 처리 후 사용자 지정값 적용)
-        if (request.getProperties() != null) {
-            saveItemProperties(itemId, item.getBoardId(), request.getProperties(), updatedBy);
+        if (request.getProperties() != null && !request.getProperties().isEmpty()) {
+            saveItemProperties(itemId, item.getBoardId(), request.getProperties(),
+                    request.getPropertySortOrders(), updatedBy);
         }
 
         ItemResponse response = getItem(itemId);
@@ -549,8 +551,15 @@ public class ItemServiceImpl implements ItemService {
      * - GLOBAL 속성: boardId가 null, 모든 보드에서 사용 가능
      * - MANAGER 속성: boardId가 null, 소유자/부서 기준으로 사용 가능
      * - BOARD 속성: boardId가 지정됨, 해당 보드에서만 사용 가능
+     *
+     * @param itemId             아이템 ID
+     * @param boardId            보드 ID
+     * @param propertyValues     속성값 맵 (propertyId -> value)
+     * @param propertySortOrders 속성 정렬 순서 맵 (propertyId -> sortOrder), null 가능
+     * @param username           사용자명
      */
-    private void saveItemProperties(Long itemId, Long boardId, Map<Long, Object> propertyValues, String username) {
+    private void saveItemProperties(Long itemId, Long boardId, Map<Long, Object> propertyValues,
+                                    Map<Long, Integer> propertySortOrders, String username) {
         for (Map.Entry<Long, Object> entry : propertyValues.entrySet()) {
             Long propertyId = entry.getKey();
             Object value = entry.getValue();
@@ -571,7 +580,10 @@ public class ItemServiceImpl implements ItemService {
             }
             // GLOBAL, MANAGER, USER 속성은 boardId와 무관하게 사용 가능 (카테고리를 통해 보드에 연결됨)
 
-            // 값이 null이면 삭제 (빈 문자열은 "선택됨" 상태로 INSERT/UPDATE)
+            // sortOrder 가져오기
+            Integer sortOrder = (propertySortOrders != null) ? propertySortOrders.get(propertyId) : null;
+
+            // 값이 null이면 삭제 (빈 문자열 ""은 "선택됨" 상태로 유지 - 프론트엔드 의도)
             if (value == null) {
                 itemPropertyMapper.deleteByItemIdAndPropertyId(itemId, propertyId);
                 if (PropertyDef.TYPE_MULTI_SELECT.equals(propertyDef.getPropertyType())) {
@@ -580,22 +592,34 @@ public class ItemServiceImpl implements ItemService {
                 continue;
             }
 
+            // 빈 문자열인 경우 - 속성 타입에 따라 처리 (ItemProperty.setValue에서 null로 변환됨)
+            // TEXT 타입은 빈 문자열 그대로 저장, 나머지는 null로 저장되어 "선택됨" 상태 유지
+
             // 다중선택의 경우 특별 처리
             if (PropertyDef.TYPE_MULTI_SELECT.equals(propertyDef.getPropertyType())) {
-                saveMultiSelectProperty(itemId, propertyId, value, username);
+                saveMultiSelectProperty(itemId, propertyId, value, sortOrder, username);
             } else {
-                saveSingleProperty(itemId, propertyId, propertyDef.getPropertyType(), value, username);
+                saveSingleProperty(itemId, propertyId, propertyDef.getPropertyType(), value, sortOrder, username);
             }
         }
     }
 
     /**
      * 단일 값 속성 저장
+     *
+     * @param itemId       아이템 ID
+     * @param propertyId   속성 ID
+     * @param propertyType 속성 타입
+     * @param value        값
+     * @param sortOrder    정렬 순서 (null이면 기본값 0)
+     * @param username     사용자명
      */
-    private void saveSingleProperty(Long itemId, Long propertyId, String propertyType, Object value, String username) {
+    private void saveSingleProperty(Long itemId, Long propertyId, String propertyType, Object value,
+                                    Integer sortOrder, String username) {
         ItemProperty itemProperty = ItemProperty.builder()
                 .itemId(itemId)
                 .propertyId(propertyId)
+                .sortOrder(sortOrder)
                 .createdBy(username)
                 .updatedBy(username)
                 .build();
@@ -606,8 +630,15 @@ public class ItemServiceImpl implements ItemService {
 
     /**
      * 다중선택 속성값 저장
+     *
+     * @param itemId     아이템 ID
+     * @param propertyId 속성 ID
+     * @param value      값 (List 또는 콤마 구분 문자열)
+     * @param sortOrder  정렬 순서 (null이면 기본값 0)
+     * @param username   사용자명
      */
-    private void saveMultiSelectProperty(Long itemId, Long propertyId, Object value, String username) {
+    private void saveMultiSelectProperty(Long itemId, Long propertyId, Object value,
+                                         Integer sortOrder, String username) {
         // 기존 값 삭제
         itemPropertyMapper.deleteMultiByItemIdAndPropertyId(itemId, propertyId);
 
@@ -648,6 +679,7 @@ public class ItemServiceImpl implements ItemService {
                 .itemId(itemId)
                 .propertyId(propertyId)
                 .valueText(textValue)
+                .sortOrder(sortOrder)
                 .createdBy(username)
                 .updatedBy(username)
                 .build();
@@ -731,12 +763,12 @@ public class ItemServiceImpl implements ItemService {
 
             PropertyDef propertyDef = propertyDefOpt.get();
 
-            // 속성값 저장
+            // 속성값 저장 (상속 속성은 sortOrder=null, 기본값 0 사용)
             try {
                 if (PropertyDef.TYPE_MULTI_SELECT.equals(propertyDef.getPropertyType())) {
-                    saveMultiSelectProperty(itemId, propertyId, defaultValue, createdBy);
+                    saveMultiSelectProperty(itemId, propertyId, defaultValue, null, createdBy);
                 } else {
-                    saveSingleProperty(itemId, propertyId, propertyDef.getPropertyType(), defaultValue, createdBy);
+                    saveSingleProperty(itemId, propertyId, propertyDef.getPropertyType(), defaultValue, null, createdBy);
                 }
                 inheritedCount++;
             } catch (Exception e) {
@@ -819,12 +851,12 @@ public class ItemServiceImpl implements ItemService {
                     if (newPropDefOpt.isPresent()) {
                         PropertyDef newPropDef = newPropDefOpt.get();
 
-                        // 기존 값으로 새 속성에 저장 (타입 호환 시)
+                        // 기존 값으로 새 속성에 저장 (타입 호환 시, sortOrder=null)
                         try {
                             String valueToTransfer = getTransferableValue(oldValue);
                             if (valueToTransfer != null && !valueToTransfer.isEmpty()) {
                                 saveSingleProperty(itemId, matchingNewPropertyId,
-                                        newPropDef.getPropertyType(), valueToTransfer, updatedBy);
+                                        newPropDef.getPropertyType(), valueToTransfer, null, updatedBy);
                                 log.debug("Property value transferred by name: '{}' ({} -> {})",
                                         oldPropertyName, oldPropertyId, matchingNewPropertyId);
                             }
@@ -882,5 +914,34 @@ public class ItemServiceImpl implements ItemService {
         }
 
         return null;
+    }
+
+    // =============================================
+    // 아이템 속성 순서 변경
+    // =============================================
+
+    @Override
+    @Transactional
+    public void updatePropertySortOrders(Long itemId, ItemPropertySortRequest request, String updatedBy) {
+        log.info("Updating item property sort orders: itemId={}, ordersCount={}",
+                itemId, request.getOrders() != null ? request.getOrders().size() : 0);
+
+        // 아이템 존재 확인
+        itemMapper.findById(itemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(itemId));
+
+        if (request.getOrders() == null || request.getOrders().isEmpty()) {
+            log.warn("No sort orders provided for itemId={}", itemId);
+            return;
+        }
+
+        // Mapper의 내부 클래스로 변환
+        List<ItemPropertyMapper.ItemPropertySortOrder> orders = request.getOrders().stream()
+                .map(o -> new ItemPropertyMapper.ItemPropertySortOrder(o.getItemPropertyId(), o.getSortOrder()))
+                .collect(Collectors.toList());
+
+        // 일괄 업데이트
+        int updatedCount = itemPropertyMapper.updateSortOrders(orders, updatedBy);
+        log.info("Item property sort orders updated: itemId={}, updatedCount={}", itemId, updatedCount);
     }
 }

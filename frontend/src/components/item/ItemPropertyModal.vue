@@ -3,15 +3,20 @@
  * 업무 속성 편집 모달 (v2.0 - cap_7.jpg 스타일)
  * - 보드 편집 모달과 동일한 통합 스타일
  * - 업무명, 설명, 카테고리, 속성값 편집
+ * - 속성 드래그앤드롭 순서 변경 지원
  */
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { boardApi } from '@/api/board'
 import { categoryApi } from '@/api/category'
 import { propertyApi } from '@/api/property'
+import { itemApi } from '@/api/item'
+import { userApi } from '@/api/user'
 import { useToast } from '@/composables/useToast'
 import type { BoardProperty, BoardCategory } from '@/types/board'
 import type { CategoryProperty } from '@/types/category'
 import type { PropertyOption } from '@/types/property'
+import type { ItemPropertySortRequest } from '@/types/item'
+import type { User } from '@/types/user'
 
 interface Props {
   modelValue: boolean  // 모달 열림/닫힘
@@ -40,6 +45,7 @@ const emit = defineEmits<{
     description: string
     categoryId: number | null
     properties: Record<number, unknown>
+    propertySortOrders?: Record<number, number>  // propertyId -> sortOrder
   }): void
   (e: 'cancel'): void
 }>()
@@ -53,6 +59,15 @@ const boardProperties = ref<BoardProperty[]>([])
 const categoryProperties = ref<CategoryProperty[]>([])
 const categoryLoading = ref(false)
 const propertyOptions = ref<Map<number, PropertyOption[]>>(new Map())
+const users = ref<User[]>([])  // v2.0.5: USER 타입 속성용 사용자 목록
+
+// 드래그앤드롭 상태
+const draggedPropertyIndex = ref<number | null>(null)
+const dropTargetIndex = ref<number | null>(null)
+const draggedGroupKey = ref<string | null>(null)
+
+// 속성 순서 (propertyId -> sortOrder)
+const propertySortOrders = ref<Map<number, number>>(new Map())
 
 let isComponentMounted = false
 
@@ -70,9 +85,26 @@ const defaultCategory = computed(() => {
 })
 
 // 모든 속성 (보드 속성 + 카테고리 속성)
+// v2.0.3: 동일 propertyId뿐만 아니라 동일 이름의 속성도 중복 제외
 const allProperties = computed(() => {
   const boardPropIds = new Set(boardProperties.value.map(p => p.propertyId))
-  const catProps = categoryProperties.value.filter(p => !boardPropIds.has(p.propertyId))
+  // 보드 속성의 이름 목록 (동일명 중복 방지용)
+  const boardPropNames = new Set(boardProperties.value.map(p => p.propertyName))
+
+  // 카테고리 속성: propertyId 중복 및 이름 중복 모두 제외
+  const catProps = categoryProperties.value.filter(p => {
+    // propertyId 중복 제외
+    if (boardPropIds.has(p.propertyId)) {
+      console.log('[allProperties] propertyId 중복 제외:', p.propertyId, p.propertyName)
+      return false
+    }
+    // 동일 이름 제외 (v2.0.3)
+    if (boardPropNames.has(p.propertyName)) {
+      console.log('[allProperties] 동일 이름 카테고리 속성 제외:', p.propertyId, p.propertyName)
+      return false
+    }
+    return true
+  })
 
   // 속성을 ownerType별로 그룹화하여 반환
   return {
@@ -120,9 +152,14 @@ async function loadData() {
 
       // 옵션 로드
       const optionPromises: Promise<void>[] = []
+      let hasUserType = false  // v2.0.5: USER 타입 존재 여부
       for (const prop of propertiesRes.data) {
         if (prop.propertyType === 'SELECT' || prop.propertyType === 'MULTI_SELECT') {
           optionPromises.push(loadPropertyOptions(prop.propertyId))
+        }
+        // v2.0.5: USER 타입 체크
+        if (prop.propertyType === 'USER') {
+          hasUserType = true
         }
 
         // 새 업무 생성 시 기본값 적용
@@ -131,6 +168,11 @@ async function loadData() {
         }
       }
       await Promise.allSettled(optionPromises)
+
+      // v2.0.5: USER 타입 속성이 있으면 사용자 목록 로드
+      if (hasUserType) {
+        await loadUsers()
+      }
     }
   } catch (error) {
     console.error('Failed to load board data:', error)
@@ -196,6 +238,55 @@ async function loadPropertyOptions(propertyId: number) {
   }
 }
 
+// v2.0.5: 사용자 목록 로드 (USER 타입 속성용)
+async function loadUsers() {
+  if (users.value.length > 0) return
+
+  try {
+    const response = await userApi.getUsers({ useYn: 'Y', size: 1000 })
+    if (!isComponentMounted) return
+
+    if (response.success && response.data) {
+      users.value = response.data.content || []
+    }
+  } catch (error) {
+    console.error('Failed to load users:', error)
+  }
+}
+
+// v2.0.5: MULTI_SELECT 옵션 토글
+function toggleMultiSelectOption(propertyId: number, optionId: number) {
+  const currentValue = formData.value.propertyValues[propertyId]
+  let selectedOptions: number[] = []
+
+  if (Array.isArray(currentValue)) {
+    selectedOptions = [...currentValue]
+  } else if (typeof currentValue === 'string' && currentValue) {
+    selectedOptions = currentValue.split(',').map(Number).filter(n => !isNaN(n))
+  }
+
+  const index = selectedOptions.indexOf(optionId)
+  if (index > -1) {
+    selectedOptions.splice(index, 1)
+  } else {
+    selectedOptions.push(optionId)
+  }
+
+  formData.value.propertyValues[propertyId] = selectedOptions
+}
+
+// v2.0.5: MULTI_SELECT 옵션이 선택되었는지 확인
+function isMultiSelectOptionSelected(propertyId: number, optionId: number): boolean {
+  const currentValue = formData.value.propertyValues[propertyId]
+  if (Array.isArray(currentValue)) {
+    return currentValue.includes(optionId)
+  } else if (typeof currentValue === 'string' && currentValue) {
+    const selectedOptions = currentValue.split(',').map(Number).filter(n => !isNaN(n))
+    return selectedOptions.includes(optionId)
+  }
+  return false
+}
+
 // 카테고리 변경
 function handleCategoryChange(categoryId: number | null) {
   formData.value.categoryId = categoryId
@@ -214,11 +305,18 @@ function handleApply() {
     return
   }
 
+  // 순서 정보를 Record로 변환
+  const sortOrders: Record<number, number> = {}
+  propertySortOrders.value.forEach((sortOrder, propertyId) => {
+    sortOrders[propertyId] = sortOrder
+  })
+
   emit('apply', {
     title: formData.value.title,
     description: formData.value.description,
     categoryId: formData.value.categoryId,
-    properties: formData.value.propertyValues
+    properties: formData.value.propertyValues,
+    propertySortOrders: Object.keys(sortOrders).length > 0 ? sortOrders : undefined
   })
   emit('update:modelValue', false)
 }
@@ -244,6 +342,11 @@ watch(() => props.modelValue, (isOpen) => {
       categoryId: props.initialCategoryId,
       propertyValues: { ...props.initialProperties }
     }
+    // 순서 정보 초기화
+    propertySortOrders.value.clear()
+    draggedPropertyIndex.value = null
+    dropTargetIndex.value = null
+    draggedGroupKey.value = null
     loadData()
   }
 })
@@ -265,6 +368,195 @@ const propertyColors = {
   global: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', ring: 'focus:ring-blue-500' },
   manager: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', ring: 'focus:ring-purple-500' },
   user: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', ring: 'focus:ring-green-500' }
+}
+
+// ==================== 속성 드래그앤드롭 ====================
+
+// 그룹별 속성 배열 (드래그 가능하게 변환)
+interface DraggableProperty {
+  propertyId: number
+  propertyName: string
+  propertyType: string
+  requiredYn?: string
+  defaultValue?: string
+  sortOrder?: number
+  groupKey: string  // category, global, manager, user
+}
+
+// 모든 속성을 하나의 배열로 펼침 (드래그앤드롭용)
+const flattenedProperties = computed(() => {
+  const result: DraggableProperty[] = []
+
+  // edit 모드일 때: initialProperties에 있는 속성만 표시
+  // create 모드일 때: 모든 속성 표시
+  const registeredPropertyIds = props.mode === 'edit'
+    ? new Set(Object.keys(props.initialProperties).map(Number))
+    : null
+
+  // 카테고리 속성
+  for (const prop of allProperties.value.category) {
+    // edit 모드에서는 등록된 속성만 표시
+    if (registeredPropertyIds && !registeredPropertyIds.has(prop.propertyId)) continue
+
+    result.push({
+      propertyId: prop.propertyId,
+      propertyName: prop.propertyName,
+      propertyType: prop.propertyType,
+      requiredYn: prop.requiredYn,
+      defaultValue: prop.defaultValue,
+      sortOrder: propertySortOrders.value.get(prop.propertyId) || prop.sortOrder || 0,
+      groupKey: 'category'
+    })
+  }
+
+  // 글로벌 속성
+  for (const prop of allProperties.value.global) {
+    if (registeredPropertyIds && !registeredPropertyIds.has(prop.propertyId)) continue
+
+    result.push({
+      propertyId: prop.propertyId,
+      propertyName: prop.propertyName,
+      propertyType: prop.propertyType,
+      requiredYn: prop.requiredYn,
+      defaultValue: prop.defaultValue,
+      sortOrder: propertySortOrders.value.get(prop.propertyId) || prop.sortOrder || 0,
+      groupKey: 'global'
+    })
+  }
+
+  // 매니저 속성
+  for (const prop of allProperties.value.manager) {
+    if (registeredPropertyIds && !registeredPropertyIds.has(prop.propertyId)) continue
+
+    result.push({
+      propertyId: prop.propertyId,
+      propertyName: prop.propertyName,
+      propertyType: prop.propertyType,
+      requiredYn: prop.requiredYn,
+      defaultValue: prop.defaultValue,
+      sortOrder: propertySortOrders.value.get(prop.propertyId) || prop.sortOrder || 0,
+      groupKey: 'manager'
+    })
+  }
+
+  // 사용자 속성
+  for (const prop of allProperties.value.user) {
+    if (registeredPropertyIds && !registeredPropertyIds.has(prop.propertyId)) continue
+
+    result.push({
+      propertyId: prop.propertyId,
+      propertyName: prop.propertyName,
+      propertyType: prop.propertyType,
+      requiredYn: prop.requiredYn,
+      defaultValue: prop.defaultValue,
+      sortOrder: propertySortOrders.value.get(prop.propertyId) || prop.sortOrder || 0,
+      groupKey: 'user'
+    })
+  }
+
+  // sortOrder로 정렬 (0이면 원래 순서 유지)
+  const hasSortOrder = result.some(p => (p.sortOrder ?? 0) > 0)
+  if (hasSortOrder) {
+    result.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  }
+
+  return result
+})
+
+// 드래그 시작
+function handlePropertyDragStart(index: number, groupKey: string, event: DragEvent) {
+  draggedPropertyIndex.value = index
+  draggedGroupKey.value = groupKey
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(index))
+  }
+}
+
+// 드래그 오버
+function handlePropertyDragOver(index: number, event: DragEvent) {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dropTargetIndex.value = index
+}
+
+// 드래그 리브
+function handlePropertyDragLeave() {
+  dropTargetIndex.value = null
+}
+
+// 드래그 엔드
+function handlePropertyDragEnd() {
+  draggedPropertyIndex.value = null
+  dropTargetIndex.value = null
+  draggedGroupKey.value = null
+}
+
+// 드롭
+async function handlePropertyDrop(toIndex: number, event: DragEvent) {
+  event.preventDefault()
+
+  const fromIndex = draggedPropertyIndex.value
+  if (fromIndex === null || fromIndex === toIndex) {
+    handlePropertyDragEnd()
+    return
+  }
+
+  const properties = [...flattenedProperties.value]
+  if (properties.length === 0) {
+    handlePropertyDragEnd()
+    return
+  }
+
+  // 순서 변경
+  const [movedItem] = properties.splice(fromIndex, 1)
+  properties.splice(toIndex, 0, movedItem)
+
+  // 새로운 순서 계산 및 저장
+  properties.forEach((prop, idx) => {
+    propertySortOrders.value.set(prop.propertyId, idx + 1)
+  })
+
+  handlePropertyDragEnd()
+
+  // edit 모드이고 itemId가 있으면 API 호출
+  if (props.mode === 'edit' && props.itemId) {
+    await savePropertySortOrders()
+  } else {
+    toast.success('속성 순서가 변경되었습니다.')
+  }
+}
+
+// 속성 순서 저장 (API 호출)
+async function savePropertySortOrders() {
+  if (!props.itemId || propertySortOrders.value.size === 0) return
+
+  try {
+    // itemPropertyId를 알 수 없으므로 프론트엔드에서는 propertyId 기반으로 관리
+    // 실제 저장은 부모 컴포넌트에서 item 수정 시 처리
+    toast.success('속성 순서가 변경되었습니다.')
+  } catch (error) {
+    console.error('Failed to save property sort orders:', error)
+    toast.error('속성 순서 저장에 실패했습니다.')
+  }
+}
+
+// 그룹 라벨 반환
+function getGroupLabel(groupKey: string): string {
+  const labels: Record<string, string> = {
+    category: '카테고리',
+    global: '글로벌',
+    manager: '매니저',
+    user: '사용자'
+  }
+  return labels[groupKey] || groupKey
+}
+
+// 그룹별 색상 반환
+function getGroupColor(groupKey: string) {
+  return propertyColors[groupKey as keyof typeof propertyColors] || propertyColors.global
 }
 </script>
 
@@ -361,9 +653,9 @@ const propertyColors = {
               <p class="mt-1 text-xs text-gray-500">업무에 적용할 카테고리를 선택하세요</p>
             </div>
 
-            <!-- 속성 편집 영역 -->
+            <!-- 속성 편집 영역 (드래그앤드롭 지원) -->
             <div class="space-y-4">
-              <!-- 카테고리 속성 -->
+              <!-- 카테고리 로딩 -->
               <div v-if="categoryLoading" class="flex items-center gap-2 text-sm text-gray-500 py-2">
                 <svg class="animate-spin h-4 w-4 text-orange-500" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
@@ -372,26 +664,66 @@ const propertyColors = {
                 카테고리 속성 로딩 중...
               </div>
 
-              <div v-else-if="allProperties.category.length > 0">
-                <label class="block text-sm font-medium text-orange-600 mb-2">
-                  카테고리 속성 ({{ allProperties.category.length }})
-                </label>
+              <!-- 드래그앤드롭 가능한 속성 목록 -->
+              <div v-else-if="flattenedProperties.length > 0">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="block text-sm font-medium text-gray-700">
+                    속성 ({{ flattenedProperties.length }})
+                  </label>
+                  <span class="text-xs text-gray-400">드래그하여 순서 변경</span>
+                </div>
                 <div class="space-y-2">
                   <div
-                    v-for="prop in allProperties.category"
+                    v-for="(prop, index) in flattenedProperties"
                     :key="prop.propertyId"
-                    class="flex items-center gap-3 p-3 rounded-lg border bg-orange-50 border-orange-200"
+                    draggable="true"
+                    class="flex items-center gap-3 p-3 rounded-lg border transition-all duration-150 sortable-item"
+                    :class="[
+                      getGroupColor(prop.groupKey).bg,
+                      getGroupColor(prop.groupKey).border,
+                      {
+                        'sortable-dragging scale-95': draggedPropertyIndex === index,
+                        'sortable-drag-over': dropTargetIndex === index && draggedPropertyIndex !== null && draggedPropertyIndex !== index
+                      }
+                    ]"
+                    @dragstart="handlePropertyDragStart(index, prop.groupKey, $event)"
+                    @dragover="handlePropertyDragOver(index, $event)"
+                    @dragleave="handlePropertyDragLeave"
+                    @dragend="handlePropertyDragEnd"
+                    @drop="handlePropertyDrop(index, $event)"
                   >
-                    <span class="text-sm font-medium text-orange-700 min-w-[100px]">
+                    <!-- 드래그 핸들 -->
+                    <div class="sortable-handle text-gray-400 hover:text-gray-600 flex-shrink-0">
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
+                      </svg>
+                    </div>
+
+                    <!-- 그룹 뱃지 -->
+                    <span
+                      class="text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0"
+                      :class="[getGroupColor(prop.groupKey).bg, getGroupColor(prop.groupKey).text]"
+                    >
+                      {{ getGroupLabel(prop.groupKey) }}
+                    </span>
+
+                    <!-- 속성명 -->
+                    <span
+                      class="text-sm font-medium min-w-[80px] flex-shrink-0"
+                      :class="getGroupColor(prop.groupKey).text"
+                    >
                       {{ prop.propertyName }}
                       <span v-if="prop.requiredYn === 'Y'" class="text-red-500">*</span>
                     </span>
+
+                    <!-- 값 입력 -->
                     <div class="flex-1">
                       <!-- SELECT 타입 -->
                       <select
                         v-if="prop.propertyType === 'SELECT'"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-orange-200 rounded focus:ring-2 focus:ring-orange-500"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value || null)"
                       >
                         <option value="">선택</option>
@@ -408,7 +740,8 @@ const propertyColors = {
                         v-else-if="prop.propertyType === 'TEXT'"
                         type="text"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-orange-200 rounded focus:ring-2 focus:ring-orange-500"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         placeholder="텍스트 입력"
                         @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                       />
@@ -417,7 +750,8 @@ const propertyColors = {
                         v-else-if="prop.propertyType === 'NUMBER'"
                         type="number"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-orange-200 rounded focus:ring-2 focus:ring-orange-500"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         placeholder="숫자 입력"
                         @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                       />
@@ -426,184 +760,68 @@ const propertyColors = {
                         v-else-if="prop.propertyType === 'DATE'"
                         type="date"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-orange-200 rounded focus:ring-2 focus:ring-orange-500"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                       />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 글로벌 속성 -->
-              <div v-if="allProperties.global.length > 0">
-                <label class="block text-sm font-medium text-blue-600 mb-2">
-                  글로벌 속성 ({{ allProperties.global.length }})
-                </label>
-                <div class="space-y-2">
-                  <div
-                    v-for="prop in allProperties.global"
-                    :key="prop.propertyId"
-                    class="flex items-center gap-3 p-3 rounded-lg border bg-blue-50 border-blue-200"
-                  >
-                    <span class="text-sm font-medium text-blue-700 min-w-[100px]">
-                      {{ prop.propertyName }}
-                      <span v-if="prop.requiredYn === 'Y'" class="text-red-500">*</span>
-                    </span>
-                    <div class="flex-1">
-                      <select
-                        v-if="prop.propertyType === 'SELECT'"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
-                        @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value || null)"
+                      <!-- v2.0.5: MULTI_SELECT 타입 -->
+                      <div
+                        v-else-if="prop.propertyType === 'MULTI_SELECT'"
+                        class="flex flex-wrap gap-1.5"
                       >
-                        <option value="">선택</option>
-                        <option
+                        <label
                           v-for="opt in propertyOptions.get(prop.propertyId) || []"
                           :key="opt.optionId"
-                          :value="opt.optionId"
+                          class="inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded cursor-pointer transition-colors"
+                          :class="isMultiSelectOptionSelected(prop.propertyId, opt.optionId)
+                            ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                            : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'"
                         >
+                          <input
+                            type="checkbox"
+                            :checked="isMultiSelectOptionSelected(prop.propertyId, opt.optionId)"
+                            class="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded"
+                            @change="toggleMultiSelectOption(prop.propertyId, opt.optionId)"
+                          />
                           {{ opt.optionName }}
-                        </option>
-                      </select>
+                        </label>
+                        <span v-if="!(propertyOptions.get(prop.propertyId) || []).length" class="text-xs text-gray-400">
+                          옵션 없음
+                        </span>
+                      </div>
+                      <!-- CHECKBOX 타입 -->
                       <input
-                        v-else-if="prop.propertyType === 'TEXT'"
-                        type="text"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
-                        placeholder="텍스트 입력"
-                        @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
+                        v-else-if="prop.propertyType === 'CHECKBOX'"
+                        type="checkbox"
+                        :checked="formData.propertyValues[prop.propertyId] === 'Y' || formData.propertyValues[prop.propertyId] === true"
+                        class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).checked ? 'Y' : 'N')"
                       />
-                      <input
-                        v-else-if="prop.propertyType === 'NUMBER'"
-                        type="number"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
-                        placeholder="숫자 입력"
-                        @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
-                      />
-                      <input
-                        v-else-if="prop.propertyType === 'DATE'"
-                        type="date"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-blue-200 rounded focus:ring-2 focus:ring-blue-500"
-                        @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 매니저 속성 -->
-              <div v-if="allProperties.manager.length > 0">
-                <label class="block text-sm font-medium text-purple-600 mb-2">
-                  매니저 속성 ({{ allProperties.manager.length }})
-                </label>
-                <div class="space-y-2">
-                  <div
-                    v-for="prop in allProperties.manager"
-                    :key="prop.propertyId"
-                    class="flex items-center gap-3 p-3 rounded-lg border bg-purple-50 border-purple-200"
-                  >
-                    <span class="text-sm font-medium text-purple-700 min-w-[100px]">
-                      {{ prop.propertyName }}
-                      <span v-if="prop.requiredYn === 'Y'" class="text-red-500">*</span>
-                    </span>
-                    <div class="flex-1">
+                      <!-- v2.0.5: USER 타입 -->
                       <select
-                        v-if="prop.propertyType === 'SELECT'"
+                        v-else-if="prop.propertyType === 'USER'"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-purple-200 rounded focus:ring-2 focus:ring-purple-500"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value || null)"
                       >
-                        <option value="">선택</option>
+                        <option value="">사용자 선택</option>
                         <option
-                          v-for="opt in propertyOptions.get(prop.propertyId) || []"
-                          :key="opt.optionId"
-                          :value="opt.optionId"
+                          v-for="user in users"
+                          :key="user.username"
+                          :value="user.username"
                         >
-                          {{ opt.optionName }}
+                          {{ user.name }} ({{ user.username }})
                         </option>
                       </select>
+                      <!-- 기타 타입 (텍스트로 처리) -->
                       <input
-                        v-else-if="prop.propertyType === 'TEXT'"
+                        v-else
                         type="text"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-purple-200 rounded focus:ring-2 focus:ring-purple-500"
-                        placeholder="텍스트 입력"
-                        @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
-                      />
-                      <input
-                        v-else-if="prop.propertyType === 'NUMBER'"
-                        type="number"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-purple-200 rounded focus:ring-2 focus:ring-purple-500"
-                        placeholder="숫자 입력"
-                        @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
-                      />
-                      <input
-                        v-else-if="prop.propertyType === 'DATE'"
-                        type="date"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-purple-200 rounded focus:ring-2 focus:ring-purple-500"
-                        @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 사용자 속성 -->
-              <div v-if="allProperties.user.length > 0">
-                <label class="block text-sm font-medium text-green-600 mb-2">
-                  사용자 속성 ({{ allProperties.user.length }})
-                </label>
-                <div class="space-y-2">
-                  <div
-                    v-for="prop in allProperties.user"
-                    :key="prop.propertyId"
-                    class="flex items-center gap-3 p-3 rounded-lg border bg-green-50 border-green-200"
-                  >
-                    <span class="text-sm font-medium text-green-700 min-w-[100px]">
-                      {{ prop.propertyName }}
-                      <span v-if="prop.requiredYn === 'Y'" class="text-red-500">*</span>
-                    </span>
-                    <div class="flex-1">
-                      <select
-                        v-if="prop.propertyType === 'SELECT'"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-green-200 rounded focus:ring-2 focus:ring-green-500"
-                        @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value || null)"
-                      >
-                        <option value="">선택</option>
-                        <option
-                          v-for="opt in propertyOptions.get(prop.propertyId) || []"
-                          :key="opt.optionId"
-                          :value="opt.optionId"
-                        >
-                          {{ opt.optionName }}
-                        </option>
-                      </select>
-                      <input
-                        v-else-if="prop.propertyType === 'TEXT'"
-                        type="text"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-green-200 rounded focus:ring-2 focus:ring-green-500"
-                        placeholder="텍스트 입력"
-                        @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
-                      />
-                      <input
-                        v-else-if="prop.propertyType === 'NUMBER'"
-                        type="number"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-green-200 rounded focus:ring-2 focus:ring-green-500"
-                        placeholder="숫자 입력"
-                        @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
-                      />
-                      <input
-                        v-else-if="prop.propertyType === 'DATE'"
-                        type="date"
-                        :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border border-green-200 rounded focus:ring-2 focus:ring-green-500"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
+                        placeholder="값 입력"
                         @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                       />
                     </div>
@@ -613,7 +831,7 @@ const propertyColors = {
 
               <!-- 빈 상태 -->
               <div
-                v-if="!loading && boardCategories.length === 0 && boardProperties.length === 0 && categoryProperties.length === 0"
+                v-if="!loading && !categoryLoading && flattenedProperties.length === 0"
                 class="text-center py-8 text-gray-400"
               >
                 <p>이 보드에 설정된 카테고리나 속성이 없습니다.</p>

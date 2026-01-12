@@ -18,6 +18,8 @@
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
         <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
         <!-- 조인 필드 -->
         <result property="propertyName" column="PROPERTY_NAME"/>
         <result property="propertyType" column="PROPERTY_TYPE"/>
@@ -41,6 +43,8 @@
             o.CREATED_BY,
             o.UPDATED_AT,
             o.UPDATED_BY,
+            o.DELETED_AT,
+            o.DELETED_BY,
             p.PROPERTY_NAME,
             p.PROPERTY_TYPE,
             p.BOARD_ID,

@@ -213,17 +213,12 @@ async function openBoardEditModal() {
   const board = boardStore.currentBoard
   if (!board) return
 
-  boardFormData.value = {
-    boardName: board.boardName,
-    description: board.description || '',
-    color: board.color || '#3B82F6',
-    categoryIds: [],
-    propertyIds: [],
-    propertyDefaults: {}
-  }
-  showBoardEditModal.value = true
+  // 먼저 데이터 초기화
+  let categoryIds: number[] = []
+  let propertyIds: number[] = []
+  const propertyDefaults: Record<number, string> = {}
 
-  // 기존 카테고리와 속성 로드
+  // 기존 카테고리와 속성 로드 (모달 열기 전에 완료)
   try {
     const [catRes, propRes] = await Promise.all([
       boardApi.getBoardCategories(board.boardId),
@@ -232,29 +227,40 @@ async function openBoardEditModal() {
 
     if (catRes.success && catRes.data) {
       existingBoardCategories.value = catRes.data
-      boardFormData.value.categoryIds = catRes.data.map(c => c.categoryId)
+      categoryIds = catRes.data.map(c => c.categoryId)
     } else {
       existingBoardCategories.value = []
-      boardFormData.value.categoryIds = []
     }
 
     if (propRes.success && propRes.data) {
       existingBoardProperties.value = propRes.data
-      boardFormData.value.propertyIds = propRes.data.map(p => p.propertyId)
+      propertyIds = propRes.data.map(p => p.propertyId)
       propRes.data.forEach(p => {
         if (p.defaultValue) {
-          boardFormData.value.propertyDefaults[p.propertyId] = p.defaultValue
+          propertyDefaults[p.propertyId] = p.defaultValue
         }
       })
     } else {
       existingBoardProperties.value = []
-      boardFormData.value.propertyIds = []
     }
   } catch (error) {
     console.error('Failed to load board categories/properties:', error)
     existingBoardCategories.value = []
     existingBoardProperties.value = []
   }
+
+  // 데이터 로드 완료 후 formData 설정
+  boardFormData.value = {
+    boardName: board.boardName,
+    description: board.description || '',
+    color: board.color || '#3B82F6',
+    categoryIds,
+    propertyIds,
+    propertyDefaults
+  }
+
+  // 모달 열기 (데이터가 이미 준비된 상태)
+  showBoardEditModal.value = true
 }
 
 // 보드 수정 저장 (EntityEditModal에서 호출)

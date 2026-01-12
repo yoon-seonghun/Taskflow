@@ -136,30 +136,54 @@ const assigneeOptions = computed((): SelectOption[] => {
 // v2.0 수정: item.properties에서 직접 속성 정보 사용 (propertyStore 의존성 제거)
 // - 글로벌/매니저 속성은 boardId가 없어 propertyStore에 로드되지 않음
 // - item.properties에는 백엔드에서 JOIN된 propertyName, propertyType 포함
+// v2.0.2: 정렬 기준 통일 - ownerType(1차) → sortOrder(2차)
 const customProperties = computed(() => {
   if (!props.item.properties || props.item.properties.length === 0) {
     return []
   }
 
+  // ownerType 정렬 순서: GLOBAL(0) → MANAGER(1) → USER(2)
+  const ownerTypeOrder: Record<string, number> = {
+    'GLOBAL': 0,
+    'MANAGER': 1,
+    'USER': 2
+  }
+
   // item.properties에서 직접 PropertyDef 형태로 변환
   // TB_ITEM_PROPERTY에 저장된 속성만 포함 (시스템 속성은 TB_ITEM 컬럼에 직접 저장되므로 미포함)
-  return props.item.properties.map(p => ({
-    propertyId: p.propertyId,
-    propertyName: p.propertyName || `속성 ${p.propertyId}`,
-    propertyType: p.propertyType || 'TEXT',
-    requiredYn: 'N',  // item.properties에 미포함, 기본값 사용
-    options: []  // 옵션은 PropertyEditor에서 별도 로드
-  }))
+  // 정렬: ownerType(1차) → sortOrder(2차)
+  return [...props.item.properties]
+    .sort((a, b) => {
+      // 1차 정렬: ownerType (GLOBAL → MANAGER → USER)
+      const ownerA = ownerTypeOrder[a.ownerType || 'USER'] ?? 2
+      const ownerB = ownerTypeOrder[b.ownerType || 'USER'] ?? 2
+      if (ownerA !== ownerB) return ownerA - ownerB
+      // 2차 정렬: sortOrder
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+    })
+    .map(p => ({
+      propertyId: p.propertyId,
+      propertyName: p.propertyName || `속성 ${p.propertyId}`,
+      propertyType: p.propertyType || 'TEXT',
+      ownerType: p.ownerType || 'USER',
+      requiredYn: 'N',  // item.properties에 미포함, 기본값 사용
+      options: [],  // 옵션은 PropertyEditor에서 별도 로드
+      sortOrder: p.sortOrder ?? 0
+    }))
 })
 
 // 필드 변경 핸들러
+// v2.0.5: properties를 제외한 요청 전송 (null 값인 속성이 삭제되는 문제 방지)
 function handleFieldChange<K extends keyof ItemUpdateRequest>(
   field: K,
   value: ItemUpdateRequest[K]
 ) {
   formData.value[field] = value
   emit('change', field, value)
-  emit('update', formData.value)
+
+  // 기본 필드 변경 시 properties는 전송하지 않음 (속성 변경은 handlePropertyChange에서 처리)
+  const { properties, ...restFormData } = formData.value
+  emit('update', { ...restFormData, [field]: value } as ItemUpdateRequest)
 }
 
 // 상태 변경
@@ -188,6 +212,7 @@ function handleAssigneeChange(value: string | number | null) {
 }
 
 // 날짜 변경 (null로 클리어 지원)
+// v2.0.5: properties를 제외한 요청 전송 (null 값인 속성이 삭제되는 문제 방지)
 function handleDateChange(field: 'requestDate' | 'dueDate', value: string | null) {
   if (value === null || value === undefined || value === '') {
     // null로 설정 요청 - clear_fields에 추가
@@ -199,7 +224,10 @@ function handleDateChange(field: 'requestDate' | 'dueDate', value: string | null
     }
     formData.value[field] = undefined
     emit('change', field, null)
-    emit('update', formData.value)
+
+    // properties 제외하고 전송
+    const { properties, ...restFormData } = formData.value
+    emit('update', restFormData as ItemUpdateRequest)
   } else {
     // 값이 있는 경우 - clear_fields에서 제거
     if (formData.value.clear_fields) {
@@ -210,11 +238,19 @@ function handleDateChange(field: 'requestDate' | 'dueDate', value: string | null
 }
 
 // 동적 속성 변경
+// v2.0.5: 변경된 속성만 전송 (다른 속성의 null 값이 삭제되는 문제 방지)
 function handlePropertyChange(propertyId: number, value: unknown) {
-  const properties = { ...formData.value.properties, [propertyId]: value }
-  formData.value.properties = properties
+  // 로컬 formData에는 전체 속성값 유지 (화면 표시용)
+  const updatedProperties = { ...formData.value.properties, [propertyId]: value }
+  formData.value.properties = updatedProperties
   emit('change', `property_${propertyId}`, value)
-  emit('update', formData.value)
+
+  // 업데이트 요청에는 변경된 속성만 포함 (null 값인 다른 속성이 삭제되지 않도록)
+  const updateRequest: ItemUpdateRequest = {
+    ...formData.value,
+    properties: { [propertyId]: value }  // 변경된 속성만 전송
+  }
+  emit('update', updateRequest)
 }
 
 // 속성값 가져오기

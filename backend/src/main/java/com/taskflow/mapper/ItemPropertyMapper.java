@@ -153,4 +153,69 @@ public interface ItemPropertyMapper {
      * @return 영향받은 행 수
      */
     int deleteMultiByItemId(@Param("itemId") Long itemId);
+
+    // =============================================
+    // 속성 순서 관리
+    // =============================================
+
+    /**
+     * 아이템의 최대 정렬 순서 조회
+     *
+     * @param itemId 아이템 ID
+     * @return 최대 정렬 순서
+     */
+    Integer getMaxSortOrder(@Param("itemId") Long itemId);
+
+    /**
+     * 속성 정렬 순서 변경
+     *
+     * @param itemPropertyId 속성값 ID
+     * @param sortOrder      정렬 순서
+     * @param updatedBy      수정자
+     * @return 영향받은 행 수
+     */
+    int updateSortOrder(@Param("itemPropertyId") Long itemPropertyId,
+                        @Param("sortOrder") Integer sortOrder,
+                        @Param("updatedBy") String updatedBy);
+
+    /**
+     * 아이템의 속성 정렬 순서 일괄 변경
+     *
+     * @param orders    순서 변경 목록 (itemPropertyId, sortOrder)
+     * @param updatedBy 수정자
+     * @return 영향받은 행 수
+     */
+    int updateSortOrders(@Param("orders") List<ItemPropertySortOrder> orders,
+                         @Param("updatedBy") String updatedBy);
+
+    /**
+     * 속성 정렬 순서 변경용 내부 클래스
+     */
+    class ItemPropertySortOrder {
+        private Long itemPropertyId;
+        private Integer sortOrder;
+
+        public ItemPropertySortOrder() {}
+
+        public ItemPropertySortOrder(Long itemPropertyId, Integer sortOrder) {
+            this.itemPropertyId = itemPropertyId;
+            this.sortOrder = sortOrder;
+        }
+
+        public Long getItemPropertyId() {
+            return itemPropertyId;
+        }
+
+        public void setItemPropertyId(Long itemPropertyId) {
+            this.itemPropertyId = itemPropertyId;
+        }
+
+        public Integer getSortOrder() {
+            return sortOrder;
+        }
+
+        public void setSortOrder(Integer sortOrder) {
+            this.sortOrder = sortOrder;
+        }
+    }
 }

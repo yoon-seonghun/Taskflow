@@ -19,6 +19,8 @@
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
         <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
         <!-- 조인 필드 -->
         <result property="createdByName" column="CREATED_BY_NAME"/>
         <result property="updatedByName" column="UPDATED_BY_NAME"/>
@@ -42,6 +44,8 @@
             t.CREATED_BY,
             t.UPDATED_AT,
             t.UPDATED_BY,
+            t.DELETED_AT,
+            t.DELETED_BY,
             uc.NAME AS CREATED_BY_NAME,
             uu.NAME AS UPDATED_BY_NAME,
             ua.NAME AS DEFAULT_ASSIGNEE_NAME

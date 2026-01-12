@@ -139,17 +139,9 @@ function openCreateModal() {
 // 보드 수정 모달 열기
 async function openEditModal(board: Board) {
   selectedBoard.value = board
-  formData.value = {
-    boardName: board.boardName,
-    description: board.description || '',
-    color: board.color || '#3B82F6',
-    categoryIds: [],
-    propertyIds: [],
-    propertyDefaults: {}
-  }
-  showEditModal.value = true
 
-  // 기존 카테고리와 속성 로드
+  // 기존 카테고리와 속성을 먼저 로드한 후 모달을 열어야 함
+  // (모달이 열리면서 BoardPropertySelector가 마운트되기 전에 초기값이 설정되어야 함)
   try {
     const [catRes, propRes] = await Promise.all([
       boardApi.getBoardCategories(board.boardId),
@@ -157,33 +149,56 @@ async function openEditModal(board: Board) {
     ])
 
     // 카테고리 로드 결과 처리
+    let categoryIds: number[] = []
     if (catRes.success && catRes.data) {
       existingBoardCategories.value = catRes.data
-      formData.value.categoryIds = catRes.data.map(c => c.categoryId)
+      categoryIds = catRes.data.map(c => c.categoryId)
     } else {
       existingBoardCategories.value = []
-      formData.value.categoryIds = []
     }
 
     // 속성 로드 결과 처리
+    let propertyIds: number[] = []
+    const propertyDefaults: Record<number, string> = {}
     if (propRes.success && propRes.data) {
       existingBoardProperties.value = propRes.data
-      formData.value.propertyIds = propRes.data.map(p => p.propertyId)
+      propertyIds = propRes.data.map(p => p.propertyId)
       // 기본값 설정
       propRes.data.forEach(p => {
         if (p.defaultValue) {
-          formData.value.propertyDefaults[p.propertyId] = p.defaultValue
+          propertyDefaults[p.propertyId] = p.defaultValue
         }
       })
     } else {
       existingBoardProperties.value = []
-      formData.value.propertyIds = []
     }
+
+    // formData 설정 (API 결과 반영)
+    formData.value = {
+      boardName: board.boardName,
+      description: board.description || '',
+      color: board.color || '#3B82F6',
+      categoryIds,
+      propertyIds,
+      propertyDefaults
+    }
+
+    // 모달 열기 (초기값이 모두 설정된 후)
+    showEditModal.value = true
   } catch (error) {
     console.error('Failed to load board categories/properties:', error)
-    // 로드 실패 시 기본값 설정
+    // 로드 실패 시 기본값으로 모달 열기
     existingBoardCategories.value = []
     existingBoardProperties.value = []
+    formData.value = {
+      boardName: board.boardName,
+      description: board.description || '',
+      color: board.color || '#3B82F6',
+      categoryIds: [],
+      propertyIds: [],
+      propertyDefaults: {}
+    }
+    showEditModal.value = true
   }
 }
 

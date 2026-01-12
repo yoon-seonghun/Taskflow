@@ -74,6 +74,16 @@ public class Position {
      */
     private String updatedBy;
 
+    /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
     // =============================================
     // 편의 메서드
     // =============================================

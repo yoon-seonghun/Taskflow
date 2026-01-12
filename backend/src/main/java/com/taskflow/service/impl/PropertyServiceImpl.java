@@ -166,6 +166,9 @@ public class PropertyServiceImpl implements PropertyService {
         boardMapper.findById(boardId)
                 .orElseThrow(() -> BusinessException.boardNotFound(boardId));
 
+        // v2.0.3: 글로벌/매니저 속성에 동일 이름이 있는지 먼저 확인
+        checkDuplicateNameInUpperTypes(request.getPropertyName(), PropertyDef.OWNER_TYPE_USER, createdBy);
+
         // 사용자 속성명 중복 확인 (같은 사용자가 만든 속성 중에서)
         List<PropertyDef> existingUserProps = propertyDefMapper.findUserProperties(createdBy);
         boolean nameExists = existingUserProps.stream()
@@ -244,6 +247,9 @@ public class PropertyServiceImpl implements PropertyService {
     public PropertyResponse createManagerProperty(PropertyCreateRequest request, String createdBy) {
         log.info("Creating manager property: name={}, owner={}", request.getPropertyName(), createdBy);
 
+        // v2.0.3: 글로벌 속성에 동일 이름이 있는지 먼저 확인
+        checkDuplicateNameInUpperTypes(request.getPropertyName(), PropertyDef.OWNER_TYPE_MANAGER, createdBy);
+
         // 사용자 정보 조회
         User user = userMapper.findByUsername(createdBy)
                 .orElseThrow(() -> BusinessException.userNotFound(createdBy));
@@ -285,6 +291,9 @@ public class PropertyServiceImpl implements PropertyService {
     @Transactional
     public PropertyResponse createUserProperty(PropertyCreateRequest request, String createdBy) {
         log.info("Creating user property: name={}, owner={}", request.getPropertyName(), createdBy);
+
+        // v2.0.3: 글로벌/매니저 속성에 동일 이름이 있는지 먼저 확인
+        checkDuplicateNameInUpperTypes(request.getPropertyName(), PropertyDef.OWNER_TYPE_USER, createdBy);
 
         // 사용자 속성명 중복 확인 (같은 사용자가 만든 속성 중에서)
         List<PropertyDef> existingUserProps = propertyDefMapper.findUserProperties(createdBy);
@@ -386,8 +395,10 @@ public class PropertyServiceImpl implements PropertyService {
         propertyDefMapper.softDelete(propertyId, deletedBy);
         log.info("Property soft deleted: id={}", propertyId);
 
-        // 캐시 무효화
-        propertyCacheService.evictBoardCache(boardId);
+        // 캐시 무효화 (보드 속성인 경우만)
+        if (boardId != null) {
+            propertyCacheService.evictBoardCache(boardId);
+        }
     }
 
     // =============================================
@@ -459,8 +470,10 @@ public class PropertyServiceImpl implements PropertyService {
         propertyOptionMapper.insert(option);
         log.info("Option created: id={}, name={}", option.getOptionId(), option.getOptionName());
 
-        // 캐시 무효화
-        propertyCacheService.evictBoardCache(propertyDef.getBoardId());
+        // 캐시 무효화 (보드 속성인 경우만)
+        if (propertyDef.getBoardId() != null) {
+            propertyCacheService.evictBoardCache(propertyDef.getBoardId());
+        }
 
         return getOption(option.getOptionId());
     }
@@ -499,8 +512,10 @@ public class PropertyServiceImpl implements PropertyService {
         propertyOptionMapper.update(option);
         log.info("Option updated: id={}", optionId);
 
-        // 캐시 무효화
-        propertyCacheService.evictBoardCache(option.getBoardId());
+        // 캐시 무효화 (보드 속성인 경우만)
+        if (option.getBoardId() != null) {
+            propertyCacheService.evictBoardCache(option.getBoardId());
+        }
 
         return getOption(optionId);
     }
@@ -520,8 +535,10 @@ public class PropertyServiceImpl implements PropertyService {
         propertyOptionMapper.softDelete(optionId, deletedBy);
         log.info("Option soft deleted: id={}", optionId);
 
-        // 캐시 무효화
-        propertyCacheService.evictBoardCache(boardId);
+        // 캐시 무효화 (보드 속성인 경우만)
+        if (boardId != null) {
+            propertyCacheService.evictBoardCache(boardId);
+        }
     }
 
     // =============================================
@@ -665,5 +682,97 @@ public class PropertyServiceImpl implements PropertyService {
 
         log.info("Batch transfer completed: success={}/{}", results.size(), propertyIds.size());
         return results;
+    }
+
+    // =============================================
+    // v2.0.3: 상위 ownerType 동일명 속성 체크
+    // =============================================
+
+    /**
+     * 상위 ownerType에 동일 이름의 속성이 있는지 확인
+     * - USER 생성 시: GLOBAL, MANAGER 속성 중 동일명 확인
+     * - MANAGER 생성 시: GLOBAL 속성 중 동일명 확인
+     * - GLOBAL 생성 시: 체크 불필요 (최상위)
+     *
+     * @param propertyName 확인할 속성명
+     * @param targetOwnerType 생성하려는 속성의 ownerType
+     * @param username 생성자 (매니저 속성 조회 시 사용)
+     */
+    private void checkDuplicateNameInUpperTypes(String propertyName, String targetOwnerType, String username) {
+        if (PropertyDef.OWNER_TYPE_GLOBAL.equals(targetOwnerType)) {
+            // 글로벌 속성 생성 시에는 상위 ownerType 체크 불필요
+            return;
+        }
+
+        // 글로벌 속성 중 동일명 확인
+        List<PropertyDef> globalProps = propertyDefMapper.findGlobalProperties();
+        boolean existsInGlobal = globalProps.stream()
+                .anyMatch(p -> p.getPropertyName().equals(propertyName));
+        if (existsInGlobal) {
+            throw BusinessException.conflict(
+                    "동일한 이름의 글로벌 속성이 이미 존재합니다: " + propertyName);
+        }
+
+        // USER 속성 생성 시에는 매니저 속성도 확인
+        if (PropertyDef.OWNER_TYPE_USER.equals(targetOwnerType)) {
+            // 사용자 정보 조회하여 접근 가능한 매니저 속성 확인
+            User user = userMapper.findByUsername(username).orElse(null);
+            if (user != null) {
+                List<String> departmentCodes = getAccessibleDepartmentCodes(user.getDepartmentCode());
+                List<PropertyDef> managerProps = propertyDefMapper.findManagerProperties(username, departmentCodes);
+                boolean existsInManager = managerProps.stream()
+                        .anyMatch(p -> p.getPropertyName().equals(propertyName));
+                if (existsInManager) {
+                    throw BusinessException.conflict(
+                            "동일한 이름의 매니저 속성이 이미 존재합니다: " + propertyName);
+                }
+            }
+        }
+
+        log.debug("Duplicate name check passed for property: name={}, targetOwnerType={}", propertyName, targetOwnerType);
+    }
+
+    // =============================================
+    // 속성 순서 변경
+    // =============================================
+
+    @Override
+    @Transactional
+    public void reorderProperties(PropertyReorderRequest request, String updatedBy) {
+        log.info("Reordering properties: ownerType={}, count={}",
+                request.getOwnerType(), request.getOrders().size());
+
+        String ownerType = request.getOwnerType();
+
+        // 각 속성의 ownerType이 요청과 일치하는지 검증
+        for (PropertyReorderRequest.PropertyOrder order : request.getOrders()) {
+            PropertyDef propertyDef = propertyDefMapper.findById(order.getPropertyId())
+                    .orElseThrow(() -> BusinessException.propertyNotFound(order.getPropertyId()));
+
+            // ownerType 검증: 같은 그룹 내에서만 순서 변경 가능
+            if (!ownerType.equals(propertyDef.getOwnerType())) {
+                throw BusinessException.badRequest(
+                        String.format("속성 ID %d는 %s 유형이 아닙니다. (실제: %s)",
+                                order.getPropertyId(), ownerType, propertyDef.getOwnerType()));
+            }
+
+            // USER/MANAGER 유형인 경우 소유자 검증 (본인 속성만 순서 변경 가능)
+            if (PropertyDef.OWNER_TYPE_USER.equals(ownerType) ||
+                PropertyDef.OWNER_TYPE_MANAGER.equals(ownerType)) {
+                if (!updatedBy.equals(propertyDef.getOwnerUsername())) {
+                    throw BusinessException.forbidden(
+                            String.format("속성 ID %d에 대한 순서 변경 권한이 없습니다.", order.getPropertyId()));
+                }
+            }
+        }
+
+        // 순서 업데이트 실행
+        for (PropertyReorderRequest.PropertyOrder order : request.getOrders()) {
+            propertyDefMapper.updateSortOrder(order.getPropertyId(), order.getSortOrder(), updatedBy);
+            log.debug("Property sortOrder updated: id={}, sortOrder={}",
+                    order.getPropertyId(), order.getSortOrder());
+        }
+
+        log.info("Properties reordered successfully: count={}", request.getOrders().size());
     }
 }

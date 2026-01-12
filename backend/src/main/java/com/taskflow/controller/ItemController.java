@@ -362,4 +362,31 @@ public class ItemController {
 
         return ResponseEntity.ok(ApiResponse.success(permission));
     }
+
+    // =============================================
+    // 아이템 속성 순서 변경
+    // =============================================
+
+    /**
+     * 아이템 속성 순서 변경
+     */
+    @PutMapping("/{id}/properties/sort")
+    public ResponseEntity<ApiResponse<Void>> updatePropertySortOrders(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId,
+            @Valid @RequestBody ItemPropertySortRequest request
+    ) {
+        // 접근 권한 확인
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+        }
+
+        log.info("Update item property sort orders: itemId={}", itemId);
+
+        itemService.updatePropertySortOrders(itemId, request, currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "속성 순서가 변경되었습니다"));
+    }
 }

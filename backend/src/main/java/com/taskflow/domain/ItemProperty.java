@@ -71,6 +71,11 @@ public class ItemProperty {
     private String valueCheckbox;
 
     /**
+     * 정렬 순서
+     */
+    private Integer sortOrder;
+
+    /**
      * 생성일시
      */
     private LocalDateTime createdAt;
@@ -90,6 +95,16 @@ public class ItemProperty {
      */
     private String updatedBy;
 
+    /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
     // =============================================
     // 추가 필드 (Mapper에서 JOIN으로 설정)
     // =============================================
@@ -103,6 +118,11 @@ public class ItemProperty {
      * 속성 타입
      */
     private String propertyType;
+
+    /**
+     * 속성 소유자 타입 (GLOBAL, MANAGER, USER)
+     */
+    private String ownerType;
 
     /**
      * 사용자 값일 때 사용자명
@@ -156,42 +176,67 @@ public class ItemProperty {
 
         switch (type) {
             case PropertyDef.TYPE_TEXT, PropertyDef.TYPE_MULTI_SELECT -> {
-                this.valueText = value.toString();
+                // 빈 문자열은 null로 처리 (선택됨 상태 유지)
+                String textValue = value.toString();
+                this.valueText = (textValue == null || textValue.trim().isEmpty()) ? null : textValue;
             }
             case PropertyDef.TYPE_CHECKBOX -> {
-                this.valueCheckbox = value.toString();
+                // 체크박스 값을 'Y' 또는 'N'으로 정규화 (DB 컬럼이 CHAR(1))
+                String checkValue = value.toString();
+                if (checkValue == null || checkValue.trim().isEmpty()) {
+                    this.valueCheckbox = null;
+                } else {
+                    // 'true', '1', 'Y', 'yes' 등은 'Y'로, 나머지는 'N'으로 변환
+                    String normalized = checkValue.trim().toLowerCase();
+                    this.valueCheckbox = ("true".equals(normalized) || "1".equals(normalized)
+                            || "y".equals(normalized) || "yes".equals(normalized)) ? "Y" : "N";
+                }
             }
             case PropertyDef.TYPE_SELECT -> {
-                if (value instanceof Long) {
+                // 빈 문자열은 null로 처리
+                String selectStr = value.toString();
+                if (selectStr == null || selectStr.trim().isEmpty()) {
+                    this.valueOptionId = null;
+                    this.valueText = null;
+                } else if (value instanceof Long) {
                     this.valueOptionId = (Long) value;
                 } else {
                     try {
-                        this.valueOptionId = Long.parseLong(value.toString());
+                        this.valueOptionId = Long.parseLong(selectStr);
                     } catch (NumberFormatException e) {
                         // 옵션 ID가 아닌 텍스트 값인 경우
-                        this.valueText = value.toString();
+                        this.valueText = selectStr;
                     }
                 }
             }
             case PropertyDef.TYPE_NUMBER -> {
-                if (value instanceof BigDecimal) {
+                // 빈 문자열은 null로 처리
+                String numStr = value.toString();
+                if (numStr == null || numStr.trim().isEmpty()) {
+                    this.valueNumber = null;
+                } else if (value instanceof BigDecimal) {
                     this.valueNumber = (BigDecimal) value;
                 } else if (value instanceof Number) {
-                    this.valueNumber = new BigDecimal(value.toString());
+                    this.valueNumber = new BigDecimal(numStr);
                 } else {
-                    this.valueNumber = new BigDecimal(value.toString());
+                    this.valueNumber = new BigDecimal(numStr);
                 }
             }
             case PropertyDef.TYPE_DATE -> {
-                if (value instanceof LocalDate) {
+                // 빈 문자열은 null로 처리
+                String dateStr = value.toString();
+                if (dateStr == null || dateStr.trim().isEmpty()) {
+                    this.valueDate = null;
+                } else if (value instanceof LocalDate) {
                     this.valueDate = (LocalDate) value;
                 } else {
-                    this.valueDate = LocalDate.parse(value.toString());
+                    this.valueDate = LocalDate.parse(dateStr);
                 }
             }
             case PropertyDef.TYPE_USER -> {
-                // USERNAME (String)
-                this.valueUsername = value.toString();
+                // USERNAME (String) - 빈 문자열은 null로 처리 (FK 제약 조건)
+                String username = value.toString();
+                this.valueUsername = (username == null || username.trim().isEmpty()) ? null : username;
             }
         }
     }

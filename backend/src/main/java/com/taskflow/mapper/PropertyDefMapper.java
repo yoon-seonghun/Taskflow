@@ -210,4 +210,20 @@ public interface PropertyDefMapper {
      */
     List<PropertyDef> findAccessibleProperties(@Param("username") String username,
                                                 @Param("departmentCodes") List<String> departmentCodes);
+
+    // =============================================
+    // 순서 변경
+    // =============================================
+
+    /**
+     * 속성 정렬 순서 변경
+     *
+     * @param propertyId 속성 ID
+     * @param sortOrder  새 정렬 순서
+     * @param updatedBy  수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int updateSortOrder(@Param("propertyId") Long propertyId,
+                        @Param("sortOrder") Integer sortOrder,
+                        @Param("updatedBy") String updatedBy);
 }

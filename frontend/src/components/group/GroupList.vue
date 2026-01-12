@@ -4,10 +4,13 @@
  * - 그룹 카드 표시
  * - 드래그 앤 드롭 순서 변경
  * - 그룹 선택/수정/삭제
+ *
+ * v2.0.1: useSortableDrag composable 적용
  */
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import type { Group } from '@/types/group'
 import { useGroupStore } from '@/stores/group'
+import { useItemDrag } from '@/composables/useSortableDrag'
 
 interface Props {
   showInactive?: boolean
@@ -27,9 +30,20 @@ const emit = defineEmits<{
 
 const groupStore = useGroupStore()
 
-// 드래그 상태
-const draggedGroup = ref<Group | null>(null)
-const dragOverGroupId = ref<number | null>(null)
+// 드래그 앤 드롭 (useItemDrag composable 사용)
+const {
+  handleDragStart,
+  handleDragOver,
+  handleDragLeave,
+  handleDragEnd,
+  handleDrop,
+  isDragOver
+} = useItemDrag<Group>({
+  getItemKey: (group) => group.groupId,
+  onDrop: async (draggedGroup, targetGroup) => {
+    await groupStore.updateGroupOrder(draggedGroup.groupId, targetGroup.sortOrder)
+  }
+})
 
 // 표시할 그룹 목록
 const displayGroups = computed(() => {
@@ -75,58 +89,6 @@ function handleToggleActive(event: Event, group: Group) {
 // 추가
 function handleAdd() {
   emit('add')
-}
-
-// 드래그 시작
-function handleDragStart(event: DragEvent, group: Group) {
-  draggedGroup.value = group
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('groupId', group.groupId.toString())
-  }
-}
-
-// 드래그 오버
-function handleDragOver(event: DragEvent, group: Group) {
-  event.preventDefault()
-  if (!draggedGroup.value) return
-  if (draggedGroup.value.groupId === group.groupId) return
-  dragOverGroupId.value = group.groupId
-}
-
-// 드래그 리브
-function handleDragLeave() {
-  dragOverGroupId.value = null
-}
-
-// 드롭
-async function handleDrop(event: DragEvent, targetGroup: Group) {
-  event.preventDefault()
-  if (!draggedGroup.value) return
-  if (draggedGroup.value.groupId === targetGroup.groupId) return
-
-  // 순서 변경
-  const success = await groupStore.updateGroupOrder(
-    draggedGroup.value.groupId,
-    targetGroup.sortOrder
-  )
-
-  if (success) {
-    // 새로고침은 store에서 처리됨
-  }
-
-  resetDragState()
-}
-
-// 드래그 종료
-function handleDragEnd() {
-  resetDragState()
-}
-
-// 드래그 상태 초기화
-function resetDragState() {
-  draggedGroup.value = null
-  dragOverGroupId.value = null
 }
 
 // 그룹 색상 스타일
@@ -184,19 +146,19 @@ function getMemberCountText(count?: number) {
       <div
         v-for="group in displayGroups"
         :key="group.groupId"
-        class="group-card"
+        class="group-card sortable-item"
         :class="{
           'selected': selectedGroupId === group.groupId,
           'inactive': group.useYn !== 'Y',
-          'drag-over': dragOverGroupId === group.groupId
+          'drag-over': isDragOver(group)
         }"
         :style="getColorStyle(group.groupColor)"
         draggable="true"
         @click="handleSelect(group)"
-        @dragstart="handleDragStart($event, group)"
-        @dragover="handleDragOver($event, group)"
+        @dragstart="handleDragStart(group, $event)"
+        @dragover="handleDragOver(group, $event)"
         @dragleave="handleDragLeave"
-        @drop="handleDrop($event, group)"
+        @drop="handleDrop(group, $event)"
       >
         <!-- 색상 바 -->
         <div class="color-bar" :style="{ backgroundColor: group.groupColor || '#9CA3AF' }" />

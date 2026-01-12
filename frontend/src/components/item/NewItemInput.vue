@@ -350,6 +350,7 @@ defineExpose({ focus, clear })
       :initial-category-id="selectedCategoryId"
       :initial-property-ids="selectedPropertyIds"
       :initial-property-defaults="selectedPropertyDefaults"
+      enable-property-drag-drop
       @save="handlePropertySave"
       @cancel="handlePropertyCancel"
     />

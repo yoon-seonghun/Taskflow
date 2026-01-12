@@ -397,22 +397,24 @@ export const useCategoryStore = defineStore('category', () => {
   }
 
   /**
-   * 카테고리 속성 순서 변경
+   * 카테고리 속성 순서 변경 (일괄)
    */
-  async function updatePropertyOrder(categoryId: number, propertyId: number, sortOrder: number) {
+  async function reorderProperties(categoryId: number, orders: { propertyId: number; sortOrder: number }[]) {
     loading.value = true
     error.value = null
     try {
-      await categoryApi.updatePropertyOrder(categoryId, propertyId, sortOrder)
+      await categoryApi.reorderProperties(categoryId, orders)
 
       // 현재 상세에서 속성 순서 업데이트
       if (currentCategory.value?.categoryId === categoryId) {
-        const property = currentCategory.value.properties.find(p => p.propertyId === propertyId)
-        if (property) {
-          property.sortOrder = sortOrder
-          // 재정렬
-          currentCategory.value.properties.sort((a, b) => a.sortOrder - b.sortOrder)
+        for (const order of orders) {
+          const property = currentCategory.value.properties.find(p => p.propertyId === order.propertyId)
+          if (property) {
+            property.sortOrder = order.sortOrder
+          }
         }
+        // 재정렬
+        currentCategory.value.properties.sort((a, b) => a.sortOrder - b.sortOrder)
       }
     } catch (e: any) {
       error.value = e.message || '속성 순서 변경에 실패했습니다.'
@@ -520,7 +522,7 @@ export const useCategoryStore = defineStore('category', () => {
     // Actions - 속성
     addProperty,
     removeProperty,
-    updatePropertyOrder,
+    reorderProperties,
     updatePropertyDefaultValue,
 
     // Helpers

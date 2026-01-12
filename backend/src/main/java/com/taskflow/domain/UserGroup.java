@@ -48,6 +48,16 @@ public class UserGroup {
      */
     private String createdBy;
 
+    /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
     // =============================================
     // 추가 필드 (Mapper에서 JOIN으로 설정)
     // =============================================

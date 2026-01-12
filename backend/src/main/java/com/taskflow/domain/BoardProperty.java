@@ -61,6 +61,26 @@ public class BoardProperty {
      */
     private String createdBy;
 
+    /**
+     * 수정일시
+     */
+    private LocalDateTime updatedAt;
+
+    /**
+     * 수정자 USERNAME
+     */
+    private String updatedBy;
+
+    /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
     // ============================================
     // 조회용 필드 (속성 정보)
     // ============================================

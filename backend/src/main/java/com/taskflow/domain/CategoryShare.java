@@ -61,6 +61,16 @@ public class CategoryShare {
      */
     private String updatedBy;
 
+    /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
     // ============================================
     // 조회용 필드
     // ============================================

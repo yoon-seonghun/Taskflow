@@ -316,4 +316,42 @@ body {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* =============================================
+   * 드래그 앤 드롭 정렬 공통 스타일
+   * useSortableDrag composable과 함께 사용
+   * ============================================= */
+
+  /* 드래그 중인 아이템 */
+  .sortable-dragging {
+    @apply opacity-50;
+  }
+
+  /* 드롭 타겟 표시 (상단 border) */
+  .sortable-drag-over {
+    @apply border-t-2 border-blue-500;
+  }
+
+  /* 드롭 타겟 표시 (배경색) */
+  .sortable-drag-over-bg {
+    @apply bg-blue-50;
+  }
+
+  /* 드래그 가능 아이템 커서 */
+  .sortable-item {
+    @apply cursor-grab;
+  }
+
+  .sortable-item:active {
+    @apply cursor-grabbing;
+  }
+
+  /* 드래그 핸들 */
+  .sortable-handle {
+    @apply cursor-grab opacity-50 hover:opacity-100 transition-opacity;
+  }
+
+  .sortable-handle:active {
+    @apply cursor-grabbing;
+  }
 }

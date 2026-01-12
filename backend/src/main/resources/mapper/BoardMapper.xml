@@ -20,6 +20,8 @@
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
         <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
         <!-- 추가 필드 -->
         <result property="ownerName" column="OWNER_NAME"/>
         <result property="itemCount" column="ITEM_COUNT"/>
@@ -44,6 +46,8 @@
             b.CREATED_BY,
             b.UPDATED_AT,
             b.UPDATED_BY,
+            b.DELETED_AT,
+            b.DELETED_BY,
             u.NAME AS OWNER_NAME,
             (SELECT COUNT(*) FROM TB_ITEM i WHERE i.BOARD_ID = b.BOARD_ID) AS ITEM_COUNT,
             (SELECT COUNT(*) FROM TB_BOARD_SHARE bs WHERE bs.BOARD_ID = b.BOARD_ID) AS SHARE_COUNT

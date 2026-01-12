@@ -19,6 +19,8 @@
         <result property="requiredYn" column="REQUIRED_YN"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
     </resultMap>
 
     <!-- ============================================= -->
@@ -37,7 +39,9 @@
             cp.DEFAULT_VALUE,
             cp.REQUIRED_YN,
             cp.CREATED_AT,
-            cp.CREATED_BY
+            cp.CREATED_BY,
+            cp.DELETED_AT,
+            cp.DELETED_BY
         FROM TB_CATEGORY_PROPERTY cp
         LEFT JOIN TB_PROPERTY_DEF pd ON cp.PROPERTY_ID = pd.PROPERTY_ID
     </sql>

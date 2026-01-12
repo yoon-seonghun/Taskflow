@@ -1,6 +1,12 @@
 package com.taskflow.service;
 
-import com.taskflow.dto.item.*;
+import com.taskflow.dto.item.CrossBoardSearchRequest;
+import com.taskflow.dto.item.ItemCreateRequest;
+import com.taskflow.dto.item.ItemPageResponse;
+import com.taskflow.dto.item.ItemPropertySortRequest;
+import com.taskflow.dto.item.ItemResponse;
+import com.taskflow.dto.item.ItemSearchRequest;
+import com.taskflow.dto.item.ItemUpdateRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -160,4 +166,17 @@ public interface ItemService {
      * @return 통계 정보 (overdue, pending 등)
      */
     Map<String, Object> getCrossBoardStats(String username);
+
+    // =============================================
+    // 아이템 속성 순서 변경
+    // =============================================
+
+    /**
+     * 아이템 속성 순서 변경
+     *
+     * @param itemId    아이템 ID
+     * @param request   순서 변경 요청
+     * @param updatedBy 수정자 사용자명
+     */
+    void updatePropertySortOrders(Long itemId, ItemPropertySortRequest request, String updatedBy);
 }

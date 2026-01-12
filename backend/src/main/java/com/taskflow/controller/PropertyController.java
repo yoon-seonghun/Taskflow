@@ -311,4 +311,26 @@ public class PropertyController {
 
         return ResponseEntity.ok(ApiResponse.success(response, response.size() + "개 속성이 이전되었습니다"));
     }
+
+    // =============================================
+    // 속성 순서 변경 API
+    // =============================================
+
+    /**
+     * 속성 순서 일괄 변경
+     * - 같은 ownerType 내에서만 순서 변경 가능
+     *
+     * @param request 속성 ID와 순서 목록
+     */
+    @PatchMapping("/properties/reorder")
+    public ResponseEntity<ApiResponse<Void>> reorderProperties(
+            @Valid @RequestBody PropertyReorderRequest request
+    ) {
+        log.info("Reorder properties: ownerType={}, count={}", request.getOwnerType(), request.getOrders().size());
+
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        propertyService.reorderProperties(request, currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.successWithMessage("속성 순서가 변경되었습니다"));
+    }
 }

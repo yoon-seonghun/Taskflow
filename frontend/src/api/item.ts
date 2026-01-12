@@ -7,7 +7,8 @@ import type {
   ItemPageResponse,
   CrossBoardStats,
   ItemTransferRequest,
-  ItemShare
+  ItemShare,
+  ItemPropertySortRequest
 } from '@/types/item'
 import type { Share, ShareRequest, ShareUpdateRequest } from '@/types/share'
 
@@ -134,5 +135,16 @@ export const itemApi = {
    */
   removeItemShare(itemId: number, userId: number) {
     return del<void>(`/items/${itemId}/shares/${userId}`)
+  },
+
+  // =============================================
+  // 아이템 속성 순서 변경
+  // =============================================
+
+  /**
+   * 아이템 속성 순서 변경
+   */
+  updatePropertySortOrders(boardId: number, itemId: number, data: ItemPropertySortRequest) {
+    return put<void>(`/boards/${boardId}/items/${itemId}/properties/sort`, data)
   }
 }

@@ -185,13 +185,12 @@ export const categoryApi = {
   },
 
   /**
-   * 카테고리 속성 순서 변경
+   * 카테고리 속성 순서 변경 (일괄)
    * @param categoryId 카테고리 ID
-   * @param propertyId 속성 ID
-   * @param sortOrder 순서
+   * @param orders 속성 ID와 순서 목록
    */
-  updatePropertyOrder(categoryId: number, propertyId: number, sortOrder: number) {
-    return patch<void>(`/categories/${categoryId}/properties/order`, { propertyId, sortOrder })
+  reorderProperties(categoryId: number, orders: { propertyId: number; sortOrder: number }[]) {
+    return patch<void>(`/categories/${categoryId}/properties/order`, { orders })
   },
 
   /**

@@ -56,6 +56,16 @@ public class CategoryProperty {
      */
     private String createdBy;
 
+    /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
     // ============================================
     // 조회용 필드 (속성 정보)
     // ============================================

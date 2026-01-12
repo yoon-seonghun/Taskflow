@@ -39,17 +39,24 @@ const currentCategoryName = computed(() => {
   return defaultCategory.value?.categoryName || '선택 안함'
 })
 
-// 보드 속성 그룹핑
+// 보드 속성 그룹핑 (각 그룹 내 sortOrder로 정렬)
+// v2.0.2: 정렬 기준 통일 - ownerType별 그룹 내에서 sortOrder 정렬
 const globalProperties = computed(() =>
-  boardProperties.value.filter(p => p.ownerType === 'GLOBAL')
+  boardProperties.value
+    .filter(p => p.ownerType === 'GLOBAL')
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 )
 
 const managerProperties = computed(() =>
-  boardProperties.value.filter(p => p.ownerType === 'MANAGER')
+  boardProperties.value
+    .filter(p => p.ownerType === 'MANAGER')
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 )
 
 const userProperties = computed(() =>
-  boardProperties.value.filter(p => p.ownerType === 'USER')
+  boardProperties.value
+    .filter(p => p.ownerType === 'USER')
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 )
 
 // 데이터 로드

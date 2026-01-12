@@ -49,6 +49,10 @@ const availableProperties = ref<{ propertyId: number; propertyName: string; prop
 const selectedPropertyId = ref<number | null>(null)
 const propertyDefaultValue = ref('')
 
+// 속성 드래그앤드롭 관련
+const draggedPropertyIndex = ref<number | null>(null)
+const dropTargetIndex = ref<number | null>(null)
+
 // 부서 목록
 const departments = ref<Department[]>([])
 
@@ -106,11 +110,11 @@ function flattenDepartments(depts: Department[], result: Department[] = []): Dep
   return result
 }
 
-// 속성 목록 로드 (v2.0: 접근 가능한 속성 조회)
+// 속성 목록 로드 (v2.0: 카테고리는 사용자 속성만 연결 가능)
 async function loadAvailableProperties() {
   try {
-    // 사용자가 접근 가능한 모든 속성 조회 (글로벌 + 매니저 + 본인 속성)
-    const response = await propertyApi.getAccessibleProperties()
+    // 카테고리에는 사용자(USER) 속성만 연결 가능 (설계 정책)
+    const response = await propertyApi.getUserProperties()
     availableProperties.value = response.data.map(p => ({
       propertyId: p.propertyId,
       propertyName: p.propertyName,
@@ -356,6 +360,82 @@ function getPropertyTypeLabel(type: string): string {
     USER: '사용자'
   }
   return labels[type] || type
+}
+
+// ==================== 속성 드래그앤드롭 ====================
+
+// 드래그 시작
+function handlePropertyDragStart(index: number, event: DragEvent) {
+  draggedPropertyIndex.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(index))
+  }
+}
+
+// 드래그 오버
+function handlePropertyDragOver(index: number, event: DragEvent) {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dropTargetIndex.value = index
+}
+
+// 드래그 리브
+function handlePropertyDragLeave() {
+  dropTargetIndex.value = null
+}
+
+// 드래그 엔드
+function handlePropertyDragEnd() {
+  draggedPropertyIndex.value = null
+  dropTargetIndex.value = null
+}
+
+// 드롭
+async function handlePropertyDrop(toIndex: number, event: DragEvent) {
+  event.preventDefault()
+
+  const fromIndex = draggedPropertyIndex.value
+  if (fromIndex === null || fromIndex === toIndex || !category.value) {
+    handlePropertyDragEnd()
+    return
+  }
+
+  const properties = category.value.properties
+  if (!properties || properties.length === 0) {
+    handlePropertyDragEnd()
+    return
+  }
+
+  // 로컬에서 먼저 순서 변경 (Optimistic Update)
+  const [movedItem] = properties.splice(fromIndex, 1)
+  properties.splice(toIndex, 0, movedItem)
+
+  // 새로운 순서 계산
+  const orders = properties.map((prop, idx) => ({
+    propertyId: prop.propertyId,
+    sortOrder: idx + 1
+  }))
+
+  // 로컬 상태 업데이트
+  properties.forEach((prop, idx) => {
+    prop.sortOrder = idx + 1
+  })
+
+  handlePropertyDragEnd()
+
+  // API 호출
+  try {
+    await categoryStore.reorderProperties(category.value.categoryId, orders)
+    uiStore.showSuccess('속성 순서가 변경되었습니다.')
+  } catch (error) {
+    console.error('Failed to reorder properties:', error)
+    uiStore.showError('속성 순서 변경에 실패했습니다.')
+    // 실패 시 원래대로 복원
+    await loadCategoryDetail()
+  }
 }
 
 // 권한 라벨
@@ -735,15 +815,38 @@ watch(() => props.modelValue, (isOpen) => {
                   <table class="w-full text-sm">
                     <thead class="bg-gray-50 border-b border-gray-200">
                       <tr>
+                        <th class="w-10 px-2 py-3"></th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">순서</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">속성명</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">타입</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">기본값</th>
-                        <th class="px-4 py-3 w-24"></th>
+                        <th class="px-4 py-3 w-20"></th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                      <tr v-for="(property, index) in category.properties" :key="property.propertyId" class="hover:bg-gray-50">
+                      <tr
+                        v-for="(property, index) in category.properties"
+                        :key="property.propertyId"
+                        draggable="true"
+                        class="hover:bg-gray-50 transition-all duration-150 sortable-item"
+                        :class="{
+                          'sortable-dragging': draggedPropertyIndex === index,
+                          'sortable-drag-over': dropTargetIndex === index && draggedPropertyIndex !== null && draggedPropertyIndex !== index
+                        }"
+                        @dragstart="handlePropertyDragStart(index, $event)"
+                        @dragover="handlePropertyDragOver(index, $event)"
+                        @dragleave="handlePropertyDragLeave"
+                        @dragend="handlePropertyDragEnd"
+                        @drop="handlePropertyDrop(index, $event)"
+                      >
+                        <!-- 드래그 핸들 -->
+                        <td class="w-10 px-2 py-3">
+                          <div class="sortable-handle text-gray-400 hover:text-gray-600">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
+                            </svg>
+                          </div>
+                        </td>
                         <td class="px-4 py-3 text-gray-500">{{ property.sortOrder || index + 1 }}</td>
                         <td class="px-4 py-3 font-medium text-gray-900">{{ property.propertyName }}</td>
                         <td class="px-4 py-3">

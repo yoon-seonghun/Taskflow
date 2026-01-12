@@ -22,6 +22,8 @@
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
         <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
     </resultMap>
 
     <!-- 옵션 포함 Result Map -->
@@ -49,7 +51,9 @@
             p.CREATED_AT,
             p.CREATED_BY,
             p.UPDATED_AT,
-            p.UPDATED_BY
+            p.UPDATED_BY,
+            p.DELETED_AT,
+            p.DELETED_BY
         FROM TB_PROPERTY_DEF p
     </sql>
 
@@ -319,5 +323,19 @@
             END,
             p.SORT_ORDER, p.PROPERTY_NAME
     </select>
+
+    <!-- ============================================= -->
+    <!-- 순서 변경 -->
+    <!-- ============================================= -->
+
+    <!-- 속성 정렬 순서 변경 -->
+    <update id="updateSortOrder">
+        UPDATE TB_PROPERTY_DEF
+        SET
+            SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE PROPERTY_ID = #{propertyId}
+    </update>
 
 </mapper>

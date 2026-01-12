@@ -12,6 +12,7 @@ import { usePropertyStore } from '@/stores/property'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { boardApi } from '@/api/board'
+import { itemApi } from '@/api/item'
 import { Button, Spinner, MarkdownEditor, EntityEditModal } from '@/components/common'
 import { FileAttachment } from '@/components/file'
 import ItemForm from './ItemForm.vue'
@@ -62,6 +63,7 @@ const canShare = ref(false)
 const boardCategories = ref<Category[]>([])
 const selectedPropertyIds = ref<number[]>([])
 const selectedPropertyDefaults = ref<Record<number, string>>({})
+const selectedPropertySortOrders = ref<Record<number, number>>({})  // v2.0.1: 속성 정렬 순서
 
 // 컬럼 폭 상태 (리사이즈용)
 const PROP_WIDTH_KEY = 'taskflow_prop_width'
@@ -183,6 +185,7 @@ async function loadItem() {
 
 // v2.0: 아이템의 현재 속성 정보를 모달 초기값으로 설정
 // CONCEPT_NOTE 원칙: 모달 초기값 = TB_ITEM_PROPERTY에 저장된 속성만 (보드 전체 속성 X)
+// v2.0.2: sortOrder를 배열 인덱스 기반으로 할당 (DB 순서 유지)
 function initializePropertySelection(itemData: Item) {
   // 1. 아이템에 실제 저장된 속성 ID 목록 (TB_ITEM_PROPERTY 기준)
   const itemPropertyIds: number[] = []
@@ -190,25 +193,36 @@ function initializePropertySelection(itemData: Item) {
   // 2. 아이템에 저장된 속성 값 (TB_ITEM_PROPERTY)
   const defaults: Record<number, string> = {}
 
+  // v2.0.2: 1 기반 sortOrder 사용 (DB 쿼리 결과 순서 반영, 일관성 유지)
+  // DB에서 sortOrder가 0이어도, 배열 순서 자체가 실제 표시 순서를 반영
+  const sortOrders: Record<number, number> = {}
+
   // item.properties에서 속성 ID 및 값 추출 (TB_ITEM_PROPERTY 데이터)
   if (itemData.properties && itemData.properties.length > 0) {
-    for (const prop of itemData.properties) {
+    itemData.properties.forEach((prop, index) => {
       // 속성 ID 수집 (값 유무와 관계없이 TB_ITEM_PROPERTY에 레코드가 있으면 "선택됨")
       itemPropertyIds.push(prop.propertyId)
       // 값 추출
       if (prop.value !== null && prop.value !== undefined) {
         defaults[prop.propertyId] = String(prop.value)
       }
-    }
+      // v2.0.2: 1 기반 sortOrder 사용 (PropertiesContent.vue와 일관성 유지)
+      // 이렇게 하면 모달에서 ensureSortOrdersForSelectedProperties가
+      // 이미 sortOrder가 있는 속성은 재정렬하지 않음
+      sortOrders[prop.propertyId] = index + 1  // 1 기반
+    })
   }
 
   // propertyValues에서도 값 추출 (대안 - properties에 없는 경우)
   if (itemData.propertyValues) {
+    let nextIndex = itemPropertyIds.length + 1  // 1 기반: 기존 속성 개수 + 1
     for (const [propId, value] of Object.entries(itemData.propertyValues)) {
       const propertyId = Number(propId)
       // propertyValues에만 있고 properties에 없는 경우 추가
       if (!itemPropertyIds.includes(propertyId)) {
         itemPropertyIds.push(propertyId)
+        // propertyValues에서 추가된 속성은 기존 속성 뒤에 배치
+        sortOrders[propertyId] = nextIndex++
       }
       if (value !== null && value !== undefined) {
         defaults[propertyId] = String(value)
@@ -216,9 +230,13 @@ function initializePropertySelection(itemData: Item) {
     }
   }
 
+  console.log('[initializePropertySelection] item.properties 순서:', itemData.properties?.map(p => p.propertyId))
+  console.log('[initializePropertySelection] 할당된 sortOrders:', sortOrders)
+
   // 3. 선택된 속성 ID = 아이템에 실제 저장된 속성만 (TB_ITEM_PROPERTY 기준)
   selectedPropertyIds.value = itemPropertyIds
   selectedPropertyDefaults.value = defaults
+  selectedPropertySortOrders.value = sortOrders
 }
 
 // 이관/공유 권한 확인
@@ -272,6 +290,7 @@ async function loadBoardCategories() {
 }
 
 // v2.0: 속성 선택 모달에서 저장 핸들러
+// v2.0.1: propertySortOrders 추가
 async function handlePropertySave(data: {
   name: string
   description: string
@@ -280,6 +299,7 @@ async function handlePropertySave(data: {
   categoryId: number | null
   propertyIds: number[]
   propertyDefaults: Record<number, string>
+  propertySortOrders: Record<number, number>
 }) {
   if (!item.value || !props.boardId) return
 
@@ -297,6 +317,7 @@ async function handlePropertySave(data: {
     console.log('[handlePropertySave] item.value.properties:', item.value.properties)
     console.log('[handlePropertySave] existingPropertyIds:', Array.from(existingPropertyIds))
     console.log('[handlePropertySave] newPropertyIds (from modal):', Array.from(newPropertyIds))
+    console.log('[handlePropertySave] propertySortOrders:', data.propertySortOrders)
 
     // 3. properties 맵 생성
     const properties: Record<number, unknown> = {}
@@ -322,12 +343,13 @@ async function handlePropertySave(data: {
 
     console.log('[handlePropertySave] 최종 properties 맵:', properties)
 
-    // 제목, 설명, 카테고리 및 속성 업데이트
+    // 제목, 설명, 카테고리 및 속성 업데이트 (sortOrder 포함)
     const updateData: ItemUpdateRequest = {
       title: data.name || undefined,
       description: data.description || undefined,
       categoryId: data.categoryId ?? undefined,
-      properties: Object.keys(properties).length > 0 ? properties : undefined
+      properties: Object.keys(properties).length > 0 ? properties : undefined,
+      propertySortOrders: Object.keys(data.propertySortOrders).length > 0 ? data.propertySortOrders : undefined
     }
 
     console.log('[handlePropertySave] API 전송 데이터:', updateData)
@@ -336,6 +358,32 @@ async function handlePropertySave(data: {
     console.log('[handlePropertySave] API 응답 result:', result)
     console.log('[handlePropertySave] result.properties:', result?.properties)
     if (result) {
+      // v2.0.1: 속성 정렬 순서 별도 업데이트 (기존 속성에 대해서만)
+      // 아이템 업데이트 후 반환된 properties에서 itemPropertyId를 가져와 sortOrder 업데이트
+      if (Object.keys(data.propertySortOrders).length > 0 && result.properties && result.properties.length > 0) {
+        try {
+          // propertyId -> sortOrder 맵에서 itemPropertyId -> sortOrder 맵으로 변환
+          const orders: Array<{ itemPropertyId: number; sortOrder: number }> = []
+          for (const prop of result.properties) {
+            const sortOrder = data.propertySortOrders[prop.propertyId]
+            if (sortOrder !== undefined && prop.itemPropertyId) {
+              orders.push({
+                itemPropertyId: prop.itemPropertyId,
+                sortOrder: sortOrder
+              })
+            }
+          }
+
+          if (orders.length > 0) {
+            console.log('[handlePropertySave] 속성 순서 업데이트:', orders)
+            await itemApi.updatePropertySortOrders(props.boardId, item.value.itemId, { orders })
+          }
+        } catch (sortError) {
+          console.warn('[handlePropertySave] 속성 순서 업데이트 실패:', sortError)
+          // 순서 업데이트 실패해도 속성 수정은 성공으로 처리
+        }
+      }
+
       // 아이템 다시 로드하여 최신 properties 반영 (API 응답에 완전한 properties 배열 포함)
       await loadItem()
       emit('updated', item.value!)
@@ -793,6 +841,8 @@ onUnmounted(() => {
       :initial-category-id="item.categoryId"
       :initial-property-ids="selectedPropertyIds"
       :initial-property-defaults="selectedPropertyDefaults"
+      :initial-property-sort-orders="selectedPropertySortOrders"
+      enable-property-drag-drop
       @save="handlePropertySave"
     />
   </div>

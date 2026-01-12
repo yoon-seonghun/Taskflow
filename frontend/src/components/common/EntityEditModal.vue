@@ -28,6 +28,7 @@ interface Props {
   initialCategoryId?: number | null  // 업무용: 단일
   initialPropertyIds?: number[]
   initialPropertyDefaults?: Record<number, string>
+  initialPropertySortOrders?: Record<number, number>  // v2.0.1: 속성 정렬 순서
 
   // 외부 데이터
   categories: Category[]
@@ -38,6 +39,7 @@ interface Props {
   nameRequired?: boolean
   showColor?: boolean
   showDescription?: boolean
+  enablePropertyDragDrop?: boolean  // v2.0.1: 속성 드래그 앤 드롭 활성화
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -49,6 +51,7 @@ const props = withDefaults(defineProps<Props>(), {
   initialCategoryId: null,
   initialPropertyIds: () => [],
   initialPropertyDefaults: () => ({}),
+  initialPropertySortOrders: () => ({}),
   colorOptions: () => [
     '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
     '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#6B7280'
@@ -56,7 +59,8 @@ const props = withDefaults(defineProps<Props>(), {
   nameLabel: '',
   nameRequired: true,
   showColor: true,
-  showDescription: true
+  showDescription: true,
+  enablePropertyDragDrop: false
 })
 
 const emit = defineEmits<{
@@ -69,6 +73,7 @@ const emit = defineEmits<{
     categoryId: number | null  // 업무용
     propertyIds: number[]
     propertyDefaults: Record<number, string>
+    propertySortOrders: Record<number, number>  // v2.0.1: 속성 정렬 순서
   }): void
   (e: 'cancel'): void
 }>()
@@ -81,7 +86,8 @@ const formData = ref({
   categoryIds: [...props.initialCategoryIds],  // 보드용
   categoryId: props.initialCategoryId as number | null,  // 업무용
   propertyIds: [...props.initialPropertyIds],
-  propertyDefaults: { ...props.initialPropertyDefaults }
+  propertyDefaults: { ...props.initialPropertyDefaults },
+  propertySortOrders: { ...props.initialPropertySortOrders }  // v2.0.1: 속성 정렬 순서
 })
 
 // 모달 제목 (props.title이 없으면 mode에 따라 자동 설정)
@@ -123,6 +129,11 @@ function handlePropertyDefaultsUpdate(defaults: Record<number, string>) {
   formData.value.propertyDefaults = defaults
 }
 
+// v2.0.1: 속성 정렬 순서 업데이트 핸들러
+function handlePropertySortOrdersUpdate(sortOrders: Record<number, number>) {
+  formData.value.propertySortOrders = sortOrders
+}
+
 // 저장
 function handleSave() {
   if (props.nameRequired && !formData.value.name.trim()) {
@@ -136,7 +147,8 @@ function handleSave() {
     categoryIds: formData.value.categoryIds,
     categoryId: formData.value.categoryId,
     propertyIds: formData.value.propertyIds,
-    propertyDefaults: formData.value.propertyDefaults
+    propertyDefaults: formData.value.propertyDefaults,
+    propertySortOrders: formData.value.propertySortOrders
   })
 }
 
@@ -161,7 +173,8 @@ watch(() => props.modelValue, (isOpen) => {
       categoryIds: [...props.initialCategoryIds],
       categoryId: props.initialCategoryId,
       propertyIds: [...props.initialPropertyIds],
-      propertyDefaults: { ...props.initialPropertyDefaults }
+      propertyDefaults: { ...props.initialPropertyDefaults },
+      propertySortOrders: { ...props.initialPropertySortOrders }
     }
   }
 })
@@ -289,13 +302,17 @@ watch(() => props.modelValue, (isOpen) => {
               </p>
             </div>
 
-            <!-- 속성 선택 패널 -->
+            <!-- 속성 선택 패널 (v2.0.4: 보드 모드에서는 카테고리 속성 숨김 및 드래그앤드롭 비활성) -->
             <BoardPropertySelector
               :selected-category-ids="selectedCategoryIdsForSelector"
               :selected-property-ids="formData.propertyIds"
               :property-defaults="formData.propertyDefaults"
+              :initial-sort-orders="formData.propertySortOrders"
+              :enable-drag-drop="mode !== 'board' && enablePropertyDragDrop"
+              :show-category-properties="mode !== 'board'"
               @update:selected-property-ids="handlePropertyIdsUpdate"
               @update:property-defaults="handlePropertyDefaultsUpdate"
+              @update:property-sort-orders="handlePropertySortOrdersUpdate"
             />
           </div>
         </div>

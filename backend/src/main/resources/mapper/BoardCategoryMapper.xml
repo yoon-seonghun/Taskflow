@@ -17,6 +17,8 @@
         <result property="sortOrder" column="SORT_ORDER"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
     </resultMap>
 
     <!-- ============================================= -->
@@ -33,7 +35,9 @@
             bc.DEFAULT_YN,
             bc.SORT_ORDER,
             bc.CREATED_AT,
-            bc.CREATED_BY
+            bc.CREATED_BY,
+            bc.DELETED_AT,
+            bc.DELETED_BY
         FROM TB_BOARD_CATEGORY bc
         LEFT JOIN TB_CATEGORY c ON bc.CATEGORY_ID = c.CATEGORY_ID
     </sql>

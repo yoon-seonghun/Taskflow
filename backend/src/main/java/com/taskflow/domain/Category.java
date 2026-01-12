@@ -86,6 +86,16 @@ public class Category {
      */
     private String updatedBy;
 
+    /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
     // ============================================
     // 연관 데이터 (조회용)
     // ============================================

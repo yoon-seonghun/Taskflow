@@ -1,4 +1,4 @@
-import { get, post, put, del } from './client'
+import { get, post, put, del, patch } from './client'
 import type {
   PropertyDef,
   PropertyCreateRequest,
@@ -123,6 +123,17 @@ export const propertyApi = {
    */
   transferProperties(propertyIds: number[], newOwnerUsername: string) {
     return post<PropertyDef[]>(`/properties/transfer-batch?newOwner=${encodeURIComponent(newOwnerUsername)}`, propertyIds)
+  },
+
+  /**
+   * 속성 순서 변경
+   * - 같은 ownerType 내에서만 순서 변경 가능
+   */
+  reorderProperties(data: {
+    ownerType: 'GLOBAL' | 'MANAGER' | 'USER';
+    orders: { propertyId: number; sortOrder: number }[];
+  }) {
+    return patch<void>('/properties/reorder', data)
   },
 
   // =============================================

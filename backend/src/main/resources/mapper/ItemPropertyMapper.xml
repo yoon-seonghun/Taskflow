@@ -17,13 +17,17 @@
         <result property="valueUsername" column="VALUE_USERNAME"/>
         <result property="valueOptionId" column="VALUE_OPTION_ID"/>
         <result property="valueCheckbox" column="VALUE_CHECKBOX"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
         <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
         <!-- 조인 필드 -->
         <result property="propertyName" column="PROPERTY_NAME"/>
         <result property="propertyType" column="PROPERTY_TYPE"/>
+        <result property="ownerType" column="OWNER_TYPE"/>
         <result property="valueUserName" column="VALUE_USER_NAME"/>
         <result property="optionName" column="OPTION_NAME"/>
         <result property="optionColor" column="OPTION_COLOR"/>
@@ -36,6 +40,8 @@
         <result property="optionId" column="OPTION_ID"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
         <!-- 조인 필드 -->
         <result property="optionName" column="OPTION_NAME"/>
         <result property="optionColor" column="COLOR"/>
@@ -58,12 +64,14 @@
             v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
+            v.SORT_ORDER,
             v.CREATED_AT,
             v.CREATED_BY,
             v.UPDATED_AT,
             v.UPDATED_BY,
             p.PROPERTY_NAME,
             p.PROPERTY_TYPE,
+            p.OWNER_TYPE,
             u.NAME AS VALUE_USER_NAME,
             o.OPTION_LABEL AS OPTION_NAME,
             o.COLOR AS OPTION_COLOR
@@ -87,12 +95,14 @@
             v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
+            v.SORT_ORDER,
             v.CREATED_AT,
             v.CREATED_BY,
             v.UPDATED_AT,
             v.UPDATED_BY,
             p.PROPERTY_NAME,
             p.PROPERTY_TYPE,
+            p.OWNER_TYPE,
             u.NAME AS VALUE_USER_NAME,
             o.OPTION_LABEL AS OPTION_NAME,
             o.COLOR AS OPTION_COLOR
@@ -102,7 +112,14 @@
         LEFT JOIN TB_PROPERTY_OPTION o ON p.PROPERTY_TYPE = 'SELECT'
             AND v.VALUE_OPTION_ID = o.OPTION_ID
         WHERE v.ITEM_ID = #{itemId}
-        ORDER BY p.SORT_ORDER
+        ORDER BY v.SORT_ORDER,
+                 CASE p.OWNER_TYPE
+                     WHEN 'GLOBAL' THEN 1
+                     WHEN 'MANAGER' THEN 2
+                     WHEN 'USER' THEN 3
+                     ELSE 4
+                 END,
+                 p.SORT_ORDER
     </select>
 
     <!-- 여러 아이템의 속성값 목록 일괄 조회 (N+1 쿼리 최적화) -->
@@ -117,12 +134,14 @@
             v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
+            v.SORT_ORDER,
             v.CREATED_AT,
             v.CREATED_BY,
             v.UPDATED_AT,
             v.UPDATED_BY,
             p.PROPERTY_NAME,
             p.PROPERTY_TYPE,
+            p.OWNER_TYPE,
             u.NAME AS VALUE_USER_NAME,
             o.OPTION_LABEL AS OPTION_NAME,
             o.COLOR AS OPTION_COLOR
@@ -135,7 +154,15 @@
         <foreach collection="itemIds" item="itemId" open="(" separator="," close=")">
             #{itemId}
         </foreach>
-        ORDER BY v.ITEM_ID, p.SORT_ORDER
+        ORDER BY v.ITEM_ID,
+                 v.SORT_ORDER,
+                 CASE p.OWNER_TYPE
+                     WHEN 'GLOBAL' THEN 1
+                     WHEN 'MANAGER' THEN 2
+                     WHEN 'USER' THEN 3
+                     ELSE 4
+                 END,
+                 p.SORT_ORDER
     </select>
 
     <!-- 아이템의 특정 속성값 조회 -->
@@ -150,12 +177,14 @@
             v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
+            v.SORT_ORDER,
             v.CREATED_AT,
             v.CREATED_BY,
             v.UPDATED_AT,
             v.UPDATED_BY,
             p.PROPERTY_NAME,
             p.PROPERTY_TYPE,
+            p.OWNER_TYPE,
             u.NAME AS VALUE_USER_NAME,
             o.OPTION_LABEL AS OPTION_NAME,
             o.COLOR AS OPTION_COLOR
@@ -200,12 +229,14 @@
             v.VALUE_USERNAME,
             v.VALUE_OPTION_ID,
             v.VALUE_CHECKBOX,
+            v.SORT_ORDER,
             v.CREATED_AT,
             v.CREATED_BY,
             v.UPDATED_AT,
             v.UPDATED_BY,
             p.PROPERTY_NAME,
-            p.PROPERTY_TYPE
+            p.PROPERTY_TYPE,
+            p.OWNER_TYPE
         FROM TB_ITEM_PROPERTY v
         INNER JOIN TB_PROPERTY_DEF p ON v.PROPERTY_ID = p.PROPERTY_ID
         WHERE v.PROPERTY_ID = #{propertyId}
@@ -226,6 +257,7 @@
             VALUE_USERNAME,
             VALUE_OPTION_ID,
             VALUE_CHECKBOX,
+            SORT_ORDER,
             CREATED_BY
         ) VALUES (
             #{itemId},
@@ -236,6 +268,7 @@
             #{valueUsername},
             #{valueOptionId},
             #{valueCheckbox},
+            COALESCE(#{sortOrder}, 0),
             #{createdBy}
         )
     </insert>
@@ -250,6 +283,7 @@
             VALUE_USERNAME = #{valueUsername},
             VALUE_OPTION_ID = #{valueOptionId},
             VALUE_CHECKBOX = #{valueCheckbox},
+            SORT_ORDER = COALESCE(#{sortOrder}, SORT_ORDER),
             UPDATED_BY = #{updatedBy},
             UPDATED_AT = CURRENT_TIMESTAMP
         WHERE ITEM_PROPERTY_ID = #{itemPropertyId}
@@ -266,6 +300,7 @@
             VALUE_USERNAME,
             VALUE_OPTION_ID,
             VALUE_CHECKBOX,
+            SORT_ORDER,
             CREATED_BY
         ) VALUES (
             #{itemId},
@@ -276,6 +311,7 @@
             #{valueUsername},
             #{valueOptionId},
             #{valueCheckbox},
+            COALESCE(#{sortOrder}, 0),
             #{createdBy}
         )
         ON DUPLICATE KEY UPDATE
@@ -285,6 +321,7 @@
             VALUE_USERNAME = #{valueUsername},
             VALUE_OPTION_ID = #{valueOptionId},
             VALUE_CHECKBOX = #{valueCheckbox},
+            SORT_ORDER = COALESCE(#{sortOrder}, SORT_ORDER),
             UPDATED_BY = #{updatedBy},
             UPDATED_AT = CURRENT_TIMESTAMP
     </insert>
@@ -339,5 +376,38 @@
         DELETE FROM TB_ITEM_PROPERTY_MULTI
         WHERE ITEM_ID = #{itemId}
     </delete>
+
+    <!-- ============================================= -->
+    <!-- 속성 순서 관리 -->
+    <!-- ============================================= -->
+
+    <!-- 아이템의 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0)
+        FROM TB_ITEM_PROPERTY
+        WHERE ITEM_ID = #{itemId}
+    </select>
+
+    <!-- 속성 정렬 순서 변경 -->
+    <update id="updateSortOrder">
+        UPDATE TB_ITEM_PROPERTY
+        SET
+            SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_PROPERTY_ID = #{itemPropertyId}
+    </update>
+
+    <!-- 아이템의 속성 정렬 순서 일괄 변경 -->
+    <update id="updateSortOrders">
+        <foreach collection="orders" item="order" separator=";">
+            UPDATE TB_ITEM_PROPERTY
+            SET
+                SORT_ORDER = #{order.sortOrder},
+                UPDATED_BY = #{updatedBy},
+                UPDATED_AT = CURRENT_TIMESTAMP
+            WHERE ITEM_PROPERTY_ID = #{order.itemPropertyId}
+        </foreach>
+    </update>
 
 </mapper>

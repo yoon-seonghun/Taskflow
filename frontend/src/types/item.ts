@@ -45,9 +45,11 @@ export interface ItemProperty {
   propertyName?: string
   propertyCode?: string
   propertyType?: string
+  ownerType?: 'GLOBAL' | 'MANAGER' | 'USER'  // 속성 소유자 타입
   value?: unknown           // 실제 값
   displayValue?: string     // 표시용 값 (옵션명, 사용자명 등)
   color?: string            // 옵션 색상
+  sortOrder?: number        // 정렬 순서 (TB_ITEM_PROPERTY)
 }
 
 export interface ItemCreateRequest {
@@ -64,6 +66,7 @@ export interface ItemCreateRequest {
   sortOrder?: number
   propertyIds?: number[]      // v2.0: 선택된 속성 ID 목록
   properties?: Record<number, unknown>
+  propertySortOrders?: Record<number, number>  // 속성 정렬 순서 (propertyId -> sortOrder)
 }
 
 export interface ItemUpdateRequest {
@@ -80,6 +83,7 @@ export interface ItemUpdateRequest {
   sortOrder?: number
   propertyIds?: number[]      // v2.0: 선택된 속성 ID 목록
   properties?: Record<number, unknown>
+  propertySortOrders?: Record<number, number>  // 속성 정렬 순서 (propertyId -> sortOrder)
   /** null로 설정할 필드 목록 (예: ['requestDate', 'dueDate']) - snake_case로 전송됨 */
   clear_fields?: string[]
 }
@@ -159,4 +163,19 @@ export interface ItemShare {
   canDelete: boolean
   createdAt?: string
   updatedAt?: string
+}
+
+/**
+ * 아이템 속성 순서 변경 요청 DTO
+ */
+export interface ItemPropertySortRequest {
+  orders: PropertySortOrder[]
+}
+
+/**
+ * 속성 순서 정보
+ */
+export interface PropertySortOrder {
+  itemPropertyId: number
+  sortOrder: number
 }

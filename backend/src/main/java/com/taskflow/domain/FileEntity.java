@@ -117,6 +117,16 @@ public class FileEntity {
      */
     private String updatedBy;
 
+    /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
     // =============================================
     // 조인 필드 (조회용)
     // =============================================

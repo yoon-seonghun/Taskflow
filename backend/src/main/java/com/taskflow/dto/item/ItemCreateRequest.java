@@ -82,4 +82,9 @@ public class ItemCreateRequest {
      * 동적 속성값 (propertyId -> value)
      */
     private Map<Long, Object> properties;
+
+    /**
+     * 속성 정렬 순서 (propertyId -> sortOrder)
+     */
+    private Map<Long, Integer> propertySortOrders;
 }

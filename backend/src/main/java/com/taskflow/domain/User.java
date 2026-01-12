@@ -98,6 +98,16 @@ public class User {
     private String updatedBy;
 
     /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
+    /**
      * 마지막 로그인 일시
      */
     private LocalDateTime lastLoginAt;

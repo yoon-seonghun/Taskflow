@@ -78,6 +78,16 @@ public class Department {
     private String updatedBy;
 
     /**
+     * 삭제일시 (논리삭제)
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * 삭제자 USERNAME
+     */
+    private String deletedBy;
+
+    /**
      * 마지막 동기화 일시 (External 모드)
      */
     private LocalDateTime lastSyncedAt;

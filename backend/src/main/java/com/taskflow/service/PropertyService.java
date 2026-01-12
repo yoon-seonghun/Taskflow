@@ -233,4 +233,17 @@ public interface PropertyService {
      * @return 이전된 속성 목록
      */
     List<PropertyResponse> transferProperties(List<Long> propertyIds, String newOwnerUsername, String transferredBy);
+
+    // =============================================
+    // 속성 순서 변경
+    // =============================================
+
+    /**
+     * 속성 순서 일괄 변경
+     * - 같은 ownerType 내에서만 순서 변경 가능
+     *
+     * @param request   순서 변경 요청
+     * @param updatedBy 수정자 USERNAME
+     */
+    void reorderProperties(PropertyReorderRequest request, String updatedBy);
 }
