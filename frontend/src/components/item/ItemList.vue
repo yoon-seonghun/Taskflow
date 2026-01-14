@@ -4,12 +4,14 @@
  * - 단순 목록 형태
  * - 빠른 스캔에 최적화
  * - 모바일 최적화
+ * - 드래그 앤 드롭 정렬 지원
  */
 import { ref, computed, watch } from 'vue'
 import { useItemStore } from '@/stores/item'
 import { useSlideOver } from '@/composables/useSlideOver'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
+import { useSortableDrag } from '@/composables/useSortableDrag'
 import { Spinner, EmptyState } from '@/components/common'
 import ItemListRow from './ItemListRow.vue'
 import { isItemOverdue } from '@/utils/item'
@@ -40,21 +42,43 @@ const isLoading = ref(false)
 const selectedItemId = ref<number | null>(null)
 const showCompleted = ref(false)
 
-// 활성 아이템 목록 (필터 적용)
-const activeItems = computed(() => {
-  const items = itemStore.activeItems
+// 드래그 중 로컬 순서 (useSortableDrag에서 사용)
+const localItems = ref<Item[] | null>(null)
 
-  switch (props.filter) {
-    case 'not_started':
-      return items.filter(i => i.status === 'NOT_STARTED')
-    case 'in_progress':
-      return items.filter(i => i.status === 'IN_PROGRESS')
-    case 'overdue':
-      return items.filter(i => isItemOverdue(i))
-    case 'pending':
-      return items.filter(i => i.status === 'PENDING')
-    default:
-      return items
+// 활성 아이템 목록 (필터 적용, 정렬 포함)
+const activeItems = computed({
+  get() {
+    // 드래그 중에는 로컬 순서 사용
+    if (localItems.value) {
+      return localItems.value
+    }
+
+    const items = itemStore.activeItems
+
+    let filtered: Item[]
+    switch (props.filter) {
+      case 'not_started':
+        filtered = items.filter(i => i.status === 'NOT_STARTED')
+        break
+      case 'in_progress':
+        filtered = items.filter(i => i.status === 'IN_PROGRESS')
+        break
+      case 'overdue':
+        filtered = items.filter(i => isItemOverdue(i))
+        break
+      case 'pending':
+        filtered = items.filter(i => i.status === 'PENDING')
+        break
+      default:
+        filtered = items
+    }
+
+    // sortOrder 기준 정렬
+    return [...filtered].sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))
+  },
+  set(newItems: Item[]) {
+    // useSortableDrag에서 드래그 중 로컬 순서 업데이트
+    localItems.value = newItems
   }
 })
 
@@ -117,6 +141,45 @@ function toggleCompleted() {
   showCompleted.value = !showCompleted.value
 }
 
+// 드래그 앤 드롭 정렬
+const {
+  draggedIndex,
+  dragOverIndex,
+  getDragClass,
+  handleDragStart,
+  handleDragOver,
+  handleDragLeave,
+  handleDragEnd: baseDragEnd,
+  handleDrop
+} = useSortableDrag<Item>({
+  items: activeItems,
+  itemKey: 'itemId',
+  onReorder: async (reorderedItems, fromIndex, toIndex) => {
+    if (!reorderedItems[toIndex]) return
+
+    const itemId = reorderedItems[toIndex].itemId
+    // 새 sortOrder 계산
+    const newSortOrder = toIndex
+
+    // API 호출
+    const success = await itemStore.reorderItem(props.boardId, itemId, newSortOrder)
+    if (success) {
+      toast.success('순서가 변경되었습니다.')
+    } else {
+      toast.error('순서 변경에 실패했습니다.')
+    }
+  }
+})
+
+// 드래그 종료 시 localItems 초기화
+function handleDragEndWrapper(event: DragEvent, index: number) {
+  baseDragEnd(event)
+  // 드래그 완료 후 로컬 순서 초기화 (store에서 가져온 순서 사용)
+  setTimeout(() => {
+    localItems.value = null
+  }, 100)
+}
+
 // boardId 변경 시 데이터 재로드
 watch(() => props.boardId, () => {
   loadData()
@@ -145,13 +208,21 @@ watch(() => props.boardId, () => {
         <!-- 활성 아이템 목록 -->
         <div v-if="activeItems.length > 0">
           <ItemListRow
-            v-for="item in activeItems"
+            v-for="(item, index) in activeItems"
             :key="item.itemId"
             :item="item"
             :selected="selectedItemId === item.itemId"
+            draggable
+            :drag-class="getDragClass(index)"
+            :is-drag-over="dragOverIndex === index"
             @click="handleItemClick"
             @complete="handleComplete"
             @delete="handleDelete"
+            @dragstart="handleDragStart(index, $event)"
+            @dragover="handleDragOver(index, $event)"
+            @dragleave="handleDragLeave"
+            @dragend="handleDragEndWrapper($event, index)"
+            @drop="handleDrop(index, $event)"
           />
         </div>
 

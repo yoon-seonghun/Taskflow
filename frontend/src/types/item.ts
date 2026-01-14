@@ -36,6 +36,13 @@ export interface Item {
   updatedByName?: string
   properties?: ItemProperty[]
   propertyValues?: Record<number, unknown>
+  // 공유/이관 정보
+  isSharedToMe?: boolean        // 공유받은 업무 여부
+  sharedByUsername?: string     // 공유해준 사용자 USERNAME
+  sharedByUserName?: string     // 공유해준 사용자 이름
+  transferredFrom?: number      // 이관 원본 보드 ID
+  transferredByUsername?: string // 이관해준 사용자 USERNAME
+  transferredByUserName?: string // 이관해준 사용자 이름
 }
 
 export interface ItemProperty {
@@ -46,6 +53,8 @@ export interface ItemProperty {
   propertyCode?: string
   propertyType?: string
   ownerType?: 'GLOBAL' | 'MANAGER' | 'USER'  // 속성 소유자 타입
+  dataSourceType?: 'INTERNAL' | 'EXTERNAL'   // 데이터 소스 타입
+  externalQueryId?: number                    // 외부 쿼리 ID
   value?: unknown           // 실제 값
   displayValue?: string     // 표시용 값 (옵션명, 사용자명 등)
   color?: string            // 옵션 색상
@@ -101,7 +110,8 @@ export interface ItemSearchRequest {
   includeDeleted?: boolean
   page?: number
   size?: number
-  sort?: string
+  sortField?: string          // 정렬 필드 (sortOrder, createdAt, dueDate 등)
+  sortDirection?: 'asc' | 'desc'  // 정렬 방향
 }
 
 /**
@@ -178,4 +188,12 @@ export interface ItemPropertySortRequest {
 export interface PropertySortOrder {
   itemPropertyId: number
   sortOrder: number
+}
+
+/**
+ * 아이템 순서 변경 요청 DTO
+ */
+export interface ItemReorderRequest {
+  itemId: number
+  newOrder: number
 }

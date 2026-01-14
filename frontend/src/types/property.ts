@@ -30,6 +30,13 @@ export interface PropertyOption {
  */
 export type OwnerType = 'GLOBAL' | 'MANAGER' | 'USER'
 
+/**
+ * 데이터 소스 유형
+ * - INTERNAL: 내부 옵션 테이블 사용 (기본값)
+ * - EXTERNAL: 외부 쿼리 결과 사용
+ */
+export type DataSourceType = 'INTERNAL' | 'EXTERNAL'
+
 export interface PropertyDef {
   propertyId: number
   boardId?: number | null   // v2.0: 사용자 속성은 null
@@ -48,6 +55,11 @@ export interface PropertyDef {
   useYn?: string            // 응답에서 미포함
   deleted?: boolean
   options?: PropertyOption[]
+  // 외부 쿼리 연동 (SELECT/MULTI_SELECT/CHECKBOX 타입용)
+  externalQueryId?: number | null    // 연동된 외부 쿼리 ID
+  dataSourceType?: DataSourceType    // 데이터 소스 유형 (INTERNAL/EXTERNAL)
+  externalQueryCode?: string         // 외부 쿼리 코드 (표시용)
+  externalQueryName?: string         // 외부 쿼리명 (표시용)
   createdAt?: string
   updatedAt?: string
 }
@@ -62,6 +74,9 @@ export interface PropertyCreateRequest {
   sortOrder?: number
   hiddenYn?: string         // deprecated, visibleYn 사용 권장
   visibleYn?: string        // DB: VISIBLE_YN
+  // 외부 쿼리 연동
+  externalQueryId?: number | null    // 외부 쿼리 ID (EXTERNAL 타입 시)
+  dataSourceType?: DataSourceType    // 데이터 소스 유형 (기본값: INTERNAL)
 }
 
 export interface PropertyUpdateRequest {
@@ -74,6 +89,9 @@ export interface PropertyUpdateRequest {
   hiddenYn?: string       // deprecated, visibleYn 사용 권장
   visibleYn?: string      // DB: VISIBLE_YN
   useYn?: string
+  // 외부 쿼리 연동
+  externalQueryId?: number | null    // 외부 쿼리 ID (null로 설정하면 연동 해제)
+  dataSourceType?: DataSourceType    // 데이터 소스 유형
 }
 
 export interface OptionCreateRequest {

@@ -12,6 +12,7 @@ import { usePropertyStore } from '@/stores/property'
 import { useBoardStore } from '@/stores/board'
 import { useDepartmentStore } from '@/stores/department'
 import { useSlideOver } from '@/composables/useSlideOver'
+import { useSortableDrag } from '@/composables/useSortableDrag'
 import type { UserOption, DepartmentOption } from '@/components/common'
 import { useToast } from '@/composables/useToast'
 import { userApi } from '@/api/user'
@@ -193,23 +194,89 @@ onMounted(() => {
 // 기존 defaultColumnWidths (호환성 유지)
 const defaultColumnWidths = columnWidths
 
-// 아이템 목록 (필터 적용)
-const items = computed(() => {
-  const activeItems = itemStore.activeItems
+// 드래그 중 로컬 순서 (useSortableDrag에서 사용)
+const localItems = ref<Item[] | null>(null)
 
-  switch (props.filter) {
-    case 'not_started':
-      return activeItems.filter(i => i.status === 'NOT_STARTED')
-    case 'in_progress':
-      return activeItems.filter(i => i.status === 'IN_PROGRESS')
-    case 'overdue':
-      return activeItems.filter(i => isItemOverdue(i))
-    case 'pending':
-      return activeItems.filter(i => i.status === 'PENDING')
-    default:
-      return activeItems
+// 아이템 목록 (필터 적용 + sortOrder 정렬)
+const items = computed({
+  get() {
+    // 드래그 중에는 로컬 순서 사용
+    if (localItems.value) {
+      return localItems.value
+    }
+
+    const activeItems = itemStore.activeItems
+
+    let filtered: Item[]
+    switch (props.filter) {
+      case 'not_started':
+        filtered = activeItems.filter(i => i.status === 'NOT_STARTED')
+        break
+      case 'in_progress':
+        filtered = activeItems.filter(i => i.status === 'IN_PROGRESS')
+        break
+      case 'overdue':
+        filtered = activeItems.filter(i => isItemOverdue(i))
+        break
+      case 'pending':
+        filtered = activeItems.filter(i => i.status === 'PENDING')
+        break
+      default:
+        filtered = [...activeItems]
+    }
+
+    // sortOrder 기준 정렬 (낮은 순서가 먼저)
+    return [...filtered].sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))
+  },
+  set(newItems: Item[]) {
+    // useSortableDrag에서 드래그 중 로컬 순서 업데이트
+    localItems.value = newItems
   }
 })
+
+// 드래그 앤 드롭 정렬 설정
+const {
+  draggedIndex,
+  dragOverIndex,
+  isDragging,
+  isReordering,
+  handleDragStart,
+  handleDragOver,
+  handleDragLeave,
+  handleDragEnd: originalHandleDragEnd,
+  handleDrop,
+  getDragClass
+} = useSortableDrag<Item>({
+  items: items,
+  itemKey: 'itemId',
+  onReorder: async (reorderedItems, fromIndex, toIndex) => {
+    const movedItem = reorderedItems[toIndex]
+    if (!movedItem) {
+      // 로컬 상태 초기화
+      localItems.value = null
+      return
+    }
+
+    // 새 위치(인덱스)를 그대로 newOrder로 사용
+    // 백엔드에서 다른 아이템들의 순서도 함께 조정함
+    const newSortOrder = toIndex
+
+    const success = await itemStore.reorderItem(props.boardId, movedItem.itemId, newSortOrder)
+
+    // 로컬 상태 초기화 (store에서 갱신된 데이터 사용)
+    localItems.value = null
+
+    if (!success) {
+      toast.error('순서 변경에 실패했습니다.')
+    }
+  }
+})
+
+// 드래그 종료 시 로컬 상태 초기화
+function handleDragEnd(event?: DragEvent) {
+  originalHandleDragEnd(event)
+  localItems.value = null
+}
 
 // 완료/삭제된 아이템 (당일)
 const todayCompletedItems = computed(() => itemStore.todayCompletedItems)
@@ -472,6 +539,8 @@ watch(() => props.boardId, () => {
       <div class="flex-1 overflow-auto">
         <!-- 테이블 헤더 -->
         <div class="sticky top-0 z-10 flex bg-gray-50 border-b border-gray-200">
+          <!-- 드래그 핸들 헤더 (빈 공간) -->
+          <div class="w-6 h-8 flex-shrink-0 bg-gray-50"></div>
           <!-- 제목 헤더 -->
           <div
             class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 relative group"
@@ -610,7 +679,7 @@ watch(() => props.boardId, () => {
         <!-- 테이블 바디 -->
         <div class="divide-y divide-gray-200">
           <ItemRow
-            v-for="item in items"
+            v-for="(item, index) in items"
             :key="item.itemId"
             :item="item"
             :properties="visibleProperties"
@@ -620,6 +689,9 @@ watch(() => props.boardId, () => {
             :departments="departments"
             :board-categories="boardCategories"
             :selected="selectedItemId === item.itemId"
+            :draggable="true"
+            :drag-class="getDragClass(index)"
+            :is-drag-over="dragOverIndex === index && draggedIndex !== index"
             @click="handleItemClick"
             @update="handleItemUpdate"
             @update-property="handlePropertyUpdate"
@@ -627,6 +699,11 @@ watch(() => props.boardId, () => {
             @delete="handleDelete"
             @restore="handleRestore"
             @category-change="handleCategoryChange"
+            @dragstart="handleDragStart(index, $event)"
+            @dragover="handleDragOver(index, $event)"
+            @dragleave="handleDragLeave"
+            @dragend="handleDragEnd($event)"
+            @drop="handleDrop(index, $event)"
           />
         </div>
 

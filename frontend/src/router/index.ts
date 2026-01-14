@@ -24,6 +24,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '업무 목록' }
       },
       {
+        path: 'shared',
+        name: 'SharedItems',
+        component: () => import('@/views/SharedItemsView.vue'),
+        meta: { title: '공유받은 업무' }
+      },
+      {
         path: 'overdue',
         name: 'Overdue',
         component: () => import('@/views/OverdueView.vue'),

@@ -4,6 +4,7 @@
  * - 단순 목록 형태
  * - 주요 정보만 표시
  * - 모바일 최적화
+ * - 드래그 앤 드롭 정렬 지원
  * Compact UI: height 48px (모바일 터치 영역 고려)
  */
 import { computed } from 'vue'
@@ -13,16 +14,29 @@ import type { Item, ItemStatus, Priority } from '@/types/item'
 interface Props {
   item: Item
   selected?: boolean
+  // 드래그 앤 드롭 관련
+  draggable?: boolean
+  dragClass?: Record<string, boolean>
+  isDragOver?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  selected: false
+  selected: false,
+  draggable: false,
+  dragClass: () => ({}),
+  isDragOver: false
 })
 
 const emit = defineEmits<{
   (e: 'click', item: Item): void
   (e: 'complete', itemId: number): void
   (e: 'delete', itemId: number): void
+  // 드래그 앤 드롭 이벤트
+  (e: 'dragstart', event: DragEvent): void
+  (e: 'dragover', event: DragEvent): void
+  (e: 'dragleave', event: DragEvent): void
+  (e: 'dragend', event: DragEvent): void
+  (e: 'drop', event: DragEvent): void
 }>()
 
 // 상태 설정
@@ -58,7 +72,9 @@ const rowClasses = computed(() => [
   'border-l-4',
   priorityConfig[props.item.priority].color,
   props.selected ? 'bg-primary-50 border-primary-500' : '',
-  isInactive.value ? 'opacity-60' : ''
+  isInactive.value ? 'opacity-60' : '',
+  props.dragClass?.['sortable-dragging'] ? 'opacity-50 bg-gray-100' : '',
+  props.isDragOver ? 'border-t-2 border-t-primary-500' : ''
 ])
 
 // 날짜 포맷
@@ -94,10 +110,57 @@ function handleDelete(event: Event) {
   event.stopPropagation()
   emit('delete', props.item.itemId)
 }
+
+// 드래그 앤 드롭 이벤트 핸들러
+function handleDragStart(event: DragEvent) {
+  if (!props.draggable) return
+  emit('dragstart', event)
+}
+
+function handleDragOver(event: DragEvent) {
+  if (!props.draggable) return
+  event.preventDefault()
+  emit('dragover', event)
+}
+
+function handleDragLeave(event: DragEvent) {
+  if (!props.draggable) return
+  emit('dragleave', event)
+}
+
+function handleDragEnd(event: DragEvent) {
+  if (!props.draggable) return
+  emit('dragend', event)
+}
+
+function handleDrop(event: DragEvent) {
+  if (!props.draggable) return
+  event.preventDefault()
+  emit('drop', event)
+}
 </script>
 
 <template>
-  <div :class="rowClasses" @click="handleClick">
+  <div
+    :class="rowClasses"
+    :draggable="draggable"
+    @click="handleClick"
+    @dragstart="handleDragStart"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @dragend="handleDragEnd"
+    @drop="handleDrop"
+  >
+    <!-- 드래그 핸들 (draggable일 때만 표시) -->
+    <div
+      v-if="draggable && !isInactive"
+      class="w-6 h-full flex items-center justify-center flex-shrink-0 cursor-grab hover:bg-gray-100 text-gray-400 hover:text-gray-600 mr-1"
+    >
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
+      </svg>
+    </div>
+
     <!-- 체크박스 (완료 버튼) -->
     <button
       v-if="!isInactive"

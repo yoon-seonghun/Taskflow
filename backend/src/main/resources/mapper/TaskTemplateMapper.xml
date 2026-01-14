@@ -12,6 +12,10 @@
         <result property="content" column="CONTENT"/>
         <result property="defaultAssigneeUsername" column="DEFAULT_ASSIGNEE_USERNAME"/>
         <result property="defaultItemStatus" column="DEFAULT_ITEM_STATUS"/>
+        <result property="categoryId" column="CATEGORY_ID"/>
+        <result property="ownerType" column="OWNER_TYPE"/>
+        <result property="ownerUsername" column="OWNER_USERNAME"/>
+        <result property="ownerDeptCode" column="OWNER_DEPT_CODE"/>
         <result property="status" column="STATUS"/>
         <result property="sortOrder" column="SORT_ORDER"/>
         <result property="useCount" column="USE_COUNT"/>
@@ -25,6 +29,8 @@
         <result property="createdByName" column="CREATED_BY_NAME"/>
         <result property="updatedByName" column="UPDATED_BY_NAME"/>
         <result property="defaultAssigneeName" column="DEFAULT_ASSIGNEE_NAME"/>
+        <result property="categoryName" column="CATEGORY_NAME"/>
+        <result property="categoryColor" column="CATEGORY_COLOR"/>
     </resultMap>
 
     <!-- ============================================= -->
@@ -37,6 +43,10 @@
             t.CONTENT,
             t.DEFAULT_ASSIGNEE_USERNAME,
             t.DEFAULT_ITEM_STATUS,
+            t.CATEGORY_ID,
+            t.OWNER_TYPE,
+            t.OWNER_USERNAME,
+            t.OWNER_DEPT_CODE,
             CASE WHEN t.USE_YN = 'Y' THEN 'ACTIVE' ELSE 'INACTIVE' END AS STATUS,
             t.SORT_ORDER,
             t.USE_COUNT,
@@ -48,11 +58,14 @@
             t.DELETED_BY,
             uc.NAME AS CREATED_BY_NAME,
             uu.NAME AS UPDATED_BY_NAME,
-            ua.NAME AS DEFAULT_ASSIGNEE_NAME
+            ua.NAME AS DEFAULT_ASSIGNEE_NAME,
+            c.CATEGORY_NAME,
+            c.CATEGORY_COLOR
         FROM TB_TASK_TEMPLATE t
         LEFT JOIN TB_USER uc ON t.CREATED_BY = uc.USERNAME
         LEFT JOIN TB_USER uu ON t.UPDATED_BY = uu.USERNAME
         LEFT JOIN TB_USER ua ON t.DEFAULT_ASSIGNEE_USERNAME = ua.USERNAME
+        LEFT JOIN TB_CATEGORY c ON t.CATEGORY_ID = c.CATEGORY_ID
     </sql>
 
     <!-- ============================================= -->
@@ -101,6 +114,80 @@
     </select>
 
     <!-- ============================================= -->
+    <!-- 소유 유형별 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 글로벌 템플릿 목록 조회 -->
+    <select id="findGlobalTemplates" resultMap="TaskTemplateResultMap">
+        <include refid="selectTaskTemplate"/>
+        WHERE t.OWNER_TYPE = 'GLOBAL'
+          AND t.USE_YN = 'Y'
+        ORDER BY t.SORT_ORDER, t.CREATED_AT DESC
+    </select>
+
+    <!-- 매니저 템플릿 목록 조회 (부서 계층 포함) -->
+    <select id="findManagerTemplates" resultMap="TaskTemplateResultMap">
+        <include refid="selectTaskTemplate"/>
+        WHERE t.OWNER_TYPE = 'MANAGER'
+          AND t.USE_YN = 'Y'
+          AND (
+              t.OWNER_USERNAME = #{username}
+              <if test="departmentCodes != null and departmentCodes.size() > 0">
+                  OR t.OWNER_DEPT_CODE IN
+                  <foreach collection="departmentCodes" item="code" open="(" separator="," close=")">
+                      #{code}
+                  </foreach>
+              </if>
+          )
+        ORDER BY t.SORT_ORDER, t.CREATED_AT DESC
+    </select>
+
+    <!-- 개인 템플릿 목록 조회 -->
+    <select id="findUserTemplates" resultMap="TaskTemplateResultMap">
+        <include refid="selectTaskTemplate"/>
+        WHERE t.OWNER_TYPE = 'USER'
+          AND t.USE_YN = 'Y'
+          AND t.OWNER_USERNAME = #{username}
+        ORDER BY t.SORT_ORDER, t.CREATED_AT DESC
+    </select>
+
+    <!-- 접근 가능한 전체 템플릿 목록 조회 -->
+    <select id="findAccessibleTemplates" resultMap="TaskTemplateResultMap">
+        <include refid="selectTaskTemplate"/>
+        WHERE t.USE_YN = 'Y'
+          AND (
+              t.OWNER_TYPE = 'GLOBAL'
+              OR (t.OWNER_TYPE = 'USER' AND t.OWNER_USERNAME = #{username})
+              OR (t.OWNER_TYPE = 'MANAGER' AND (
+                  t.OWNER_USERNAME = #{username}
+                  <if test="departmentCodes != null and departmentCodes.size() > 0">
+                      OR t.OWNER_DEPT_CODE IN
+                      <foreach collection="departmentCodes" item="code" open="(" separator="," close=")">
+                          #{code}
+                      </foreach>
+                  </if>
+              ))
+          )
+        ORDER BY
+            CASE t.OWNER_TYPE
+                WHEN 'GLOBAL' THEN 1
+                WHEN 'MANAGER' THEN 2
+                WHEN 'USER' THEN 3
+            END,
+            t.SORT_ORDER, t.CREATED_AT DESC
+    </select>
+
+    <!-- 소유 유형 + 내용 중복 체크 -->
+    <select id="findByContentAndOwner" resultMap="TaskTemplateResultMap">
+        <include refid="selectTaskTemplate"/>
+        WHERE t.CONTENT = #{content}
+          AND t.OWNER_TYPE = #{ownerType}
+          <if test="ownerType != 'GLOBAL'">
+              AND t.OWNER_USERNAME = #{ownerUsername}
+          </if>
+    </select>
+
+    <!-- ============================================= -->
     <!-- 등록/수정/삭제 -->
     <!-- ============================================= -->
 
@@ -110,6 +197,10 @@
             CONTENT,
             DEFAULT_ASSIGNEE_USERNAME,
             DEFAULT_ITEM_STATUS,
+            CATEGORY_ID,
+            OWNER_TYPE,
+            OWNER_USERNAME,
+            OWNER_DEPT_CODE,
             SORT_ORDER,
             USE_COUNT,
             USE_YN,
@@ -118,6 +209,10 @@
             #{content},
             #{defaultAssigneeUsername},
             #{defaultItemStatus},
+            #{categoryId},
+            COALESCE(#{ownerType}, 'USER'),
+            #{ownerUsername},
+            #{ownerDeptCode},
             COALESCE(#{sortOrder}, 0),
             COALESCE(#{useCount}, 0),
             CASE WHEN #{status} = 'ACTIVE' THEN 'Y' WHEN #{status} = 'INACTIVE' THEN 'N' ELSE 'Y' END,
@@ -132,6 +227,7 @@
             CONTENT = #{content},
             DEFAULT_ASSIGNEE_USERNAME = #{defaultAssigneeUsername},
             DEFAULT_ITEM_STATUS = #{defaultItemStatus},
+            CATEGORY_ID = #{categoryId},
             SORT_ORDER = COALESCE(#{sortOrder}, SORT_ORDER),
             USE_YN = CASE WHEN #{status} = 'ACTIVE' THEN 'Y' WHEN #{status} = 'INACTIVE' THEN 'N' ELSE USE_YN END,
             UPDATED_BY = #{updatedBy},

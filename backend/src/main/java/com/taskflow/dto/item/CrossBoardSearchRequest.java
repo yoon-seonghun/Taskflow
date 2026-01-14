@@ -70,6 +70,16 @@ public class CrossBoardSearchRequest {
     private Boolean overdueOnly = false;
 
     /**
+     * 완료 업무 포함 여부
+     */
+    private Boolean includeCompleted = false;
+
+    /**
+     * 삭제 업무 포함 여부
+     */
+    private Boolean includeDeleted = false;
+
+    /**
      * 시작일 (생성일 기준)
      */
     private LocalDate startDate;
@@ -240,6 +250,22 @@ public class CrossBoardSearchRequest {
 
     public void setOverdueOnly(Boolean overdueOnly) {
         this.overdueOnly = overdueOnly;
+    }
+
+    public Boolean getIncludeCompleted() {
+        return includeCompleted;
+    }
+
+    public void setIncludeCompleted(Boolean includeCompleted) {
+        this.includeCompleted = includeCompleted;
+    }
+
+    public Boolean getIncludeDeleted() {
+        return includeDeleted;
+    }
+
+    public void setIncludeDeleted(Boolean includeDeleted) {
+        this.includeDeleted = includeDeleted;
     }
 
     public LocalDate getStartDate() {

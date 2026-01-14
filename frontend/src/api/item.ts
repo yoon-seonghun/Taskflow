@@ -8,7 +8,8 @@ import type {
   CrossBoardStats,
   ItemTransferRequest,
   ItemShare,
-  ItemPropertySortRequest
+  ItemPropertySortRequest,
+  ItemReorderRequest
 } from '@/types/item'
 import type { Share, ShareRequest, ShareUpdateRequest } from '@/types/share'
 
@@ -73,6 +74,13 @@ export const itemApi = {
     return get<CrossBoardStats>('/items/stats')
   },
 
+  /**
+   * 공유받은 업무 목록 조회
+   */
+  getSharedItems(params?: CrossBoardSearchRequest) {
+    return get<ItemPageResponse>('/items/shared', params)
+  },
+
   // =============================================
   // 업무 이관 API
   // =============================================
@@ -126,15 +134,15 @@ export const itemApi = {
   /**
    * 업무 공유 권한 변경
    */
-  updateItemShare(itemId: number, userId: number, data: ShareUpdateRequest) {
-    return put<void>(`/items/${itemId}/shares/${userId}`, data)
+  updateItemShare(itemId: number, username: string, data: ShareUpdateRequest) {
+    return put<void>(`/items/${itemId}/shares/${username}`, data)
   },
 
   /**
    * 업무 공유 제거
    */
-  removeItemShare(itemId: number, userId: number) {
-    return del<void>(`/items/${itemId}/shares/${userId}`)
+  removeItemShare(itemId: number, username: string) {
+    return del<void>(`/items/${itemId}/shares/${username}`)
   },
 
   // =============================================
@@ -146,5 +154,16 @@ export const itemApi = {
    */
   updatePropertySortOrders(boardId: number, itemId: number, data: ItemPropertySortRequest) {
     return put<void>(`/boards/${boardId}/items/${itemId}/properties/sort`, data)
+  },
+
+  // =============================================
+  // 아이템 순서 변경 (Drag & Drop)
+  // =============================================
+
+  /**
+   * 아이템 순서 변경
+   */
+  reorderItem(boardId: number, data: ItemReorderRequest) {
+    return put<void>(`/boards/${boardId}/items/reorder`, data)
   }
 }

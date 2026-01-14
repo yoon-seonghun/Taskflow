@@ -21,12 +21,12 @@ export const itemShareApi = {
     return post<void>(`/items/${itemId}/shares`, data)
   },
 
-  updatePermission(itemId: number, userId: number, data: ShareUpdateRequest) {
-    return put<void>(`/items/${itemId}/shares/${userId}`, data)
+  updatePermission(itemId: number, username: string, data: ShareUpdateRequest) {
+    return put<void>(`/items/${itemId}/shares/${username}`, data)
   },
 
-  removeShare(itemId: number, userId: number) {
-    return del<void>(`/items/${itemId}/shares/${userId}`)
+  removeShare(itemId: number, username: string) {
+    return del<void>(`/items/${itemId}/shares/${username}`)
   }
 }
 

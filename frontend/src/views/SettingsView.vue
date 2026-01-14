@@ -19,6 +19,9 @@ import UsersContent from '@/components/settings/UsersContent.vue'
 import DepartmentsContent from '@/components/settings/DepartmentsContent.vue'
 import CategoryContent from '@/components/settings/CategoryContent.vue'
 import PropertiesContent from '@/components/settings/PropertiesContent.vue'
+import ExternalDatasourceContent from '@/components/settings/ExternalDatasourceContent.vue'
+import ExternalQueryContent from '@/components/settings/ExternalQueryContent.vue'
+import SmtpSettingsContent from '@/components/settings/SmtpSettingsContent.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,7 +31,7 @@ const configStore = useConfigStore()
 const positionStore = usePositionStore()
 
 // 탭 타입
-type SettingsTab = 'settings' | 'users' | 'departments' | 'positions' | 'categories' | 'properties'
+type SettingsTab = 'settings' | 'users' | 'departments' | 'positions' | 'categories' | 'properties' | 'external-datasources' | 'external-queries' | 'smtp'
 
 // 현재 활성 탭
 const activeTab = ref<SettingsTab>('settings')
@@ -37,25 +40,46 @@ const activeTab = ref<SettingsTab>('settings')
 const isExternalMode = computed(() => configStore.isExternalMode)
 const positionCrudEnabled = computed(() => configStore.positionCrudEnabled)
 
-// 탭 목록 (직급 관리: Internal=CRUD, External=readonly)
+// 관리자 여부
+const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
+
+// 탭 목록 (역할별 접근 권한)
+// - ADMIN: 모든 메뉴
+// - MANAGER/USER: 환경설정, 카테고리 관리, 속성 관리, 외부 쿼리
 const tabs = computed(() => {
-  const items: { id: SettingsTab; label: string; icon: string }[] = [
+  const allTabs: { id: SettingsTab; label: string; icon: string; adminOnly?: boolean }[] = [
     { id: 'settings', label: '환경설정', icon: 'cog' },
-    { id: 'users', label: '사용자 관리', icon: 'user' },
-    { id: 'departments', label: '부서 관리', icon: 'building' },
-    { id: 'positions', label: '직급 관리', icon: 'badge' },
+    { id: 'users', label: '사용자 관리', icon: 'user', adminOnly: true },
+    { id: 'departments', label: '부서 관리', icon: 'building', adminOnly: true },
+    { id: 'positions', label: '직급 관리', icon: 'badge', adminOnly: true },
     { id: 'categories', label: '카테고리 관리', icon: 'tag' },
-    { id: 'properties', label: '속성 관리', icon: 'grid' }
+    { id: 'properties', label: '속성 관리', icon: 'grid' },
+    { id: 'external-datasources', label: '외부 DB', icon: 'database', adminOnly: true },
+    { id: 'external-queries', label: '외부 쿼리', icon: 'code' },
+    { id: 'smtp', label: 'SMTP 설정', icon: 'mail', adminOnly: true }
   ]
-  return items
+
+  // 관리자가 아니면 adminOnly 탭 제외
+  if (!isAdmin.value) {
+    return allTabs.filter(tab => !tab.adminOnly)
+  }
+  return allTabs
 })
 
-// URL 쿼리로 탭 초기화 및 변경 감지
+// 접근 가능한 탭 ID 목록
+const accessibleTabIds = computed(() => tabs.value.map(tab => tab.id))
+
+// URL 쿼리로 탭 초기화 및 변경 감지 (권한 체크 포함)
 watch(() => route.query.tab, (newTab) => {
   if (newTab && typeof newTab === 'string') {
-    const validTabs: SettingsTab[] = ['settings', 'users', 'departments', 'positions', 'categories', 'properties']
-    if (validTabs.includes(newTab as SettingsTab)) {
-      activeTab.value = newTab as SettingsTab
+    const tabId = newTab as SettingsTab
+    // 접근 가능한 탭인지 확인
+    if (accessibleTabIds.value.includes(tabId)) {
+      activeTab.value = tabId
+    } else {
+      // 권한이 없으면 기본 탭(환경설정)으로
+      activeTab.value = 'settings'
+      router.replace({ query: { tab: 'settings' } })
     }
   }
 }, { immediate: true })
@@ -335,6 +359,15 @@ onMounted(async () => {
             <svg v-else-if="tab.icon === 'grid'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
             </svg>
+            <svg v-else-if="tab.icon === 'database'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+            </svg>
+            <svg v-else-if="tab.icon === 'code'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            <svg v-else-if="tab.icon === 'mail'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
           </span>
           <span>{{ tab.label }}</span>
         </button>
@@ -354,8 +387,16 @@ onMounted(async () => {
               </span>
             </div>
             <div>
-              <p class="font-medium text-gray-900">{{ authStore.user?.userName || '사용자' }}</p>
-              <p class="text-sm text-gray-500">{{ authStore.user?.loginId || '-' }}</p>
+              <p class="font-medium text-gray-900">
+                {{ authStore.user?.userName || '사용자' }}
+                <span v-if="authStore.user?.positionName || authStore.user?.departmentName" class="text-gray-400 font-normal">
+                  ｜
+                  <span v-if="authStore.user?.positionName" class="text-gray-600">{{ authStore.user.positionName }}</span>
+                  <span v-if="authStore.user?.positionName && authStore.user?.departmentName" class="text-gray-400"> · </span>
+                  <span v-if="authStore.user?.departmentName" class="text-gray-600">{{ authStore.user.departmentName }}</span>
+                </span>
+              </p>
+              <p class="text-sm text-gray-500">{{ authStore.user?.username || '-' }}</p>
             </div>
           </div>
         </div>
@@ -439,6 +480,21 @@ onMounted(async () => {
     <!-- 속성 관리 탭 -->
     <div v-else-if="activeTab === 'properties'">
       <PropertiesContent />
+    </div>
+
+    <!-- 외부 DB 관리 탭 -->
+    <div v-else-if="activeTab === 'external-datasources'">
+      <ExternalDatasourceContent />
+    </div>
+
+    <!-- 외부 쿼리 관리 탭 -->
+    <div v-else-if="activeTab === 'external-queries'">
+      <ExternalQueryContent />
+    </div>
+
+    <!-- SMTP 설정 탭 -->
+    <div v-else-if="activeTab === 'smtp'">
+      <SmtpSettingsContent />
     </div>
 
     <!-- 직급 관리 탭 -->

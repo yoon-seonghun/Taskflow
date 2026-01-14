@@ -28,6 +28,14 @@ public class TaskTemplate {
     public static final String STATUS_INACTIVE = "INACTIVE";
 
     // =============================================
+    // 소유 유형 상수
+    // =============================================
+
+    public static final String OWNER_TYPE_GLOBAL = "GLOBAL";
+    public static final String OWNER_TYPE_MANAGER = "MANAGER";
+    public static final String OWNER_TYPE_USER = "USER";
+
+    // =============================================
     // 필드
     // =============================================
 
@@ -50,6 +58,26 @@ public class TaskTemplate {
      * 기본 업무 상태 (NOT_STARTED, IN_PROGRESS, PENDING)
      */
     private String defaultItemStatus;
+
+    /**
+     * 기본 카테고리 ID (FK → TB_CATEGORY)
+     */
+    private Long categoryId;
+
+    /**
+     * 소유 유형 (GLOBAL, MANAGER, USER)
+     */
+    private String ownerType;
+
+    /**
+     * 소유자 USERNAME (FK → TB_USER.USERNAME)
+     */
+    private String ownerUsername;
+
+    /**
+     * 소유자 부서코드 (MANAGER용)
+     */
+    private String ownerDeptCode;
 
     /**
      * 상태 (ACTIVE, INACTIVE)
@@ -114,6 +142,16 @@ public class TaskTemplate {
      * 기본 담당자 이름 (조인)
      */
     private String defaultAssigneeName;
+
+    /**
+     * 카테고리명 (조인)
+     */
+    private String categoryName;
+
+    /**
+     * 카테고리 색상 (조인)
+     */
+    private String categoryColor;
 
     // =============================================
     // 헬퍼 메서드

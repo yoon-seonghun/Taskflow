@@ -1,7 +1,14 @@
 package com.taskflow.controller;
 
 import com.taskflow.common.ApiResponse;
-import com.taskflow.dto.item.*;
+import com.taskflow.dto.item.ItemCreateRequest;
+import com.taskflow.dto.item.ItemPageResponse;
+import com.taskflow.dto.item.ItemPropertySortRequest;
+import com.taskflow.dto.item.ItemReorderRequest;
+import com.taskflow.dto.item.ItemResponse;
+import com.taskflow.dto.item.ItemSearchRequest;
+import com.taskflow.dto.item.ItemTransferRequest;
+import com.taskflow.dto.item.ItemUpdateRequest;
 import com.taskflow.security.SecurityUtils;
 import com.taskflow.service.BoardService;
 import com.taskflow.service.ItemService;
@@ -129,19 +136,22 @@ public class ItemController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("id") Long itemId
     ) {
-        // 접근 권한 확인
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 공유 권한)
         String currentUsername = SecurityUtils.getCurrentUsername();
-        if (!boardService.hasAccess(boardId, currentUsername)) {
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean hasItemAccess = itemShareService.hasItemAccess(itemId, currentUsername);
+
+        if (!hasBoardAccess && !hasItemAccess) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+                    .body(ApiResponse.error("접근 권한이 없습니다"));
         }
 
         log.debug("Get item: id={}", itemId);
 
         ItemResponse response = itemService.getItem(itemId);
 
-        // 보드 일치 확인
-        if (!boardId.equals(response.getBoardId())) {
+        // 보드 일치 확인 (보드 접근 권한이 있는 경우에만)
+        if (hasBoardAccess && !boardId.equals(response.getBoardId())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error("아이템을 찾을 수 없습니다"));
         }
@@ -158,11 +168,14 @@ public class ItemController {
             @PathVariable("id") Long itemId,
             @Valid @RequestBody ItemUpdateRequest request
     ) {
-        // 접근 권한 확인
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 수정 권한)
         String currentUsername = SecurityUtils.getCurrentUsername();
-        if (!boardService.hasAccess(boardId, currentUsername)) {
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean canEdit = itemShareService.canEditItem(itemId, currentUsername);
+
+        if (!hasBoardAccess && !canEdit) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+                    .body(ApiResponse.error("수정 권한이 없습니다"));
         }
 
         log.info("Update item: id={}", itemId);
@@ -180,11 +193,14 @@ public class ItemController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("id") Long itemId
     ) {
-        // 접근 권한 확인
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 삭제 권한)
         String currentUsername = SecurityUtils.getCurrentUsername();
-        if (!boardService.hasAccess(boardId, currentUsername)) {
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean canDelete = itemShareService.canDeleteItem(itemId, currentUsername);
+
+        if (!hasBoardAccess && !canDelete) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+                    .body(ApiResponse.error("삭제 권한이 없습니다"));
         }
 
         log.info("Delete item: id={}", itemId);
@@ -206,11 +222,14 @@ public class ItemController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("id") Long itemId
     ) {
-        // 접근 권한 확인
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 수정 권한)
         String currentUsername = SecurityUtils.getCurrentUsername();
-        if (!boardService.hasAccess(boardId, currentUsername)) {
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean canEdit = itemShareService.canEditItem(itemId, currentUsername);
+
+        if (!hasBoardAccess && !canEdit) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+                    .body(ApiResponse.error("완료 처리 권한이 없습니다"));
         }
 
         log.info("Complete item: id={}", itemId);
@@ -228,11 +247,14 @@ public class ItemController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("id") Long itemId
     ) {
-        // 접근 권한 확인
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 수정 권한)
         String currentUsername = SecurityUtils.getCurrentUsername();
-        if (!boardService.hasAccess(boardId, currentUsername)) {
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean canEdit = itemShareService.canEditItem(itemId, currentUsername);
+
+        if (!hasBoardAccess && !canEdit) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+                    .body(ApiResponse.error("복원 권한이 없습니다"));
         }
 
         log.info("Restore item: id={}", itemId);
@@ -388,5 +410,32 @@ public class ItemController {
         itemService.updatePropertySortOrders(itemId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(null, "속성 순서가 변경되었습니다"));
+    }
+
+    // =============================================
+    // 아이템 순서 변경 (Drag & Drop)
+    // =============================================
+
+    /**
+     * 아이템 순서 변경
+     */
+    @PutMapping("/reorder")
+    public ResponseEntity<ApiResponse<Void>> reorderItem(
+            @PathVariable("boardId") Long boardId,
+            @Valid @RequestBody ItemReorderRequest request
+    ) {
+        // 접근 권한 확인
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+        }
+
+        log.info("Reorder item: boardId={}, itemId={}, newOrder={}",
+                boardId, request.getItemId(), request.getNewOrder());
+
+        itemService.reorderItem(boardId, request, currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "아이템 순서가 변경되었습니다"));
     }
 }

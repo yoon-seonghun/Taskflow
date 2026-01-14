@@ -18,6 +18,8 @@
         <result property="sortOrder" column="SORT_ORDER"/>
         <result property="visibleYn" column="VISIBLE_YN"/>
         <result property="useYn" column="USE_YN"/>
+        <result property="externalQueryId" column="EXTERNAL_QUERY_ID"/>
+        <result property="dataSourceType" column="DATA_SOURCE_TYPE"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
         <result property="updatedAt" column="UPDATED_AT"/>
@@ -48,6 +50,8 @@
             p.SORT_ORDER,
             p.VISIBLE_YN,
             p.USE_YN,
+            p.EXTERNAL_QUERY_ID,
+            COALESCE(p.DATA_SOURCE_TYPE, 'INTERNAL') AS DATA_SOURCE_TYPE,
             p.CREATED_AT,
             p.CREATED_BY,
             p.UPDATED_AT,
@@ -175,6 +179,8 @@
             SORT_ORDER,
             VISIBLE_YN,
             USE_YN,
+            EXTERNAL_QUERY_ID,
+            DATA_SOURCE_TYPE,
             CREATED_BY
         ) VALUES (
             #{boardId},
@@ -186,6 +192,8 @@
             #{sortOrder},
             #{visibleYn},
             COALESCE(#{useYn}, 'Y'),
+            #{externalQueryId},
+            COALESCE(#{dataSourceType}, 'INTERNAL'),
             #{createdBy}
         )
     </insert>
@@ -202,6 +210,8 @@
             SORT_ORDER = #{sortOrder},
             VISIBLE_YN = #{visibleYn},
             USE_YN = #{useYn},
+            EXTERNAL_QUERY_ID = #{externalQueryId},
+            DATA_SOURCE_TYPE = COALESCE(#{dataSourceType}, 'INTERNAL'),
             UPDATED_BY = #{updatedBy},
             UPDATED_AT = CURRENT_TIMESTAMP
         WHERE PROPERTY_ID = #{propertyId}

@@ -40,8 +40,9 @@ const allUsers = ref<User[]>([])
 
 // 카테고리 목록 및 사용자 목록 로드
 onMounted(async () => {
-  if (categoryStore.categories.length === 0) {
-    await categoryStore.fetchCategories()
+  // 접근 가능한 카테고리만 로드 (내 것 + 공유받은 것)
+  if (categoryStore.accessibleCategories.length === 0) {
+    await categoryStore.fetchAccessibleCategories()
   }
 
   // 모든 활성 사용자 로드
@@ -115,9 +116,9 @@ const groupOptions = computed((): SelectOption[] => {
   }))
 })
 
-// 카테고리 옵션
+// 카테고리 옵션 (접근 가능한 카테고리만)
 const categoryOptions = computed((): SelectOption[] => {
-  return categoryStore.activeCategories.map(c => ({
+  return categoryStore.activeAccessibleCategories.map(c => ({
     value: c.categoryId,
     label: c.categoryName,
     color: c.color
@@ -168,7 +169,9 @@ const customProperties = computed(() => {
       ownerType: p.ownerType || 'USER',
       requiredYn: 'N',  // item.properties에 미포함, 기본값 사용
       options: [],  // 옵션은 PropertyEditor에서 별도 로드
-      sortOrder: p.sortOrder ?? 0
+      sortOrder: p.sortOrder ?? 0,
+      dataSourceType: p.dataSourceType || 'INTERNAL',  // 외부 쿼리 연동
+      externalQueryId: p.externalQueryId  // 외부 쿼리 ID
     }))
 })
 

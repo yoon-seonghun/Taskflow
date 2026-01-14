@@ -168,6 +168,58 @@ public interface ItemMapper {
     int deleteByBoardId(@Param("boardId") Long boardId);
 
     // =============================================
+    // 아이템 순서 변경
+    // =============================================
+
+    /**
+     * 아이템 순서 업데이트
+     *
+     * @param itemId    아이템 ID
+     * @param sortOrder 새 순서
+     * @param updatedBy 수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int updateSortOrder(@Param("itemId") Long itemId,
+                        @Param("sortOrder") Integer sortOrder,
+                        @Param("updatedBy") String updatedBy);
+
+    /**
+     * 범위 내 아이템 순서 증가 (아이템을 위로 이동 시)
+     *
+     * @param boardId       보드 ID
+     * @param fromOrder     시작 순서
+     * @param toOrder       끝 순서
+     * @param excludeItemId 제외할 아이템 ID
+     * @return 영향받은 행 수
+     */
+    int incrementSortOrderInRange(@Param("boardId") Long boardId,
+                                  @Param("fromOrder") Integer fromOrder,
+                                  @Param("toOrder") Integer toOrder,
+                                  @Param("excludeItemId") Long excludeItemId);
+
+    /**
+     * 범위 내 아이템 순서 감소 (아이템을 아래로 이동 시)
+     *
+     * @param boardId       보드 ID
+     * @param fromOrder     시작 순서
+     * @param toOrder       끝 순서
+     * @param excludeItemId 제외할 아이템 ID
+     * @return 영향받은 행 수
+     */
+    int decrementSortOrderInRange(@Param("boardId") Long boardId,
+                                  @Param("fromOrder") Integer fromOrder,
+                                  @Param("toOrder") Integer toOrder,
+                                  @Param("excludeItemId") Long excludeItemId);
+
+    /**
+     * 보드별 아이템 목록 조회 (순서대로 정렬)
+     *
+     * @param boardId 보드 ID
+     * @return 아이템 목록
+     */
+    List<Item> findByBoardIdOrderBySortOrder(@Param("boardId") Long boardId);
+
+    // =============================================
     // Cross-board 조회
     // =============================================
 
@@ -270,4 +322,28 @@ public interface ItemMapper {
      * @return 이관된 업무 목록
      */
     List<Item> findTransferredItems(@Param("boardId") Long boardId);
+
+    // =============================================
+    // 공유받은 업무 조회
+    // =============================================
+
+    /**
+     * 공유받은 업무 목록 조회
+     *
+     * @param username 사용자 USERNAME
+     * @param request  검색 조건
+     * @return 공유받은 업무 목록
+     */
+    List<Item> findSharedItems(@Param("username") String username,
+                               @Param("request") CrossBoardSearchRequest request);
+
+    /**
+     * 공유받은 업무 총 개수 조회
+     *
+     * @param username 사용자 USERNAME
+     * @param request  검색 조건
+     * @return 공유받은 업무 개수
+     */
+    long countSharedItems(@Param("username") String username,
+                          @Param("request") CrossBoardSearchRequest request);
 }

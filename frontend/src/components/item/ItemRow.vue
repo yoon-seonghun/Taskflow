@@ -13,6 +13,7 @@ import { isItemOverdue, getOverdueDays } from '@/utils/item'
 import type { Item, ItemStatus, Priority } from '@/types/item'
 import type { PropertyDef, PropertyOption } from '@/types/property'
 import type { BoardCategory } from '@/types/board'
+import ItemBadges from './ItemBadges.vue'
 
 interface ColumnWidths {
   title: number
@@ -36,6 +37,10 @@ interface Props {
   boardCategories?: BoardCategory[]
   selected?: boolean
   isEditing?: boolean
+  // 드래그 앤 드롭 관련
+  draggable?: boolean
+  dragClass?: Record<string, boolean>
+  isDragOver?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,7 +57,10 @@ const props = withDefaults(defineProps<Props>(), {
     category: 80,
     comments: 50,
     actions: 70
-  })
+  }),
+  draggable: false,
+  dragClass: () => ({}),
+  isDragOver: false
 })
 
 const emit = defineEmits<{
@@ -63,6 +71,12 @@ const emit = defineEmits<{
   (e: 'delete', itemId: number): void
   (e: 'restore', itemId: number): void
   (e: 'categoryChange', item: Item, newCategoryId: number | null): void  // v2.0: 카테고리 변경 시 모달 오픈
+  // 드래그 앤 드롭 이벤트
+  (e: 'dragstart', event: DragEvent): void
+  (e: 'dragover', event: DragEvent): void
+  (e: 'dragleave', event: DragEvent): void
+  (e: 'dragend', event: DragEvent): void
+  (e: 'drop', event: DragEvent): void
 }>()
 
 // 카테고리 옵션 (보드에 연결된 카테고리만 사용)
@@ -129,7 +143,9 @@ const isInactive = computed(() =>
 const rowClasses = computed(() => [
   'flex items-center h-8 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer',
   props.selected ? 'bg-primary-50' : '',
-  isInactive.value ? 'opacity-60' : ''
+  isInactive.value ? 'opacity-60' : '',
+  props.dragClass?.['sortable-dragging'] ? 'opacity-50 bg-gray-100' : '',
+  props.isDragOver ? 'border-t-2 border-t-primary-500' : ''
 ])
 
 // 셀 클릭 핸들러 (토글 지원)
@@ -364,6 +380,34 @@ function handleRowClick() {
   emit('click', props.item)
 }
 
+// 드래그 앤 드롭 이벤트 핸들러
+function handleDragStart(event: DragEvent) {
+  if (!props.draggable) return
+  emit('dragstart', event)
+}
+
+function handleDragOver(event: DragEvent) {
+  if (!props.draggable) return
+  event.preventDefault()
+  emit('dragover', event)
+}
+
+function handleDragLeave(event: DragEvent) {
+  if (!props.draggable) return
+  emit('dragleave', event)
+}
+
+function handleDragEnd(event: DragEvent) {
+  if (!props.draggable) return
+  emit('dragend', event)
+}
+
+function handleDrop(event: DragEvent) {
+  if (!props.draggable) return
+  event.preventDefault()
+  emit('drop', event)
+}
+
 // 행 ref (외부 클릭 감지용)
 const rowRef = ref<HTMLElement | null>(null)
 
@@ -413,7 +457,26 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="rowRef" :class="rowClasses" @click="handleRowClick">
+  <div
+    ref="rowRef"
+    :class="rowClasses"
+    :draggable="draggable"
+    @click="handleRowClick"
+    @dragstart="handleDragStart"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @dragend="handleDragEnd"
+    @drop="handleDrop"
+  >
+    <!-- 드래그 핸들 (draggable일 때만 표시) -->
+    <div
+      v-if="draggable"
+      class="w-6 h-full flex items-center justify-center flex-shrink-0 cursor-grab hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+    >
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
+      </svg>
+    </div>
     <!-- 제목 컬럼 -->
     <div
       class="group/title px-2 flex items-center gap-2 h-full border-r border-gray-200 relative"
@@ -434,6 +497,8 @@ onUnmounted(() => {
         />
       </template>
       <template v-else>
+        <!-- 공유/이관 배지 -->
+        <ItemBadges :item="item" size="sm" :show-owner-name="false" class="mr-1" />
         <span class="truncate text-[13px] text-gray-900 flex-1">{{ item.title }}</span>
         <!-- 지연 표시 -->
         <span

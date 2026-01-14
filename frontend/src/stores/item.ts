@@ -22,7 +22,9 @@ export const useItemStore = defineStore('item', () => {
   // 필터 상태
   const filters = ref<ItemSearchRequest>({
     includeCompleted: false,
-    includeDeleted: false
+    includeDeleted: false,
+    sortField: 'sortOrder',
+    sortDirection: 'asc'
   })
 
   // 편집 상태 추적 (충돌 감지용)
@@ -388,39 +390,62 @@ export const useItemStore = defineStore('item', () => {
 
   /**
    * 아이템 순서 변경 (Optimistic Update)
+   * - 새 reorder API 사용 (서버에서 다른 아이템 순서도 조정)
    */
   async function reorderItem(
     boardId: number,
     itemId: number,
-    newSortOrder: number,
-    newGroupId?: number
+    newSortOrder: number
   ): Promise<boolean> {
     const originalItem = items.value.find(i => i.itemId === itemId)
     if (!originalItem) return false
 
-    const originalData = { ...originalItem }
+    const originalOrder = originalItem.sortOrder ?? 0
+    const oldOrder = originalOrder
+    const newOrder = newSortOrder
 
-    // Optimistic Update
-    _updateItem(itemId, {
-      sortOrder: newSortOrder,
-      groupId: newGroupId ?? originalItem.groupId
+    // 동일 순서면 무시
+    if (oldOrder === newOrder) return true
+
+    // Optimistic Update - 새 배열로 교체하여 reactivity 보장
+    items.value = items.value.map(item => {
+      if (item.itemId === itemId) {
+        return { ...item, sortOrder: newOrder }
+      } else if (item.sortOrder !== undefined) {
+        if (oldOrder > newOrder) {
+          // 위로 이동: newOrder <= x < oldOrder인 아이템들은 +1
+          if (item.sortOrder >= newOrder && item.sortOrder < oldOrder) {
+            return { ...item, sortOrder: item.sortOrder + 1 }
+          }
+        } else {
+          // 아래로 이동: oldOrder < x <= newOrder인 아이템들은 -1
+          if (item.sortOrder > oldOrder && item.sortOrder <= newOrder) {
+            return { ...item, sortOrder: item.sortOrder - 1 }
+          }
+        }
+      }
+      return item
     })
 
     try {
-      const response = await itemApi.updateItem(boardId, itemId, {
-        sortOrder: newSortOrder,
-        groupId: newGroupId
+      const response = await itemApi.reorderItem(boardId, {
+        itemId,
+        newOrder: newSortOrder
       })
 
-      if (response.success && response.data) {
-        _updateItem(itemId, response.data)
+      if (response.success) {
+        // 성공 시 전체 목록 새로고침하여 서버 상태와 동기화
+        await fetchItems(boardId)
         return true
       }
 
-      _updateItem(itemId, originalData)
+      // 실패 시 롤백 - 전체 목록 새로고침
+      await fetchItems(boardId)
       return false
     } catch (e) {
-      _updateItem(itemId, originalData)
+      console.error('[Store] reorderItem error:', e)
+      // 실패 시 롤백 - 전체 목록 새로고침
+      await fetchItems(boardId)
       return false
     }
   }
@@ -445,7 +470,18 @@ export const useItemStore = defineStore('item', () => {
   function clearItems() {
     items.value = []
     selectedItemId.value = null
+    currentBoardId.value = null
     error.value = null
+    loading.value = false
+    editingItemId.value = null
+    editingItemData.value = null
+    // 필터 기본값으로 리셋
+    filters.value = {
+      includeCompleted: false,
+      includeDeleted: false,
+      sortField: 'sortOrder',
+      sortDirection: 'asc'
+    }
   }
 
   function clearError() {
@@ -620,11 +656,11 @@ export const useItemStore = defineStore('item', () => {
    */
   async function updateItemShare(
     itemId: number,
-    userId: number,
+    username: string,
     request: ShareUpdateRequest
   ): Promise<boolean> {
     try {
-      const response = await itemApi.updateItemShare(itemId, userId, request)
+      const response = await itemApi.updateItemShare(itemId, username, request)
       return response.success
     } catch {
       error.value = '권한 변경에 실패했습니다.'
@@ -635,9 +671,9 @@ export const useItemStore = defineStore('item', () => {
   /**
    * 업무 공유 제거
    */
-  async function removeItemShare(itemId: number, userId: number): Promise<boolean> {
+  async function removeItemShare(itemId: number, username: string): Promise<boolean> {
     try {
-      const response = await itemApi.removeItemShare(itemId, userId)
+      const response = await itemApi.removeItemShare(itemId, username)
       return response.success
     } catch {
       error.value = '공유 제거에 실패했습니다.'

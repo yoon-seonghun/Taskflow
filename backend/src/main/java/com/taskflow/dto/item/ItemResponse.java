@@ -159,6 +159,40 @@ public class ItemResponse {
      */
     private Map<Long, Object> propertyValues;
 
+    // =============================================
+    // 공유/이관 정보
+    // =============================================
+
+    /**
+     * 공유받은 업무 여부 (현재 사용자 기준)
+     */
+    private Boolean isSharedToMe;
+
+    /**
+     * 공유해준 사용자 USERNAME
+     */
+    private String sharedByUsername;
+
+    /**
+     * 공유해준 사용자 이름
+     */
+    private String sharedByUserName;
+
+    /**
+     * 이관 원본 보드 ID
+     */
+    private Long transferredFrom;
+
+    /**
+     * 이관해준 사용자 USERNAME
+     */
+    private String transferredByUsername;
+
+    /**
+     * 이관해준 사용자 이름
+     */
+    private String transferredByUserName;
+
     /**
      * 도메인 객체를 응답 DTO로 변환
      */
@@ -211,6 +245,14 @@ public class ItemResponse {
                 .updatedAt(item.getUpdatedAt())
                 .properties(propertyResponses)
                 .propertyValues(propertyValueMap.isEmpty() ? null : propertyValueMap)
+                .sortOrder(item.getSortOrder())
+                // 공유/이관 정보
+                .isSharedToMe(item.getIsSharedToMe())
+                .sharedByUsername(item.getSharedByUsername())
+                .sharedByUserName(item.getSharedByUserName())
+                .transferredFrom(item.getTransferredFrom())
+                .transferredByUsername(item.getTransferredByUsername())
+                .transferredByUserName(item.getTransferredByUserName())
                 .build();
     }
 
@@ -240,6 +282,10 @@ public class ItemResponse {
         private Object value;
         private String displayValue;  // 표시용 값 (옵션명, 사용자명 등)
         private String color;         // 옵션 색상
+        private String ownerType;     // 속성 소유자 타입 (GLOBAL, MANAGER, USER)
+        private Integer sortOrder;    // 정렬 순서
+        private String dataSourceType;  // 데이터 소스 타입 (INTERNAL, EXTERNAL)
+        private Long externalQueryId;   // 외부 쿼리 ID
 
         public static PropertyValueResponse from(ItemProperty prop) {
             if (prop == null) {
@@ -260,6 +306,10 @@ public class ItemResponse {
                     .value(prop.getValue())
                     .displayValue(displayValue)
                     .color(prop.getOptionColor())
+                    .ownerType(prop.getOwnerType())
+                    .sortOrder(prop.getSortOrder())
+                    .dataSourceType(prop.getDataSourceType() != null ? prop.getDataSourceType() : "INTERNAL")
+                    .externalQueryId(prop.getExternalQueryId())
                     .build();
         }
     }

@@ -66,6 +66,7 @@
         INNER JOIN TB_USER u ON bs.USERNAME = u.USERNAME
         LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
         WHERE bs.BOARD_ID = #{boardId}
+          AND bs.DELETED_AT IS NULL
         ORDER BY u.NAME
     </select>
 
@@ -87,6 +88,7 @@
         INNER JOIN TB_USER u ON bs.USERNAME = u.USERNAME
         LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
         WHERE bs.USERNAME = #{username}
+          AND bs.DELETED_AT IS NULL
           AND b.USE_YN = 'Y'
         ORDER BY b.BOARD_NAME
     </select>
@@ -97,6 +99,7 @@
             SELECT 1 FROM TB_BOARD_SHARE
             WHERE BOARD_ID = #{boardId}
               AND USERNAME = #{username}
+              AND DELETED_AT IS NULL
         )
     </select>
 
@@ -119,18 +122,19 @@
         LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
         WHERE bs.BOARD_ID = #{boardId}
           AND bs.USERNAME = #{username}
+          AND bs.DELETED_AT IS NULL
     </select>
 
     <!-- 보드에 공유된 사용자가 있는지 확인 -->
     <select id="hasShares" resultType="boolean">
         SELECT EXISTS (
-            SELECT 1 FROM TB_BOARD_SHARE WHERE BOARD_ID = #{boardId}
+            SELECT 1 FROM TB_BOARD_SHARE WHERE BOARD_ID = #{boardId} AND DELETED_AT IS NULL
         )
     </select>
 
     <!-- 보드 공유 사용자 수 조회 -->
     <select id="countByBoardId" resultType="int">
-        SELECT COUNT(*) FROM TB_BOARD_SHARE WHERE BOARD_ID = #{boardId}
+        SELECT COUNT(*) FROM TB_BOARD_SHARE WHERE BOARD_ID = #{boardId} AND DELETED_AT IS NULL
     </select>
 
     <!-- ============================================= -->

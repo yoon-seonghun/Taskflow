@@ -479,6 +479,18 @@ export const useCategoryStore = defineStore('category', () => {
     currentCategory.value = null
   }
 
+  /**
+   * 모든 카테고리 상태 초기화 (로그아웃 시 사용)
+   */
+  function reset() {
+    categories.value = []
+    accessibleCategories.value = []
+    myCategories.value = []
+    sharedCategories.value = []
+    currentCategory.value = null
+    error.value = null
+  }
+
   // =============================================
   // Return
   // =============================================
@@ -527,6 +539,7 @@ export const useCategoryStore = defineStore('category', () => {
 
     // Helpers
     clearError,
-    clearCurrentCategory
+    clearCurrentCategory,
+    reset
   }
 })

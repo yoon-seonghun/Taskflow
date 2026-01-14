@@ -7,6 +7,14 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useBoardStore } from '@/stores/board'
+import { useItemStore } from '@/stores/item'
+import { usePropertyStore } from '@/stores/property'
+import { useSseStore } from '@/stores/sse'
+import { useCategoryStore } from '@/stores/category'
+import { useGroupStore } from '@/stores/group'
+import { useExternalDatasourceStore } from '@/stores/externalDatasource'
+import { useExternalQueryStore } from '@/stores/externalQuery'
 import { authApi } from '@/api/auth'
 import { useToast } from './useToast'
 import type { LoginRequest } from '@/types/user'
@@ -14,6 +22,14 @@ import type { LoginRequest } from '@/types/user'
 export function useAuth() {
   const router = useRouter()
   const authStore = useAuthStore()
+  const boardStore = useBoardStore()
+  const itemStore = useItemStore()
+  const propertyStore = usePropertyStore()
+  const sseStore = useSseStore()
+  const categoryStore = useCategoryStore()
+  const groupStore = useGroupStore()
+  const externalDatasourceStore = useExternalDatasourceStore()
+  const externalQueryStore = useExternalQueryStore()
   const toast = useToast()
 
   const loginError = ref<string | null>(null)
@@ -28,6 +44,24 @@ export function useAuth() {
   const isInitialized = computed(() => authStore.initialized)
 
   /**
+   * 모든 스토어 캐시 초기화
+   * - 로그인/로그아웃 시 호출하여 이전 사용자 데이터 정리
+   */
+  function clearAllStores() {
+    // SSE 연결 먼저 종료
+    sseStore.reset()
+
+    // 모든 Store 캐시 정리
+    boardStore.clearBoards()
+    itemStore.clearItems()
+    propertyStore.clearProperties()
+    categoryStore.reset()
+    groupStore.reset()
+    externalDatasourceStore.reset()
+    externalQueryStore.reset()
+  }
+
+  /**
    * 로그인
    */
   async function login(credentials: LoginRequest): Promise<boolean> {
@@ -39,6 +73,9 @@ export function useAuth() {
       const response = await authApi.login(credentials)
 
       if (response.success && response.data) {
+        // 로그인 성공 전 이전 사용자 데이터 정리
+        clearAllStores()
+
         const { accessToken, user } = response.data
         authStore.setAuth(accessToken, user)
 
@@ -76,8 +113,10 @@ export function useAuth() {
       // 서버 로그아웃 실패해도 클라이언트는 로그아웃 처리
       console.error('Logout API error:', error)
     } finally {
-      // 클라이언트 상태 초기화
+      // 모든 Store 캐시 정리
+      clearAllStores()
       authStore.clearAuth()
+
       isLoggingOut.value = false
 
       // 로그인 페이지로 이동

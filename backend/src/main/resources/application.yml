@@ -40,6 +40,17 @@ taskflow:
       user-table: ${EXTERNAL_USER_TABLE:VW_TASKFLOW_USER}
       department-table: ${EXTERNAL_DEPARTMENT_TABLE:VW_TASKFLOW_DEPARTMENT}
 
+# 외부 DB 연결 암호화 설정
+encryption:
+  aes:
+    secret-key: ${AES_SECRET_KEY:VGFza0Zsb3dBRVMyNTZLZXlGb3JFeHRlcm5hbERCUGFzc3dvcmRFbmNyeXB0aW9u}
+
+# 외부 쿼리 설정
+external-query:
+  default-query-timeout: 30000
+  max-result-rows: 1000
+  default-cache-ttl: 300
+
 server:
   port: 8080
   servlet:

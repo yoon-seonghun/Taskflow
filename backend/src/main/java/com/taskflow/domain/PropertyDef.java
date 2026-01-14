@@ -82,6 +82,18 @@ public class PropertyDef {
     private String useYn;
 
     /**
+     * 외부 쿼리 ID (FK) - 외부 DB 쿼리 연동용
+     */
+    private Long externalQueryId;
+
+    /**
+     * 데이터 소스 타입 (INTERNAL/EXTERNAL)
+     * - INTERNAL: 내부 옵션 테이블 사용
+     * - EXTERNAL: 외부 쿼리 결과 사용
+     */
+    private String dataSourceType;
+
+    /**
      * 생성일시
      */
     private LocalDateTime createdAt;
@@ -142,6 +154,13 @@ public class PropertyDef {
     public static final String OWNER_TYPE_USER = "USER";
 
     // =============================================
+    // 상수: 데이터 소스 타입
+    // =============================================
+
+    public static final String DATA_SOURCE_TYPE_INTERNAL = "INTERNAL";
+    public static final String DATA_SOURCE_TYPE_EXTERNAL = "EXTERNAL";
+
+    // =============================================
     // 편의 메서드
     // =============================================
 
@@ -195,5 +214,26 @@ public class PropertyDef {
      */
     public boolean isUser() {
         return OWNER_TYPE_USER.equals(ownerType);
+    }
+
+    /**
+     * 외부 데이터 소스 사용 여부
+     */
+    public boolean isExternalDataSource() {
+        return DATA_SOURCE_TYPE_EXTERNAL.equals(dataSourceType);
+    }
+
+    /**
+     * 내부 데이터 소스 사용 여부
+     */
+    public boolean isInternalDataSource() {
+        return DATA_SOURCE_TYPE_INTERNAL.equals(dataSourceType) || dataSourceType == null;
+    }
+
+    /**
+     * 외부 쿼리 연동 여부
+     */
+    public boolean hasExternalQuery() {
+        return externalQueryId != null && isExternalDataSource();
     }
 }

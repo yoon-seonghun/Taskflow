@@ -189,7 +189,7 @@ function handleItemClick(item: Item) {
 }
 
 // 드롭 핸들러 (상태/우선순위/담당자/그룹 변경)
-async function handleDrop(columnId: string | number, item: Item) {
+async function handleDrop(columnId: string | number, item: Item, targetIndex?: number) {
   if (!item.itemId) return
 
   let updateData: Partial<Item> = {}
@@ -229,8 +229,43 @@ async function handleDrop(columnId: string | number, item: Item) {
       group: '그룹'
     }
     toast.success(`${fieldNames[groupBy.value]}가 변경되었습니다.`)
+
+    // 타겟 위치가 지정된 경우 순서도 변경
+    if (targetIndex !== undefined) {
+      await handleReorder(columnId, item.itemId, targetIndex)
+    }
   } else {
     toast.error('변경에 실패했습니다.')
+  }
+}
+
+// 컬럼 내 순서 변경 핸들러
+async function handleReorder(columnId: string | number, itemId: number, newIndex: number) {
+  // 해당 컬럼의 아이템 목록에서 새 sortOrder 계산
+  const column = columns.value.find(c => c.id === columnId)
+  if (!column) return
+
+  // 컬럼 내 아이템들의 sortOrder 기준으로 새 순서 계산
+  const sortedItems = [...column.items].sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))
+
+  // 새 인덱스에 해당하는 sortOrder 계산
+  let newSortOrder: number
+  if (newIndex === 0) {
+    // 맨 앞으로 이동
+    const firstItem = sortedItems.find(i => i.itemId !== itemId)
+    newSortOrder = firstItem ? (firstItem.sortOrder ?? 0) : 0
+  } else if (newIndex >= sortedItems.length - 1) {
+    // 맨 뒤로 이동
+    const lastItem = sortedItems.filter(i => i.itemId !== itemId).pop()
+    newSortOrder = lastItem ? (lastItem.sortOrder ?? 0) + 1 : sortedItems.length
+  } else {
+    // 중간으로 이동 - 대상 위치의 아이템 인덱스 사용
+    newSortOrder = newIndex
+  }
+
+  const success = await itemStore.reorderItem(props.boardId, itemId, newSortOrder)
+  if (!success) {
+    toast.error('순서 변경에 실패했습니다.')
   }
 }
 
@@ -316,11 +351,12 @@ watch(() => props.boardId, () => {
           :key="column.id"
           :column-id="column.id"
           :title="column.title"
-          :items="column.items"
+          :items="column.items.slice().sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))"
           :color="column.color"
           collapsible
           @item-click="handleItemClick"
           @drop="handleDrop"
+          @reorder="handleReorder"
           @add-item="handleAddItem"
         />
       </div>

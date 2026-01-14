@@ -43,5 +43,62 @@ export const templateApi = {
    */
   useTemplate(templateId: number) {
     return post<void>(`/task-templates/${templateId}/use`)
+  },
+
+  // =============================================
+  // 소유 유형별 조회
+  // =============================================
+
+  /**
+   * 글로벌 템플릿 목록 조회
+   */
+  getGlobalTemplates() {
+    return get<TaskTemplate[]>('/task-templates/global')
+  },
+
+  /**
+   * 매니저 템플릿 목록 조회
+   */
+  getManagerTemplates() {
+    return get<TaskTemplate[]>('/task-templates/manager')
+  },
+
+  /**
+   * 개인 템플릿 목록 조회
+   */
+  getUserTemplates() {
+    return get<TaskTemplate[]>('/task-templates/user')
+  },
+
+  /**
+   * 접근 가능한 전체 템플릿 목록 조회
+   */
+  getAccessibleTemplates() {
+    return get<TaskTemplate[]>('/task-templates/accessible')
+  },
+
+  // =============================================
+  // 소유 유형별 등록
+  // =============================================
+
+  /**
+   * 글로벌 템플릿 등록
+   */
+  createGlobalTemplate(data: TaskTemplateCreateRequest) {
+    return post<TaskTemplate>('/task-templates/global', data)
+  },
+
+  /**
+   * 매니저 템플릿 등록
+   */
+  createManagerTemplate(data: TaskTemplateCreateRequest) {
+    return post<TaskTemplate>('/task-templates/manager', data)
+  },
+
+  /**
+   * 개인 템플릿 등록
+   */
+  createUserTemplate(data: TaskTemplateCreateRequest) {
+    return post<TaskTemplate>('/task-templates/user', data)
   }
 }

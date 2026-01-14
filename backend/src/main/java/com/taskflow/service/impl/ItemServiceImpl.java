@@ -162,6 +162,10 @@ public class ItemServiceImpl implements ItemService {
         String status = request.getStatus() != null ? request.getStatus() : Item.STATUS_NOT_STARTED;
         String priority = request.getPriority() != null ? request.getPriority() : Item.PRIORITY_NORMAL;
 
+        // 정렬 순서 설정 (현재 최대값 + 1)
+        Integer maxSortOrder = itemMapper.getMaxSortOrder(boardId);
+        Integer sortOrder = (maxSortOrder != null ? maxSortOrder : -1) + 1;
+
         // 아이템 엔티티 생성
         Item item = Item.builder()
                 .boardId(boardId)
@@ -175,6 +179,7 @@ public class ItemServiceImpl implements ItemService {
                 .assigneeUsername(request.getAssigneeUsername())
                 .requestDate(request.getRequestDate())
                 .dueDate(request.getDueDate())
+                .sortOrder(sortOrder)
                 .createdBy(createdBy)
                 .build();
 
@@ -408,6 +413,48 @@ public class ItemServiceImpl implements ItemService {
         log.info("Item hard deleted: id={}", itemId);
     }
 
+    @Override
+    @Transactional
+    public void reorderItem(Long boardId, com.taskflow.dto.item.ItemReorderRequest request, String updatedBy) {
+        log.info("Reordering item: boardId={}, itemId={}, newOrder={}",
+                boardId, request.getItemId(), request.getNewOrder());
+
+        // 아이템 존재 및 보드 소속 확인
+        Item item = itemMapper.findById(request.getItemId())
+                .orElseThrow(() -> BusinessException.itemNotFound(request.getItemId()));
+
+        if (!boardId.equals(item.getBoardId())) {
+            throw BusinessException.badRequest("아이템이 해당 보드에 속하지 않습니다.");
+        }
+
+        Integer currentOrder = item.getSortOrder();
+        Integer newOrder = request.getNewOrder();
+
+        // 동일 순서면 무시
+        if (currentOrder != null && currentOrder.equals(newOrder)) {
+            log.debug("Same order, skipping: itemId={}, order={}", request.getItemId(), newOrder);
+            return;
+        }
+
+        // 순서 변경 처리
+        if (currentOrder == null || currentOrder > newOrder) {
+            // 위로 이동: 범위 내 아이템 순서 증가
+            itemMapper.incrementSortOrderInRange(boardId, newOrder, currentOrder != null ? currentOrder : Integer.MAX_VALUE, request.getItemId());
+        } else {
+            // 아래로 이동: 범위 내 아이템 순서 감소
+            itemMapper.decrementSortOrderInRange(boardId, currentOrder, newOrder, request.getItemId());
+        }
+
+        // 해당 아이템 순서 업데이트
+        itemMapper.updateSortOrder(request.getItemId(), newOrder, updatedBy);
+
+        log.info("Item reordered: itemId={}, from={} to={}", request.getItemId(), currentOrder, newOrder);
+
+        // SSE 이벤트 발행 (아이템 갱신)
+        ItemResponse response = getItem(request.getItemId());
+        sseEventPublisher.publishItemUpdated(boardId, response, updatedBy);
+    }
+
     // =============================================
     // Cross-board 조회
     // =============================================
@@ -503,6 +550,29 @@ public class ItemServiceImpl implements ItemService {
         stats.put("highOverdueCount", highOverdueCount);
 
         return stats;
+    }
+
+    // =============================================
+    // 공유받은 업무 조회
+    // =============================================
+
+    @Override
+    public ItemPageResponse getSharedItems(String username, CrossBoardSearchRequest request) {
+        log.debug("Get shared items: username={}, request={}", username, request);
+
+        // 공유받은 아이템 목록 조회
+        List<Item> items = itemMapper.findSharedItems(username, request);
+
+        // 동적 속성값 로드
+        loadItemPropertiesBatch(items);
+
+        // 총 개수 조회
+        long totalElements = itemMapper.countSharedItems(username, request);
+
+        // 응답 변환
+        List<ItemResponse> content = ItemResponse.fromList(items);
+
+        return ItemPageResponse.of(content, request.getPage(), request.getSize(), totalElements);
     }
 
     // =============================================
@@ -642,38 +712,49 @@ public class ItemServiceImpl implements ItemService {
         // 기존 값 삭제
         itemPropertyMapper.deleteMultiByItemIdAndPropertyId(itemId, propertyId);
 
-        // 옵션 ID 목록 추출
-        List<Long> optionIds;
+        // 속성 정의 조회하여 데이터 소스 타입 확인
+        PropertyDef propertyDef = propertyDefMapper.findById(propertyId).orElse(null);
+        boolean isExternalQuery = propertyDef != null && "EXTERNAL".equals(propertyDef.getDataSourceType());
+
+        // 값 목록 추출 (문자열 목록)
+        List<String> stringValues;
         if (value instanceof List) {
-            optionIds = ((List<?>) value).stream()
-                    .map(v -> Long.parseLong(v.toString()))
+            stringValues = ((List<?>) value).stream()
+                    .map(Object::toString)
                     .collect(Collectors.toList());
         } else if (value instanceof String) {
             String strValue = (String) value;
-            optionIds = Arrays.stream(strValue.split(","))
+            stringValues = Arrays.stream(strValue.split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
-                    .map(Long::parseLong)
                     .collect(Collectors.toList());
         } else {
-            optionIds = List.of(Long.parseLong(value.toString()));
+            stringValues = List.of(value.toString());
         }
 
-        // 다중선택 테이블에 저장
-        for (Long optionId : optionIds) {
-            ItemPropertyMulti multi = ItemPropertyMulti.builder()
-                    .itemId(itemId)
-                    .propertyId(propertyId)
-                    .optionId(optionId)
-                    .createdBy(username)
-                    .build();
-            itemPropertyMapper.insertMulti(multi);
+        // 외부 쿼리인 경우: 문자열 값 그대로 저장 (TB_ITEM_PROPERTY_MULTI 사용 안함)
+        // 내부 옵션인 경우: 옵션 ID로 파싱하여 TB_ITEM_PROPERTY_MULTI에 저장
+        if (!isExternalQuery) {
+            // 내부 옵션: optionId로 파싱
+            for (String strVal : stringValues) {
+                try {
+                    Long optionId = Long.parseLong(strVal);
+                    ItemPropertyMulti multi = ItemPropertyMulti.builder()
+                            .itemId(itemId)
+                            .propertyId(propertyId)
+                            .optionId(optionId)
+                            .createdBy(username)
+                            .build();
+                    itemPropertyMapper.insertMulti(multi);
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid optionId for internal MULTI_SELECT: {}", strVal);
+                }
+            }
         }
+        // 외부 쿼리인 경우 TB_ITEM_PROPERTY_MULTI에는 저장하지 않음 (문자열 값이므로)
 
-        // VALUE_TEXT에도 콤마 구분으로 저장 (검색용)
-        String textValue = optionIds.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
+        // VALUE_TEXT에 콤마 구분으로 저장 (검색용 & 외부 쿼리 값 저장용)
+        String textValue = String.join(",", stringValues);
 
         ItemProperty itemProperty = ItemProperty.builder()
                 .itemId(itemId)

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 /**
  * 작업 템플릿 생성 요청 DTO
  */
@@ -30,7 +32,17 @@ public class TaskTemplateCreateRequest {
     private String defaultItemStatus;
 
     /**
+     * 기본 카테고리 ID
+     */
+    private Long categoryId;
+
+    /**
      * 정렬 순서
      */
     private Integer sortOrder;
+
+    /**
+     * 템플릿 속성 목록
+     */
+    private List<TemplatePropertyRequest> properties;
 }

@@ -108,6 +108,7 @@ public class ItemSearchRequest {
             case "categoryId" -> "i.CATEGORY_ID";
             case "requestDate" -> "i.REQUEST_DATE";
             case "dueDate" -> "i.DUE_DATE";
+            case "sortOrder" -> "COALESCE(i.SORT_ORDER, 999999)";
             case "createdAt" -> "i.CREATED_AT";
             case "updatedAt" -> "i.UPDATED_AT";
             default -> "i.CREATED_AT";

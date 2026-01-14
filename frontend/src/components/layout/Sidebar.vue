@@ -75,6 +75,7 @@ function getBoardColor(board: Board): string {
 
 const menuItems = [
   { name: 'Tasks', label: '업무 페이지', icon: 'clipboard' },
+  { name: 'SharedItems', label: '공유받은 업무', icon: 'share' },
   { name: 'Overdue', label: '지연 업무', icon: 'alert', warning: true },
   { name: 'Pending', label: '보류 업무', icon: 'pause' },
   { name: 'Completed', label: '완료 작업', icon: 'check' },
@@ -138,6 +139,10 @@ const menuItems = [
             <!-- Alert (지연) -->
             <svg v-else-if="item.icon === 'alert'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <!-- Share (공유) -->
+            <svg v-else-if="item.icon === 'share'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
             <!-- Pause (보류) -->
             <svg v-else-if="item.icon === 'pause'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -64,4 +64,17 @@ public class PropertyCreateRequest {
      */
     @Pattern(regexp = "^[YN]$", message = "표시 여부는 Y 또는 N이어야 합니다")
     private String visibleYn = "Y";
+
+    /**
+     * 외부 쿼리 ID (SELECT/MULTI_SELECT/CHECKBOX 타입에서 외부 데이터 소스 사용 시)
+     */
+    private Long externalQueryId;
+
+    /**
+     * 데이터 소스 타입 (INTERNAL/EXTERNAL)
+     * - INTERNAL: 내부 옵션 테이블 사용 (기본값)
+     * - EXTERNAL: 외부 쿼리 결과 사용
+     */
+    @Pattern(regexp = "^(INTERNAL|EXTERNAL)$", message = "데이터 소스 타입은 INTERNAL 또는 EXTERNAL이어야 합니다")
+    private String dataSourceType = "INTERNAL";
 }

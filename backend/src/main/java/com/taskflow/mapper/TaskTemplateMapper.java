@@ -64,6 +64,57 @@ public interface TaskTemplateMapper {
     int getMaxSortOrder();
 
     // =============================================
+    // 소유 유형별 조회
+    // =============================================
+
+    /**
+     * 글로벌 템플릿 목록 조회
+     *
+     * @return 글로벌 템플릿 목록
+     */
+    List<TaskTemplate> findGlobalTemplates();
+
+    /**
+     * 매니저 템플릿 목록 조회 (부서 계층 포함)
+     *
+     * @param username        소유자 USERNAME
+     * @param departmentCodes 부서 코드 목록 (본인 부서 + 상위 부서)
+     * @return 매니저 템플릿 목록
+     */
+    List<TaskTemplate> findManagerTemplates(@Param("username") String username,
+                                            @Param("departmentCodes") List<String> departmentCodes);
+
+    /**
+     * 개인 템플릿 목록 조회
+     *
+     * @param username 소유자 USERNAME
+     * @return 개인 템플릿 목록
+     */
+    List<TaskTemplate> findUserTemplates(@Param("username") String username);
+
+    /**
+     * 접근 가능한 전체 템플릿 목록 조회 (글로벌 + 매니저 + 개인)
+     *
+     * @param username        사용자 USERNAME
+     * @param departmentCodes 부서 코드 목록 (본인 부서 + 상위 부서)
+     * @return 접근 가능한 템플릿 목록
+     */
+    List<TaskTemplate> findAccessibleTemplates(@Param("username") String username,
+                                               @Param("departmentCodes") List<String> departmentCodes);
+
+    /**
+     * 소유 유형 + 내용 중복 체크
+     *
+     * @param content   작업 내용
+     * @param ownerType 소유 유형
+     * @param ownerUsername 소유자 USERNAME (USER/MANAGER용)
+     * @return 템플릿
+     */
+    Optional<TaskTemplate> findByContentAndOwner(@Param("content") String content,
+                                                  @Param("ownerType") String ownerType,
+                                                  @Param("ownerUsername") String ownerUsername);
+
+    // =============================================
     // 등록/수정/삭제
     // =============================================
 

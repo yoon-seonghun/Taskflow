@@ -39,4 +39,16 @@ public class PropertyUpdateRequest {
      */
     @Pattern(regexp = "^[YN]$", message = "표시 여부는 Y 또는 N이어야 합니다")
     private String visibleYn;
+
+    /**
+     * 외부 쿼리 ID (SELECT/MULTI_SELECT/CHECKBOX 타입에서 외부 데이터 소스 사용 시)
+     * null로 설정하면 외부 쿼리 연동 해제
+     */
+    private Long externalQueryId;
+
+    /**
+     * 데이터 소스 타입 (INTERNAL/EXTERNAL)
+     */
+    @Pattern(regexp = "^(INTERNAL|EXTERNAL)$", message = "데이터 소스 타입은 INTERNAL 또는 EXTERNAL이어야 합니다")
+    private String dataSourceType;
 }

@@ -36,8 +36,8 @@ const isLoading = ref(false)
 const isSubmitting = ref(false)
 const shares = ref<Share[]>([])
 const showAddForm = ref(false)
-const newUserId = ref<number | null>(null)
-const selectedUser = ref<User | null>(null)
+const newUserId = ref<number | null>(null)  // UserSearchSelector v-model용
+const selectedUser = ref<User | null>(null)  // 선택된 사용자 전체 정보 (username 포함)
 const newPermission = ref<SharePermission>('VIEW')
 
 // 권한 옵션
@@ -47,9 +47,16 @@ const permissionOptions: { value: SharePermission; label: string; description: s
   { value: 'FULL', label: '전체', description: '이관/공유/삭제 포함 전체 권한' }
 ]
 
-// 이미 공유된 사용자 ID 목록
-const excludeUserIds = computed(() => {
-  return shares.value.map(s => s.userId)
+// 이미 공유된 사용자 username 목록 (UserSearchSelector에서 제외용)
+// UserSearchSelector는 userId 기반이므로 별도 처리 필요
+const excludeUsernames = computed(() => {
+  return shares.value.map(s => s.username)
+})
+
+// 이미 공유된 사용자 ID 목록 (UserSearchSelector v-model은 userId 사용)
+const excludeUserIds = computed<number[]>(() => {
+  // Share에 userId가 없으므로 빈 배열 반환 (username으로 필터링은 템플릿에서 처리)
+  return []
 })
 
 // 공유 목록 로드
@@ -71,7 +78,7 @@ function handleUserSelect(user: User | null) {
 
 // 공유 추가
 async function handleAddShare() {
-  if (!newUserId.value) {
+  if (!selectedUser.value?.username) {
     toast.error('공유할 사용자를 선택해주세요.')
     return
   }
@@ -79,7 +86,7 @@ async function handleAddShare() {
   isSubmitting.value = true
   try {
     const success = await itemStore.addItemShare(props.item.itemId, {
-      userId: newUserId.value,
+      username: selectedUser.value.username,
       permission: newPermission.value
     })
 
@@ -101,7 +108,7 @@ async function handleAddShare() {
 // 권한 변경
 async function handleUpdatePermission(share: Share, newPerm: SharePermission) {
   try {
-    const success = await itemStore.updateItemShare(props.item.itemId, share.userId, {
+    const success = await itemStore.updateItemShare(props.item.itemId, share.username, {
       permission: newPerm
     })
 
@@ -121,7 +128,7 @@ async function handleUpdatePermission(share: Share, newPerm: SharePermission) {
 async function handleRemoveShare(share: Share) {
   const confirmed = await confirm.show({
     title: '공유 해제',
-    message: `${share.userName || share.loginId}님의 공유를 해제하시겠습니까?`,
+    message: `${share.userName || share.username}님의 공유를 해제하시겠습니까?`,
     confirmText: '해제',
     confirmType: 'danger'
   })
@@ -129,7 +136,7 @@ async function handleRemoveShare(share: Share) {
   if (!confirmed) return
 
   try {
-    const success = await itemStore.removeItemShare(props.item.itemId, share.userId)
+    const success = await itemStore.removeItemShare(props.item.itemId, share.username)
 
     if (success) {
       toast.success('공유가 해제되었습니다.')
@@ -261,18 +268,18 @@ onMounted(() => {
           <div v-if="shares.length > 0" class="space-y-2">
             <div
               v-for="share in shares"
-              :key="share.userId"
+              :key="share.username"
               class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
             >
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center">
                   <span class="text-[13px] font-medium text-primary-700">
-                    {{ (share.userName || share.loginId || '?').charAt(0).toUpperCase() }}
+                    {{ (share.userName || share.username || '?').charAt(0).toUpperCase() }}
                   </span>
                 </div>
                 <div>
                   <p class="text-[13px] font-medium text-gray-900">
-                    {{ share.userName || share.loginId }}
+                    {{ share.userName || share.username }}
                   </p>
                   <p class="text-[11px] text-gray-500">
                     {{ share.departmentName || '소속없음' }}

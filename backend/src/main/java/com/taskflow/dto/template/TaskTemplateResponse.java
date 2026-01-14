@@ -1,10 +1,12 @@
 package com.taskflow.dto.template;
 
 import com.taskflow.domain.TaskTemplate;
+import com.taskflow.domain.TemplateProperty;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +31,51 @@ public class TaskTemplateResponse {
      * 상태
      */
     private String status;
+
+    /**
+     * 카테고리 ID
+     */
+    private Long categoryId;
+
+    /**
+     * 카테고리명
+     */
+    private String categoryName;
+
+    /**
+     * 카테고리 색상
+     */
+    private String categoryColor;
+
+    /**
+     * 소유 유형 (GLOBAL, MANAGER, USER)
+     */
+    private String ownerType;
+
+    /**
+     * 소유자 USERNAME
+     */
+    private String ownerUsername;
+
+    /**
+     * 소유자 부서코드
+     */
+    private String ownerDeptCode;
+
+    /**
+     * 기본 담당자 USERNAME
+     */
+    private String defaultAssigneeUsername;
+
+    /**
+     * 기본 담당자 이름
+     */
+    private String defaultAssigneeName;
+
+    /**
+     * 기본 업무 상태
+     */
+    private String defaultItemStatus;
 
     /**
      * 정렬 순서
@@ -71,6 +118,11 @@ public class TaskTemplateResponse {
     private String updatedByName;
 
     /**
+     * 템플릿 속성 목록
+     */
+    private List<TemplatePropertyResponse> properties;
+
+    /**
      * TaskTemplate 엔티티를 TaskTemplateResponse로 변환
      */
     public static TaskTemplateResponse from(TaskTemplate template) {
@@ -78,6 +130,15 @@ public class TaskTemplateResponse {
                 .templateId(template.getTemplateId())
                 .content(template.getContent())
                 .status(template.getStatus())
+                .categoryId(template.getCategoryId())
+                .categoryName(template.getCategoryName())
+                .categoryColor(template.getCategoryColor())
+                .ownerType(template.getOwnerType())
+                .ownerUsername(template.getOwnerUsername())
+                .ownerDeptCode(template.getOwnerDeptCode())
+                .defaultAssigneeUsername(template.getDefaultAssigneeUsername())
+                .defaultAssigneeName(template.getDefaultAssigneeName())
+                .defaultItemStatus(template.getDefaultItemStatus())
                 .sortOrder(template.getSortOrder())
                 .useCount(template.getUseCount())
                 .createdAt(template.getCreatedAt())
@@ -86,6 +147,37 @@ public class TaskTemplateResponse {
                 .updatedAt(template.getUpdatedAt())
                 .updatedBy(template.getUpdatedBy())
                 .updatedByName(template.getUpdatedByName())
+                .properties(Collections.emptyList())
+                .build();
+    }
+
+    /**
+     * TaskTemplate 엔티티와 속성 목록을 TaskTemplateResponse로 변환
+     */
+    public static TaskTemplateResponse from(TaskTemplate template, List<TemplateProperty> templateProperties) {
+        return TaskTemplateResponse.builder()
+                .templateId(template.getTemplateId())
+                .content(template.getContent())
+                .status(template.getStatus())
+                .categoryId(template.getCategoryId())
+                .categoryName(template.getCategoryName())
+                .categoryColor(template.getCategoryColor())
+                .ownerType(template.getOwnerType())
+                .ownerUsername(template.getOwnerUsername())
+                .ownerDeptCode(template.getOwnerDeptCode())
+                .defaultAssigneeUsername(template.getDefaultAssigneeUsername())
+                .defaultAssigneeName(template.getDefaultAssigneeName())
+                .defaultItemStatus(template.getDefaultItemStatus())
+                .sortOrder(template.getSortOrder())
+                .useCount(template.getUseCount())
+                .createdAt(template.getCreatedAt())
+                .createdBy(template.getCreatedBy())
+                .createdByName(template.getCreatedByName())
+                .updatedAt(template.getUpdatedAt())
+                .updatedBy(template.getUpdatedBy())
+                .updatedByName(template.getUpdatedByName())
+                .properties(templateProperties != null ?
+                        TemplatePropertyResponse.fromList(templateProperties) : Collections.emptyList())
                 .build();
     }
 

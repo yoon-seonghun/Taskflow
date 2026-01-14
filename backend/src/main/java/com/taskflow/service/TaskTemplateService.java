@@ -47,6 +47,75 @@ public interface TaskTemplateService {
     List<TaskTemplateSearchResponse> searchTemplates(String keyword);
 
     // =============================================
+    // 소유 유형별 조회
+    // =============================================
+
+    /**
+     * 글로벌 템플릿 목록 조회
+     *
+     * @return 글로벌 템플릿 목록
+     */
+    List<TaskTemplateResponse> getGlobalTemplates();
+
+    /**
+     * 매니저 템플릿 목록 조회
+     *
+     * @param username        사용자 USERNAME
+     * @param departmentCodes 부서 코드 목록
+     * @return 매니저 템플릿 목록
+     */
+    List<TaskTemplateResponse> getManagerTemplates(String username, List<String> departmentCodes);
+
+    /**
+     * 개인 템플릿 목록 조회
+     *
+     * @param username 사용자 USERNAME
+     * @return 개인 템플릿 목록
+     */
+    List<TaskTemplateResponse> getUserTemplates(String username);
+
+    /**
+     * 접근 가능한 전체 템플릿 목록 조회
+     *
+     * @param username        사용자 USERNAME
+     * @param departmentCodes 부서 코드 목록
+     * @return 접근 가능한 템플릿 목록
+     */
+    List<TaskTemplateResponse> getAccessibleTemplates(String username, List<String> departmentCodes);
+
+    // =============================================
+    // 소유 유형별 등록
+    // =============================================
+
+    /**
+     * 글로벌 템플릿 등록
+     *
+     * @param request   등록 요청
+     * @param createdBy 생성자 USERNAME
+     * @return 생성된 템플릿 응답
+     */
+    TaskTemplateResponse createGlobalTemplate(TaskTemplateCreateRequest request, String createdBy);
+
+    /**
+     * 매니저 템플릿 등록
+     *
+     * @param request        등록 요청
+     * @param createdBy      생성자 USERNAME
+     * @param departmentCode 부서 코드
+     * @return 생성된 템플릿 응답
+     */
+    TaskTemplateResponse createManagerTemplate(TaskTemplateCreateRequest request, String createdBy, String departmentCode);
+
+    /**
+     * 개인 템플릿 등록
+     *
+     * @param request   등록 요청
+     * @param createdBy 생성자 USERNAME
+     * @return 생성된 템플릿 응답
+     */
+    TaskTemplateResponse createUserTemplate(TaskTemplateCreateRequest request, String createdBy);
+
+    // =============================================
     // 템플릿 등록/수정/삭제
     // =============================================
 

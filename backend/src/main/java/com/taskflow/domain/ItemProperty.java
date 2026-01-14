@@ -139,6 +139,16 @@ public class ItemProperty {
      */
     private String optionColor;
 
+    /**
+     * 데이터 소스 타입 (INTERNAL: 내부 옵션, EXTERNAL: 외부 쿼리)
+     */
+    private String dataSourceType;
+
+    /**
+     * 외부 쿼리 ID (dataSourceType이 EXTERNAL일 때)
+     */
+    private Long externalQueryId;
+
     // =============================================
     // 편의 메서드
     // =============================================

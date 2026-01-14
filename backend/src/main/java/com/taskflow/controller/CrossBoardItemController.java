@@ -21,6 +21,7 @@ import java.util.Map;
  * - GET /api/items/overdue - 지연 업무 목록 (전체 보드)
  * - GET /api/items/pending - 보류 업무 목록 (전체 보드)
  * - GET /api/items/active - 활성 업무 목록 (전체 보드)
+ * - GET /api/items/shared - 공유받은 업무 목록
  * - GET /api/items/stats - 업무 통계
  */
 @Slf4j
@@ -176,6 +177,42 @@ public class CrossBoardItemController {
         log.debug("Get active items cross-board: username={}, request={}", currentUsername, request);
 
         ItemPageResponse response = itemService.getActiveItemsCrossBoard(currentUsername, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 공유받은 업무 목록 조회
+     * - 다른 사용자가 공유한 업무
+     * - TB_ITEM_SHARE 테이블 기반
+     */
+    @GetMapping("/shared")
+    public ResponseEntity<ApiResponse<ItemPageResponse>> getSharedItems(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "priority", required = false) String priority,
+            @RequestParam(value = "includeCompleted", required = false, defaultValue = "false") Boolean includeCompleted,
+            @RequestParam(value = "page", required = false, defaultValue = "0") Integer page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") Integer size,
+            @RequestParam(value = "sort", required = false, defaultValue = "createdAt,desc") String sort
+    ) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+
+        // 정렬 파라미터 파싱 (안전한 처리)
+        String[] sortParams = parseSortParams(sort, "createdAt", "desc");
+
+        // 검색 조건 생성
+        CrossBoardSearchRequest request = new CrossBoardSearchRequest();
+        request.setKeyword(keyword);
+        request.setStatus(status);
+        request.setPriority(priority);
+        request.setPage(page);
+        request.setSize(size);
+        request.setSortField(sortParams[0]);
+        request.setSortDirection(sortParams[1]);
+
+        log.debug("Get shared items: username={}, request={}", currentUsername, request);
+
+        ItemPageResponse response = itemService.getSharedItems(currentUsername, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

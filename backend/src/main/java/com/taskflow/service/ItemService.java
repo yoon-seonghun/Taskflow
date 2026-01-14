@@ -4,6 +4,7 @@ import com.taskflow.dto.item.CrossBoardSearchRequest;
 import com.taskflow.dto.item.ItemCreateRequest;
 import com.taskflow.dto.item.ItemPageResponse;
 import com.taskflow.dto.item.ItemPropertySortRequest;
+import com.taskflow.dto.item.ItemReorderRequest;
 import com.taskflow.dto.item.ItemResponse;
 import com.taskflow.dto.item.ItemSearchRequest;
 import com.taskflow.dto.item.ItemUpdateRequest;
@@ -128,6 +129,15 @@ public interface ItemService {
      */
     void hardDeleteItem(Long itemId);
 
+    /**
+     * 아이템 순서 변경
+     *
+     * @param boardId   보드 ID
+     * @param request   순서 변경 요청
+     * @param updatedBy 수정자 사용자명
+     */
+    void reorderItem(Long boardId, ItemReorderRequest request, String updatedBy);
+
     // =============================================
     // Cross-board 조회
     // =============================================
@@ -179,4 +189,17 @@ public interface ItemService {
      * @param updatedBy 수정자 사용자명
      */
     void updatePropertySortOrders(Long itemId, ItemPropertySortRequest request, String updatedBy);
+
+    // =============================================
+    // 공유받은 업무 조회
+    // =============================================
+
+    /**
+     * 공유받은 업무 목록 조회
+     *
+     * @param username 사용자명
+     * @param request  검색 조건
+     * @return 페이징된 공유받은 업무 목록
+     */
+    ItemPageResponse getSharedItems(String username, CrossBoardSearchRequest request);
 }

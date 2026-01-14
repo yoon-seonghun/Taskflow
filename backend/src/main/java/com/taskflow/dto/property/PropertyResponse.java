@@ -66,6 +66,26 @@ public class PropertyResponse {
     private String visibleYn;
 
     /**
+     * 외부 쿼리 ID (외부 DB 연동 시)
+     */
+    private Long externalQueryId;
+
+    /**
+     * 데이터 소스 타입 (INTERNAL/EXTERNAL)
+     */
+    private String dataSourceType;
+
+    /**
+     * 외부 쿼리 코드 (표시용)
+     */
+    private String externalQueryCode;
+
+    /**
+     * 외부 쿼리명 (표시용)
+     */
+    private String externalQueryName;
+
+    /**
      * 삭제 여부 (SSE 이벤트용)
      */
     private boolean deleted;
@@ -110,6 +130,8 @@ public class PropertyResponse {
                 .propertyType(propertyDef.getPropertyType())
                 .sortOrder(propertyDef.getSortOrder())
                 .visibleYn(propertyDef.getVisibleYn())
+                .externalQueryId(propertyDef.getExternalQueryId())
+                .dataSourceType(propertyDef.getDataSourceType() != null ? propertyDef.getDataSourceType() : "INTERNAL")
                 .options(optionResponses)
                 .createdAt(propertyDef.getCreatedAt())
                 .updatedAt(propertyDef.getUpdatedAt())

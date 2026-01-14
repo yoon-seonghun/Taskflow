@@ -192,6 +192,9 @@ public class PropertyServiceImpl implements PropertyService {
                 .propertyType(request.getPropertyType())
                 .sortOrder(sortOrder)
                 .visibleYn(request.getVisibleYn() != null ? request.getVisibleYn() : "Y")
+                // v2.0.6: 외부 쿼리 연동 필드
+                .externalQueryId(request.getExternalQueryId())
+                .dataSourceType(request.getDataSourceType() != null ? request.getDataSourceType() : "INTERNAL")
                 .createdBy(createdBy)
                 .build();
 
@@ -232,6 +235,9 @@ public class PropertyServiceImpl implements PropertyService {
                 .propertyType(request.getPropertyType())
                 .sortOrder(sortOrder)
                 .visibleYn(request.getVisibleYn() != null ? request.getVisibleYn() : "Y")
+                // v2.0.6: 외부 쿼리 연동 필드
+                .externalQueryId(request.getExternalQueryId())
+                .dataSourceType(request.getDataSourceType() != null ? request.getDataSourceType() : "INTERNAL")
                 .createdBy(createdBy)
                 .build();
 
@@ -276,6 +282,9 @@ public class PropertyServiceImpl implements PropertyService {
                 .propertyType(request.getPropertyType())
                 .sortOrder(sortOrder)
                 .visibleYn(request.getVisibleYn() != null ? request.getVisibleYn() : "Y")
+                // v2.0.6: 외부 쿼리 연동 필드
+                .externalQueryId(request.getExternalQueryId())
+                .dataSourceType(request.getDataSourceType() != null ? request.getDataSourceType() : "INTERNAL")
                 .createdBy(createdBy)
                 .build();
 
@@ -319,6 +328,9 @@ public class PropertyServiceImpl implements PropertyService {
                 .propertyType(request.getPropertyType())
                 .sortOrder(sortOrder)
                 .visibleYn(request.getVisibleYn() != null ? request.getVisibleYn() : "Y")
+                // v2.0.6: 외부 쿼리 연동 필드
+                .externalQueryId(request.getExternalQueryId())
+                .dataSourceType(request.getDataSourceType() != null ? request.getDataSourceType() : "INTERNAL")
                 .createdBy(createdBy)
                 .build();
 
@@ -367,6 +379,12 @@ public class PropertyServiceImpl implements PropertyService {
         if (request.getVisibleYn() != null) {
             propertyDef.setVisibleYn(request.getVisibleYn());
         }
+        // v2.0.6: 외부 쿼리 연동 필드
+        if (request.getDataSourceType() != null) {
+            propertyDef.setDataSourceType(request.getDataSourceType());
+        }
+        // externalQueryId는 null 설정을 허용 (연동 해제용)
+        propertyDef.setExternalQueryId(request.getExternalQueryId());
         propertyDef.setUpdatedBy(updatedBy);
 
         propertyDefMapper.update(propertyDef);

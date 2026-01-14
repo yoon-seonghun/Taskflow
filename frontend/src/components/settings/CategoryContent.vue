@@ -44,11 +44,12 @@ const colorOptions = [
   '#06B6D4', // cyan
 ]
 
-// 카테고리 목록 조회
+// 카테고리 목록 조회 (본인 소유 카테고리만)
 async function loadCategories() {
   loading.value = true
   try {
-    const res = await categoryApi.getCategories()
+    // 본인 소유 카테고리만 조회 (공유받은 카테고리는 제외)
+    const res = await categoryApi.getMyCategories()
     categories.value = res.data
   } catch (error) {
     console.error('Failed to load categories:', error)

@@ -156,7 +156,11 @@ const commentCount = computed(() => {
 
 // 아이템 로드
 async function loadItem() {
-  if (!props.itemId || !props.boardId) return
+  console.log('[ItemDetailPanel] loadItem called, props:', { itemId: props.itemId, boardId: props.boardId })
+  if (!props.itemId || !props.boardId) {
+    console.log('[ItemDetailPanel] loadItem early return - missing props')
+    return
+  }
 
   isLoading.value = true
   try {
@@ -521,7 +525,8 @@ function formatDateTime(dateStr?: string): string {
 }
 
 // itemId 변경 시 아이템 재로드
-watch(() => props.itemId, () => {
+watch(() => props.itemId, (newId, oldId) => {
+  console.log('[ItemDetailPanel] watch triggered - itemId changed:', { newId, oldId, boardId: props.boardId })
   loadItem()
 }, { immediate: true })
 

@@ -229,6 +229,14 @@ export const useGroupStore = defineStore('group', () => {
     error.value = null
   }
 
+  function reset() {
+    groups.value = []
+    selectedGroup.value = null
+    groupMembers.value = []
+    loading.value = false
+    error.value = null
+  }
+
   return {
     // State
     groups,
@@ -252,6 +260,7 @@ export const useGroupStore = defineStore('group', () => {
     selectGroup,
     getGroupById,
     clearSelection,
-    clearError
+    clearError,
+    reset
   }
 })

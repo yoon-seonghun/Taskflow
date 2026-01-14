@@ -120,6 +120,11 @@ public class Item {
     private LocalDateTime transferredAt;
 
     /**
+     * 정렬 순서
+     */
+    private Integer sortOrder;
+
+    /**
      * 생성일시
      */
     private LocalDateTime createdAt;
@@ -187,6 +192,35 @@ public class Item {
      * 댓글 수
      */
     private Integer commentCount;
+
+    // =============================================
+    // 공유/이관 정보 (Mapper에서 JOIN으로 설정)
+    // =============================================
+
+    /**
+     * 공유받은 업무 여부 (현재 사용자 기준)
+     */
+    private Boolean isSharedToMe;
+
+    /**
+     * 공유해준 사용자 USERNAME
+     */
+    private String sharedByUsername;
+
+    /**
+     * 공유해준 사용자 이름
+     */
+    private String sharedByUserName;
+
+    /**
+     * 이관해준 사용자 USERNAME (조인)
+     */
+    private String transferredByUsername;
+
+    /**
+     * 이관해준 사용자 이름 (조인)
+     */
+    private String transferredByUserName;
 
     /**
      * 동적 속성값 목록
@@ -276,5 +310,51 @@ public class Item {
             propertyValues = new HashMap<>();
         }
         propertyValues.put(propertyId, value);
+    }
+
+    // =============================================
+    // 명시적 Getter (Lombok 빌드 호환성)
+    // =============================================
+
+    /**
+     * 공유해준 사용자 USERNAME getter
+     */
+    public String getSharedByUsername() {
+        return sharedByUsername;
+    }
+
+    /**
+     * 공유해준 사용자 이름 getter
+     */
+    public String getSharedByUserName() {
+        return sharedByUserName;
+    }
+
+    /**
+     * 이관해준 사용자 USERNAME getter
+     */
+    public String getTransferredByUsername() {
+        return transferredByUsername;
+    }
+
+    /**
+     * 이관해준 사용자 이름 getter
+     */
+    public String getTransferredByUserName() {
+        return transferredByUserName;
+    }
+
+    /**
+     * 정렬 순서 getter
+     */
+    public Integer getSortOrder() {
+        return sortOrder;
+    }
+
+    /**
+     * 정렬 순서 setter
+     */
+    public void setSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
     }
 }

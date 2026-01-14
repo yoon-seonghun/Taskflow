@@ -4,6 +4,7 @@ WORKDIR /app
 COPY build.gradle.kts settings.gradle.kts ./
 COPY lombok.config ./
 COPY gradle ./gradle
+COPY libs ./libs
 COPY src ./src
 RUN gradle build -x test --no-daemon
 

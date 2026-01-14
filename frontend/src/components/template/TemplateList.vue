@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 import Badge from '@/components/common/Badge.vue'
-import type { TaskTemplate, DefaultItemStatus } from '@/types/template'
+import type { TaskTemplate, DefaultItemStatus, TemplateOwnerType } from '@/types/template'
 
 interface Props {
   templates: TaskTemplate[]
@@ -31,9 +31,21 @@ const statusConfig: Record<DefaultItemStatus, { label: string; variant: 'default
   PENDING: { label: '보류', variant: 'warning' }
 }
 
+// 소유 유형별 뱃지 설정
+const ownerTypeConfig: Record<TemplateOwnerType, { label: string; variant: 'success' | 'info' | 'default' }> = {
+  GLOBAL: { label: '전역', variant: 'success' },
+  MANAGER: { label: '매니저', variant: 'info' },
+  USER: { label: '개인', variant: 'default' }
+}
+
 // 상태 뱃지 정보 가져오기
 function getStatusBadge(status: DefaultItemStatus) {
   return statusConfig[status] || statusConfig.NOT_STARTED
+}
+
+// 소유 유형 뱃지 정보 가져오기
+function getOwnerTypeBadge(ownerType?: TemplateOwnerType) {
+  return ownerTypeConfig[ownerType || 'USER'] || ownerTypeConfig.USER
 }
 
 // 템플릿 선택
@@ -95,6 +107,23 @@ function isSelected(template: TaskTemplate): boolean {
 
             <!-- 부가 정보 -->
             <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+              <!-- 소유 유형 -->
+              <Badge
+                :variant="getOwnerTypeBadge(template.ownerType).variant"
+                size="sm"
+              >
+                {{ getOwnerTypeBadge(template.ownerType).label }}
+              </Badge>
+
+              <!-- 카테고리 -->
+              <span
+                v-if="template.categoryName"
+                class="category-tag"
+                :style="{ backgroundColor: template.categoryColor ? `${template.categoryColor}20` : undefined, color: template.categoryColor || undefined, borderColor: template.categoryColor || undefined }"
+              >
+                {{ template.categoryName }}
+              </span>
+
               <!-- 기본 담당자 -->
               <span v-if="template.defaultAssigneeName" class="flex items-center gap-1">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,5 +192,12 @@ function isSelected(template: TaskTemplate): boolean {
   @apply p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded
          transition-colors duration-150 flex-shrink-0
          disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.category-tag {
+  @apply px-1.5 py-0.5 rounded text-xs font-medium border;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
 }
 </style>

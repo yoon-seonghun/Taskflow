@@ -3,6 +3,7 @@
  * 칸반 컬럼 컴포넌트
  * - 아이템 카드 목록 표시
  * - 드래그 앤 드롭 대상 영역
+ * - 컬럼 내 순서 변경 지원
  * - 새 아이템 추가 버튼
  */
 import { ref, computed } from 'vue'
@@ -26,7 +27,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'itemClick', item: Item): void
-  (e: 'drop', columnId: string | number, item: Item): void
+  (e: 'drop', columnId: string | number, item: Item, targetIndex?: number): void
+  (e: 'reorder', columnId: string | number, itemId: number, newIndex: number): void
   (e: 'addItem', columnId: string | number): void
   (e: 'toggleCollapse', columnId: string | number): void
 }>()
@@ -34,6 +36,7 @@ const emit = defineEmits<{
 // 드래그 오버 상태
 const isDragOver = ref(false)
 const isCollapsed = ref(props.collapsed)
+const dragOverIndex = ref<number | null>(null)
 
 // 컬럼 헤더 색상 스타일
 const headerStyle = computed(() => {
@@ -63,21 +66,69 @@ function handleDragLeave(event: DragEvent) {
   const currentTarget = event.currentTarget as HTMLElement
   if (currentTarget.contains(relatedTarget)) return
   isDragOver.value = false
+  dragOverIndex.value = null
 }
 
-// 드롭
+// 카드 위에 드래그 오버 (컬럼 내 순서 변경용)
+function handleCardDragOver(index: number, event: DragEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dragOverIndex.value = index
+  isDragOver.value = true
+}
+
+// 카드 드래그 리브
+function handleCardDragLeave() {
+  dragOverIndex.value = null
+}
+
+// 카드 위에 드롭 (컬럼 내 순서 변경)
+function handleCardDrop(targetIndex: number, event: DragEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  isDragOver.value = false
+  dragOverIndex.value = null
+
+  const itemId = event.dataTransfer?.getData('text/plain')
+  if (!itemId) return
+
+  const draggedItemId = Number(itemId)
+  const draggedItem = props.items.find(i => i.itemId === draggedItemId)
+
+  if (draggedItem) {
+    // 같은 컬럼 내에서의 드롭 - 순서 변경
+    const currentIndex = props.items.findIndex(i => i.itemId === draggedItemId)
+    if (currentIndex !== targetIndex) {
+      emit('reorder', props.columnId, draggedItemId, targetIndex)
+    }
+  } else {
+    // 다른 컬럼에서 드롭된 경우 - 컬럼 변경 + 위치 지정
+    emit('drop', props.columnId, { itemId: draggedItemId } as Item, targetIndex)
+  }
+}
+
+// 컬럼 영역에 드롭 (맨 아래로 추가)
 function handleDrop(event: DragEvent) {
   event.preventDefault()
   isDragOver.value = false
+  dragOverIndex.value = null
 
   const itemId = event.dataTransfer?.getData('text/plain')
   if (itemId) {
-    const item = props.items.find(i => i.itemId === Number(itemId))
+    const draggedItemId = Number(itemId)
+    const item = props.items.find(i => i.itemId === draggedItemId)
     if (item) {
-      emit('drop', props.columnId, item)
+      // 같은 컬럼 - 맨 아래로 이동
+      const currentIndex = props.items.findIndex(i => i.itemId === draggedItemId)
+      if (currentIndex !== props.items.length - 1) {
+        emit('reorder', props.columnId, draggedItemId, props.items.length - 1)
+      }
     } else {
       // 다른 컬럼에서 드롭된 경우
-      emit('drop', props.columnId, { itemId: Number(itemId) } as Item)
+      emit('drop', props.columnId, { itemId: draggedItemId } as Item)
     }
   }
 }
@@ -175,18 +226,26 @@ function toggleCollapse() {
     <div
       v-if="!isCollapsed"
       class="flex-1 overflow-y-auto p-2 space-y-2"
-      :class="{ 'bg-primary-50 ring-2 ring-primary-300 ring-inset rounded-b-lg': isDragOver }"
+      :class="{ 'bg-primary-50 ring-2 ring-primary-300 ring-inset rounded-b-lg': isDragOver && dragOverIndex === null }"
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
       @drop="handleDrop"
     >
       <!-- 아이템 카드들 -->
-      <ItemCard
-        v-for="item in items"
+      <div
+        v-for="(item, index) in items"
         :key="item.itemId"
-        :item="item"
-        @click="handleItemClick"
-      />
+        class="relative"
+        :class="{ 'border-t-2 border-t-primary-500': dragOverIndex === index }"
+        @dragover="handleCardDragOver(index, $event)"
+        @dragleave="handleCardDragLeave"
+        @drop="handleCardDrop(index, $event)"
+      >
+        <ItemCard
+          :item="item"
+          @click="handleItemClick"
+        />
+      </div>
 
       <!-- 빈 상태 -->
       <div

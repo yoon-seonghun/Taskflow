@@ -10,6 +10,7 @@ import { computed } from 'vue'
 import { Badge } from '@/components/common'
 import { isItemOverdue, getOverdueDays } from '@/utils/item'
 import type { Item, ItemStatus, Priority } from '@/types/item'
+import ItemBadges from './ItemBadges.vue'
 
 interface Props {
   item: Item
@@ -103,6 +104,9 @@ function handleClick() {
     @click="handleClick"
   >
     <div class="p-3">
+      <!-- 공유/이관 배지 -->
+      <ItemBadges :item="item" size="sm" :show-owner-name="true" class="mb-2" />
+
       <!-- 제목 -->
       <h4 class="text-[13px] font-medium text-gray-900 line-clamp-2 mb-2">
         {{ item.title }}

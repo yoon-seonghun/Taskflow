@@ -11,6 +11,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { propertyApi } from '@/api/property'
 import { boardApi } from '@/api/board'
+import { externalQueryApi } from '@/api/externalQuery'
 import type {
   PropertyDef,
   PropertyCreateRequest,
@@ -18,8 +19,10 @@ import type {
   PropertyType,
   PropertyOption,
   OptionCreateRequest,
-  OptionUpdateRequest
+  OptionUpdateRequest,
+  DataSourceType
 } from '@/types/property'
+import type { ExternalQuery, QueryOption } from '@/types/externalQuery'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { useGroupedSortableDrag } from '@/composables/useSortableDrag'
@@ -125,8 +128,19 @@ const newProperty = ref<PropertyCreateRequest>({
   propertyName: '',
   propertyType: 'TEXT',
   ownerType: 'USER',
-  visibleYn: 'Y'
+  visibleYn: 'Y',
+  dataSourceType: 'INTERNAL',
+  externalQueryId: null
 })
+
+// v2.0.6: 외부 쿼리 연동 상태
+const externalQueries = ref<ExternalQuery[]>([])
+const externalQueriesLoading = ref(false)
+const newPropertyDataSourceType = ref<DataSourceType>('INTERNAL')
+const editPropertyDataSourceType = ref<DataSourceType>('INTERNAL')
+const previewOptions = ref<QueryOption[]>([])
+const previewLoading = ref(false)
+const showPreview = ref(false)
 
 // v2.0.5: 옵션 관리 상태
 const expandedPropertyId = ref<number | null>(null)  // 옵션 패널이 열린 속성 ID
@@ -198,7 +212,7 @@ async function loadProperties() {
 }
 
 // 속성 추가 폼 표시
-function handleShowAddForm() {
+async function handleShowAddForm() {
   showAddForm.value = true
   // 관리자가 아니면 기본값을 USER로
   selectedOwnerType.value = isAdmin.value ? 'GLOBAL' : 'USER'
@@ -206,8 +220,15 @@ function handleShowAddForm() {
     propertyName: '',
     propertyType: 'TEXT',
     requiredYn: 'N',
-    visibleYn: 'Y'
+    visibleYn: 'Y',
+    dataSourceType: 'INTERNAL',
+    externalQueryId: null
   }
+  newPropertyDataSourceType.value = 'INTERNAL'
+  previewOptions.value = []
+  showPreview.value = false
+  // 외부 쿼리 목록 로드
+  await loadExternalQueries()
 }
 
 // 속성 추가 취소
@@ -228,25 +249,42 @@ async function handleAddProperty() {
     return
   }
 
+  // v2.0.6: EXTERNAL 타입인데 쿼리가 선택되지 않은 경우
+  if (newPropertyDataSourceType.value === 'EXTERNAL' && !newProperty.value.externalQueryId) {
+    uiStore.showWarning('외부 쿼리를 선택해주세요.')
+    return
+  }
+
   saving.value = true
   try {
+    // v2.0.6: 데이터 소스 타입 설정
+    const requestData: PropertyCreateRequest = {
+      ...newProperty.value,
+      dataSourceType: newPropertyDataSourceType.value,
+      externalQueryId: newPropertyDataSourceType.value === 'EXTERNAL'
+        ? newProperty.value.externalQueryId
+        : null
+    }
+
     // v2.0: 소유 유형에 따라 다른 API 호출
     switch (selectedOwnerType.value) {
       case 'GLOBAL':
-        await propertyApi.createGlobalProperty(newProperty.value)
+        await propertyApi.createGlobalProperty(requestData)
         break
       case 'MANAGER':
-        await propertyApi.createManagerProperty(newProperty.value)
+        await propertyApi.createManagerProperty(requestData)
         break
       case 'USER':
       default:
-        await propertyApi.createUserProperty(newProperty.value)
+        await propertyApi.createUserProperty(requestData)
         break
     }
 
     const typeLabel = ownerTypeOptions.value.find(o => o.value === selectedOwnerType.value)?.label || '속성'
     uiStore.showSuccess(`${typeLabel} 속성이 추가되었습니다.`)
     handleCancelAdd()
+    previewOptions.value = []
+    showPreview.value = false
     await loadProperties()
   } catch (error: any) {
     console.error('Failed to add property:', error)
@@ -258,8 +296,15 @@ async function handleAddProperty() {
 }
 
 // 속성 편집 시작
-function handleEditProperty(property: PropertyDef) {
+async function handleEditProperty(property: PropertyDef) {
   editingProperty.value = { ...property }
+  editPropertyDataSourceType.value = (property.dataSourceType as DataSourceType) || 'INTERNAL'
+  previewOptions.value = []
+  showPreview.value = false
+  // 외부 쿼리 목록 로드 (SELECT/MULTI_SELECT/CHECKBOX 타입인 경우)
+  if (supportsExternalQuery(property.propertyType)) {
+    await loadExternalQueries()
+  }
 }
 
 // 속성 편집 취소
@@ -281,11 +326,18 @@ async function handleSaveProperty() {
       propertyName: editingProperty.value.propertyName.trim(),
       propertyType: editingProperty.value.propertyType,
       requiredYn: editingProperty.value.requiredYn,
-      visibleYn: editingProperty.value.visibleYn
+      visibleYn: editingProperty.value.visibleYn,
+      // v2.0.6: 외부 쿼리 연동 필드
+      dataSourceType: editPropertyDataSourceType.value,
+      externalQueryId: editPropertyDataSourceType.value === 'EXTERNAL'
+        ? editingProperty.value.externalQueryId
+        : null
     }
     await propertyApi.updateProperty(editingProperty.value.propertyId, updateData)
     uiStore.showSuccess('속성이 수정되었습니다.')
     editingProperty.value = null
+    previewOptions.value = []
+    showPreview.value = false
     await loadProperties()
   } catch (error: any) {
     console.error('Failed to update property:', error)
@@ -335,6 +387,71 @@ function getPropertyTypeLabel(type: PropertyType): string {
 // SELECT/MULTI_SELECT 타입인지 확인
 function isSelectType(property: PropertyDef): boolean {
   return property.propertyType === 'SELECT' || property.propertyType === 'MULTI_SELECT'
+}
+
+// v2.0.6: 외부 쿼리 연동 가능한 타입인지 확인
+function supportsExternalQuery(type: PropertyType): boolean {
+  return type === 'SELECT' || type === 'MULTI_SELECT' || type === 'CHECKBOX'
+}
+
+// v2.0.6: 외부 쿼리 목록 조회
+async function loadExternalQueries() {
+  externalQueriesLoading.value = true
+  try {
+    const res = await externalQueryApi.getAccessibleQueries()
+    externalQueries.value = res.data.filter(q => q.useYn === 'Y')
+  } catch (error) {
+    console.error('Failed to load external queries:', error)
+    externalQueries.value = []
+  } finally {
+    externalQueriesLoading.value = false
+  }
+}
+
+// v2.0.6: 외부 쿼리 옵션 미리보기
+async function handlePreviewQuery(queryId: number | null | undefined) {
+  if (!queryId) {
+    previewOptions.value = []
+    showPreview.value = false
+    return
+  }
+
+  previewLoading.value = true
+  showPreview.value = true
+  try {
+    const res = await externalQueryApi.executeQuery(queryId)
+    previewOptions.value = res.data.options || []
+  } catch (error: any) {
+    console.error('Failed to preview query:', error)
+    uiStore.showError(error.response?.data?.message || '쿼리 미리보기에 실패했습니다.')
+    previewOptions.value = []
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+// v2.0.6: 데이터 소스 타입 변경 시 처리 (새 속성)
+function handleNewPropertyDataSourceChange(type: DataSourceType) {
+  newPropertyDataSourceType.value = type
+  newProperty.value.dataSourceType = type
+  if (type === 'INTERNAL') {
+    newProperty.value.externalQueryId = null
+  }
+  previewOptions.value = []
+  showPreview.value = false
+}
+
+// v2.0.6: 데이터 소스 타입 변경 시 처리 (편집)
+function handleEditPropertyDataSourceChange(type: DataSourceType) {
+  editPropertyDataSourceType.value = type
+  if (editingProperty.value) {
+    editingProperty.value.dataSourceType = type
+    if (type === 'INTERNAL') {
+      editingProperty.value.externalQueryId = null
+    }
+  }
+  previewOptions.value = []
+  showPreview.value = false
 }
 
 // 옵션 패널 토글
@@ -655,6 +772,94 @@ onMounted(() => {
                 <option value="N">숨김</option>
               </select>
             </div>
+
+            <!-- v2.0.6: 외부 쿼리 연동 (SELECT/MULTI_SELECT/CHECKBOX 타입만) -->
+            <template v-if="supportsExternalQuery(newProperty.propertyType)">
+              <div class="md:col-span-2 mt-2 pt-3 border-t border-gray-200">
+                <label class="block text-xs font-medium text-gray-500 mb-2">옵션 데이터 소스</label>
+                <div class="flex gap-4 mb-3">
+                  <label class="data-source-option" :class="{ 'selected': newPropertyDataSourceType === 'INTERNAL' }">
+                    <input
+                      type="radio"
+                      name="newDataSource"
+                      value="INTERNAL"
+                      :checked="newPropertyDataSourceType === 'INTERNAL'"
+                      @change="handleNewPropertyDataSourceChange('INTERNAL')"
+                      class="sr-only"
+                    />
+                    <span class="data-source-label">직접 입력</span>
+                    <span class="data-source-desc">옵션을 직접 등록하여 사용</span>
+                  </label>
+                  <label class="data-source-option" :class="{ 'selected': newPropertyDataSourceType === 'EXTERNAL' }">
+                    <input
+                      type="radio"
+                      name="newDataSource"
+                      value="EXTERNAL"
+                      :checked="newPropertyDataSourceType === 'EXTERNAL'"
+                      @change="handleNewPropertyDataSourceChange('EXTERNAL')"
+                      class="sr-only"
+                    />
+                    <span class="data-source-label">외부 쿼리</span>
+                    <span class="data-source-desc">외부 DB 쿼리 결과 사용</span>
+                  </label>
+                </div>
+
+                <!-- 외부 쿼리 선택 -->
+                <div v-if="newPropertyDataSourceType === 'EXTERNAL'" class="external-query-section">
+                  <div class="flex items-end gap-2">
+                    <div class="flex-1">
+                      <label class="block text-xs font-medium text-gray-500 mb-1">외부 쿼리 선택 *</label>
+                      <select
+                        v-model="newProperty.externalQueryId"
+                        class="form-input"
+                        :disabled="externalQueriesLoading"
+                      >
+                        <option :value="null">-- 선택하세요 --</option>
+                        <option
+                          v-for="query in externalQueries"
+                          :key="query.queryId"
+                          :value="query.queryId"
+                        >
+                          {{ query.queryName }} ({{ query.queryCode }}) - {{ query.datasourceName }}
+                        </option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn-preview"
+                      :disabled="!newProperty.externalQueryId || previewLoading"
+                      @click="handlePreviewQuery(newProperty.externalQueryId)"
+                    >
+                      {{ previewLoading ? '조회 중...' : '미리보기' }}
+                    </button>
+                  </div>
+
+                  <!-- 미리보기 결과 -->
+                  <div v-if="showPreview && previewOptions.length > 0" class="preview-result mt-3">
+                    <div class="preview-header">
+                      <span class="text-xs font-medium text-gray-600">미리보기 ({{ previewOptions.length }}건)</span>
+                    </div>
+                    <div class="preview-list">
+                      <div
+                        v-for="(opt, idx) in previewOptions.slice(0, 10)"
+                        :key="idx"
+                        class="preview-item"
+                      >
+                        <span v-if="opt.color" class="preview-color" :style="{ backgroundColor: opt.color }" />
+                        <span class="preview-value">{{ opt.value }}</span>
+                        <span class="preview-label">{{ opt.label }}</span>
+                      </div>
+                      <div v-if="previewOptions.length > 10" class="text-xs text-gray-400 text-center py-1">
+                        ... 외 {{ previewOptions.length - 10 }}건
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else-if="showPreview && previewOptions.length === 0 && !previewLoading" class="text-xs text-gray-400 mt-2">
+                    조회된 결과가 없습니다.
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
           <div class="mt-4 flex justify-end gap-2">
             <button type="button" class="btn-cancel" @click="handleCancelAdd" :disabled="saving">
@@ -762,9 +967,21 @@ onMounted(() => {
                   <span class="type-badge">{{ getPropertyTypeLabel(property.propertyType) }}</span>
                   <span v-if="property.requiredYn === 'Y'" class="text-xs text-red-500">필수</span>
                   <span v-if="property.visibleYn === 'N'" class="text-xs text-gray-400">숨김</span>
-                  <!-- v2.0.5: SELECT/MULTI_SELECT 옵션 개수 표시 -->
+                  <!-- v2.0.6: 외부 쿼리 연동 표시 -->
                   <span
-                    v-if="isSelectType(property)"
+                    v-if="property.dataSourceType === 'EXTERNAL' && property.externalQueryName"
+                    class="external-query-badge"
+                    :title="`외부 쿼리: ${property.externalQueryCode}`"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                    </svg>
+                    {{ property.externalQueryName }}
+                  </span>
+                  <!-- v2.0.5: SELECT/MULTI_SELECT 옵션 개수 표시 (INTERNAL 타입만) -->
+                  <span
+                    v-else-if="isSelectType(property) && property.dataSourceType !== 'EXTERNAL'"
                     class="text-xs text-gray-400 cursor-pointer hover:text-blue-600"
                     @click.stop="toggleOptionsPanel(property)"
                   >
@@ -772,9 +989,9 @@ onMounted(() => {
                   </span>
                 </div>
                 <div class="flex items-center gap-1">
-                  <!-- v2.0.5: 옵션 관리 버튼 (SELECT/MULTI_SELECT 전용) -->
+                  <!-- v2.0.5: 옵션 관리 버튼 (SELECT/MULTI_SELECT + INTERNAL 타입 전용) -->
                   <button
-                    v-if="isSelectType(property)"
+                    v-if="isSelectType(property) && property.dataSourceType !== 'EXTERNAL'"
                     type="button"
                     class="icon-btn"
                     :class="{ 'text-blue-600 bg-blue-50': expandedPropertyId === property.propertyId }"
@@ -802,9 +1019,9 @@ onMounted(() => {
               </template>
             </div>
 
-            <!-- v2.0.5: 옵션 관리 패널 (SELECT/MULTI_SELECT 타입) -->
+            <!-- v2.0.5: 옵션 관리 패널 (SELECT/MULTI_SELECT + INTERNAL 타입) -->
             <div
-              v-if="isSelectType(property) && expandedPropertyId === property.propertyId"
+              v-if="isSelectType(property) && expandedPropertyId === property.propertyId && property.dataSourceType !== 'EXTERNAL'"
               class="options-panel"
             >
               <div class="options-panel-header">
@@ -1197,5 +1414,79 @@ onMounted(() => {
   @apply w-5 h-5 rounded cursor-pointer
          hover:ring-2 hover:ring-offset-1 hover:ring-gray-400
          transition-all;
+}
+
+/* v2.0.6: 데이터 소스 선택 */
+.data-source-option {
+  @apply flex flex-col p-2 rounded-lg border-2 border-gray-200 cursor-pointer
+         transition-all duration-150 hover:border-gray-300 hover:bg-gray-50
+         flex-1 max-w-[200px];
+}
+
+.data-source-option.selected {
+  @apply border-primary-500 bg-primary-50;
+}
+
+.data-source-label {
+  @apply text-sm font-medium text-gray-900;
+}
+
+.data-source-desc {
+  @apply text-xs text-gray-500 mt-0.5;
+}
+
+.data-source-option.selected .data-source-label {
+  @apply text-primary-700;
+}
+
+.data-source-option.selected .data-source-desc {
+  @apply text-primary-600;
+}
+
+/* v2.0.6: 외부 쿼리 섹션 */
+.external-query-section {
+  @apply mt-2;
+}
+
+.btn-preview {
+  @apply inline-flex items-center px-3 py-1.5 text-xs font-medium
+         text-primary-600 bg-primary-50 border border-primary-200 rounded-md
+         hover:bg-primary-100 transition-colors
+         disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* v2.0.6: 미리보기 결과 */
+.preview-result {
+  @apply border border-gray-200 rounded-lg overflow-hidden bg-white;
+}
+
+.preview-header {
+  @apply px-3 py-2 bg-gray-50 border-b border-gray-100;
+}
+
+.preview-list {
+  @apply max-h-48 overflow-y-auto;
+}
+
+.preview-item {
+  @apply flex items-center gap-2 px-3 py-1.5 text-sm border-b border-gray-50 last:border-b-0;
+}
+
+.preview-color {
+  @apply w-3 h-3 rounded-full flex-shrink-0;
+}
+
+.preview-value {
+  @apply text-gray-500 text-xs min-w-[80px];
+}
+
+.preview-label {
+  @apply text-gray-700;
+}
+
+/* v2.0.6: 외부 쿼리 배지 */
+.external-query-badge {
+  @apply inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium
+         rounded bg-emerald-50 text-emerald-700 border border-emerald-200;
 }
 </style>

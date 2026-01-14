@@ -50,7 +50,7 @@
             b.DELETED_BY,
             u.NAME AS OWNER_NAME,
             (SELECT COUNT(*) FROM TB_ITEM i WHERE i.BOARD_ID = b.BOARD_ID) AS ITEM_COUNT,
-            (SELECT COUNT(*) FROM TB_BOARD_SHARE bs WHERE bs.BOARD_ID = b.BOARD_ID) AS SHARE_COUNT
+            (SELECT COUNT(*) FROM TB_BOARD_SHARE bs WHERE bs.BOARD_ID = b.BOARD_ID AND bs.DELETED_AT IS NULL) AS SHARE_COUNT
         FROM TB_BOARD b
         LEFT JOIN TB_USER u ON b.OWNER_USERNAME = u.USERNAME
     </sql>
@@ -82,7 +82,9 @@
             b.OWNER_USERNAME = #{username}
             OR EXISTS (
                 SELECT 1 FROM TB_BOARD_SHARE bs
-                WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USERNAME = #{username}
+                WHERE bs.BOARD_ID = b.BOARD_ID
+                  AND bs.USERNAME = #{username}
+                  AND bs.DELETED_AT IS NULL
             )
         )
         <if test="useYn != null and useYn != ''">
@@ -111,7 +113,9 @@
                   b.OWNER_USERNAME = #{username}
                   OR EXISTS (
                       SELECT 1 FROM TB_BOARD_SHARE bs
-                      WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USERNAME = #{username}
+                      WHERE bs.BOARD_ID = b.BOARD_ID
+                        AND bs.USERNAME = #{username}
+                        AND bs.DELETED_AT IS NULL
                   )
               )
         )
@@ -218,11 +222,12 @@
             bs.PERMISSION,
             u.NAME AS OWNER_NAME,
             (SELECT COUNT(*) FROM TB_ITEM i WHERE i.BOARD_ID = b.BOARD_ID) AS ITEM_COUNT,
-            (SELECT COUNT(*) FROM TB_BOARD_SHARE bs2 WHERE bs2.BOARD_ID = b.BOARD_ID) AS SHARE_COUNT
+            (SELECT COUNT(*) FROM TB_BOARD_SHARE bs2 WHERE bs2.BOARD_ID = b.BOARD_ID AND bs2.DELETED_AT IS NULL) AS SHARE_COUNT
         FROM TB_BOARD b
         INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID
         LEFT JOIN TB_USER u ON b.OWNER_USERNAME = u.USERNAME
         WHERE bs.USERNAME = #{username}
+          AND bs.DELETED_AT IS NULL
           AND b.USE_YN = 'Y'
         ORDER BY bs.SORT_ORDER, b.CREATED_AT DESC
     </select>
@@ -267,9 +272,9 @@
                 ELSE bs.PERMISSION
             END AS PERMISSION
         FROM TB_BOARD b
-        LEFT JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username}
+        LEFT JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username} AND bs.DELETED_AT IS NULL
         WHERE b.BOARD_ID = #{boardId}
-          AND (b.OWNER_USERNAME = #{username} OR bs.USERNAME = #{username})
+          AND (b.OWNER_USERNAME = #{username} OR (bs.USERNAME = #{username} AND bs.DELETED_AT IS NULL))
     </select>
 
     <!-- 소유자 USERNAME과 보드명으로 보드 조회 -->

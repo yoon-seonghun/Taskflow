@@ -88,7 +88,12 @@ async function handleSubmit() {
     if (transferTarget.value === 'self') {
       request.targetBoardId = selectedBoardId.value!
     } else {
-      request.targetUserId = selectedUserId.value!
+      // 사용자 이관 시 username 사용 (외부 연동 키 정책)
+      if (!selectedUser.value?.username) {
+        toast.error('사용자를 선택해주세요.')
+        return
+      }
+      request.targetUsername = selectedUser.value.username
     }
 
     const result = await itemStore.transferItem(props.boardId, props.item.itemId, request)

@@ -9,7 +9,7 @@ import TemplateForm from '@/components/template/TemplateForm.vue'
 import TemplateList from '@/components/template/TemplateList.vue'
 import { templateApi } from '@/api/template'
 import { useUiStore } from '@/stores/ui'
-import type { TaskTemplate, TaskTemplateCreateRequest, TaskTemplateUpdateRequest } from '@/types/template'
+import type { TaskTemplate, TaskTemplateCreateRequest, TaskTemplateUpdateRequest, TemplateOwnerType } from '@/types/template'
 
 const uiStore = useUiStore()
 
@@ -24,11 +24,11 @@ const selectedTemplate = ref<TaskTemplate | null>(null)
 // 폼 컴포넌트 ref
 const formRef = ref<InstanceType<typeof TemplateForm> | null>(null)
 
-// 템플릿 목록 로드
+// 템플릿 목록 로드 (접근 가능한 전체 템플릿)
 async function loadTemplates() {
   loading.value = true
   try {
-    const response = await templateApi.getTemplates()
+    const response = await templateApi.getAccessibleTemplates()
     templates.value = response.data
   } catch (error) {
     console.error('Failed to load templates:', error)
@@ -38,7 +38,7 @@ async function loadTemplates() {
 }
 
 // 템플릿 등록/수정
-async function handleSubmit(data: TaskTemplateCreateRequest | TaskTemplateUpdateRequest) {
+async function handleSubmit(data: TaskTemplateCreateRequest | TaskTemplateUpdateRequest, ownerType: TemplateOwnerType) {
   submitting.value = true
   try {
     if (selectedTemplate.value) {
@@ -47,15 +47,32 @@ async function handleSubmit(data: TaskTemplateCreateRequest | TaskTemplateUpdate
       uiStore.showSuccess('템플릿이 수정되었습니다.')
       selectedTemplate.value = null
     } else {
-      // 등록
-      await templateApi.createTemplate(data as TaskTemplateCreateRequest)
-      uiStore.showSuccess('템플릿이 등록되었습니다.')
+      // 소유 유형에 따라 적절한 API 호출
+      const createRequest = data as TaskTemplateCreateRequest
+      switch (ownerType) {
+        case 'GLOBAL':
+          await templateApi.createGlobalTemplate(createRequest)
+          uiStore.showSuccess('글로벌 템플릿이 등록되었습니다.')
+          break
+        case 'MANAGER':
+          await templateApi.createManagerTemplate(createRequest)
+          uiStore.showSuccess('매니저 템플릿이 등록되었습니다.')
+          break
+        default:
+          await templateApi.createUserTemplate(createRequest)
+          uiStore.showSuccess('개인 템플릿이 등록되었습니다.')
+      }
     }
     await loadTemplates()
     formRef.value?.resetForm()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save template:', error)
-    uiStore.showError('템플릿 저장에 실패했습니다.')
+    // 권한 오류 처리
+    if (error.response?.status === 403) {
+      uiStore.showError('해당 유형의 템플릿을 등록할 권한이 없습니다.')
+    } else {
+      uiStore.showError('템플릿 저장에 실패했습니다.')
+    }
   } finally {
     submitting.value = false
   }

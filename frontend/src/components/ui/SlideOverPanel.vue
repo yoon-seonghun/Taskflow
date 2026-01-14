@@ -5,26 +5,84 @@
  * - 좌측 가장자리 드래그로 폭 조절 가능
  * - ESC 키 또는 외부 클릭으로 닫기
  */
-import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent, h, onErrorCaptured } from 'vue'
 import { useUiStore } from '@/stores/ui'
 
 const uiStore = useUiStore()
 
-// 동적 컴포넌트 등록
+// 에러 캡처
+const capturedError = ref<Error | null>(null)
+onErrorCaptured((err, instance, info) => {
+  console.error('[SlideOverPanel] Error captured:', err, info)
+  capturedError.value = err
+  return false // 에러 전파 방지
+})
+
+// 로딩 컴포넌트
+const LoadingComponent = {
+  render() {
+    return h('div', { class: 'flex items-center justify-center h-full' }, [
+      h('div', { class: 'animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500' })
+    ])
+  }
+}
+
+// 에러 컴포넌트
+const ErrorComponent = {
+  props: ['error'],
+  render() {
+    return h('div', { class: 'flex flex-col items-center justify-center h-full p-4 text-center' }, [
+      h('div', { class: 'text-red-500 mb-2' }, '컴포넌트 로딩 실패'),
+      h('div', { class: 'text-sm text-gray-500' }, this.error?.message || '알 수 없는 오류')
+    ])
+  }
+}
+
+// 동적 컴포넌트 등록 (에러 핸들링 추가)
 const dynamicComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
-  ItemDetail: defineAsyncComponent(() => import('@/components/item/ItemDetailPanel.vue')),
-  ItemDetailPanel: defineAsyncComponent(() => import('@/components/item/ItemDetailPanel.vue')),
-  ItemEdit: defineAsyncComponent(() => import('@/components/item/ItemDetailPanel.vue')),
-  ItemCreate: defineAsyncComponent(() => import('@/components/item/ItemDetailPanel.vue'))
+  ItemDetail: defineAsyncComponent({
+    loader: () => import('@/components/item/ItemDetailPanel.vue'),
+    loadingComponent: LoadingComponent,
+    errorComponent: ErrorComponent,
+    delay: 100,
+    timeout: 10000
+  }),
+  ItemDetailPanel: defineAsyncComponent({
+    loader: () => import('@/components/item/ItemDetailPanel.vue'),
+    loadingComponent: LoadingComponent,
+    errorComponent: ErrorComponent,
+    delay: 100,
+    timeout: 10000
+  }),
+  ItemEdit: defineAsyncComponent({
+    loader: () => import('@/components/item/ItemDetailPanel.vue'),
+    loadingComponent: LoadingComponent,
+    errorComponent: ErrorComponent,
+    delay: 100,
+    timeout: 10000
+  }),
+  ItemCreate: defineAsyncComponent({
+    loader: () => import('@/components/item/ItemDetailPanel.vue'),
+    loadingComponent: LoadingComponent,
+    errorComponent: ErrorComponent,
+    delay: 100,
+    timeout: 10000
+  })
 }
 
 // 패널 상태
 const isVisible = computed(() => uiStore.slideOverPanel.visible)
 const componentName = computed(() => uiStore.slideOverPanel.component)
 const resolvedComponent = computed(() => {
-  return componentName.value ? dynamicComponents[componentName.value] : null
+  const comp = componentName.value ? dynamicComponents[componentName.value] : null
+  console.log('[SlideOverPanel] resolvedComponent:', componentName.value, comp ? 'found' : 'not found')
+  return comp
 })
-const componentProps = computed(() => uiStore.slideOverPanel.props)
+const componentProps = computed(() => {
+  const props = uiStore.slideOverPanel.props
+  console.log('[SlideOverPanel] componentProps:', props)
+  return props
+})
 
 // 리사이즈 관련 상태
 const STORAGE_KEY = 'taskflow_panel_width'
@@ -193,12 +251,29 @@ watch(isVisible, (visible) => {
 
           <!-- 컨텐츠 영역 -->
           <div class="flex-1 h-full overflow-hidden">
+            <!-- 런타임 에러 표시 -->
+            <div v-if="capturedError" class="flex flex-col items-center justify-center h-full p-4 text-center">
+              <div class="text-red-500 mb-2">컴포넌트 에러 발생</div>
+              <div class="text-sm text-gray-600 mb-2">{{ capturedError.message }}</div>
+              <button
+                class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                @click="capturedError = null"
+              >
+                다시 시도
+              </button>
+            </div>
             <component
+              v-else-if="resolvedComponent"
               :is="resolvedComponent"
-              v-if="resolvedComponent"
               v-bind="componentProps"
               @close="closePanel"
             />
+            <!-- 디버그: resolvedComponent가 없는 경우 -->
+            <div v-else class="flex flex-col items-center justify-center h-full text-gray-500">
+              <div class="text-sm mb-2">컴포넌트를 로드하지 못했습니다.</div>
+              <div class="text-xs">componentName: {{ componentName }}</div>
+              <div class="text-xs">props: {{ JSON.stringify(componentProps) }}</div>
+            </div>
           </div>
 
           <!-- 폭 표시 (리사이즈 중) -->
