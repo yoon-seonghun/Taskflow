@@ -346,4 +346,28 @@ public interface ItemMapper {
      */
     long countSharedItems(@Param("username") String username,
                           @Param("request") CrossBoardSearchRequest request);
+
+    // =============================================
+    // 담당자 관련
+    // =============================================
+
+    /**
+     * 아이템 담당자 업데이트
+     *
+     * @param itemId           아이템 ID
+     * @param assigneeUsername 담당자 USERNAME (null 가능)
+     * @param updatedBy        수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int updateAssignee(@Param("itemId") Long itemId,
+                       @Param("assigneeUsername") String assigneeUsername,
+                       @Param("updatedBy") String updatedBy);
+
+    /**
+     * 아이템 ID로 조회 (단건, Optional 없이)
+     *
+     * @param itemId 아이템 ID
+     * @return 아이템
+     */
+    Item selectById(@Param("itemId") Long itemId);
 }

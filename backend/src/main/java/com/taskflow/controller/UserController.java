@@ -144,6 +144,19 @@ public class UserController {
     }
 
     /**
+     * Username으로 사용자 조회
+     */
+    @GetMapping("/by-username/{username}")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserByUsername(
+            @PathVariable("username") String username
+    ) {
+        log.debug("Get user by username: {}", LogMaskUtils.maskUsername(username));
+
+        UserResponse response = userService.getUserByUsername(username);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
      * 부서별 사용자 목록 조회
      *
      * @deprecated DepartmentController의 /api/departments/{id}/users 사용 권장

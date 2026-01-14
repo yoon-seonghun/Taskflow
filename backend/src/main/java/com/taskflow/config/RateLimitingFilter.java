@@ -33,7 +33,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private static final long LOGIN_WINDOW_MS = 60_000;      // 1분
 
     // 일반 API Rate Limit 설정
-    private static final int GENERAL_RATE_LIMIT = 100;       // 분당 100회
+    private static final int GENERAL_RATE_LIMIT = 300;       // 분당 300회 (SPA에서 페이지 로드 시 많은 요청 발생)
     private static final long GENERAL_WINDOW_MS = 60_000;    // 1분
 
     // Rate Limit 만료 시간 (1시간 후 자동 정리)

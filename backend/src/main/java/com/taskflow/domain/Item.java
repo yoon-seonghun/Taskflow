@@ -222,6 +222,40 @@ public class Item {
      */
     private String transferredByUserName;
 
+    // =============================================
+    // 배정 정보 (v2.1 - Mapper에서 JOIN으로 설정)
+    // =============================================
+
+    /**
+     * 배정받은 업무 여부 (현재 사용자 기준)
+     */
+    private Boolean isAssignedToMe;
+
+    /**
+     * 배정해준 사용자 USERNAME
+     */
+    private String assignedByUsername;
+
+    /**
+     * 배정해준 사용자 이름
+     */
+    private String assignedByUserName;
+
+    /**
+     * 배정일시
+     */
+    private LocalDateTime assignedAt;
+
+    /**
+     * 배정 대상 USERNAME (소유자 화면용)
+     */
+    private String assignedToUsername;
+
+    /**
+     * 배정 대상 이름 (소유자 화면용)
+     */
+    private String assignedToUserName;
+
     /**
      * 동적 속성값 목록
      */
@@ -345,6 +379,48 @@ public class Item {
     }
 
     /**
+     * 공유받은 업무 여부 getter
+     */
+    public Boolean getIsSharedToMe() {
+        return isSharedToMe;
+    }
+
+    /**
+     * 배정받은 업무 여부 getter
+     */
+    public Boolean getIsAssignedToMe() {
+        return isAssignedToMe;
+    }
+
+    /**
+     * 배정해준 사용자 USERNAME getter
+     */
+    public String getAssignedByUsername() {
+        return assignedByUsername;
+    }
+
+    /**
+     * 배정해준 사용자 이름 getter
+     */
+    public String getAssignedByUserName() {
+        return assignedByUserName;
+    }
+
+    /**
+     * 배정 대상 사용자 USERNAME getter
+     */
+    public String getAssignedToUsername() {
+        return assignedToUsername;
+    }
+
+    /**
+     * 배정 대상 사용자 이름 getter
+     */
+    public String getAssignedToUserName() {
+        return assignedToUserName;
+    }
+
+    /**
      * 정렬 순서 getter
      */
     public Integer getSortOrder() {
@@ -356,5 +432,19 @@ public class Item {
      */
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
+    }
+
+    /**
+     * 배정해준 사용자 이름 setter
+     */
+    public void setAssignedByUserName(String assignedByUserName) {
+        this.assignedByUserName = assignedByUserName;
+    }
+
+    /**
+     * 공유해준 사용자 이름 setter
+     */
+    public void setSharedByUserName(String sharedByUserName) {
+        this.sharedByUserName = sharedByUserName;
     }
 }

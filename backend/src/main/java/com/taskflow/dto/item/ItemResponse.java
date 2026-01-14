@@ -193,6 +193,54 @@ public class ItemResponse {
      */
     private String transferredByUserName;
 
+    // =============================================
+    // 배정 정보 (v2.1)
+    // =============================================
+
+    /**
+     * 배정받은 업무 여부 (현재 사용자 기준)
+     */
+    private Boolean isAssignedToMe;
+
+    /**
+     * 배정해준 사용자 USERNAME
+     */
+    private String assignedByUsername;
+
+    /**
+     * 배정해준 사용자 이름
+     */
+    private String assignedByUserName;
+
+    /**
+     * 배정일시
+     */
+    private LocalDateTime assignedAt;
+
+    /**
+     * 배정 대상 USERNAME (소유자 화면용)
+     */
+    private String assignedToUsername;
+
+    /**
+     * 배정 대상 이름 (소유자 화면용)
+     */
+    private String assignedToUserName;
+
+    /**
+     * 생성자 USERNAME (소유자 확인용)
+     */
+    private String createdBy;
+
+    // =============================================
+    // 접근 권한 정보 (v2.1 배정 기능)
+    // =============================================
+
+    /**
+     * 현재 사용자의 접근 권한 정보
+     */
+    private ItemAccessInfo accessInfo;
+
     /**
      * 도메인 객체를 응답 DTO로 변환
      */
@@ -253,6 +301,15 @@ public class ItemResponse {
                 .transferredFrom(item.getTransferredFrom())
                 .transferredByUsername(item.getTransferredByUsername())
                 .transferredByUserName(item.getTransferredByUserName())
+                // 배정 정보 (v2.1)
+                .isAssignedToMe(item.getIsAssignedToMe())
+                .assignedByUsername(item.getAssignedByUsername())
+                .assignedByUserName(item.getAssignedByUserName())
+                .assignedAt(item.getAssignedAt())
+                // 배정 대상 정보 (소유자 화면용)
+                .assignedToUsername(item.getAssignedToUsername())
+                .assignedToUserName(item.getAssignedToUserName())
+                .createdBy(item.getCreatedBy())
                 .build();
     }
 
@@ -312,5 +369,25 @@ public class ItemResponse {
                     .externalQueryId(prop.getExternalQueryId())
                     .build();
         }
+    }
+
+    // =============================================
+    // 명시적 Getter (Lombok 호환성 - UserName 패턴)
+    // =============================================
+
+    public String getAssignedByUserName() {
+        return assignedByUserName;
+    }
+
+    public String getAssignedToUserName() {
+        return assignedToUserName;
+    }
+
+    public String getSharedByUserName() {
+        return sharedByUserName;
+    }
+
+    public String getTransferredByUserName() {
+        return transferredByUserName;
     }
 }

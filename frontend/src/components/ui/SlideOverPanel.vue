@@ -114,6 +114,11 @@ function closePanel() {
   uiStore.closeSlideOver()
 }
 
+// 아이템 업데이트 핸들러
+function handleItemUpdated(item: unknown) {
+  uiStore.handleSlideOverItemUpdated(item)
+}
+
 // ESC 키 핸들러
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && isVisible.value) {
@@ -267,6 +272,7 @@ watch(isVisible, (visible) => {
               :is="resolvedComponent"
               v-bind="componentProps"
               @close="closePanel"
+              @updated="handleItemUpdated"
             />
             <!-- 디버그: resolvedComponent가 없는 경우 -->
             <div v-else class="flex flex-col items-center justify-center h-full text-gray-500">

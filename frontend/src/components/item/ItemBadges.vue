@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // 배지 목록 계산
 interface BadgeInfo {
-  type: 'shared' | 'transferred'
+  type: 'shared' | 'transferred' | 'assigned'
   label: string
   ownerName?: string
   color: string
@@ -37,6 +37,35 @@ interface BadgeInfo {
 
 const badges = computed<BadgeInfo[]>(() => {
   const result: BadgeInfo[] = []
+
+  // 배당받은 업무 (v2.1) - 현재 사용자가 배당받은 경우
+  if (props.item.isAssignedToMe) {
+    result.push({
+      type: 'assigned',
+      label: '배당',
+      ownerName: props.item.assignedByUserName,
+      color: 'text-green-700',
+      bgColor: 'bg-green-100',
+      icon: 'assigned',
+      title: props.item.assignedByUserName
+        ? `${props.item.assignedByUserName}님이 배당`
+        : '배당받은 업무'
+    })
+  }
+  // 배당한 업무 (v2.1) - 소유자가 다른 사용자에게 배당한 경우
+  else if (props.item.assignedToUsername) {
+    result.push({
+      type: 'assigned',
+      label: '배당됨',
+      ownerName: props.item.assignedToUserName,
+      color: 'text-emerald-700',
+      bgColor: 'bg-emerald-100',
+      icon: 'assigned',
+      title: props.item.assignedToUserName
+        ? `${props.item.assignedToUserName}님에게 배당`
+        : '배당한 업무'
+    })
+  }
 
   // 공유받은 업무
   if (props.item.isSharedToMe) {
@@ -108,8 +137,12 @@ const sizeClasses = computed(() => {
         ]"
         :title="badge.title"
       >
+        <!-- 배당 아이콘 -->
+        <svg v-if="badge.icon === 'assigned'" :class="sizeClasses.icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
         <!-- 공유 아이콘 -->
-        <svg v-if="badge.icon === 'share'" :class="sizeClasses.icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg v-else-if="badge.icon === 'share'" :class="sizeClasses.icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
         </svg>
         <!-- 이관 아이콘 -->

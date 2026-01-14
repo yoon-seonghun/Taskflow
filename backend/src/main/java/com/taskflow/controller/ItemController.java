@@ -1,6 +1,9 @@
 package com.taskflow.controller;
 
 import com.taskflow.common.ApiResponse;
+import com.taskflow.dto.assignment.AssignmentRequest;
+import com.taskflow.dto.assignment.AssignmentResponse;
+import com.taskflow.dto.item.ItemAccessInfo;
 import com.taskflow.dto.item.ItemCreateRequest;
 import com.taskflow.dto.item.ItemPageResponse;
 import com.taskflow.dto.item.ItemPropertySortRequest;
@@ -11,6 +14,7 @@ import com.taskflow.dto.item.ItemTransferRequest;
 import com.taskflow.dto.item.ItemUpdateRequest;
 import com.taskflow.security.SecurityUtils;
 import com.taskflow.service.BoardService;
+import com.taskflow.service.ItemAssignmentService;
 import com.taskflow.service.ItemService;
 import com.taskflow.service.ItemShareService;
 import jakarta.validation.Valid;
@@ -45,6 +49,7 @@ public class ItemController {
     private final ItemService itemService;
     private final BoardService boardService;
     private final ItemShareService itemShareService;
+    private final ItemAssignmentService itemAssignmentService;
 
     // =============================================
     // 아이템 CRUD
@@ -437,5 +442,99 @@ public class ItemController {
         itemService.reorderItem(boardId, request, currentUsername);
 
         return ResponseEntity.ok(ApiResponse.success(null, "아이템 순서가 변경되었습니다"));
+    }
+
+    // =============================================
+    // 업무 담당자 배정 (v2.1)
+    // =============================================
+
+    /**
+     * 업무 담당자 배정
+     */
+    @PostMapping("/{id}/assign")
+    public ResponseEntity<ApiResponse<AssignmentResponse>> assignItem(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId,
+            @Valid @RequestBody AssignmentRequest request
+    ) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        log.info("Assign item: itemId={}, assignee={}", itemId, request.getAssigneeUsername());
+
+        try {
+            AssignmentResponse response = itemAssignmentService.assignItem(boardId, itemId, request, currentUsername);
+            return ResponseEntity.ok(ApiResponse.success(response, "업무가 배정되었습니다"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * 업무 배정 취소
+     */
+    @DeleteMapping("/{id}/assign/{username}")
+    public ResponseEntity<ApiResponse<Void>> cancelAssignment(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId,
+            @PathVariable("username") String assigneeUsername
+    ) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        log.info("Cancel assignment: itemId={}, assignee={}", itemId, assigneeUsername);
+
+        try {
+            itemAssignmentService.cancelAssignment(boardId, itemId, assigneeUsername, currentUsername);
+            return ResponseEntity.ok(ApiResponse.success(null, "배정이 취소되었습니다"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * 배정 권한 수정
+     */
+    @PutMapping("/{id}/assign/{username}")
+    public ResponseEntity<ApiResponse<AssignmentResponse>> updateAssignmentPermission(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId,
+            @PathVariable("username") String assigneeUsername,
+            @RequestBody java.util.Map<String, String> request
+    ) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        String permissionLevel = request.get("permissionLevel");
+        log.info("Update assignment permission: itemId={}, assignee={}, permission={}", itemId, assigneeUsername, permissionLevel);
+
+        try {
+            AssignmentResponse response = itemAssignmentService.updateAssignmentPermission(
+                    boardId, itemId, assigneeUsername, permissionLevel, currentUsername
+            );
+            return ResponseEntity.ok(ApiResponse.success(response, "권한이 수정되었습니다"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * 업무 접근 권한 정보 조회
+     */
+    @GetMapping("/{id}/access-info")
+    public ResponseEntity<ApiResponse<ItemAccessInfo>> getAccessInfo(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId
+    ) {
+        String currentUsername = SecurityUtils.getCurrentUsername();
+
+        ItemAccessInfo accessInfo = itemAssignmentService.getAccessInfo(boardId, itemId, currentUsername);
+        return ResponseEntity.ok(ApiResponse.success(accessInfo));
     }
 }

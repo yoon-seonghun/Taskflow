@@ -31,6 +31,7 @@ export interface Item {
   deletedAt?: string      // 삭제일시
   commentCount?: number
   createdAt: string
+  createdBy?: string          // 생성자 USERNAME
   createdByName?: string
   updatedAt?: string
   updatedByName?: string
@@ -43,6 +44,14 @@ export interface Item {
   transferredFrom?: number      // 이관 원본 보드 ID
   transferredByUsername?: string // 이관해준 사용자 USERNAME
   transferredByUserName?: string // 이관해준 사용자 이름
+  // 배당 정보 (v2.1)
+  isAssignedToMe?: boolean       // 배당받은 업무 여부
+  assignedByUsername?: string    // 배당해준 사용자 USERNAME
+  assignedByUserName?: string    // 배당해준 사용자 이름
+  assignedAt?: string            // 배당일시
+  // 배당 대상 정보 (소유자 화면용 v2.1)
+  assignedToUsername?: string    // 배당 대상 사용자 USERNAME
+  assignedToUserName?: string    // 배당 대상 사용자 이름
 }
 
 export interface ItemProperty {

@@ -47,6 +47,14 @@
         <result property="transferredByUsername" column="TRANSFERRED_BY_USERNAME"/>
         <result property="transferredByUserName" column="TRANSFERRED_BY_USER_NAME"/>
         <result property="sortOrder" column="SORT_ORDER"/>
+        <!-- v2.1: 배정 필드 -->
+        <result property="isAssignedToMe" column="IS_ASSIGNED_TO_ME"/>
+        <result property="assignedByUsername" column="ASSIGNED_BY_USERNAME"/>
+        <result property="assignedByUserName" column="ASSIGNED_BY_USER_NAME"/>
+        <result property="assignedAt" column="ASSIGNED_AT"/>
+        <!-- v2.1: 배정 대상 정보 (소유자 화면용) -->
+        <result property="assignedToUsername" column="ASSIGNED_TO_USERNAME"/>
+        <result property="assignedToUserName" column="ASSIGNED_TO_USER_NAME"/>
     </resultMap>
 
     <!-- ============================================= -->
@@ -93,7 +101,15 @@
             /* 공유 정보 - 기본값 NULL (공유 업무 조회 시 별도 설정) */
             NULL AS IS_SHARED_TO_ME,
             NULL AS SHARED_BY_USERNAME,
-            NULL AS SHARED_BY_USER_NAME
+            NULL AS SHARED_BY_USER_NAME,
+            /* v2.1: 배정 정보 (소유자 화면용) - 기본값 NULL (공유 업무 조회 시 별도 설정) */
+            NULL AS IS_ASSIGNED_TO_ME,
+            ish_assign.ASSIGNED_BY AS ASSIGNED_BY_USERNAME,
+            uab.NAME AS ASSIGNED_BY_USER_NAME,
+            ish_assign.ASSIGNED_AT AS ASSIGNED_AT,
+            /* v2.1: 배정 대상 정보 (소유자 화면용) - 누구에게 배정했는지 */
+            ish_assign.USERNAME AS ASSIGNED_TO_USERNAME,
+            uat.NAME AS ASSIGNED_TO_USER_NAME
         FROM TB_ITEM i
         INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
         LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
@@ -103,6 +119,10 @@
         LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
         LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
         LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+        /* v2.1: 배정 정보 조인 - SHARE_TYPE='ASSIGN'인 활성 배정만 조회 */
+        LEFT JOIN TB_ITEM_SHARE ish_assign ON i.ITEM_ID = ish_assign.ITEM_ID AND ish_assign.SHARE_TYPE = 'ASSIGN'
+        LEFT JOIN TB_USER uab ON ish_assign.ASSIGNED_BY = uab.USERNAME
+        LEFT JOIN TB_USER uat ON ish_assign.USERNAME = uat.USERNAME
     </sql>
 
     <!-- 필터 조건 -->
@@ -544,7 +564,7 @@
     <!-- 공유받은 업무 조회 -->
     <!-- ============================================= -->
 
-    <!-- 공유받은 업무 목록 조회 (특정 사용자가 공유받은 모든 업무) -->
+    <!-- 공유받은 업무 목록 조회 (특정 사용자가 공유/배정받은 모든 업무) -->
     <select id="findSharedItems" resultMap="ItemResultMap">
         SELECT
             i.ITEM_ID,
@@ -581,10 +601,17 @@
             /* 이관 정보 */
             tb_orig.OWNER_USERNAME AS TRANSFERRED_BY_USERNAME,
             ut.NAME AS TRANSFERRED_BY_USER_NAME,
-            /* 공유 정보 */
-            TRUE AS IS_SHARED_TO_ME,
-            ish.CREATED_BY AS SHARED_BY_USERNAME,
-            us.NAME AS SHARED_BY_USER_NAME
+            /* v2.1: 공유/배정 구분 - SHARE_TYPE에 따라 설정 */
+            CASE WHEN ish.SHARE_TYPE = 'SHARE' THEN TRUE ELSE FALSE END AS IS_SHARED_TO_ME,
+            CASE WHEN ish.SHARE_TYPE = 'ASSIGN' THEN TRUE ELSE FALSE END AS IS_ASSIGNED_TO_ME,
+            /* 공유 정보 (SHARE_TYPE = 'SHARE'일 때) */
+            CASE WHEN ish.SHARE_TYPE = 'SHARE' THEN ish.CREATED_BY ELSE NULL END AS SHARED_BY_USERNAME,
+            CASE WHEN ish.SHARE_TYPE = 'SHARE' THEN us.NAME ELSE NULL END AS SHARED_BY_USER_NAME,
+            /* 배정 정보 (SHARE_TYPE = 'ASSIGN'일 때) */
+            ish.ASSIGNED_BY AS ASSIGNED_BY_USERNAME,
+            /* 서브쿼리로 배정자 이름 조회 (JOIN 문제 우회) */
+            (SELECT u_ab.NAME FROM TB_USER u_ab WHERE u_ab.USERNAME = ish.ASSIGNED_BY) AS ASSIGNED_BY_USER_NAME,
+            ish.ASSIGNED_AT AS ASSIGNED_AT
         FROM TB_ITEM i
         INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.DELETED_AT IS NULL
         INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
@@ -638,5 +665,64 @@
             </if>
         </if>
     </select>
+
+    <!-- 아이템 ID로 조회 (단건) -->
+    <select id="selectById" resultMap="ItemResultMap">
+        SELECT
+            i.ITEM_ID,
+            i.BOARD_ID,
+            i.GROUP_ID,
+            i.CATEGORY_ID,
+            i.CONTENT,
+            i.CONTENT AS TITLE,
+            i.DESCRIPTION,
+            i.STATUS,
+            i.PRIORITY,
+            i.ASSIGNEE_USERNAME,
+            i.REQUEST_DATE,
+            i.DUE_DATE,
+            i.SORT_ORDER,
+            i.PREVIOUS_STATUS,
+            i.COMPLETED_BY,
+            i.DELETED_AT,
+            i.DELETED_BY,
+            i.TRANSFERRED_FROM,
+            i.TRANSFERRED_AT,
+            i.CREATED_AT,
+            i.CREATED_BY,
+            i.UPDATED_AT,
+            i.UPDATED_BY,
+            b.BOARD_NAME,
+            g.GROUP_NAME,
+            g.GROUP_COLOR,
+            c.CATEGORY_NAME,
+            c.CATEGORY_COLOR,
+            ua.NAME AS ASSIGNEE_NAME,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME,
+            (SELECT COUNT(*) FROM TB_COMMENT cm WHERE cm.ITEM_ID = i.ITEM_ID) AS COMMENT_COUNT,
+            /* 이관 정보 */
+            tb_orig.OWNER_USERNAME AS TRANSFERRED_BY_USERNAME,
+            ut.NAME AS TRANSFERRED_BY_USER_NAME
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+        LEFT JOIN TB_CATEGORY c ON i.CATEGORY_ID = c.CATEGORY_ID
+        LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+        LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+        LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+        LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+        WHERE i.ITEM_ID = #{itemId}
+    </select>
+
+    <!-- 아이템 담당자 업데이트 -->
+    <update id="updateAssignee">
+        UPDATE TB_ITEM
+        SET ASSIGNEE_USERNAME = #{assigneeUsername},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{updatedBy}
+        WHERE ITEM_ID = #{itemId}
+    </update>
 
 </mapper>

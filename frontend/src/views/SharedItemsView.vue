@@ -115,7 +115,19 @@ function calculateStats() {
 
 // 아이템 클릭
 function handleItemClick(item: Item) {
-  openItemDetail(item.itemId, item.boardId)
+  openItemDetail(item.itemId, item.boardId, handleItemUpdated)
+}
+
+// 아이템 업데이트 핸들러 (슬라이드오버에서 수정 후 콜백)
+function handleItemUpdated(updatedItem: unknown) {
+  const updated = updatedItem as Item
+  if (!updated || !updated.itemId) return
+
+  // 로컬 목록에서 해당 아이템 업데이트
+  const idx = sharedItems.value.findIndex(i => i.itemId === updated.itemId)
+  if (idx !== -1) {
+    sharedItems.value[idx] = { ...sharedItems.value[idx], ...updated }
+  }
 }
 
 // 완료 처리
@@ -315,7 +327,7 @@ onMounted(() => {
             <thead class="sticky top-0 bg-gray-50 z-10">
               <tr class="border-b border-gray-200">
                 <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
-                  공유자
+                  공유/배당자
                 </th>
                 <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap min-w-[250px]">
                   작업 내용
@@ -344,14 +356,17 @@ onMounted(() => {
                 class="group hover:bg-gray-50 transition-colors cursor-pointer"
                 @click="handleItemClick(item)"
               >
-                <!-- 공유자 -->
+                <!-- 공유/배당자 -->
                 <td class="px-4 h-12">
                   <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[11px] font-medium">
-                      {{ item.sharedByUserName?.charAt(0) || item.ownerName?.charAt(0) || '?' }}
+                    <div
+                      class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium"
+                      :class="item.isAssignedToMe ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'"
+                    >
+                      {{ (item.isAssignedToMe ? item.assignedByUserName : item.sharedByUserName)?.charAt(0) || item.ownerName?.charAt(0) || '?' }}
                     </div>
                     <span class="text-[13px] text-gray-700">
-                      {{ item.sharedByUserName || item.ownerName || '-' }}
+                      {{ item.isAssignedToMe ? item.assignedByUserName : (item.sharedByUserName || item.ownerName) || '-' }}
                     </span>
                   </div>
                 </td>

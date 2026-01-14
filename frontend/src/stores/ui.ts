@@ -38,6 +38,7 @@ export const useUiStore = defineStore('ui', () => {
     visible: boolean
     component: string | null
     props: Record<string, unknown>
+    onUpdated?: (item: unknown) => void  // 아이템 업데이트 콜백
   }>({
     visible: false,
     component: null,
@@ -119,11 +120,23 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   // Slide-over Panel Functions
-  function openSlideOver(component: string, props: Record<string, unknown> = {}) {
+  function openSlideOver(
+    component: string,
+    props: Record<string, unknown> = {},
+    onUpdated?: (item: unknown) => void
+  ) {
     slideOverPanel.value = {
       visible: true,
       component,
-      props
+      props,
+      onUpdated
+    }
+  }
+
+  // 아이템 업데이트 이벤트 처리
+  function handleSlideOverItemUpdated(item: unknown) {
+    if (slideOverPanel.value.onUpdated) {
+      slideOverPanel.value.onUpdated(item)
     }
   }
 
@@ -131,7 +144,8 @@ export const useUiStore = defineStore('ui', () => {
     slideOverPanel.value = {
       visible: false,
       component: null,
-      props: {}
+      props: {},
+      onUpdated: undefined
     }
   }
 
@@ -182,6 +196,7 @@ export const useUiStore = defineStore('ui', () => {
     // Slide-over
     openSlideOver,
     closeSlideOver,
+    handleSlideOverItemUpdated,
     // Loading
     setGlobalLoading,
     // Sidebar

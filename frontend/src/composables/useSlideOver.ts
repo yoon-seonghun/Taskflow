@@ -22,8 +22,12 @@ export function useSlideOver() {
   const currentComponent = computed(() => uiStore.slideOverPanel.component)
   const currentProps = computed(() => uiStore.slideOverPanel.props)
 
-  function open(component: string, props: Record<string, unknown> = {}) {
-    uiStore.openSlideOver(component, props)
+  function open(
+    component: string,
+    props: Record<string, unknown> = {},
+    onUpdated?: (item: unknown) => void
+  ) {
+    uiStore.openSlideOver(component, props, onUpdated)
   }
 
   function close() {
@@ -31,7 +35,7 @@ export function useSlideOver() {
   }
 
   // 아이템 상세 패널 열기
-  function openItemDetail(itemId: number, boardId: number) {
+  function openItemDetail(itemId: number, boardId: number, onUpdated?: (item: unknown) => void) {
     if (isMobile()) {
       // 모바일: 전체 화면 페이지로 라우팅
       router.push({
@@ -40,7 +44,7 @@ export function useSlideOver() {
       })
     } else {
       // PC: 슬라이드오버 패널 사용
-      open('ItemDetailPanel', { itemId, boardId })
+      open('ItemDetailPanel', { itemId, boardId }, onUpdated)
     }
   }
 

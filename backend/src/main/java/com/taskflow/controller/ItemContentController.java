@@ -7,6 +7,7 @@ import com.taskflow.exception.BusinessException;
 import com.taskflow.security.SecurityUtils;
 import com.taskflow.service.BoardService;
 import com.taskflow.service.ItemContentService;
+import com.taskflow.service.ItemShareService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class ItemContentController {
 
     private final ItemContentService itemContentService;
     private final BoardService boardService;
+    private final ItemShareService itemShareService;
 
     /**
      * 업무 내용 조회
@@ -38,11 +40,14 @@ public class ItemContentController {
             @PathVariable("boardId") Long boardId,
             @PathVariable("itemId") Long itemId
     ) {
-        // 접근 권한 확인
+        // 접근 권한 확인: 보드 권한 또는 업무 공유/배당 권한
         String currentUsername = SecurityUtils.getCurrentUsername();
-        if (!boardService.hasAccess(boardId, currentUsername)) {
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean hasItemAccess = itemShareService.hasItemAccess(itemId, currentUsername);
+
+        if (!hasBoardAccess && !hasItemAccess) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+                    .body(ApiResponse.error("접근 권한이 없습니다"));
         }
 
         ItemContentResponse content = itemContentService.getContent(boardId, itemId);
@@ -58,11 +63,14 @@ public class ItemContentController {
             @PathVariable("itemId") Long itemId,
             @Valid @RequestBody ItemContentUpdateRequest request
     ) {
-        // 접근 권한 확인
+        // 접근 권한 확인: 보드 권한 또는 업무 공유/배당 권한
         String currentUsername = SecurityUtils.getCurrentUsername();
-        if (!boardService.hasAccess(boardId, currentUsername)) {
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean hasItemAccess = itemShareService.hasItemAccess(itemId, currentUsername);
+
+        if (!hasBoardAccess && !hasItemAccess) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+                    .body(ApiResponse.error("접근 권한이 없습니다"));
         }
 
         try {

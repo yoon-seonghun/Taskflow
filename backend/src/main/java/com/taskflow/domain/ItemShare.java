@@ -39,9 +39,24 @@ public class ItemShare {
     private String username;
 
     /**
+     * 공유 유형 (SHARE: 공유, ASSIGN: 배당)
+     */
+    private String shareType;
+
+    /**
      * 권한 (VIEW/EDIT/FULL)
      */
     private String permission;
+
+    /**
+     * 배당자 USERNAME (ASSIGN일 경우)
+     */
+    private String assignedBy;
+
+    /**
+     * 배당 일시
+     */
+    private LocalDateTime assignedAt;
 
     /**
      * 생성일시
@@ -97,6 +112,11 @@ public class ItemShare {
      */
     private String loginId;
 
+    /**
+     * 배당자 이름 (Mapper JOIN 필드)
+     */
+    private String assignedByName;
+
     // =============================================
     // 상수
     // =============================================
@@ -104,6 +124,9 @@ public class ItemShare {
     public static final String PERMISSION_VIEW = "VIEW";
     public static final String PERMISSION_EDIT = "EDIT";
     public static final String PERMISSION_FULL = "FULL";
+
+    public static final String SHARE_TYPE_SHARE = "SHARE";
+    public static final String SHARE_TYPE_ASSIGN = "ASSIGN";
 
     // =============================================
     // 편의 메서드
@@ -194,5 +217,47 @@ public class ItemShare {
         if (PERMISSION_EDIT.equals(permission)) return 2;
         if (PERMISSION_VIEW.equals(permission)) return 1;
         return 0;
+    }
+
+    /**
+     * 배당 여부 확인
+     */
+    public boolean isAssignment() {
+        return SHARE_TYPE_ASSIGN.equals(shareType);
+    }
+
+    /**
+     * 공유 여부 확인
+     */
+    public boolean isShare() {
+        return SHARE_TYPE_SHARE.equals(shareType) || shareType == null;
+    }
+
+    /**
+     * 공유 유형 getter
+     */
+    public String getShareType() {
+        return shareType;
+    }
+
+    /**
+     * 배당자 getter
+     */
+    public String getAssignedBy() {
+        return assignedBy;
+    }
+
+    /**
+     * 배당자 이름 getter
+     */
+    public String getAssignedByName() {
+        return assignedByName;
+    }
+
+    /**
+     * 배당 일시 getter
+     */
+    public LocalDateTime getAssignedAt() {
+        return assignedAt;
     }
 }

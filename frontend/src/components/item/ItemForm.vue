@@ -10,10 +10,8 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { usePropertyStore } from '@/stores/property'
 import { useBoardStore } from '@/stores/board'
 import { useCategoryStore } from '@/stores/category'
-import { Input, Select, DatePicker } from '@/components/common'
+import { Input, Select, DatePicker, UserSelectModal } from '@/components/common'
 import { PropertyEditor } from '@/components/property'
-import { userApi } from '@/api/user'
-import type { User } from '@/types/user'
 import type { Item, ItemStatus, Priority, ItemUpdateRequest } from '@/types/item'
 import type { SelectOption } from '@/components/common/Select.vue'
 
@@ -35,24 +33,24 @@ const propertyStore = usePropertyStore()
 const boardStore = useBoardStore()
 const categoryStore = useCategoryStore()
 
-// 모든 활성 사용자 목록
-const allUsers = ref<User[]>([])
+// 담당자 선택 모달 상태
+const showUserSelectModal = ref(false)
 
-// 카테고리 목록 및 사용자 목록 로드
+// 현재 담당자 표시 정보
+const currentAssigneeDisplay = computed(() => {
+  if (!formData.value.assigneeUsername) return null
+  // item에서 담당자 이름 가져오기
+  return {
+    username: formData.value.assigneeUsername,
+    name: props.item.assigneeName || formData.value.assigneeUsername
+  }
+})
+
+// 카테고리 로드
 onMounted(async () => {
   // 접근 가능한 카테고리만 로드 (내 것 + 공유받은 것)
   if (categoryStore.accessibleCategories.length === 0) {
     await categoryStore.fetchAccessibleCategories()
-  }
-
-  // 모든 활성 사용자 로드
-  try {
-    const response = await userApi.getUsers({ useYn: 'Y', size: 1000 })
-    if (response.success && response.data?.content) {
-      allUsers.value = response.data.content
-    }
-  } catch (e) {
-    console.error('Failed to load users:', e)
   }
 })
 
@@ -86,6 +84,7 @@ watch(() => props.item, (newItem) => {
     properties: newItem.propertyValues || {},
     clear_fields: []
   }
+
 }, { deep: true })
 
 // 상태 옵션
@@ -122,14 +121,6 @@ const categoryOptions = computed((): SelectOption[] => {
     value: c.categoryId,
     label: c.categoryName,
     color: c.color
-  }))
-})
-
-// 담당자 옵션 (모든 활성 사용자)
-const assigneeOptions = computed((): SelectOption[] => {
-  return allUsers.value.map(u => ({
-    value: u.username,
-    label: u.name || u.userName || u.username
   }))
 })
 
@@ -209,9 +200,10 @@ function handleCategoryChange(value: string | number | null) {
   handleFieldChange('categoryId', value as number | undefined)
 }
 
-// 담당자 변경
-function handleAssigneeChange(value: string | number | null) {
-  handleFieldChange('assigneeUsername', value as string | undefined)
+// 담당자 선택 모달에서 선택
+function handleAssigneeSelect(user: { username: string; name: string } | null) {
+  showUserSelectModal.value = false
+  handleFieldChange('assigneeUsername', user?.username || undefined)
 }
 
 // 날짜 변경 (null로 클리어 지원)
@@ -259,6 +251,13 @@ function handlePropertyChange(propertyId: number, value: unknown) {
 // 속성값 가져오기
 function getPropertyValue(propertyId: number): unknown {
   return formData.value.properties?.[propertyId] ?? null
+}
+
+// USER 타입 속성의 표시 이름 가져오기
+function getUserDisplayName(propertyId: number): string {
+  if (!props.item.properties) return ''
+  const property = props.item.properties.find(p => p.propertyId === propertyId)
+  return property?.displayValue || ''
 }
 </script>
 
@@ -330,15 +329,24 @@ function getPropertyValue(propertyId: number): unknown {
       <!-- 담당자 -->
       <div class="form-section">
         <label class="form-label">담당자</label>
-        <Select
-          :model-value="formData.assigneeUsername"
-          :options="assigneeOptions"
+        <button
+          type="button"
+          class="w-full h-8 px-3 text-left text-[13px] border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-150 flex items-center justify-between"
+          :class="{ 'bg-gray-100 cursor-not-allowed text-gray-500': disabled }"
           :disabled="disabled"
-          placeholder="담당자 선택"
-          searchable
-          clearable
-          @update:model-value="handleAssigneeChange"
-        />
+          @click="showUserSelectModal = true"
+        >
+          <span v-if="currentAssigneeDisplay" class="flex items-center gap-2 truncate">
+            <span class="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-[10px] font-medium flex items-center justify-center flex-shrink-0">
+              {{ currentAssigneeDisplay.name.charAt(0) }}
+            </span>
+            <span class="truncate">{{ currentAssigneeDisplay.name }}</span>
+          </span>
+          <span v-else class="text-gray-400">담당자 선택</span>
+          <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
       </div>
 
       <!-- 요청일 (기본속성 requestDate) -->
@@ -387,12 +395,21 @@ function getPropertyValue(propertyId: number): unknown {
             :property="property"
             :model-value="getPropertyValue(property.propertyId)"
             :disabled="disabled"
-            :users="assigneeOptions.map(o => ({ username: String(o.value), userName: o.label }))"
+            :current-user-name="property.propertyType === 'USER' ? getUserDisplayName(property.propertyId) : undefined"
             @update:model-value="handlePropertyChange(property.propertyId, $event)"
           />
         </div>
       </div>
     </div>
+
+    <!-- 담당자 선택 모달 -->
+    <UserSelectModal
+      :show="showUserSelectModal"
+      title="담당자 선택"
+      :current-username="formData.assigneeUsername"
+      @close="showUserSelectModal = false"
+      @select="handleAssigneeSelect"
+    />
   </div>
 </template>
 

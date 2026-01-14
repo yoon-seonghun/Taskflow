@@ -10,6 +10,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useItemStore } from '@/stores/item'
 import { useBoardStore } from '@/stores/board'
 import { usePropertyStore } from '@/stores/property'
+import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { boardApi } from '@/api/board'
@@ -21,6 +22,9 @@ import { FileAttachment } from '@/components/file'
 import ItemForm from './ItemForm.vue'
 import ItemTransferModal from './ItemTransferModal.vue'
 import ItemShareModal from './ItemShareModal.vue'
+import AssignConfirmModal from './AssignConfirmModal.vue'
+import { useItemPermission } from '@/composables/useItemPermission'
+import { userApi } from '@/api/user'
 import { CommentList } from '@/components/comment'
 import type { Item, ItemUpdateRequest } from '@/types/item'
 import type { Category } from '@/types/category'
@@ -41,8 +45,14 @@ const emit = defineEmits<{
 const itemStore = useItemStore()
 const boardStore = useBoardStore()
 const propertyStore = usePropertyStore()
+const authStore = useAuthStore()
 const toast = useToast()
 const confirm = useConfirm()
+
+// v2.1: 업무 권한 관리
+const boardIdRef = computed(() => props.boardId)
+const itemIdRef = computed(() => props.itemId)
+const { canAssign, isOwner, permissionLevel, fetchAccessInfo } = useItemPermission(boardIdRef, itemIdRef)
 
 // 상태
 const item = ref<Item | null>(null)
@@ -67,8 +77,13 @@ let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null
 const showTransferModal = ref(false)
 const showShareModal = ref(false)
 const showPropertyModal = ref(false)  // v2.0: 속성 선택 모달
+const showAssignModal = ref(false)    // v2.1: 담당자 배정 모달
 const canTransfer = ref(false)
 const canShare = ref(false)
+
+// v2.1: 담당자 배정 관련 상태
+const pendingAssignee = ref<{ username: string; name: string } | null>(null)
+const originalAssignee = ref<string | undefined>(undefined)
 
 // v2.0: 속성 선택 모달용 상태
 const boardCategories = ref<Category[]>([])
@@ -303,6 +318,84 @@ function handleShareUpdated() {
   // 필요시 아이템 새로고침
 }
 
+// v2.1: 담당자 배정 완료 핸들러
+async function handleAssigned(response: any) {
+  showAssignModal.value = false
+  pendingAssignee.value = null
+
+  // 아이템 새로고침
+  await loadItem()
+  if (item.value) {
+    emit('updated', item.value)
+  }
+  toast.success('담당자가 배정되었습니다.')
+}
+
+// v2.1: 담당자 배정 모달 닫기 (취소)
+function handleAssignModalClose() {
+  showAssignModal.value = false
+  // 원래 담당자로 복원 (모달을 취소한 경우)
+  if (item.value && pendingAssignee.value) {
+    item.value.assigneeUsername = originalAssignee.value
+  }
+  pendingAssignee.value = null
+}
+
+// v2.1: 담당자 변경 감지 및 배정 모달 표시
+async function checkAndShowAssignModal(newAssignee: string | undefined) {
+  console.log('[checkAndShowAssignModal] called with:', newAssignee)
+  if (!item.value || !newAssignee) {
+    console.log('[checkAndShowAssignModal] early return - no item or newAssignee')
+    return false
+  }
+
+  // 소유자 정보 확인 (현재 로그인 사용자가 소유자인지)
+  const currentUser = authStore.user
+  console.log('[checkAndShowAssignModal] currentUser:', currentUser?.username)
+  if (!currentUser) {
+    console.log('[checkAndShowAssignModal] no currentUser')
+    return false
+  }
+
+  // 자기 자신에게 배정하는 경우는 모달 표시 안함 (기본 속성 변경만)
+  if (newAssignee === currentUser.username) {
+    console.log('[checkAndShowAssignModal] assigning to self - skip modal')
+    return false
+  }
+
+  // 배정 권한 확인 (소유자 또는 FULL 권한 공유자만 배정 가능)
+  // access-info API 실패 시 createdBy 기반으로 fallback
+  const isItemOwner = item.value.createdBy === currentUser.username
+  const hasAssignPermission = canAssign.value || isItemOwner
+  console.log('[checkAndShowAssignModal] canAssign:', canAssign.value, 'isOwner:', isOwner.value, 'isItemOwner:', isItemOwner, 'hasAssignPermission:', hasAssignPermission)
+  if (!hasAssignPermission) {
+    console.log('[checkAndShowAssignModal] no assign permission - skip modal')
+    return false
+  }
+
+  // 담당자 이름 조회
+  try {
+    console.log('[checkAndShowAssignModal] fetching user info for:', newAssignee)
+    const response = await userApi.getUserByUsername(newAssignee)
+    console.log('[checkAndShowAssignModal] userApi response:', response)
+    if (response.success && response.data) {
+      pendingAssignee.value = {
+        username: newAssignee,
+        name: response.data.name || response.data.userName || newAssignee
+      }
+      showAssignModal.value = true
+      console.log('[checkAndShowAssignModal] showing modal for:', pendingAssignee.value)
+      return true
+    } else {
+      console.log('[checkAndShowAssignModal] API failed or no data')
+    }
+  } catch (error) {
+    console.error('[checkAndShowAssignModal] 사용자 정보 조회 실패:', error)
+  }
+
+  return false
+}
+
 // v2.0: 보드 카테고리 로드
 async function loadBoardCategories() {
   if (!props.boardId) {
@@ -444,6 +537,24 @@ async function handlePropertySave(data: {
 // 아이템 업데이트 (속성 변경) - description은 별도 저장 (병합하지 않음)
 async function handleUpdate(data: ItemUpdateRequest) {
   if (!item.value || !props.boardId) return
+
+  // v2.1: 담당자 변경 감지 - 모달 표시 여부 결정
+  if (data.assigneeUsername !== undefined &&
+      data.assigneeUsername !== item.value.assigneeUsername) {
+    // 원래 담당자 저장
+    originalAssignee.value = item.value.assigneeUsername
+
+    // 새 담당자로 먼저 UI 업데이트 (optimistic update)
+    item.value.assigneeUsername = data.assigneeUsername
+
+    // 배정 모달 표시 여부 확인
+    const showModal = await checkAndShowAssignModal(data.assigneeUsername)
+    if (showModal) {
+      // 모달에서 처리하므로 여기서는 API 호출하지 않음
+      return
+    }
+    // 모달을 표시하지 않는 경우 (자기 자신 등) 일반 업데이트 진행
+  }
 
   hasChanges.value = true
   isSaving.value = true
@@ -1034,6 +1145,19 @@ onUnmounted(() => {
       :initial-property-sort-orders="selectedPropertySortOrders"
       enable-property-drag-drop
       @save="handlePropertySave"
+    />
+
+    <!-- v2.1: 담당자 배정 확인 모달 -->
+    <AssignConfirmModal
+      v-if="item && pendingAssignee"
+      :show="showAssignModal"
+      :board-id="boardId"
+      :item-id="item.itemId"
+      :item-title="item.title"
+      :assignee-username="pendingAssignee.username"
+      :assignee-name="pendingAssignee.name"
+      @close="handleAssignModalClose"
+      @assigned="handleAssigned"
     />
   </div>
 </template>

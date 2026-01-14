@@ -35,6 +35,11 @@ export const userApi = {
   // 팀장 해제
   unsetHead(username: string) {
     return del<User>(`/users/${username}/head`)
+  },
+
+  // username으로 사용자 조회
+  getUserByUsername(username: string) {
+    return get<User>(`/users/by-username/${username}`)
   }
 
   // 현재 사용자 정보는 authApi.getCurrentUser() 사용 (/auth/me)

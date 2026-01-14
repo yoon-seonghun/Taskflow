@@ -563,6 +563,9 @@ public class ItemServiceImpl implements ItemService {
         // 공유받은 아이템 목록 조회
         List<Item> items = itemMapper.findSharedItems(username, request);
 
+        // 배정자/공유자 이름 설정 (MyBatis 매핑 문제 workaround)
+        enrichSharedItemsUserNames(items);
+
         // 동적 속성값 로드
         loadItemPropertiesBatch(items);
 
@@ -573,6 +576,29 @@ public class ItemServiceImpl implements ItemService {
         List<ItemResponse> content = ItemResponse.fromList(items);
 
         return ItemPageResponse.of(content, request.getPage(), request.getSize(), totalElements);
+    }
+
+    /**
+     * 공유/배정받은 업무의 사용자 이름 정보 보강
+     * Lombok UserName 패턴 호환성 이슈로 Service 레이어에서 직접 설정
+     */
+    private void enrichSharedItemsUserNames(List<Item> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+
+        for (Item item : items) {
+            // 배정자 이름 설정
+            if (item.getAssignedByUsername() != null && item.getAssignedByUserName() == null) {
+                userMapper.findByUsername(item.getAssignedByUsername())
+                        .ifPresent(user -> item.setAssignedByUserName(user.getName()));
+            }
+            // 공유자 이름 설정
+            if (item.getSharedByUsername() != null && item.getSharedByUserName() == null) {
+                userMapper.findByUsername(item.getSharedByUsername())
+                        .ifPresent(user -> item.setSharedByUserName(user.getName()));
+            }
+        }
     }
 
     // =============================================

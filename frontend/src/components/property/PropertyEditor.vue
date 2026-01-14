@@ -8,7 +8,7 @@
  */
 import { computed, ref, watch, onMounted } from 'vue'
 import { usePropertyStore } from '@/stores/property'
-import { Input, Select, DatePicker } from '@/components/common'
+import { Input, Select, DatePicker, UserSelectModal } from '@/components/common'
 import { externalQueryApi } from '@/api/externalQuery'
 import type { PropertyDef, PropertyType, PropertyOption } from '@/types/property'
 import type { SelectOption } from '@/components/common/Select.vue'
@@ -19,14 +19,18 @@ interface Props {
   modelValue?: unknown
   disabled?: boolean
   compact?: boolean
-  users?: Array<{ username: string; userName: string }>  // username 기반
+  /** @deprecated UserSelectModal 사용으로 더 이상 필요하지 않음 */
+  users?: Array<{ username: string; userName: string }>
+  /** USER 타입 속성의 현재 사용자 이름 (표시용) */
+  currentUserName?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: null,
   disabled: false,
   compact: false,
-  users: () => []
+  users: () => [],
+  currentUserName: ''
 })
 
 const emit = defineEmits<{
@@ -116,13 +120,47 @@ const options = computed((): SelectOption[] => {
   }))
 })
 
-// 사용자 옵션 (USER 타입용)
+// 사용자 옵션 (USER 타입용) - deprecated, UserSelectModal 사용으로 불필요
 const userOptions = computed((): SelectOption[] => {
   return props.users.map(user => ({
     value: user.username,    // USERNAME (string)
     label: user.userName
   }))
 })
+
+// USER 타입용 모달 상태
+const showUserSelectModal = ref(false)
+
+// USER 타입 선택된 사용자 이름 (내부 상태)
+const selectedUserName = ref<string>('')
+
+// props.currentUserName 변경 시 동기화
+watch(() => props.currentUserName, (newName) => {
+  if (newName) {
+    selectedUserName.value = newName
+  }
+}, { immediate: true })
+
+// USER 타입 선택된 사용자 표시 정보
+const selectedUserDisplay = computed(() => {
+  const username = internalValue.value as string
+  if (!username) return null
+  return {
+    username,
+    name: selectedUserName.value || props.currentUserName || username
+  }
+})
+
+// USER 타입 사용자 선택 핸들러
+function handleUserSelect(user: { username: string; name: string } | null) {
+  showUserSelectModal.value = false
+  if (user) {
+    selectedUserName.value = user.name  // 선택된 사용자 이름 저장
+  } else {
+    selectedUserName.value = ''
+  }
+  handleChange(user?.username || null)
+}
 
 // 값 변경 핸들러
 function handleChange(value: unknown) {
@@ -409,15 +447,38 @@ async function handleCreateOption(optionName: string) {
 
     <!-- USER 타입 -->
     <template v-else-if="property.propertyType === 'USER'">
-      <Select
-        :model-value="internalValue as string"
-        :options="userOptions"
+      <button
+        type="button"
+        class="w-full px-3 text-left text-[13px] border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-150 flex items-center justify-between"
+        :class="[
+          compact ? 'h-7' : 'h-8',
+          { 'bg-gray-100 cursor-not-allowed text-gray-500': disabled }
+        ]"
         :disabled="disabled"
-        :size="compact ? 'sm' : 'md'"
-        :placeholder="property.propertyName"
-        searchable
-        clearable
-        @update:model-value="handleSelectChange"
+        @click="showUserSelectModal = true"
+      >
+        <span v-if="selectedUserDisplay" class="flex items-center gap-2 truncate">
+          <span
+            class="rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center flex-shrink-0"
+            :class="compact ? 'w-4 h-4 text-[9px]' : 'w-5 h-5 text-[10px]'"
+          >
+            {{ selectedUserDisplay.name.charAt(0) }}
+          </span>
+          <span class="truncate">{{ selectedUserDisplay.name }}</span>
+        </span>
+        <span v-else class="text-gray-400">{{ property.propertyName }}</span>
+        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </button>
+
+      <!-- 사용자 선택 모달 -->
+      <UserSelectModal
+        :show="showUserSelectModal"
+        :title="property.propertyName + ' 선택'"
+        :current-username="internalValue as string"
+        @close="showUserSelectModal = false"
+        @select="handleUserSelect"
       />
     </template>
 
