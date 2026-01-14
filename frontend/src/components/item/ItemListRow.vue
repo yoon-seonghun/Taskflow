@@ -187,6 +187,7 @@ function handleDrop(event: DragEvent) {
         <h4
           class="text-[14px] text-gray-900 truncate"
           :class="{ 'line-through': isInactive }"
+          :title="item.description"
         >
           {{ item.title }}
         </h4>

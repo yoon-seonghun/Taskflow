@@ -108,7 +108,7 @@ function handleClick() {
       <ItemBadges :item="item" size="sm" :show-owner-name="true" class="mb-2" />
 
       <!-- 제목 -->
-      <h4 class="text-[13px] font-medium text-gray-900 line-clamp-2 mb-2">
+      <h4 class="text-[13px] font-medium text-gray-900 line-clamp-2 mb-2" :title="item.description">
         {{ item.title }}
       </h4>
 

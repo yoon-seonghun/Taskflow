@@ -499,7 +499,7 @@ onUnmounted(() => {
       <template v-else>
         <!-- 공유/이관 배지 -->
         <ItemBadges :item="item" size="sm" :show-owner-name="false" class="mr-1" />
-        <span class="truncate text-[13px] text-gray-900 flex-1">{{ item.title }}</span>
+        <span class="truncate text-[13px] text-gray-900 flex-1" :title="item.description">{{ item.title }}</span>
         <!-- 지연 표시 -->
         <span
           v-if="isOverdue"

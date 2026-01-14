@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
  * 아이템 상세/편집 패널 컴포넌트
- * - PC: 3컬럼 레이아웃 (속성 | 마크다운 에디터 | 댓글)
+ * - PC: 3컬럼 레이아웃 (속성 | 리치 텍스트 에디터 | 댓글)
  * - 각 컬럼 사이에 리사이즈 핸들로 폭 조절 가능
  * - Mobile: 탭 전환
+ * - v2.1: 설명(description)과 내용(content) 분리
  */
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useItemStore } from '@/stores/item'
@@ -13,7 +14,9 @@ import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
 import { boardApi } from '@/api/board'
 import { itemApi } from '@/api/item'
-import { Button, Spinner, MarkdownEditor, EntityEditModal } from '@/components/common'
+import { itemContentApi, type ItemContentResponse } from '@/api/itemContent'
+import { Button, Spinner, EntityEditModal } from '@/components/common'
+import RichTextEditor from '@/components/editor/RichTextEditor.vue'
 import { FileAttachment } from '@/components/file'
 import ItemForm from './ItemForm.vue'
 import ItemTransferModal from './ItemTransferModal.vue'
@@ -49,8 +52,16 @@ const hasChanges = ref(false)
 const activeTab = ref<'detail' | 'content' | 'comments'>('detail')
 const commentListRef = ref<InstanceType<typeof CommentList> | null>(null)
 
-// 에디터 content 상태
-const editorContent = ref('')
+// v2.1: 설명(description)과 내용(content) 분리
+const descriptionText = ref('')  // TB_ITEM.DESCRIPTION (단일 라인 요약)
+
+// v2.1: 리치 텍스트 에디터 상태 (TB_ITEM_CONTENT)
+const richTextContent = ref('')  // 리치 텍스트 HTML 내용
+const contentVersion = ref(0)    // 동시 편집 충돌 방지용 버전
+const isContentSaving = ref(false)
+const contentLastSavedAt = ref<Date | null>(null)
+const hasUnsavedContent = ref(false)
+let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null
 
 // 모달 상태
 const showTransferModal = ref(false)
@@ -167,8 +178,11 @@ async function loadItem() {
     const result = await itemStore.fetchItem(props.boardId, props.itemId)
     if (result) {
       item.value = result
-      editorContent.value = result.description || ''
+      descriptionText.value = result.description || ''  // v2.1: 설명 필드
       itemStore.startEditing(props.itemId, result)
+
+      // v2.1: 업무 내용(content) 별도 로드
+      await loadItemContent()
 
       // v2.0: 현재 아이템의 속성 정보 초기화 (모달용)
       initializePropertySelection(result)
@@ -184,6 +198,30 @@ async function loadItem() {
     emit('close')
   } finally {
     isLoading.value = false
+  }
+}
+
+// v2.1: 업무 내용(content) 로드
+async function loadItemContent() {
+  if (!props.boardId || !props.itemId) return
+
+  try {
+    const response = await itemContentApi.getContent(props.boardId, props.itemId)
+    if (response.success && response.data) {
+      richTextContent.value = response.data.content || ''
+      contentVersion.value = response.data.version || 0
+      contentLastSavedAt.value = response.data.updatedAt ? new Date(response.data.updatedAt) : null
+    } else {
+      // 내용이 없는 경우
+      richTextContent.value = ''
+      contentVersion.value = 0
+      contentLastSavedAt.value = null
+    }
+    hasUnsavedContent.value = false
+  } catch (error) {
+    console.error('[loadItemContent] Failed to load content:', error)
+    richTextContent.value = ''
+    contentVersion.value = 0
   }
 }
 
@@ -417,13 +455,16 @@ async function handleUpdate(data: ItemUpdateRequest) {
   try {
     const result = await itemStore.updateItem(props.boardId, item.value.itemId, updateData)
     if (result) {
-      // 현재 에디터 내용 유지 (서버 응답으로 덮어쓰지 않음)
-      const currentDescription = editorContent.value
+      // v2.1: 현재 설명/내용 유지 (서버 응답으로 덮어쓰지 않음)
+      const currentDescription = descriptionText.value
+      const currentContent = richTextContent.value
       item.value = result
-      // 에디터 내용이 변경되지 않았으면 현재 값 유지
+      // 설명이 변경되지 않았으면 현재 값 유지
       if (result.description !== currentDescription) {
-        editorContent.value = result.description || ''
+        descriptionText.value = result.description || ''
       }
+      // 리치 텍스트 내용은 별도 테이블이므로 현재 값 유지
+      richTextContent.value = currentContent
       hasChanges.value = false
       emit('updated', result)
     } else {
@@ -436,28 +477,96 @@ async function handleUpdate(data: ItemUpdateRequest) {
   }
 }
 
-// 마크다운 에디터 description 저장
-async function handleContentSave(description: string) {
+// v2.1: 설명(description) 저장 - 단일 라인 텍스트
+async function handleDescriptionSave() {
   if (!item.value || !props.boardId) return
-  if (description === item.value.description) return
+  if (descriptionText.value === item.value.description) return
 
   hasChanges.value = true
   isSaving.value = true
 
   try {
-    const result = await itemStore.updateItem(props.boardId, item.value.itemId, { description })
+    const result = await itemStore.updateItem(props.boardId, item.value.itemId, {
+      description: descriptionText.value
+    })
     if (result) {
       item.value = result
       hasChanges.value = false
       emit('updated', result)
     } else {
-      toast.error('내용 저장에 실패했습니다.')
+      toast.error('설명 저장에 실패했습니다.')
     }
   } catch (error) {
-    toast.error('내용 저장에 실패했습니다.')
+    toast.error('설명 저장에 실패했습니다.')
   } finally {
     isSaving.value = false
   }
+}
+
+// v2.1: 리치 텍스트 내용 변경 핸들러 (자동 저장 트리거)
+function handleRichTextChange(html: string, plainText: string) {
+  hasUnsavedContent.value = true
+
+  // 기존 타이머 취소
+  if (autoSaveTimeout) {
+    clearTimeout(autoSaveTimeout)
+  }
+
+  // 2초 후 자동 저장
+  autoSaveTimeout = setTimeout(() => {
+    saveRichTextContent()
+  }, 2000)
+}
+
+// v2.1: 리치 텍스트 내용 저장
+async function saveRichTextContent() {
+  if (!item.value || !props.boardId || !hasUnsavedContent.value) return
+
+  isContentSaving.value = true
+
+  try {
+    const response = await itemContentApi.updateContent(props.boardId, props.itemId, {
+      contentType: 'HTML',
+      content: richTextContent.value,
+      version: contentVersion.value
+    })
+
+    if (response.success && response.data) {
+      contentVersion.value = response.data.version
+      contentLastSavedAt.value = new Date()
+      hasUnsavedContent.value = false
+    } else {
+      toast.error('내용 저장에 실패했습니다.')
+    }
+  } catch (error: any) {
+    // 버전 충돌 처리
+    if (error.response?.status === 409) {
+      const confirmed = await confirm.show({
+        title: '편집 충돌',
+        message: '다른 사용자가 수정했습니다. 새로고침하시겠습니까?',
+        confirmText: '새로고침',
+        cancelText: '내 변경사항 유지',
+        confirmType: 'warning'
+      })
+
+      if (confirmed) {
+        await loadItemContent()
+      }
+    } else {
+      toast.error('내용 저장에 실패했습니다.')
+    }
+  } finally {
+    isContentSaving.value = false
+  }
+}
+
+// v2.1: 수동 저장 (버튼 클릭 시)
+async function handleManualSave() {
+  if (autoSaveTimeout) {
+    clearTimeout(autoSaveTimeout)
+    autoSaveTimeout = null
+  }
+  await saveRichTextContent()
 }
 
 // 완료 처리
@@ -550,6 +659,17 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   itemStore.stopEditing()
+
+  // v2.1: 자동 저장 타이머 정리
+  if (autoSaveTimeout) {
+    clearTimeout(autoSaveTimeout)
+    autoSaveTimeout = null
+  }
+
+  // 저장되지 않은 내용이 있으면 저장 시도
+  if (hasUnsavedContent.value) {
+    saveRichTextContent()
+  }
 })
 </script>
 
@@ -723,18 +843,54 @@ onUnmounted(() => {
 
           <!-- 에디터 패널 -->
           <div class="flex-1 min-w-0 overflow-hidden flex flex-col">
-            <!-- 마크다운 에디터 영역 -->
-            <div class="flex-1 min-h-[200px] p-4 pb-0 flex flex-col">
-              <label class="text-[12px] font-medium text-gray-600 mb-2 flex-shrink-0">내용</label>
+            <!-- v2.1: 설명 필드 (단일 라인) -->
+            <div class="flex-shrink-0 px-4 pt-4 pb-2">
+              <label class="text-[12px] font-medium text-gray-600 mb-1.5 block">설명</label>
+              <input
+                v-model="descriptionText"
+                type="text"
+                class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-50 disabled:text-gray-500"
+                placeholder="업무에 대한 간단한 설명을 입력하세요..."
+                :disabled="item.status === 'DELETED'"
+                @blur="handleDescriptionSave"
+                @keyup.enter="handleDescriptionSave"
+              />
+            </div>
+
+            <!-- v2.1: 리치 텍스트 에디터 영역 -->
+            <div class="flex-1 min-h-[200px] px-4 pb-0 flex flex-col">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-[12px] font-medium text-gray-600">내용</label>
+                <div class="flex items-center gap-2 text-[11px] text-gray-400">
+                  <span v-if="isContentSaving" class="flex items-center gap-1">
+                    <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    저장 중...
+                  </span>
+                  <span v-else-if="hasUnsavedContent" class="text-amber-500">미저장</span>
+                  <span v-else-if="contentLastSavedAt">
+                    {{ formatDateTime(contentLastSavedAt.toISOString()) }} 저장됨
+                  </span>
+                  <button
+                    v-if="hasUnsavedContent && !isContentSaving"
+                    class="px-2 py-0.5 text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                    @click="handleManualSave"
+                  >
+                    저장
+                  </button>
+                </div>
+              </div>
               <div class="flex-1 min-h-0">
-                <MarkdownEditor
-                  v-model="editorContent"
-                  :disabled="item.status === 'DELETED'"
-                  :related-type="'ITEM'"
-                  :related-id="item.itemId"
-                  placeholder="마크다운 형식으로 상세 내용을 입력하세요..."
+                <RichTextEditor
+                  v-model="richTextContent"
+                  :readonly="item.status === 'DELETED'"
+                  placeholder="상세 내용을 입력하세요..."
                   min-height="100%"
-                  @save="handleContentSave"
+                  max-height="none"
+                  related-type="ITEM"
+                  :related-id="item.itemId"
+                  @change="handleRichTextChange"
                 />
               </div>
             </div>
@@ -776,15 +932,44 @@ onUnmounted(() => {
           <ItemForm :item="item" :disabled="item.status === 'DELETED'" @update="handleUpdate" />
         </div>
         <div v-show="activeTab === 'content'" class="h-full overflow-y-auto flex flex-col">
-          <div class="flex-1 p-4">
-            <MarkdownEditor
-              v-model="editorContent"
+          <!-- v2.1: 설명 필드 (단일 라인) -->
+          <div class="flex-shrink-0 px-4 pt-4 pb-2">
+            <label class="text-[12px] font-medium text-gray-600 mb-1.5 block">설명</label>
+            <input
+              v-model="descriptionText"
+              type="text"
+              class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-50 disabled:text-gray-500"
+              placeholder="업무에 대한 간단한 설명을 입력하세요..."
               :disabled="item.status === 'DELETED'"
-              :related-type="'ITEM'"
+              @blur="handleDescriptionSave"
+            />
+          </div>
+
+          <!-- v2.1: 리치 텍스트 에디터 -->
+          <div class="flex-1 p-4">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-[12px] font-medium text-gray-600">내용</label>
+              <div class="flex items-center gap-2 text-[11px] text-gray-400">
+                <span v-if="isContentSaving">저장 중...</span>
+                <span v-else-if="hasUnsavedContent" class="text-amber-500">미저장</span>
+                <button
+                  v-if="hasUnsavedContent && !isContentSaving"
+                  class="px-2 py-0.5 text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                  @click="handleManualSave"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+            <RichTextEditor
+              v-model="richTextContent"
+              :readonly="item.status === 'DELETED'"
+              placeholder="상세 내용을 입력하세요..."
+              min-height="calc(100vh - 400px)"
+              max-height="none"
+              related-type="ITEM"
               :related-id="item.itemId"
-              placeholder="마크다운 형식으로 상세 내용을 입력하세요..."
-              min-height="calc(100vh - 350px)"
-              @save="handleContentSave"
+              @change="handleRichTextChange"
             />
           </div>
           <div class="flex-shrink-0">

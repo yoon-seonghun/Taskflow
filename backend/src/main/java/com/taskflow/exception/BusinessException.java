@@ -168,4 +168,8 @@ public class BusinessException extends RuntimeException {
     public static BusinessException dataInUse(String message) {
         return new BusinessException(message, HttpStatus.CONFLICT, "DATA_IN_USE");
     }
+
+    public static BusinessException versionConflict(String message) {
+        return new BusinessException(message, HttpStatus.CONFLICT, "VERSION_CONFLICT");
+    }
 }

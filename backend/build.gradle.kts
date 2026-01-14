@@ -42,6 +42,9 @@ dependencies {
     // Caching (Caffeine)
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
+    // HTML Parser (for plain text extraction)
+    implementation("org.jsoup:jsoup:1.17.2")
+
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
