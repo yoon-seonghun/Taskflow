@@ -45,7 +45,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <Header :is-mobile="isMobile" @toggle-sidebar="toggleSidebar" />
     <div class="flex pt-14">
       <Sidebar :open="sidebarOpen" :is-mobile="isMobile" @close="closeSidebar" />

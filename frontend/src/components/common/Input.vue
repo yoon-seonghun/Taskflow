@@ -52,7 +52,7 @@ const inputClasses = computed(() => {
   const base = [
     'w-full rounded border transition-all duration-150',
     'focus:outline-none focus:ring-2 focus:border-transparent',
-    'placeholder:text-gray-400'
+    'placeholder:text-gray-400 dark:placeholder:text-gray-500'
   ]
 
   // Size styles
@@ -65,9 +65,11 @@ const inputClasses = computed(() => {
   // State styles
   const states = props.error
     ? 'border-red-500 focus:ring-red-500'
-    : 'border-gray-300 focus:ring-primary-500'
+    : 'border-gray-300 focus:ring-primary-500 dark:border-gray-600'
 
-  const disabled = props.disabled ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'bg-white'
+  const disabled = props.disabled
+    ? 'bg-gray-100 cursor-not-allowed text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+    : 'bg-white dark:bg-gray-800 dark:text-gray-100'
 
   return [
     ...base,
@@ -120,7 +122,7 @@ defineExpose({ focus, blur, inputRef })
 <template>
   <div class="w-full">
     <!-- Label -->
-    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1">
+    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1 dark:text-gray-300">
       {{ label }}
       <span v-if="required" class="text-red-500 ml-0.5">*</span>
     </label>
@@ -148,7 +150,7 @@ defineExpose({ focus, blur, inputRef })
       <button
         v-if="clearable && modelValue && !disabled"
         type="button"
-        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+        class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 dark:hover:text-gray-300"
         @click="handleClear"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

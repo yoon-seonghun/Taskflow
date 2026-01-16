@@ -314,7 +314,7 @@ watch(() => props.boardId, () => {
     <!-- 헤더: 그룹 기준 선택 -->
     <div class="flex-shrink-0 pb-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <span class="text-[13px] text-gray-500">그룹 기준:</span>
+        <span class="text-[13px] text-gray-500 dark:text-gray-400">그룹 기준:</span>
         <Select
           :model-value="groupBy"
           :options="groupByOptions"
@@ -324,7 +324,7 @@ watch(() => props.boardId, () => {
         />
       </div>
 
-      <div class="text-[13px] text-gray-500">
+      <div class="text-[13px] text-gray-500 dark:text-gray-400">
         총 {{ items.length }}개 업무
       </div>
     </div>

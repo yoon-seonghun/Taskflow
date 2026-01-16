@@ -244,9 +244,9 @@ defineExpose({
 <template>
   <!-- v2.2.1: h-full + flex로 높이 100% 지원 -->
   <div
-    class="rich-text-editor border rounded-lg overflow-hidden bg-white transition-colors h-full flex flex-col"
+    class="rich-text-editor border rounded-lg overflow-hidden bg-white dark:bg-gray-800 transition-colors h-full flex flex-col"
     :class="[
-      isDragOver ? 'border-primary-400 ring-2 ring-primary-200' : 'border-gray-200'
+      isDragOver ? 'border-primary-400 ring-2 ring-primary-200 dark:ring-primary-800' : 'border-gray-200 dark:border-gray-700'
     ]"
   >
     <!-- 툴바 -->
@@ -263,7 +263,7 @@ defineExpose({
     <div
       :class="[
         'editor-content-wrapper relative flex-1 min-h-0',
-        readonly ? 'bg-gray-50' : 'bg-white'
+        readonly ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-800'
       ]"
       :style="{
         minHeight: minHeight !== '100%' ? minHeight : undefined,
@@ -280,27 +280,27 @@ defineExpose({
       <!-- 드래그 오버레이 -->
       <div
         v-if="isDragOver"
-        class="absolute inset-0 bg-primary-50/80 flex items-center justify-center pointer-events-none"
+        class="absolute inset-0 bg-primary-50/80 dark:bg-primary-900/80 flex items-center justify-center pointer-events-none"
       >
         <div class="text-center">
-          <svg class="w-12 h-12 mx-auto text-primary-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-12 h-12 mx-auto text-primary-500 dark:text-primary-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p class="text-primary-600 font-medium">이미지를 놓으세요</p>
+          <p class="text-primary-600 dark:text-primary-400 font-medium">이미지를 놓으세요</p>
         </div>
       </div>
 
       <!-- 업로드 중 오버레이 -->
       <div
         v-if="isImageUploading"
-        class="absolute inset-0 bg-white/80 flex items-center justify-center"
+        class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 flex items-center justify-center"
       >
         <div class="text-center">
           <svg class="w-8 h-8 mx-auto text-primary-500 animate-spin mb-2" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <p class="text-gray-600 text-sm">이미지 업로드 중...</p>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">이미지 업로드 중...</p>
         </div>
       </div>
     </div>
@@ -308,10 +308,10 @@ defineExpose({
     <!-- 글자 수 표시 -->
     <div
       v-if="editor && !readonly"
-      class="px-3 py-1.5 border-t border-gray-100 bg-gray-50 text-[12px] text-gray-500 flex justify-between"
+      class="px-3 py-1.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-[12px] text-gray-500 dark:text-gray-400 flex justify-between"
     >
       <span>{{ editor.storage.characterCount.characters() }}자</span>
-      <span v-if="editor.storage.characterCount.characters() >= 100000" class="text-red-500">
+      <span v-if="editor.storage.characterCount.characters() >= 100000" class="text-red-500 dark:text-red-400">
         최대 글자 수에 도달했습니다
       </span>
     </div>
@@ -323,6 +323,7 @@ defineExpose({
 .editor-content-wrapper .ProseMirror {
   min-height: inherit;
   outline: none;
+  color: inherit;
 }
 
 .editor-content-wrapper .ProseMirror p.is-editor-empty:first-child::before {
@@ -331,6 +332,10 @@ defineExpose({
   color: #9ca3af;
   pointer-events: none;
   height: 0;
+}
+
+:is(.dark) .editor-content-wrapper .ProseMirror p.is-editor-empty:first-child::before {
+  color: #6b7280;
 }
 
 /* 목록 스타일 */
@@ -378,6 +383,11 @@ defineExpose({
   font-style: italic;
 }
 
+:is(.dark) .editor-content-wrapper .ProseMirror blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
 /* 코드 블록 스타일 */
 .editor-content-wrapper .ProseMirror pre {
   background-color: #1f2937;
@@ -396,6 +406,11 @@ defineExpose({
   border-radius: 0.25rem;
   font-family: ui-monospace, monospace;
   font-size: 0.875rem;
+}
+
+:is(.dark) .editor-content-wrapper .ProseMirror code {
+  background-color: #374151;
+  color: #f87171;
 }
 
 .editor-content-wrapper .ProseMirror pre code {
@@ -418,13 +433,26 @@ defineExpose({
   text-align: left;
 }
 
+:is(.dark) .editor-content-wrapper .ProseMirror th,
+:is(.dark) .editor-content-wrapper .ProseMirror td {
+  border-color: #4b5563;
+}
+
 .editor-content-wrapper .ProseMirror th {
   background-color: #f9fafb;
   font-weight: 600;
 }
 
+:is(.dark) .editor-content-wrapper .ProseMirror th {
+  background-color: #1f2937;
+}
+
 .editor-content-wrapper .ProseMirror .selectedCell {
   background-color: #dbeafe;
+}
+
+:is(.dark) .editor-content-wrapper .ProseMirror .selectedCell {
+  background-color: #1e3a5f;
 }
 
 /* 이미지 스타일 */
@@ -445,10 +473,19 @@ defineExpose({
   margin: 1.5rem 0;
 }
 
+:is(.dark) .editor-content-wrapper .ProseMirror hr {
+  border-top-color: #4b5563;
+}
+
 /* 하이라이트 스타일 */
 .editor-content-wrapper .ProseMirror mark {
   background-color: #fef08a;
   padding: 0.125rem 0;
+}
+
+:is(.dark) .editor-content-wrapper .ProseMirror mark {
+  background-color: #854d0e;
+  color: #fef08a;
 }
 
 /* 제목 스타일 */
@@ -486,5 +523,13 @@ defineExpose({
 
 .editor-content-wrapper .ProseMirror a:hover {
   color: #1d4ed8;
+}
+
+:is(.dark) .editor-content-wrapper .ProseMirror a {
+  color: #60a5fa;
+}
+
+:is(.dark) .editor-content-wrapper .ProseMirror a:hover {
+  color: #93c5fd;
 }
 </style>

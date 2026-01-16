@@ -260,8 +260,8 @@ onMounted(() => {
 
       <div class="settings-card-content">
         <!-- 추가 폼 -->
-        <div v-if="showAddForm" class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 class="text-sm font-medium text-gray-900 mb-3">새 카테고리 추가</h4>
+        <div v-if="showAddForm" class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">새 카테고리 추가</h4>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">카테고리명</label>
@@ -381,7 +381,7 @@ onMounted(() => {
               <template v-else>
                 <td>
                   <div class="flex items-center gap-1">
-                    <span class="text-gray-600">{{ category.sortOrder }}</span>
+                    <span class="text-gray-600 dark:text-gray-300">{{ category.sortOrder }}</span>
                     <div class="flex flex-col">
                       <button
                         type="button"
@@ -412,7 +412,7 @@ onMounted(() => {
                     :style="{ backgroundColor: category.categoryColor || '#6B7280' }"
                   ></div>
                 </td>
-                <td class="font-medium text-gray-900">
+                <td class="font-medium text-gray-900 dark:text-white">
                   {{ category.categoryName }}
                 </td>
                 <td>
@@ -483,11 +483,13 @@ onMounted(() => {
 }
 
 .settings-card {
-  @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  @apply bg-white rounded-lg border border-gray-200 overflow-hidden
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .settings-card-title {
-  @apply px-4 py-3 text-base font-medium text-gray-900 bg-gray-50 border-b border-gray-200;
+  @apply px-4 py-3 text-base font-medium text-gray-900 bg-gray-50 border-b border-gray-200
+         dark:text-white dark:bg-gray-700 dark:border-gray-600;
 }
 
 .settings-card-content {
@@ -497,26 +499,31 @@ onMounted(() => {
 .btn-add {
   @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
          text-primary-600 bg-primary-50 rounded-md
-         hover:bg-primary-100 transition-colors;
+         hover:bg-primary-100 transition-colors
+         dark:text-primary-400 dark:bg-primary-900/50 dark:hover:bg-primary-900/70;
 }
 
 .btn-primary {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-white bg-primary-600 rounded-lg
          hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+         transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed
+         dark:focus:ring-offset-gray-900;
 }
 
 .btn-cancel {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150 disabled:opacity-50;
+         transition-colors duration-150 disabled:opacity-50
+         dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600
+         dark:focus:ring-offset-gray-900;
 }
 
 .form-input {
   @apply w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md
-         focus:ring-primary-500 focus:border-primary-500;
+         focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400;
 }
 
 .option-table {
@@ -524,23 +531,27 @@ onMounted(() => {
 }
 
 .option-table thead {
-  @apply bg-gray-50 border-y border-gray-200;
+  @apply bg-gray-50 border-y border-gray-200
+         dark:bg-gray-700 dark:border-gray-600;
 }
 
 .option-table th {
-  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider
+         dark:text-gray-400;
 }
 
 .option-table tbody {
-  @apply divide-y divide-gray-100;
+  @apply divide-y divide-gray-100
+         dark:divide-gray-700;
 }
 
 .option-table td {
-  @apply px-4 py-3 whitespace-nowrap;
+  @apply px-4 py-3 whitespace-nowrap dark:text-gray-300;
 }
 
 .option-table tbody tr {
-  @apply hover:bg-gray-50 transition-colors;
+  @apply hover:bg-gray-50 transition-colors
+         dark:hover:bg-gray-700;
 }
 
 .status-badge {
@@ -548,18 +559,22 @@ onMounted(() => {
 }
 
 .status-badge.active {
-  @apply bg-green-100 text-green-700;
+  @apply bg-green-100 text-green-700
+         dark:bg-green-900/50 dark:text-green-400;
 }
 
 .status-badge.inactive {
-  @apply bg-gray-100 text-gray-600;
+  @apply bg-gray-100 text-gray-600
+         dark:bg-gray-700 dark:text-gray-400;
 }
 
 .icon-btn {
-  @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-50;
+  @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-50
+         dark:hover:bg-gray-700 dark:text-gray-400;
 }
 
 .order-btn {
-  @apply p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed;
+  @apply p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed
+         dark:hover:text-gray-300;
 }
 </style>

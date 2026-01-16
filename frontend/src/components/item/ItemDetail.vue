@@ -347,7 +347,7 @@ onMounted(() => {
 
     <!-- 아이템이 없는 경우 -->
     <div v-else-if="!item" class="flex-1 flex items-center justify-center">
-      <p class="text-gray-500">아이템을 찾을 수 없습니다.</p>
+      <p class="text-gray-500 dark:text-gray-400">아이템을 찾을 수 없습니다.</p>
     </div>
 
     <!-- 아이템 상세 -->
@@ -355,7 +355,7 @@ onMounted(() => {
       <!-- 컨텐츠 영역 -->
       <div class="flex-1 overflow-y-auto">
         <!-- 제목 -->
-        <div class="px-4 py-4 border-b border-gray-200">
+        <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
           <template v-if="isEditingTitle">
             <div class="flex gap-2">
               <Input
@@ -371,7 +371,7 @@ onMounted(() => {
           </template>
           <template v-else>
             <h3
-              class="text-lg font-semibold text-gray-900 cursor-pointer hover:bg-gray-50 rounded px-2 py-1 -mx-2"
+              class="text-lg font-semibold text-gray-900 cursor-pointer hover:bg-gray-50 rounded px-2 py-1 -mx-2 dark:text-white dark:hover:bg-gray-700"
               @click="startEditTitle"
             >
               {{ item.title }}
@@ -380,10 +380,10 @@ onMounted(() => {
         </div>
 
         <!-- 속성 섹션 -->
-        <div class="px-4 py-4 space-y-3 border-b border-gray-200">
+        <div class="px-4 py-4 space-y-3 border-b border-gray-200 dark:border-gray-700">
           <!-- 상태 -->
           <div class="flex items-center">
-            <span class="w-24 text-[13px] text-gray-500">상태</span>
+            <span class="w-24 text-[13px] text-gray-500 dark:text-gray-400">상태</span>
             <Select
               :model-value="item.status"
               :options="statusOptions"
@@ -395,7 +395,7 @@ onMounted(() => {
 
           <!-- 우선순위 -->
           <div class="flex items-center">
-            <span class="w-24 text-[13px] text-gray-500">우선순위</span>
+            <span class="w-24 text-[13px] text-gray-500 dark:text-gray-400">우선순위</span>
             <Select
               :model-value="item.priority"
               :options="priorityOptions"
@@ -407,13 +407,13 @@ onMounted(() => {
 
           <!-- 담당자 -->
           <div class="flex items-center">
-            <span class="w-24 text-[13px] text-gray-500">담당자</span>
-            <span class="text-[13px] text-gray-700">{{ item.assigneeName || '-' }}</span>
+            <span class="w-24 text-[13px] text-gray-500 dark:text-gray-400">담당자</span>
+            <span class="text-[13px] text-gray-700 dark:text-gray-200">{{ item.assigneeName || '-' }}</span>
           </div>
 
           <!-- 요청일 -->
           <div class="flex items-center">
-            <span class="w-24 text-[13px] text-gray-500">요청일</span>
+            <span class="w-24 text-[13px] text-gray-500 dark:text-gray-400">요청일</span>
             <DatePicker
               :model-value="item.requestDate"
               mode="date"
@@ -426,7 +426,7 @@ onMounted(() => {
 
           <!-- 마감일 -->
           <div class="flex items-center">
-            <span class="w-24 text-[13px] text-gray-500">마감일</span>
+            <span class="w-24 text-[13px] text-gray-500 dark:text-gray-400">마감일</span>
             <DatePicker
               :model-value="item.dueDate"
               mode="date"
@@ -440,7 +440,7 @@ onMounted(() => {
           <!-- 동적 속성 -->
           <template v-for="property in properties" :key="property.propertyId">
             <div class="flex items-center">
-              <span class="w-24 text-[13px] text-gray-500">{{ property.propertyName }}</span>
+              <span class="w-24 text-[13px] text-gray-500 dark:text-gray-400">{{ property.propertyName }}</span>
 
               <!-- TEXT 타입 -->
               <template v-if="property.propertyType === 'TEXT'">
@@ -490,7 +490,7 @@ onMounted(() => {
                 <input
                   type="checkbox"
                   :checked="getPropertyValue(property.propertyId) as boolean"
-                  class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700"
                   @change="updateProperty(property.propertyId, ($event.target as HTMLInputElement).checked)"
                 />
               </template>
@@ -499,12 +499,12 @@ onMounted(() => {
         </div>
 
         <!-- 내용 섹션 -->
-        <div class="px-4 py-4 border-b border-gray-200">
-          <h4 class="text-[13px] font-medium text-gray-700 mb-2">내용</h4>
+        <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h4 class="text-[13px] font-medium text-gray-700 mb-2 dark:text-gray-200">내용</h4>
           <template v-if="isEditingContent">
             <textarea
               v-model="editedContent"
-              class="w-full h-32 px-3 py-2 text-[13px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              class="w-full h-32 px-3 py-2 text-[13px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
               @keydown.escape="isEditingContent = false"
             />
             <div class="flex gap-2 mt-2">
@@ -514,7 +514,7 @@ onMounted(() => {
           </template>
           <template v-else>
             <div
-              class="min-h-[80px] text-[13px] text-gray-700 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 rounded p-2 -mx-2"
+              class="min-h-[80px] text-[13px] text-gray-700 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 rounded p-2 -mx-2 dark:text-gray-200 dark:hover:bg-gray-700"
               @click="startEditContent"
             >
               {{ item.content || '내용을 입력하세요...' }}
@@ -524,7 +524,7 @@ onMounted(() => {
 
         <!-- 댓글 섹션 -->
         <div class="px-4 py-4">
-          <h4 class="text-[13px] font-medium text-gray-700 mb-3">
+          <h4 class="text-[13px] font-medium text-gray-700 mb-3 dark:text-gray-200">
             댓글 ({{ item.commentCount || 0 }})
           </h4>
 
@@ -550,33 +550,33 @@ onMounted(() => {
           <div v-if="isLoadingComments" class="text-center py-4">
             <Spinner size="sm" />
           </div>
-          <div v-else-if="comments.length === 0" class="text-center text-[13px] text-gray-500 py-4">
+          <div v-else-if="comments.length === 0" class="text-center text-[13px] text-gray-500 py-4 dark:text-gray-400">
             댓글이 없습니다.
           </div>
           <div v-else class="space-y-3">
             <div
               v-for="comment in comments"
               :key="comment.commentId"
-              class="p-3 bg-gray-50 rounded-lg"
+              class="p-3 bg-gray-50 rounded-lg dark:bg-gray-800"
             >
               <div class="flex items-start justify-between gap-2">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 mb-1">
-                    <span class="text-[13px] font-medium text-gray-900">
+                    <span class="text-[13px] font-medium text-gray-900 dark:text-white">
                       {{ comment.createdByName || '사용자' }}
                     </span>
-                    <span class="text-[11px] text-gray-400">
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500">
                       {{ formatDateTime(comment.createdAt) }}
                     </span>
-                    <span v-if="comment.edited" class="text-[11px] text-gray-400">(수정됨)</span>
+                    <span v-if="comment.edited" class="text-[11px] text-gray-400 dark:text-gray-500">(수정됨)</span>
                   </div>
-                  <p class="text-[13px] text-gray-700 whitespace-pre-wrap break-words">
+                  <p class="text-[13px] text-gray-700 whitespace-pre-wrap break-words dark:text-gray-200">
                     {{ comment.content }}
                   </p>
                 </div>
                 <button
                   type="button"
-                  class="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  class="p-1 text-gray-400 hover:text-red-500 transition-colors dark:hover:text-red-400"
                   title="삭제"
                   @click="deleteComment(comment.commentId)"
                 >
@@ -590,7 +590,7 @@ onMounted(() => {
         </div>
 
         <!-- 메타 정보 -->
-        <div class="px-4 py-3 bg-gray-50 text-[12px] text-gray-500">
+        <div class="px-4 py-3 bg-gray-50 text-[12px] text-gray-500 dark:bg-gray-900/50 dark:text-gray-400">
           <div class="flex items-center gap-4">
             <span>등록: {{ item.createdByName }} ({{ formatDateTime(item.createdAt) }})</span>
             <span v-if="item.updatedAt">수정: {{ item.updatedByName }} ({{ formatDateTime(item.updatedAt) }})</span>
@@ -599,7 +599,7 @@ onMounted(() => {
       </div>
 
       <!-- 하단 액션 버튼 -->
-      <div class="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-white">
+      <div class="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
         <div class="flex justify-between">
           <div>
             <Button

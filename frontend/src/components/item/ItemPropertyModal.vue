@@ -364,10 +364,10 @@ onUnmounted(() => {
 
 // 속성 타입별 색상
 const propertyColors = {
-  category: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', ring: 'focus:ring-orange-500' },
-  global: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', ring: 'focus:ring-blue-500' },
-  manager: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', ring: 'focus:ring-purple-500' },
-  user: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', ring: 'focus:ring-green-500' }
+  category: { bg: 'bg-orange-50 dark:bg-orange-900/30', border: 'border-orange-200 dark:border-orange-800', text: 'text-orange-700 dark:text-orange-400', ring: 'focus:ring-orange-500' },
+  global: { bg: 'bg-blue-50 dark:bg-blue-900/30', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-700 dark:text-blue-400', ring: 'focus:ring-blue-500' },
+  manager: { bg: 'bg-purple-50 dark:bg-purple-900/30', border: 'border-purple-200 dark:border-purple-800', text: 'text-purple-700 dark:text-purple-400', ring: 'focus:ring-purple-500' },
+  user: { bg: 'bg-green-50 dark:bg-green-900/30', border: 'border-green-200 dark:border-green-800', text: 'text-green-700 dark:text-green-400', ring: 'focus:ring-green-500' }
 }
 
 // ==================== 속성 드래그앤드롭 ====================
@@ -567,10 +567,10 @@ function getGroupColor(groupKey: string) {
       <div class="fixed inset-0 bg-black/50" @click="handleClose" />
 
       <!-- 모달 컨테이너 -->
-      <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         <!-- 헤더 -->
-        <div class="px-6 py-4 border-b">
-          <h3 class="text-lg font-semibold text-gray-900">
+        <div class="px-6 py-4 border-b dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
             {{ mode === 'create' ? '새 업무 등록' : '업무 속성 수정' }}
           </h3>
         </div>
@@ -588,34 +588,34 @@ function getGroupColor(groupKey: string) {
           <div v-else class="space-y-4">
             <!-- 업무명 -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">업무명 *</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">업무명 *</label>
               <input
                 v-model="formData.title"
                 type="text"
                 placeholder="업무 제목을 입력하세요"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
             <!-- 설명 -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">설명</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">설명</label>
               <textarea
                 v-model="formData.description"
                 rows="3"
                 placeholder="업무 설명을 입력하세요 (선택)"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
             <!-- 카테고리 선택 -->
             <div v-if="boardCategories.length > 0">
-              <label class="block text-sm font-medium text-gray-700 mb-2">카테고리</label>
-              <div class="max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-1">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">카테고리</label>
+              <div class="max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2 space-y-1">
                 <!-- 선택 안함 옵션 -->
                 <label
-                  class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
-                  :class="{ 'bg-blue-50': formData.categoryId === null }"
+                  class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  :class="{ 'bg-blue-50 dark:bg-blue-900/50': formData.categoryId === null }"
                 >
                   <input
                     type="radio"
@@ -624,14 +624,14 @@ function getGroupColor(groupKey: string) {
                     class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                     @change="handleCategoryChange(null)"
                   />
-                  <span class="text-sm text-gray-500">선택 안함</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">선택 안함</span>
                 </label>
                 <!-- 카테고리 목록 -->
                 <label
                   v-for="cat in boardCategories"
                   :key="cat.categoryId"
-                  class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
-                  :class="{ 'bg-blue-50': formData.categoryId === cat.categoryId }"
+                  class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  :class="{ 'bg-blue-50 dark:bg-blue-900/50': formData.categoryId === cat.categoryId }"
                 >
                   <input
                     type="radio"
@@ -644,9 +644,9 @@ function getGroupColor(groupKey: string) {
                     class="w-3 h-3 rounded flex-shrink-0"
                     :style="{ backgroundColor: cat.categoryColor || '#6B7280' }"
                   />
-                  <span class="text-sm text-gray-700">
+                  <span class="text-sm text-gray-700 dark:text-gray-300">
                     {{ cat.categoryName }}
-                    <span v-if="cat.isDefault" class="text-xs text-gray-400">(기본)</span>
+                    <span v-if="cat.isDefault" class="text-xs text-gray-400 dark:text-gray-500">(기본)</span>
                   </span>
                 </label>
               </div>
@@ -667,10 +667,10 @@ function getGroupColor(groupKey: string) {
               <!-- 드래그앤드롭 가능한 속성 목록 -->
               <div v-else-if="flattenedProperties.length > 0">
                 <div class="flex items-center justify-between mb-2">
-                  <label class="block text-sm font-medium text-gray-700">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     속성 ({{ flattenedProperties.length }})
                   </label>
-                  <span class="text-xs text-gray-400">드래그하여 순서 변경</span>
+                  <span class="text-xs text-gray-400 dark:text-gray-500">드래그하여 순서 변경</span>
                 </div>
                 <div class="space-y-2">
                   <div
@@ -693,7 +693,7 @@ function getGroupColor(groupKey: string) {
                     @drop="handlePropertyDrop(index, $event)"
                   >
                     <!-- 드래그 핸들 -->
-                    <div class="sortable-handle text-gray-400 hover:text-gray-600 flex-shrink-0">
+                    <div class="sortable-handle text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0">
                       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
                       </svg>
@@ -722,7 +722,7 @@ function getGroupColor(groupKey: string) {
                       <select
                         v-if="prop.propertyType === 'SELECT'"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                         :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value || null)"
                       >
@@ -740,7 +740,7 @@ function getGroupColor(groupKey: string) {
                         v-else-if="prop.propertyType === 'TEXT'"
                         type="text"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                         :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         placeholder="텍스트 입력"
                         @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
@@ -750,7 +750,7 @@ function getGroupColor(groupKey: string) {
                         v-else-if="prop.propertyType === 'NUMBER'"
                         type="number"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                         :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         placeholder="숫자 입력"
                         @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
@@ -760,7 +760,7 @@ function getGroupColor(groupKey: string) {
                         v-else-if="prop.propertyType === 'DATE'"
                         type="date"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                         :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                       />
@@ -774,8 +774,8 @@ function getGroupColor(groupKey: string) {
                           :key="opt.optionId"
                           class="inline-flex items-center gap-1.5 px-2 py-1 text-sm rounded cursor-pointer transition-colors"
                           :class="isMultiSelectOptionSelected(prop.propertyId, opt.optionId)
-                            ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                            : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'"
+                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600'"
                         >
                           <input
                             type="checkbox"
@@ -785,7 +785,7 @@ function getGroupColor(groupKey: string) {
                           />
                           {{ opt.optionName }}
                         </label>
-                        <span v-if="!(propertyOptions.get(prop.propertyId) || []).length" class="text-xs text-gray-400">
+                        <span v-if="!(propertyOptions.get(prop.propertyId) || []).length" class="text-xs text-gray-400 dark:text-gray-500">
                           옵션 없음
                         </span>
                       </div>
@@ -801,7 +801,7 @@ function getGroupColor(groupKey: string) {
                       <select
                         v-else-if="prop.propertyType === 'USER'"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                         :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value || null)"
                       >
@@ -819,7 +819,7 @@ function getGroupColor(groupKey: string) {
                         v-else
                         type="text"
                         :value="formData.propertyValues[prop.propertyId]"
-                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2"
+                        class="w-full px-2 py-1.5 text-sm border rounded focus:ring-2 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
                         :class="[getGroupColor(prop.groupKey).border, getGroupColor(prop.groupKey).ring]"
                         placeholder="값 입력"
                         @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
@@ -832,7 +832,7 @@ function getGroupColor(groupKey: string) {
               <!-- 빈 상태 -->
               <div
                 v-if="!loading && !categoryLoading && flattenedProperties.length === 0"
-                class="text-center py-8 text-gray-400"
+                class="text-center py-8 text-gray-400 dark:text-gray-500"
               >
                 <p>이 보드에 설정된 카테고리나 속성이 없습니다.</p>
               </div>
@@ -841,10 +841,10 @@ function getGroupColor(groupKey: string) {
         </div>
 
         <!-- 푸터 -->
-        <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+        <div class="flex justify-end gap-3 px-6 py-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <button
             type="button"
-            class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
             @click="handleCancel"
           >
             취소

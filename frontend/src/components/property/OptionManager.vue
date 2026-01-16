@@ -200,22 +200,22 @@ const colorPresets = [
 </script>
 
 <template>
-  <div class="h-full flex bg-white rounded-lg border border-gray-200 overflow-hidden">
+  <div class="h-full flex bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
     <!-- 좌측: 속성 목록 -->
-    <div class="w-48 flex-shrink-0 border-r border-gray-200 bg-gray-50">
-      <div class="p-3 border-b border-gray-200">
-        <h3 class="text-[13px] font-medium text-gray-700">속성 목록</h3>
+    <div class="w-48 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+      <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-[13px] font-medium text-gray-700 dark:text-gray-300">속성 목록</h3>
       </div>
 
       <div class="overflow-y-auto">
         <button
           v-for="property in selectProperties"
           :key="property.propertyId"
-          class="w-full flex items-center gap-2 px-3 py-2.5 text-left text-[13px] transition-colors border-b border-gray-100"
+          class="w-full flex items-center gap-2 px-3 py-2.5 text-left text-[13px] transition-colors border-b border-gray-100 dark:border-gray-700"
           :class="[
             selectedPropertyId === property.propertyId
-              ? 'bg-white text-primary-700 font-medium'
-              : 'text-gray-700 hover:bg-gray-100'
+              ? 'bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-400 font-medium'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
           ]"
           @click="handlePropertySelect(property.propertyId)"
         >
@@ -234,7 +234,7 @@ const colorPresets = [
         <!-- 빈 상태 -->
         <div
           v-if="selectProperties.length === 0"
-          class="px-3 py-6 text-center text-[13px] text-gray-400"
+          class="px-3 py-6 text-center text-[13px] text-gray-400 dark:text-gray-500"
         >
           선택형 속성이 없습니다.
         </div>
@@ -244,12 +244,12 @@ const colorPresets = [
     <!-- 우측: 옵션 목록 -->
     <div class="flex-1 flex flex-col min-w-0">
       <!-- 헤더 -->
-      <div class="flex items-center justify-between p-3 border-b border-gray-200">
+      <div class="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
         <div>
-          <h3 class="text-[14px] font-medium text-gray-900">
+          <h3 class="text-[14px] font-medium text-gray-900 dark:text-gray-100">
             {{ selectedProperty?.propertyName || '옵션 관리' }}
           </h3>
-          <p class="text-[12px] text-gray-500 mt-0.5">
+          <p class="text-[12px] text-gray-500 dark:text-gray-400 mt-0.5">
             {{ sortedOptions.length }}개 옵션
           </p>
         </div>
@@ -271,16 +271,16 @@ const colorPresets = [
         <!-- 빈 상태 -->
         <div
           v-if="!selectedProperty"
-          class="h-full flex items-center justify-center text-[13px] text-gray-400"
+          class="h-full flex items-center justify-center text-[13px] text-gray-400 dark:text-gray-500"
         >
           좌측에서 속성을 선택해주세요.
         </div>
 
         <div v-else-if="sortedOptions.length === 0 && !isAddingOption" class="h-full flex flex-col items-center justify-center">
-          <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
-          <p class="text-[13px] text-gray-500 mb-3">등록된 옵션이 없습니다.</p>
+          <p class="text-[13px] text-gray-500 dark:text-gray-400 mb-3">등록된 옵션이 없습니다.</p>
           <Button size="sm" @click="startAddOption">옵션 추가</Button>
         </div>
 
@@ -289,7 +289,7 @@ const colorPresets = [
           <div
             v-for="(option, index) in sortedOptions"
             :key="option.optionId"
-            class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+            class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             <!-- 편집 모드 -->
             <template v-if="editingOptionId === option.optionId">
@@ -310,14 +310,14 @@ const colorPresets = [
               <input
                 v-model="editedOptionName"
                 type="text"
-                class="flex-1 px-2 py-1 text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                class="flex-1 px-2 py-1 text-[13px] border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-gray-100"
                 @keydown.enter="saveEdit"
                 @keydown.escape="cancelEdit"
               />
 
               <!-- 저장/취소 버튼 -->
               <button
-                class="p-1 text-green-600 hover:bg-green-50 rounded"
+                class="p-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded"
                 @click="saveEdit"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,7 +325,7 @@ const colorPresets = [
                 </svg>
               </button>
               <button
-                class="p-1 text-gray-400 hover:bg-gray-100 rounded"
+                class="p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                 @click="cancelEdit"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,7 +343,7 @@ const colorPresets = [
               />
 
               <!-- 이름 -->
-              <span class="flex-1 text-[13px] text-gray-700 truncate">
+              <span class="flex-1 text-[13px] text-gray-700 dark:text-gray-300 truncate">
                 {{ option.optionName }}
               </span>
 
@@ -351,7 +351,7 @@ const colorPresets = [
               <div class="flex items-center gap-0.5">
                 <!-- 위로 이동 -->
                 <button
-                  class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                  class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed"
                   :disabled="index === 0"
                   title="위로 이동"
                   @click="moveOption(option, 'up')"
@@ -363,7 +363,7 @@ const colorPresets = [
 
                 <!-- 아래로 이동 -->
                 <button
-                  class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                  class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded disabled:opacity-30 disabled:cursor-not-allowed"
                   :disabled="index === sortedOptions.length - 1"
                   title="아래로 이동"
                   @click="moveOption(option, 'down')"
@@ -375,7 +375,7 @@ const colorPresets = [
 
                 <!-- 편집 -->
                 <button
-                  class="p-1 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
+                  class="p-1 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded"
                   title="편집"
                   @click="startEdit(option)"
                 >
@@ -386,7 +386,7 @@ const colorPresets = [
 
                 <!-- 삭제 -->
                 <button
-                  class="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                  class="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
                   title="삭제"
                   @click="confirmDelete(option)"
                 >
@@ -401,7 +401,7 @@ const colorPresets = [
           <!-- 새 옵션 추가 폼 -->
           <div
             v-if="isAddingOption"
-            class="flex items-center gap-2 p-2 bg-primary-50 rounded-lg border border-primary-200"
+            class="flex items-center gap-2 p-2 bg-primary-50 dark:bg-primary-900/30 rounded-lg border border-primary-200 dark:border-primary-700"
           >
             <!-- 색상 선택 -->
             <div class="relative">
@@ -421,7 +421,7 @@ const colorPresets = [
               v-model="newOptionName"
               type="text"
               placeholder="옵션 이름 입력"
-              class="flex-1 px-2 py-1 text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+              class="flex-1 px-2 py-1 text-[13px] border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
               @keydown.enter="saveNewOption"
               @keydown.escape="cancelAdd"
               autofocus
@@ -429,7 +429,7 @@ const colorPresets = [
 
             <!-- 저장/취소 버튼 -->
             <button
-              class="p-1 text-green-600 hover:bg-green-50 rounded"
+              class="p-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded"
               @click="saveNewOption"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,7 +437,7 @@ const colorPresets = [
               </svg>
             </button>
             <button
-              class="p-1 text-gray-400 hover:bg-gray-100 rounded"
+              class="p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               @click="cancelAdd"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -451,9 +451,9 @@ const colorPresets = [
       <!-- 색상 프리셋 (추가/편집 시) -->
       <div
         v-if="isAddingOption || editingOptionId"
-        class="p-3 border-t border-gray-200 bg-gray-50"
+        class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
       >
-        <p class="text-[11px] text-gray-500 mb-2">색상 프리셋</p>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-2">색상 프리셋</p>
         <div class="flex flex-wrap gap-1.5">
           <button
             v-for="color in colorPresets"

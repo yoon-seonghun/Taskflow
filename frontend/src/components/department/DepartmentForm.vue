@@ -284,11 +284,11 @@ defineExpose({ resetForm })
 
 <style scoped>
 .department-form {
-  @apply p-4 bg-white rounded-lg border border-gray-200;
+  @apply p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 
 .form-title {
-  @apply text-base font-medium text-gray-900 mb-4;
+  @apply text-base font-medium text-gray-900 dark:text-gray-100 mb-4;
 }
 
 .btn-primary {
@@ -299,8 +299,8 @@ defineExpose({ resetForm })
 }
 
 .btn-secondary {
-  @apply px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg
-         hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg
+         hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          disabled:opacity-50 disabled:cursor-not-allowed
          transition-colors duration-150;
 }

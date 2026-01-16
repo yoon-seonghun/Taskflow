@@ -138,10 +138,10 @@ watch(filterTab, () => {
     <div class="header-section">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-xl font-semibold text-gray-900">알림</h1>
-          <p class="text-sm text-gray-500 mt-1">
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">알림</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
             총 {{ totalElements }}건
-            <span v-if="unreadCount > 0" class="text-primary-600">
+            <span v-if="unreadCount > 0" class="text-primary-600 dark:text-primary-400">
               (읽지 않은 알림 {{ unreadCount }}건)
             </span>
           </p>
@@ -198,10 +198,10 @@ watch(filterTab, () => {
 
       <!-- 빈 상태 -->
       <div v-else-if="notifications.length === 0" class="empty-state">
-        <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
-        <p class="text-gray-500">
+        <p class="text-gray-500 dark:text-gray-400">
           {{ filterTab === 'unread' ? '읽지 않은 알림이 없습니다.' : '알림이 없습니다.' }}
         </p>
       </div>
@@ -249,14 +249,14 @@ watch(filterTab, () => {
                   </span>
                   <span v-if="!notification.isRead" class="w-2 h-2 bg-blue-500 rounded-full" />
                 </div>
-                <p class="text-sm font-medium text-gray-900 truncate">{{ notification.title }}</p>
-                <p v-if="notification.message" class="text-sm text-gray-500 truncate mt-0.5">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ notification.title }}</p>
+                <p v-if="notification.message" class="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
                   {{ notification.message }}
                 </p>
               </div>
               <div class="flex-shrink-0 text-right">
-                <p class="text-xs text-gray-400">{{ formatTime(notification.createdAt) }}</p>
-                <p v-if="notification.createdByName" class="text-xs text-gray-400 mt-0.5">
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ formatTime(notification.createdAt) }}</p>
+                <p v-if="notification.createdByName" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                   {{ notification.createdByName }}
                 </p>
               </div>
@@ -264,7 +264,7 @@ watch(filterTab, () => {
           </div>
 
           <!-- 화살표 -->
-          <svg class="w-5 h-5 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </div>
@@ -288,19 +288,19 @@ watch(filterTab, () => {
 }
 
 .header-section {
-  @apply bg-white rounded-lg border border-gray-200 p-4 mb-4;
+  @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4;
 }
 
 .notification-list {
-  @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden;
 }
 
 .notification-item {
-  @apply flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors;
+  @apply flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
 }
 
 .notification-unread {
-  @apply bg-blue-50/50;
+  @apply bg-blue-50/50 dark:bg-blue-900/20;
 }
 
 .notification-icon {
@@ -324,12 +324,12 @@ watch(filterTab, () => {
 }
 
 .filter-tab-inactive {
-  @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+  @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600;
 }
 
 .btn-secondary {
-  @apply inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg
-         hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+  @apply inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
+         hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          transition-colors;
 }
 </style>

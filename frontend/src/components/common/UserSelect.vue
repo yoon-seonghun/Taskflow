@@ -104,11 +104,11 @@ const triggerClasses = computed(() => {
     ? 'border-red-500 focus:ring-red-500'
     : isOpen.value
       ? 'border-primary-500 ring-2 ring-primary-500'
-      : 'border-gray-300 focus:ring-primary-500'
+      : 'border-gray-300 focus:ring-primary-500 dark:border-gray-600'
 
   const disabled = props.disabled
-    ? 'bg-gray-100 cursor-not-allowed text-gray-500'
-    : 'bg-white cursor-pointer hover:border-gray-400'
+    ? 'bg-gray-100 cursor-not-allowed text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+    : 'bg-white cursor-pointer hover:border-gray-400 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-gray-500'
 
   return [...base, sizes[props.size], states, disabled].join(' ')
 })
@@ -204,7 +204,7 @@ onUnmounted(() => {
 <template>
   <div ref="containerRef" class="relative w-full">
     <!-- Label -->
-    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1">
+    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1 dark:text-gray-300">
       {{ label }}
       <span v-if="required" class="text-red-500 ml-0.5">*</span>
     </label>
@@ -267,17 +267,17 @@ onUnmounted(() => {
       <div
         v-if="isOpen"
         data-popover
-        class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+        class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden dark:bg-gray-800 dark:border-gray-700"
         style="min-width: 240px;"
       >
         <!-- Search + Department Filter -->
-        <div class="p-2 border-b border-gray-100 space-y-2">
+        <div class="p-2 border-b border-gray-100 space-y-2 dark:border-gray-700">
           <!-- Search Input -->
           <input
             ref="searchInputRef"
             v-model="searchQuery"
             type="text"
-            class="w-full px-2 py-1.5 text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+            class="w-full px-2 py-1.5 text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-400"
             placeholder="이름 또는 부서로 검색..."
             @keydown="handleKeydown"
           />
@@ -287,7 +287,7 @@ onUnmounted(() => {
             <button
               type="button"
               class="px-2 py-1 text-[11px] rounded-full transition-colors"
-              :class="selectedDepartmentId === null ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+              :class="selectedDepartmentId === null ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
               @click="handleDepartmentChange(null)"
             >
               전체
@@ -297,7 +297,7 @@ onUnmounted(() => {
               :key="dept.departmentId"
               type="button"
               class="px-2 py-1 text-[11px] rounded-full transition-colors"
-              :class="selectedDepartmentId === dept.departmentId ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+              :class="selectedDepartmentId === dept.departmentId ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
               @click="handleDepartmentChange(dept.departmentId)"
             >
               {{ dept.departmentName }}
@@ -312,22 +312,22 @@ onUnmounted(() => {
             :key="user.username"
             class="px-3 py-2 text-[13px] cursor-pointer flex items-center gap-2"
             :class="[
-              'hover:bg-gray-50',
-              highlightedIndex === index ? 'bg-gray-100' : '',
-              user.username === modelValue ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
+              'hover:bg-gray-50 dark:hover:bg-gray-700',
+              highlightedIndex === index ? 'bg-gray-100 dark:bg-gray-700' : '',
+              user.username === modelValue ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200'
             ]"
             @click="selectUser(user)"
             @mouseenter="highlightedIndex = index"
           >
             <!-- Avatar -->
-            <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[11px] font-medium flex items-center justify-center flex-shrink-0">
+            <span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-[11px] font-medium flex items-center justify-center flex-shrink-0 dark:bg-gray-700 dark:text-gray-300">
               {{ user.userName.charAt(0) }}
             </span>
 
             <!-- User Info -->
             <div class="flex-1 min-w-0">
               <div class="truncate font-medium" :title="user.userName">{{ user.userName }}</div>
-              <div v-if="user.departmentName" class="truncate text-[11px] text-gray-400" :title="user.departmentName">
+              <div v-if="user.departmentName" class="truncate text-[11px] text-gray-400 dark:text-gray-500" :title="user.departmentName">
                 {{ user.departmentName }}
               </div>
             </div>
@@ -345,7 +345,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Empty State -->
-          <div v-if="filteredUsers.length === 0" class="px-3 py-4 text-center text-gray-500 text-[13px]">
+          <div v-if="filteredUsers.length === 0" class="px-3 py-4 text-center text-gray-500 text-[13px] dark:text-gray-400">
             <template v-if="searchQuery">검색 결과가 없습니다</template>
             <template v-else>사용자가 없습니다</template>
           </div>

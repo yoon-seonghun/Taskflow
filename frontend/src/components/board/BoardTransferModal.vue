@@ -145,11 +145,11 @@ watch(() => props.show, (newShow) => {
   >
     <div class="space-y-5">
       <!-- 보드 정보 -->
-      <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <p class="text-[12px] text-gray-500 mb-1">이관할 보드</p>
+      <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <p class="text-[12px] text-gray-500 dark:text-gray-400 mb-1">이관할 보드</p>
         <div class="flex items-center gap-2">
-          <span class="text-[14px] font-medium text-gray-900">{{ board.boardName }}</span>
-          <span v-if="board.itemCount !== undefined" class="text-[12px] text-gray-500">
+          <span class="text-[14px] font-medium text-gray-900 dark:text-white">{{ board.boardName }}</span>
+          <span v-if="board.itemCount !== undefined" class="text-[12px] text-gray-500 dark:text-gray-400">
             (업무 {{ board.itemCount }}건)
           </span>
         </div>
@@ -157,11 +157,11 @@ watch(() => props.show, (newShow) => {
 
       <!-- 이관 방법 선택 (라디오 버튼) -->
       <div>
-        <label class="block text-[13px] font-medium text-gray-700 mb-3">이관 방법</label>
+        <label class="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-3">이관 방법</label>
         <div class="space-y-2">
           <!-- 다른 보드로 업무 병합 -->
-          <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-            :class="transferMethod === 'merge' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'"
+          <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            :class="transferMethod === 'merge' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30' : 'border-gray-200 dark:border-gray-700'"
           >
             <input
               type="radio"
@@ -170,14 +170,14 @@ watch(() => props.show, (newShow) => {
               class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
             />
             <div>
-              <p class="text-[13px] font-medium text-gray-700">다른 보드로 업무 병합</p>
-              <p class="text-[12px] text-gray-500">내 다른 보드로 업무를 옮기고 현재 보드를 삭제합니다</p>
+              <p class="text-[13px] font-medium text-gray-700 dark:text-gray-300">다른 보드로 업무 병합</p>
+              <p class="text-[12px] text-gray-500 dark:text-gray-400">내 다른 보드로 업무를 옮기고 현재 보드를 삭제합니다</p>
             </div>
           </label>
 
           <!-- 다른 사용자에게 보드 이관 -->
-          <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-            :class="transferMethod === 'transfer' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'"
+          <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            :class="transferMethod === 'transfer' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30' : 'border-gray-200 dark:border-gray-700'"
           >
             <input
               type="radio"
@@ -186,8 +186,8 @@ watch(() => props.show, (newShow) => {
               class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
             />
             <div>
-              <p class="text-[13px] font-medium text-gray-700">다른 사용자에게 보드 이관</p>
-              <p class="text-[12px] text-gray-500">보드 전체를 다른 사용자에게 이관합니다</p>
+              <p class="text-[13px] font-medium text-gray-700 dark:text-gray-300">다른 사용자에게 보드 이관</p>
+              <p class="text-[12px] text-gray-500 dark:text-gray-400">보드 전체를 다른 사용자에게 이관합니다</p>
             </div>
           </label>
         </div>
@@ -195,10 +195,10 @@ watch(() => props.show, (newShow) => {
 
       <!-- 대상 보드 선택 (병합) -->
       <div v-if="transferMethod === 'merge'" class="animate-fadeIn">
-        <label class="block text-[13px] font-medium text-gray-700 mb-2">대상 보드</label>
+        <label class="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-2">대상 보드</label>
         <select
           v-model="selectedBoardId"
-          class="w-full px-3 py-2 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          class="w-full px-3 py-2 text-[13px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white"
         >
           <option :value="null">병합할 보드를 선택하세요</option>
           <option v-for="b in otherBoards" :key="b.boardId" :value="b.boardId">
@@ -206,16 +206,16 @@ watch(() => props.show, (newShow) => {
             <template v-if="b.itemCount !== undefined"> ({{ b.itemCount }}건)</template>
           </option>
         </select>
-        <p v-if="otherBoards.length === 0" class="mt-2 text-[12px] text-amber-600">
+        <p v-if="otherBoards.length === 0" class="mt-2 text-[12px] text-amber-600 dark:text-amber-400">
           병합 가능한 보드가 없습니다. 새 보드를 생성해주세요.
         </p>
 
         <!-- 경고 메시지 -->
-        <div class="mt-3 flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-          <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="mt-3 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg border border-amber-200 dark:border-amber-800">
+          <svg class="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <p class="text-[12px] text-amber-700">
+          <p class="text-[12px] text-amber-700 dark:text-amber-400">
             현재 보드의 모든 업무가 선택한 보드로 이동됩니다.
             <strong>병합 후 현재 보드는 삭제됩니다.</strong>
           </p>
@@ -233,11 +233,11 @@ watch(() => props.show, (newShow) => {
         />
 
         <!-- 안내 메시지 -->
-        <div class="mt-3 flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="mt-3 flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+          <svg class="w-5 h-5 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <div class="text-[12px] text-blue-700">
+          <div class="text-[12px] text-blue-700 dark:text-blue-400">
             <p>보드명이 <strong>"보드이관"</strong>으로 변경되어 선택한 사용자에게 이관됩니다.</p>
             <p class="mt-1">이관 후에는 해당 보드에 대한 소유권이 없어집니다.</p>
           </div>
@@ -245,11 +245,11 @@ watch(() => props.show, (newShow) => {
 
         <!-- 사유 입력 (선택) -->
         <div class="mt-4">
-          <label class="block text-[13px] font-medium text-gray-700 mb-2">이관 사유 (선택)</label>
+          <label class="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-2">이관 사유 (선택)</label>
           <textarea
             v-model="reason"
             rows="2"
-            class="w-full px-3 py-2 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+            class="w-full px-3 py-2 text-[13px] border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none dark:bg-gray-800 dark:text-white"
             placeholder="이관 사유를 입력하세요..."
           />
         </div>

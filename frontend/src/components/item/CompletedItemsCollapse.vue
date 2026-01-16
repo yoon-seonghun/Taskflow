@@ -62,13 +62,13 @@ function getStatusText(status: string): string {
   <div v-if="itemCount > 0" class="completed-items-collapse">
     <!-- 헤더 (클릭 시 확장/축소) -->
     <button
-      class="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+      class="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700 rounded-lg transition-colors"
       @click="toggleExpand"
     >
       <div class="flex items-center gap-2">
         <!-- 확장/축소 아이콘 -->
         <svg
-          class="w-4 h-4 text-gray-500 transition-transform duration-200"
+          class="w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200"
           :class="{ 'rotate-90': isExpanded }"
           fill="none"
           stroke="currentColor"
@@ -78,29 +78,29 @@ function getStatusText(status: string): string {
         </svg>
 
         <!-- 텍스트 -->
-        <span class="text-[13px] font-medium text-gray-600">
+        <span class="text-[13px] font-medium text-gray-600 dark:text-gray-300">
           오늘 처리된 업무
         </span>
 
         <!-- 카운트 배지 -->
-        <span class="px-2 py-0.5 text-[11px] font-medium bg-gray-200 text-gray-600 rounded-full">
+        <span class="px-2 py-0.5 text-[11px] font-medium bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full">
           {{ itemCount }}건
         </span>
 
         <!-- 완료/삭제 구분 표시 -->
         <div class="flex items-center gap-1.5 ml-2">
-          <span v-if="completedCount > 0" class="text-[11px] text-green-600">
+          <span v-if="completedCount > 0" class="text-[11px] text-green-600 dark:text-green-400">
             완료 {{ completedCount }}
           </span>
-          <span v-if="completedCount > 0 && deletedCount > 0" class="text-gray-300">|</span>
-          <span v-if="deletedCount > 0" class="text-[11px] text-red-500">
+          <span v-if="completedCount > 0 && deletedCount > 0" class="text-gray-300 dark:text-gray-600">|</span>
+          <span v-if="deletedCount > 0" class="text-[11px] text-red-500 dark:text-red-400">
             삭제 {{ deletedCount }}
           </span>
         </div>
       </div>
 
       <!-- 힌트 텍스트 -->
-      <span class="text-[11px] text-gray-400">
+      <span class="text-[11px] text-gray-400 dark:text-gray-500">
         {{ isExpanded ? '접기' : '펼치기' }}
       </span>
     </button>
@@ -116,10 +116,10 @@ function getStatusText(status: string): string {
     >
       <div
         v-if="isExpanded"
-        class="mt-2 border border-gray-200 rounded-lg overflow-hidden"
+        class="mt-2 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
       >
         <!-- 테이블 헤더 -->
-        <div class="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 border-b border-gray-200 text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+        <div class="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           <div class="col-span-7">작업 내용</div>
           <div class="col-span-2 text-center">결과</div>
           <div class="col-span-3 text-right">처리 시간</div>
@@ -130,11 +130,11 @@ function getStatusText(status: string): string {
           <div
             v-for="item in todayItems"
             :key="item.itemId"
-            class="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
+            class="grid grid-cols-12 gap-2 px-4 py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <!-- 작업 내용 -->
             <div class="col-span-7 flex items-center gap-2 min-w-0">
-              <span class="text-[13px] text-gray-700 truncate">
+              <span class="text-[13px] text-gray-700 dark:text-gray-200 truncate">
                 {{ item.title }}
               </span>
             </div>
@@ -151,7 +151,7 @@ function getStatusText(status: string): string {
 
             <!-- 처리 시간 -->
             <div class="col-span-3 flex items-center justify-end">
-              <span class="text-[12px] text-gray-500">
+              <span class="text-[12px] text-gray-500 dark:text-gray-400">
                 {{ formatTime(item) }}
               </span>
             </div>
@@ -161,7 +161,7 @@ function getStatusText(status: string): string {
         <!-- 빈 상태 (표시될 일 없음 - 안전장치) -->
         <div
           v-if="todayItems.length === 0"
-          class="px-4 py-6 text-center text-[13px] text-gray-400"
+          class="px-4 py-6 text-center text-[13px] text-gray-400 dark:text-gray-500"
         >
           오늘 처리된 업무가 없습니다.
         </div>

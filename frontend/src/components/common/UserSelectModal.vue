@@ -75,15 +75,15 @@ watch(() => props.show, (newVal) => {
   >
     <div class="p-4">
       <!-- 현재 담당자 표시 -->
-      <div v-if="currentUsername" class="mb-4 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+      <div v-if="currentUsername" class="mb-4 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="text-xs text-blue-600">현재 담당자:</span>
-            <span class="text-sm font-medium text-blue-800">{{ currentUsername }}</span>
+            <span class="text-xs text-blue-600 dark:text-blue-400">현재 담당자:</span>
+            <span class="text-sm font-medium text-blue-800 dark:text-blue-300">{{ currentUsername }}</span>
           </div>
           <button
             type="button"
-            class="text-xs text-blue-600 hover:text-blue-800 underline"
+            class="text-xs text-blue-600 hover:text-blue-800 underline dark:text-blue-400 dark:hover:text-blue-300"
             @click="handleClear"
           >
             담당자 해제
@@ -104,7 +104,7 @@ watch(() => props.show, (newVal) => {
       <div class="flex justify-end gap-2">
         <button
           type="button"
-          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
           @click="emit('close')"
         >
           취소

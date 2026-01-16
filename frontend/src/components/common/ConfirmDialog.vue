@@ -34,7 +34,7 @@ function handleCancel() {
     @confirm="handleConfirm"
     @cancel="handleCancel"
   >
-    <p class="text-gray-700">
+    <p class="text-gray-700 dark:text-gray-300">
       {{ options?.message }}
     </p>
   </Modal>

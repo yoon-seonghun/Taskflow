@@ -26,7 +26,7 @@ const iconPaths: Record<string, string> = {
 <template>
   <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
     <!-- Icon -->
-    <div class="w-16 h-16 mb-4 text-gray-300">
+    <div class="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600">
       <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           stroke-linecap="round"
@@ -38,12 +38,12 @@ const iconPaths: Record<string, string> = {
     </div>
 
     <!-- Title -->
-    <h3 class="text-[14px] font-medium text-gray-600 mb-1">
+    <h3 class="text-[14px] font-medium text-gray-600 mb-1 dark:text-gray-400">
       {{ title }}
     </h3>
 
     <!-- Description -->
-    <p v-if="description" class="text-[13px] text-gray-400 max-w-sm">
+    <p v-if="description" class="text-[13px] text-gray-400 max-w-sm dark:text-gray-500">
       {{ description }}
     </p>
 

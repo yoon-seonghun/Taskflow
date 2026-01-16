@@ -578,7 +578,7 @@ watch(() => props.boardId, () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+  <div class="flex flex-col h-full bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
     <!-- 로딩 상태 -->
     <div v-if="loading" class="flex-1 flex items-center justify-center">
       <Spinner size="lg" />
@@ -598,15 +598,15 @@ watch(() => props.boardId, () => {
     <template v-else>
       <div class="flex-1 overflow-auto">
         <!-- 테이블 헤더 -->
-        <div class="sticky top-0 z-10 flex bg-gray-50 border-b border-gray-200">
+        <div class="sticky top-0 z-10 flex bg-gray-50 border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
           <!-- 드래그 핸들 헤더 (빈 공간) -->
-          <div class="w-6 h-8 flex-shrink-0 bg-gray-50"></div>
+          <div class="w-6 h-8 flex-shrink-0 bg-gray-50 dark:bg-gray-900"></div>
           <!-- 제목 헤더 -->
           <div
-            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 relative group"
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 relative group dark:text-gray-300 dark:border-gray-700"
             :style="{ width: `${columnWidths.title}px`, minWidth: `${columnMinWidths.title}px` }"
           >
-            <svg class="w-4 h-4 mr-1.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 mr-1.5 text-gray-400 flex-shrink-0 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
             </svg>
             <span class="truncate">업무내용</span>
@@ -620,7 +620,7 @@ watch(() => props.boardId, () => {
 
           <!-- 상태 헤더 -->
           <div
-            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
             :style="{ width: `${columnWidths.status}px`, minWidth: `${columnMinWidths.status}px` }"
           >
             <span class="truncate">상태</span>
@@ -633,7 +633,7 @@ watch(() => props.boardId, () => {
 
           <!-- 우선순위 헤더 -->
           <div
-            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
             :style="{ width: `${columnWidths.priority}px`, minWidth: `${columnMinWidths.priority}px` }"
           >
             <span class="truncate">우선순위</span>
@@ -646,7 +646,7 @@ watch(() => props.boardId, () => {
 
           <!-- 담당자 헤더 -->
           <div
-            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
             :style="{ width: `${columnWidths.assignee}px`, minWidth: `${columnMinWidths.assignee}px` }"
           >
             <span class="truncate">담당자</span>
@@ -659,7 +659,7 @@ watch(() => props.boardId, () => {
 
           <!-- 요청일 헤더 -->
           <div
-            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
             :style="{ width: `${columnWidths.requestDate}px`, minWidth: `${columnMinWidths.requestDate}px` }"
           >
             <span class="truncate">요청일</span>
@@ -672,7 +672,7 @@ watch(() => props.boardId, () => {
 
           <!-- 마감일 헤더 -->
           <div
-            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
             :style="{ width: `${columnWidths.dueDate}px`, minWidth: `${columnMinWidths.dueDate}px` }"
           >
             <span class="truncate">마감일</span>
@@ -685,7 +685,7 @@ watch(() => props.boardId, () => {
 
           <!-- 카테고리 헤더 -->
           <div
-            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group"
+            class="px-2 h-8 flex items-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative group dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
             :style="{ width: `${columnWidths.category}px`, minWidth: `${columnMinWidths.category}px` }"
           >
             <span class="truncate">카테고리</span>
@@ -714,10 +714,10 @@ watch(() => props.boardId, () => {
 
           <!-- 댓글 헤더 -->
           <div
-            class="px-2 h-8 flex items-center justify-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative"
+            class="px-2 h-8 flex items-center justify-center text-[13px] font-medium text-gray-600 border-r border-gray-200 bg-gray-50 relative dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700"
             :style="{ width: `${columnWidths.comments}px`, minWidth: `${columnMinWidths.comments}px` }"
           >
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
             <div
@@ -729,7 +729,7 @@ watch(() => props.boardId, () => {
 
           <!-- 액션 헤더 -->
           <div
-            class="px-2 h-8 flex items-center justify-center text-[13px] font-medium text-gray-600 bg-gray-50"
+            class="px-2 h-8 flex items-center justify-center text-[13px] font-medium text-gray-600 bg-gray-50 dark:bg-gray-900 dark:text-gray-300"
             :style="{ width: `${columnWidths.actions}px`, minWidth: `${columnMinWidths.actions}px` }"
           >
             액션
@@ -737,7 +737,7 @@ watch(() => props.boardId, () => {
         </div>
 
         <!-- 테이블 바디 -->
-        <div class="divide-y divide-gray-200">
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
           <ItemRow
             v-for="(item, index) in items"
             :key="item.itemId"
@@ -771,9 +771,9 @@ watch(() => props.boardId, () => {
         </div>
 
         <!-- 당일 완료/삭제된 아이템 (축소 가능) -->
-        <div v-if="todayCompletedItems.length > 0" class="border-t border-gray-200">
+        <div v-if="todayCompletedItems.length > 0" class="border-t border-gray-200 dark:border-gray-700">
           <details class="group">
-            <summary class="px-4 py-2 text-[13px] text-gray-500 cursor-pointer hover:bg-gray-50 flex items-center gap-2">
+            <summary class="px-4 py-2 text-[13px] text-gray-500 cursor-pointer hover:bg-gray-50 flex items-center gap-2 dark:text-gray-400 dark:hover:bg-gray-700">
               <svg
                 class="w-4 h-4 transition-transform group-open:rotate-90"
                 fill="none"
@@ -784,7 +784,7 @@ watch(() => props.boardId, () => {
               </svg>
               오늘 처리된 업무 ({{ todayCompletedItems.length }}건)
             </summary>
-            <div class="bg-gray-50">
+            <div class="bg-gray-50 dark:bg-gray-900/50">
               <ItemRow
                 v-for="item in todayCompletedItems"
                 :key="item.itemId"

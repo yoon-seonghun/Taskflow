@@ -75,9 +75,9 @@ const permissionBadgeText = computed(() => {
 // 권한 배지 색상 클래스
 const permissionBadgeClass = computed(() => {
   const level = permissionLevel.value
-  if (level === 'FULL') return 'bg-green-100 text-green-700'
-  if (level === 'EDIT') return 'bg-blue-100 text-blue-700'
-  return 'bg-gray-100 text-gray-600'  // VIEW 또는 기본
+  if (level === 'FULL') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+  if (level === 'EDIT') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+  return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'  // VIEW 또는 기본
 })
 
 // 상태
@@ -888,21 +888,21 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="item-detail-panel h-full flex flex-col bg-white">
+  <div class="item-detail-panel h-full flex flex-col bg-white dark:bg-gray-800">
     <!-- 헤더 -->
-    <div class="flex-shrink-0 px-4 py-3 border-b border-gray-200">
+    <div class="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
           <button
             v-if="isMobile"
-            class="p-1 -ml-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+            class="p-1 -ml-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded"
             @click="handleClose"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h2 class="text-[15px] font-semibold text-gray-900">업무 상세</h2>
+          <h2 class="text-[15px] font-semibold text-gray-900 dark:text-white">업무 상세</h2>
         </div>
 
         <div class="flex items-center gap-1">
@@ -986,7 +986,7 @@ onUnmounted(() => {
 
           <button
             v-if="!isMobile"
-            class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+            class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700 rounded"
             @click="handleClose"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -996,7 +996,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-if="modifiedInfo || showPermissionBadge" class="mt-2 flex items-center gap-2 text-[11px] text-gray-400">
+      <div v-if="modifiedInfo || showPermissionBadge" class="mt-2 flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
         <!-- 공유/배당 권한 배지 -->
         <span
           v-if="showPermissionBadge"
@@ -1020,25 +1020,25 @@ onUnmounted(() => {
     </div>
 
     <!-- 탭 (모바일) -->
-    <div v-if="isMobile" class="flex-shrink-0 border-b border-gray-200">
+    <div v-if="isMobile" class="flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
       <div class="flex">
         <button
           class="flex-1 px-3 py-2.5 text-[13px] font-medium"
-          :class="activeTab === 'detail' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500'"
+          :class="activeTab === 'detail' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-gray-500 dark:text-gray-400'"
           @click="activeTab = 'detail'"
         >속성</button>
         <button
           class="flex-1 px-3 py-2.5 text-[13px] font-medium"
-          :class="activeTab === 'content' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500'"
+          :class="activeTab === 'content' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-gray-500 dark:text-gray-400'"
           @click="activeTab = 'content'"
         >내용</button>
         <button
           class="flex-1 px-3 py-2.5 text-[13px] font-medium relative"
-          :class="activeTab === 'comments' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500'"
+          :class="activeTab === 'comments' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-gray-500 dark:text-gray-400'"
           @click="activeTab = 'comments'"
         >
           댓글
-          <span v-if="commentCount > 0" class="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100">{{ commentCount }}</span>
+          <span v-if="commentCount > 0" class="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-300">{{ commentCount }}</span>
         </button>
       </div>
     </div>
@@ -1052,7 +1052,7 @@ onUnmounted(() => {
 
       <!-- 아이템 없음 -->
       <div v-else-if="!item" class="h-full flex items-center justify-center">
-        <p class="text-[14px] text-gray-500">업무를 찾을 수 없습니다.</p>
+        <p class="text-[14px] text-gray-500 dark:text-gray-400">업무를 찾을 수 없습니다.</p>
       </div>
 
       <!-- PC 레이아웃: 3컬럼 + 리사이즈 핸들 -->
@@ -1060,7 +1060,7 @@ onUnmounted(() => {
         <div ref="containerRef" class="h-full flex">
           <!-- 속성 패널 -->
           <div
-            class="flex-shrink-0 overflow-y-auto p-3 bg-gray-50"
+            class="flex-shrink-0 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900"
             :style="{ width: `${propWidth}px` }"
           >
             <ItemForm
@@ -1070,7 +1070,7 @@ onUnmounted(() => {
             />
 
             <!-- v2.2: 하위 업무 목록 -->
-            <div class="mt-4 pt-4 border-t border-gray-200">
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <SubTaskList
                 :parent-item="item"
                 :board-id="boardId"
@@ -1085,12 +1085,12 @@ onUnmounted(() => {
 
           <!-- 리사이즈 핸들 (속성-에디터) -->
           <div
-            class="w-2 flex-shrink-0 bg-gray-200 hover:bg-primary-300 cursor-ew-resize flex items-center justify-center group"
-            :class="{ 'bg-primary-400': isResizingProp }"
+            class="w-2 flex-shrink-0 bg-gray-200 hover:bg-primary-300 dark:bg-gray-700 dark:hover:bg-primary-600 cursor-ew-resize flex items-center justify-center group"
+            :class="{ 'bg-primary-400 dark:bg-primary-500': isResizingProp }"
             @mousedown="startResizeProp"
           >
             <div class="flex flex-col gap-0.5">
-              <div class="w-0.5 h-4 bg-gray-400 group-hover:bg-primary-600 rounded-full" />
+              <div class="w-0.5 h-4 bg-gray-400 group-hover:bg-primary-600 dark:bg-gray-500 dark:group-hover:bg-primary-400 rounded-full" />
             </div>
           </div>
 
@@ -1098,11 +1098,11 @@ onUnmounted(() => {
           <div class="flex-1 min-w-0 overflow-hidden flex flex-col">
             <!-- v2.1: 설명 필드 (단일 라인) -->
             <div class="flex-shrink-0 px-4 pt-4 pb-2">
-              <label class="text-[12px] font-medium text-gray-600 mb-1.5 block">설명</label>
+              <label class="text-[12px] font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">설명</label>
               <input
                 v-model="descriptionText"
                 type="text"
-                class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-50 disabled:text-gray-500"
+                class="w-full px-3 py-2 text-[13px] border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-50 disabled:text-gray-500 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
                 placeholder="업무에 대한 간단한 설명을 입력하세요..."
                 :disabled="item.status === 'DELETED'"
                 @blur="handleDescriptionSave"
@@ -1113,8 +1113,8 @@ onUnmounted(() => {
             <!-- v2.1: 리치 텍스트 에디터 영역 -->
             <div class="flex-1 min-h-[200px] px-4 pb-0 flex flex-col">
               <div class="flex items-center justify-between mb-1.5">
-                <label class="text-[12px] font-medium text-gray-600">내용</label>
-                <div class="flex items-center gap-2 text-[11px] text-gray-400">
+                <label class="text-[12px] font-medium text-gray-600 dark:text-gray-400">내용</label>
+                <div class="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
                   <span v-if="isContentSaving" class="flex items-center gap-1">
                     <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1161,18 +1161,18 @@ onUnmounted(() => {
 
           <!-- 리사이즈 핸들 (에디터-댓글) -->
           <div
-            class="w-2 flex-shrink-0 bg-gray-200 hover:bg-primary-300 cursor-ew-resize flex items-center justify-center group"
-            :class="{ 'bg-primary-400': isResizingComment }"
+            class="w-2 flex-shrink-0 bg-gray-200 hover:bg-primary-300 dark:bg-gray-700 dark:hover:bg-primary-600 cursor-ew-resize flex items-center justify-center group"
+            :class="{ 'bg-primary-400 dark:bg-primary-500': isResizingComment }"
             @mousedown="startResizeComment"
           >
             <div class="flex flex-col gap-0.5">
-              <div class="w-0.5 h-4 bg-gray-400 group-hover:bg-primary-600 rounded-full" />
+              <div class="w-0.5 h-4 bg-gray-400 group-hover:bg-primary-600 dark:bg-gray-500 dark:group-hover:bg-primary-400 rounded-full" />
             </div>
           </div>
 
           <!-- 댓글 패널 -->
           <div
-            class="flex-shrink-0 overflow-y-auto p-3 bg-gray-50"
+            class="flex-shrink-0 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900"
             :style="{ width: `${commentWidth}px` }"
           >
             <CommentList ref="commentListRef" :item-id="itemId" />
@@ -1182,11 +1182,11 @@ onUnmounted(() => {
 
       <!-- 모바일 레이아웃 -->
       <template v-else>
-        <div v-show="activeTab === 'detail'" class="h-full overflow-y-auto p-4">
+        <div v-show="activeTab === 'detail'" class="h-full overflow-y-auto p-4 border-t border-gray-200 dark:border-gray-700">
           <ItemForm :item="item" :disabled="item.status === 'DELETED'" @update="handleUpdate" />
 
           <!-- v2.2: 하위 업무 목록 (모바일) -->
-          <div class="mt-4 pt-4 border-t border-gray-200">
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <SubTaskList
               :parent-item="item"
               :board-id="boardId"
@@ -1198,14 +1198,14 @@ onUnmounted(() => {
             />
           </div>
         </div>
-        <div v-show="activeTab === 'content'" class="h-full overflow-y-auto flex flex-col">
+        <div v-show="activeTab === 'content'" class="h-full overflow-y-auto flex flex-col border-t border-gray-200 dark:border-gray-700">
           <!-- v2.1: 설명 필드 (단일 라인) -->
           <div class="flex-shrink-0 px-4 pt-4 pb-2">
-            <label class="text-[12px] font-medium text-gray-600 mb-1.5 block">설명</label>
+            <label class="text-[12px] font-medium text-gray-600 dark:text-gray-400 mb-1.5 block">설명</label>
             <input
               v-model="descriptionText"
               type="text"
-              class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-50 disabled:text-gray-500"
+              class="w-full px-3 py-2 text-[13px] border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-50 disabled:text-gray-500 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
               placeholder="업무에 대한 간단한 설명을 입력하세요..."
               :disabled="item.status === 'DELETED'"
               @blur="handleDescriptionSave"
@@ -1215,8 +1215,8 @@ onUnmounted(() => {
           <!-- v2.1: 리치 텍스트 에디터 -->
           <div class="flex-1 p-4">
             <div class="flex items-center justify-between mb-1.5">
-              <label class="text-[12px] font-medium text-gray-600">내용</label>
-              <div class="flex items-center gap-2 text-[11px] text-gray-400">
+              <label class="text-[12px] font-medium text-gray-600 dark:text-gray-400">내용</label>
+              <div class="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
                 <span v-if="isContentSaving">저장 중...</span>
                 <span v-else-if="hasUnsavedContent" class="text-amber-500">미저장</span>
                 <button
@@ -1256,7 +1256,7 @@ onUnmounted(() => {
     <!-- 하단 버튼 (모바일) -->
     <div
       v-if="isMobile && item && item.status !== 'DELETED'"
-      class="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-white"
+      class="flex-shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
     >
       <div class="flex gap-2">
         <Button v-if="item.status !== 'COMPLETED'" variant="primary" class="flex-1" @click="handleComplete">완료 처리</Button>

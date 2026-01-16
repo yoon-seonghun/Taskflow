@@ -314,7 +314,7 @@ async function handleCreateOption(optionName: string) {
     <template v-else-if="property.propertyType === 'SELECT'">
       <!-- 외부 쿼리 로딩 중 -->
       <template v-if="isExternalQuery && externalOptionsLoading">
-        <span class="text-[12px] text-gray-400 flex items-center gap-1">
+        <span class="text-[12px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
           <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -342,7 +342,7 @@ async function handleCreateOption(optionName: string) {
         />
       </template>
       <!-- 옵션 없음 -->
-      <span v-else class="text-[12px] text-gray-400">
+      <span v-else class="text-[12px] text-gray-400 dark:text-gray-500">
         옵션 없음
       </span>
     </template>
@@ -351,7 +351,7 @@ async function handleCreateOption(optionName: string) {
     <template v-else-if="property.propertyType === 'MULTI_SELECT'">
       <!-- 외부 쿼리 로딩 중 -->
       <template v-if="isExternalQuery && externalOptionsLoading">
-        <span class="text-[12px] text-gray-400 flex items-center gap-1">
+        <span class="text-[12px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
           <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -376,7 +376,7 @@ async function handleCreateOption(optionName: string) {
               :class="[
                 isExternalOptionSelected(option.value)
                   ? 'border-current'
-                  : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
               ]"
               :style="isExternalOptionSelected(option.value) ? getExternalOptionStyle(option) : {}"
               :disabled="disabled"
@@ -404,7 +404,7 @@ async function handleCreateOption(optionName: string) {
               :class="[
                 isOptionSelected(option.optionId)
                   ? 'border-current'
-                  : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
               ]"
               :style="isOptionSelected(option.optionId) ? getOptionStyle(option) : {}"
               :disabled="disabled"
@@ -424,7 +424,7 @@ async function handleCreateOption(optionName: string) {
           </template>
 
           <!-- 옵션이 없는 경우 -->
-          <span v-if="options.length === 0" class="text-[12px] text-gray-400">
+          <span v-if="options.length === 0" class="text-[12px] text-gray-400 dark:text-gray-500">
             옵션 없음
           </span>
         </div>
@@ -438,10 +438,10 @@ async function handleCreateOption(optionName: string) {
           type="checkbox"
           :checked="Boolean(internalValue)"
           :disabled="disabled"
-          class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 focus:ring-2 cursor-pointer disabled:cursor-not-allowed"
+          class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 focus:ring-2 cursor-pointer disabled:cursor-not-allowed dark:bg-gray-700"
           @change="handleCheckboxChange"
         />
-        <span class="text-[13px] text-gray-700">{{ property.propertyName }}</span>
+        <span class="text-[13px] text-gray-700 dark:text-gray-300">{{ property.propertyName }}</span>
       </label>
     </template>
 
@@ -449,25 +449,25 @@ async function handleCreateOption(optionName: string) {
     <template v-else-if="property.propertyType === 'USER'">
       <button
         type="button"
-        class="w-full px-3 text-left text-[13px] border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-150 flex items-center justify-between"
+        class="w-full px-3 text-left text-[13px] border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-150 flex items-center justify-between"
         :class="[
           compact ? 'h-7' : 'h-8',
-          { 'bg-gray-100 cursor-not-allowed text-gray-500': disabled }
+          { 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400': disabled }
         ]"
         :disabled="disabled"
         @click="showUserSelectModal = true"
       >
         <span v-if="selectedUserDisplay" class="flex items-center gap-2 truncate">
           <span
-            class="rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center flex-shrink-0"
+            class="rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 font-medium flex items-center justify-center flex-shrink-0"
             :class="compact ? 'w-4 h-4 text-[9px]' : 'w-5 h-5 text-[10px]'"
           >
             {{ selectedUserDisplay.name.charAt(0) }}
           </span>
-          <span class="truncate">{{ selectedUserDisplay.name }}</span>
+          <span class="truncate text-gray-900 dark:text-gray-100">{{ selectedUserDisplay.name }}</span>
         </span>
-        <span v-else class="text-gray-400">{{ property.propertyName }}</span>
-        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <span v-else class="text-gray-400 dark:text-gray-500">{{ property.propertyName }}</span>
+        <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </button>
@@ -484,7 +484,7 @@ async function handleCreateOption(optionName: string) {
 
     <!-- 알 수 없는 타입 -->
     <template v-else>
-      <div class="text-[12px] text-gray-400">
+      <div class="text-[12px] text-gray-400 dark:text-gray-500">
         지원하지 않는 속성 타입: {{ property.propertyType }}
       </div>
     </template>

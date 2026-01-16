@@ -173,7 +173,7 @@ function isSelected(template: TaskTemplate): boolean {
 
 <style scoped>
 .template-list {
-  @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden;
 }
 
 .template-item {
@@ -181,15 +181,15 @@ function isSelected(template: TaskTemplate): boolean {
 }
 
 .template-item:hover {
-  @apply bg-gray-50;
+  @apply bg-gray-50 dark:bg-gray-700;
 }
 
 .template-item.selected {
-  @apply bg-primary-50 border-l-2 border-primary-500;
+  @apply bg-primary-50 dark:bg-primary-900 border-l-2 border-primary-500;
 }
 
 .delete-btn {
-  @apply p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded
+  @apply p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900 rounded
          transition-colors duration-150 flex-shrink-0
          disabled:opacity-50 disabled:cursor-not-allowed;
 }
@@ -199,5 +199,11 @@ function isSelected(template: TaskTemplate): boolean {
   background-color: #f3f4f6;
   color: #6b7280;
   border-color: #e5e7eb;
+}
+
+.dark .category-tag {
+  background-color: #374151;
+  color: #9ca3af;
+  border-color: #4b5563;
 }
 </style>

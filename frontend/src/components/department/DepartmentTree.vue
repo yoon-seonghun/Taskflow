@@ -220,15 +220,15 @@ function isDescendant(parent: Department, targetId: number): boolean {
 
 <style scoped>
 .department-tree {
-  @apply bg-white rounded-lg border border-gray-200;
+  @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 
 .tree-header {
-  @apply flex items-center justify-between px-4 py-3 border-b border-gray-200;
+  @apply flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700;
 }
 
 .tree-title {
-  @apply text-sm font-medium text-gray-900;
+  @apply text-sm font-medium text-gray-900 dark:text-gray-100;
 }
 
 .tree-actions {
@@ -236,13 +236,13 @@ function isDescendant(parent: Department, targetId: number): boolean {
 }
 
 .action-btn {
-  @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors;
+  @apply p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors;
 }
 
 .add-btn {
   @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
-         text-primary-600 bg-primary-50 rounded-md
-         hover:bg-primary-100 transition-colors;
+         text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900 rounded-md
+         hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors;
 }
 
 .tree-content {

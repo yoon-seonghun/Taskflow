@@ -367,11 +367,13 @@ onMounted(() => {
 }
 
 .settings-card {
-  @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  @apply bg-white rounded-lg border border-gray-200 overflow-hidden
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .settings-card-title {
-  @apply px-4 py-3 text-base font-medium text-gray-900 bg-gray-50 border-b border-gray-200;
+  @apply px-4 py-3 text-base font-medium text-gray-900 bg-gray-50 border-b border-gray-200
+         dark:text-white dark:bg-gray-700 dark:border-gray-600;
 }
 
 .settings-card-content {
@@ -383,12 +385,13 @@ onMounted(() => {
 }
 
 .form-label {
-  @apply block text-sm font-medium text-gray-700;
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
 }
 
 .form-input {
   @apply w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-         focus:ring-primary-500 focus:border-primary-500 transition-colors;
+         focus:ring-primary-500 focus:border-primary-500 transition-colors
+         dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400;
 }
 
 .btn-primary {
@@ -396,7 +399,8 @@ onMounted(() => {
          text-white bg-primary-600 rounded-lg
          hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          disabled:opacity-50 disabled:cursor-not-allowed
-         transition-colors duration-150;
+         transition-colors duration-150
+         dark:focus:ring-offset-gray-900;
 }
 
 .btn-secondary {
@@ -404,6 +408,8 @@ onMounted(() => {
          text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          disabled:opacity-50 disabled:cursor-not-allowed
-         transition-colors duration-150;
+         transition-colors duration-150
+         dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600
+         dark:focus:ring-offset-gray-900;
 }
 </style>

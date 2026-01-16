@@ -218,42 +218,42 @@ onMounted(() => {
     <!-- 헤더 -->
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           보류 업무
           <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </h2>
-        <p class="text-sm text-gray-500 mt-1">보류 상태인 업무를 관리합니다.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">보류 상태인 업무를 관리합니다.</p>
       </div>
     </div>
 
     <!-- 통계 카드 -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-      <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <div class="text-2xl font-bold text-yellow-600">{{ stats.total }}</div>
-        <div class="text-sm text-gray-500">전체 보류</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">전체 보류</div>
       </div>
-      <div class="bg-white rounded-lg border border-gray-200 p-4">
-        <div class="text-2xl font-bold text-gray-700">{{ stats.avgDays }}일</div>
-        <div class="text-sm text-gray-500">평균 보류 기간</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ stats.avgDays }}일</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">평균 보류 기간</div>
       </div>
-      <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <div class="text-2xl font-bold text-orange-500">{{ stats.longPending }}</div>
-        <div class="text-sm text-gray-500">7일 이상 보류</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">7일 이상 보류</div>
       </div>
-      <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <div class="text-2xl font-bold text-red-500">{{ stats.urgentHigh }}</div>
-        <div class="text-sm text-gray-500">긴급/높음</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">긴급/높음</div>
       </div>
     </div>
 
     <!-- 필터 영역 -->
-    <div class="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
       <div class="flex flex-wrap items-center gap-4">
         <!-- 보드 필터 -->
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-700 whitespace-nowrap">보드:</span>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">보드:</span>
           <Select
             v-model="selectedBoardId"
             :options="boardOptions"
@@ -262,14 +262,14 @@ onMounted(() => {
           />
         </div>
 
-        <div class="ml-auto text-sm text-gray-500">
+        <div class="ml-auto text-sm text-gray-500 dark:text-gray-400">
           {{ pendingItems.length }}건 / 총 {{ totalElements }}건
         </div>
       </div>
     </div>
 
     <!-- 테이블 -->
-    <div class="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col">
+    <div class="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
       <!-- 로딩 상태 -->
       <div v-if="loading" class="flex-1 flex items-center justify-center">
         <Spinner size="lg" />
@@ -289,33 +289,33 @@ onMounted(() => {
       <template v-else>
         <div class="flex-1 overflow-auto">
           <table class="w-full">
-            <thead class="sticky top-0 bg-gray-50 z-10">
-              <tr class="border-b border-gray-200">
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+            <thead class="sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
+              <tr class="border-b border-gray-200 dark:border-gray-700">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   보류 기간
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap min-w-[250px]">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap min-w-[250px]">
                   작업 내용
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   우선순위
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   담당자
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   보류일
                 </th>
-                <th class="px-4 h-10 text-center text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-center text-[13px] font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   처리
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
               <tr
                 v-for="item in pendingItems"
                 :key="item.itemId"
-                class="group hover:bg-gray-50 transition-colors cursor-pointer"
+                class="group hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 @click="handleItemClick(item)"
               >
                 <!-- 보류 기간 -->
@@ -339,18 +339,18 @@ onMounted(() => {
                 <!-- 작업 내용 -->
                 <td class="px-4 h-12">
                   <div class="flex items-center gap-2">
-                    <span class="text-[13px] text-gray-900 truncate max-w-[300px]" :title="item.title">
+                    <span class="text-[13px] text-gray-900 dark:text-gray-100 truncate max-w-[300px]" :title="item.title">
                       {{ item.title }}
                     </span>
                     <!-- Notion 스타일 '열기' 버튼 -->
                     <button
-                      class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded"
+                      class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 dark:text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900 rounded"
                       title="상세 패널 열기"
                       @click.stop="handleItemClick(item)"
                     >
                       열기
                     </button>
-                    <span v-if="item.boardName" class="px-1.5 py-0.5 text-[11px] bg-gray-100 text-gray-500 rounded flex-shrink-0">
+                    <span v-if="item.boardName" class="px-1.5 py-0.5 text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded flex-shrink-0">
                       {{ item.boardName }}
                     </span>
                   </div>
@@ -364,9 +364,9 @@ onMounted(() => {
                 </td>
 
                 <!-- 담당자 -->
-                <td class="px-4 h-12 text-[13px] text-gray-600 whitespace-nowrap">
+                <td class="px-4 h-12 text-[13px] text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[11px] font-medium">
+                    <div class="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 flex items-center justify-center text-[11px] font-medium">
                       {{ item.assigneeName?.charAt(0) || '?' }}
                     </div>
                     <span>{{ item.assigneeName || '-' }}</span>
@@ -374,7 +374,7 @@ onMounted(() => {
                 </td>
 
                 <!-- 보류일 -->
-                <td class="px-4 h-12 text-[13px] text-gray-600 whitespace-nowrap">
+                <td class="px-4 h-12 text-[13px] text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   {{ formatDate(item.updatedAt || item.createdAt) }}
                 </td>
 
@@ -412,7 +412,7 @@ onMounted(() => {
         </div>
 
         <!-- 페이징 -->
-        <div v-if="totalPages > 1" class="flex-shrink-0 border-t border-gray-200 px-4 py-3">
+        <div v-if="totalPages > 1" class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
           <Pagination
             :current-page="currentPage"
             :total-pages="totalPages"

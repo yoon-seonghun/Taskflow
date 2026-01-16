@@ -35,19 +35,19 @@ const depthStyles = computed(() => {
       return {
         margin: 'ml-4',
         border: 'border-l-[3px] border-blue-400',
-        bg: 'bg-blue-50/50'
+        bg: 'bg-blue-50/50 dark:bg-blue-900/20'
       }
     case 2:
       return {
         margin: 'ml-8',
         border: 'border-l-[3px] border-purple-400',
-        bg: 'bg-purple-50/50'
+        bg: 'bg-purple-50/50 dark:bg-purple-900/20'
       }
     default:
       return {
         margin: '',
         border: '',
-        bg: 'bg-white'
+        bg: 'bg-white dark:bg-gray-800'
       }
   }
 })
@@ -90,7 +90,8 @@ function handleComplete(e: Event) {
   <div
     v-if="compact"
     class="sub-task-card-compact flex items-center gap-2 py-1 px-2 rounded
-           bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+           bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors
+           dark:bg-gray-700/50 dark:hover:bg-gray-700"
     @click="handleClick"
   >
     <!-- 깊이 표시 -->
@@ -104,7 +105,7 @@ function handleComplete(e: Event) {
       class="flex-shrink-0 w-3.5 h-3.5 border rounded-sm transition-colors"
       :class="isCompleted
         ? 'bg-green-500 border-green-500 text-white'
-        : 'border-gray-300 hover:border-green-500'"
+        : 'border-gray-300 hover:border-green-500 dark:border-gray-500 dark:hover:border-green-500'"
       @click="handleComplete"
     >
       <svg v-if="isCompleted" class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +116,7 @@ function handleComplete(e: Event) {
     <!-- 제목 -->
     <span
       class="flex-1 text-[12px] truncate"
-      :class="isCompleted ? 'line-through text-gray-400' : 'text-gray-700'"
+      :class="isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'"
     >
       {{ item.title || item.content }}
     </span>
@@ -132,7 +133,8 @@ function handleComplete(e: Event) {
   <div
     v-else
     class="sub-task-card rounded-lg shadow-sm border border-gray-200
-           hover:shadow-md cursor-pointer transition-all"
+           hover:shadow-md cursor-pointer transition-all
+           dark:border-gray-700"
     :class="[depthStyles.margin, depthStyles.border, depthStyles.bg]"
     :draggable="draggable"
     @click="handleClick"
@@ -158,7 +160,7 @@ function handleComplete(e: Event) {
       <!-- 제목 -->
       <span
         class="flex-1 text-[13px] leading-snug"
-        :class="isCompleted ? 'line-through text-gray-400' : 'text-gray-800'"
+        :class="isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'"
       >
         {{ item.title || item.content }}
       </span>
@@ -175,18 +177,18 @@ function handleComplete(e: Event) {
     <div class="flex items-center justify-between gap-2 px-3 pb-2">
       <!-- 담당자 -->
       <div v-if="item.assigneeName" class="flex items-center gap-1">
-        <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-          <span class="text-[10px] text-gray-600 font-medium">
+        <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center dark:bg-gray-600">
+          <span class="text-[10px] text-gray-600 font-medium dark:text-gray-300">
             {{ item.assigneeName?.charAt(0) }}
           </span>
         </div>
-        <span class="text-[11px] text-gray-500">{{ item.assigneeName }}</span>
+        <span class="text-[11px] text-gray-500 dark:text-gray-400">{{ item.assigneeName }}</span>
       </div>
 
       <div class="flex-1" />
 
       <!-- 마감일 -->
-      <span v-if="item.dueDate" class="text-[11px] text-gray-400">
+      <span v-if="item.dueDate" class="text-[11px] text-gray-400 dark:text-gray-500">
         {{ formatDate(item.dueDate) }}
       </span>
     </div>
@@ -194,7 +196,7 @@ function handleComplete(e: Event) {
     <!-- 부모 정보 (배당받은 업무) -->
     <div
       v-if="showParentInfo && item.parentInfo"
-      class="flex items-center gap-1 px-3 pb-2 text-[11px] text-gray-500"
+      class="flex items-center gap-1 px-3 pb-2 text-[11px] text-gray-500 dark:text-gray-400"
     >
       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />

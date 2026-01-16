@@ -117,7 +117,7 @@ defineExpose({
     </div>
 
     <!-- 빈 상태 -->
-    <div v-else-if="displayDepartments.length === 0" class="text-center py-4 text-gray-500 text-sm">
+    <div v-else-if="displayDepartments.length === 0" class="text-center py-4 text-gray-500 text-sm dark:text-gray-400">
       부서가 없습니다
     </div>
 
@@ -196,8 +196,8 @@ const DepartmentTreeNode = defineComponent({
         h('div', {
           class: [
             'flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer text-sm',
-            'hover:bg-gray-100 transition-colors',
-            isSelected.value ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
+            'hover:bg-gray-100 transition-colors dark:hover:bg-gray-700',
+            isSelected.value ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200'
           ],
           style: { paddingLeft: indent },
           onClick: handleSelect

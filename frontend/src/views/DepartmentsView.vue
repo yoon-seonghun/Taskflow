@@ -189,8 +189,8 @@ onMounted(() => {
   <div class="departments-view">
     <!-- 헤더 -->
     <div class="mb-6">
-      <h1 class="text-xl font-semibold text-gray-900">부서 관리</h1>
-      <p class="mt-1 text-sm text-gray-500">
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">부서 관리</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         <template v-if="isExternalMode">
           외부 시스템과 연동되어 부서 정보를 조회만 할 수 있습니다.
         </template>
@@ -205,11 +205,11 @@ onMounted(() => {
       <div class="lg:col-span-5">
         <!-- 필터 옵션 -->
         <div class="flex items-center justify-between mb-3">
-          <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+          <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
             <input
               v-model="showInactive"
               type="checkbox"
-              class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
             />
             비활성 부서 표시
           </label>
@@ -252,10 +252,10 @@ onMounted(() => {
                   </svg>
                 </div>
                 <div>
-                  <h2 class="text-lg font-medium text-gray-900">
+                  <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                     {{ selectedDepartment.departmentName }}
                   </h2>
-                  <p class="text-sm text-gray-500">{{ selectedDepartment.departmentCode }}</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">{{ selectedDepartment.departmentCode }}</p>
                 </div>
               </div>
               <Badge
@@ -269,16 +269,16 @@ onMounted(() => {
             <!-- 부서 정보 -->
             <div class="detail-info">
               <div class="info-row">
-                <span class="info-label">상위 부서</span>
-                <span class="info-value">{{ selectedDepartment.parentName || '(최상위)' }}</span>
+                <span class="info-label dark:text-gray-400">상위 부서</span>
+                <span class="info-value dark:text-gray-100">{{ selectedDepartment.parentName || '(최상위)' }}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">정렬 순서</span>
-                <span class="info-value">{{ selectedDepartment.sortOrder }}</span>
+                <span class="info-label dark:text-gray-400">정렬 순서</span>
+                <span class="info-value dark:text-gray-100">{{ selectedDepartment.sortOrder }}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">계층 깊이</span>
-                <span class="info-value">{{ selectedDepartment.depth + 1 }}단계</span>
+                <span class="info-label dark:text-gray-400">계층 깊이</span>
+                <span class="info-value dark:text-gray-100">{{ selectedDepartment.depth + 1 }}단계</span>
               </div>
             </div>
 
@@ -300,21 +300,21 @@ onMounted(() => {
             </div>
             <!-- External 모드 안내 -->
             <div v-else class="external-notice">
-              <p class="text-sm text-amber-600">외부 연동 모드 (조회 전용)</p>
+              <p class="text-sm text-amber-600 dark:text-amber-400">외부 연동 모드 (조회 전용)</p>
             </div>
 
             <!-- 소속 사용자 목록 -->
             <div class="users-section">
-              <h3 class="section-title">
+              <h3 class="section-title dark:text-gray-100">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
                 소속 사용자
-                <span class="text-gray-500 font-normal">({{ departmentUsers.length }}명)</span>
+                <span class="text-gray-500 dark:text-gray-400 font-normal">({{ departmentUsers.length }}명)</span>
               </h3>
 
-              <div v-if="departmentUsers.length === 0" class="empty-users">
+              <div v-if="departmentUsers.length === 0" class="empty-users dark:text-gray-400">
                 <p>소속된 사용자가 없습니다.</p>
               </div>
               <div v-else class="users-list">
@@ -328,12 +328,12 @@ onMounted(() => {
                   </div>
                   <div class="user-info">
                     <div class="flex items-center gap-1.5">
-                      <span class="user-name">{{ user.userName }}</span>
+                      <span class="user-name dark:text-gray-100">{{ user.userName }}</span>
                       <Badge v-if="user.headYn === 'Y'" variant="primary" size="xs">팀장</Badge>
                     </div>
-                    <span class="user-meta">
+                    <span class="user-meta dark:text-gray-400">
                       {{ user.username }}
-                      <span v-if="user.positionName" class="text-gray-400 ml-1">· {{ user.positionName }}</span>
+                      <span v-if="user.positionName" class="text-gray-400 dark:text-gray-500 ml-1">· {{ user.positionName }}</span>
                     </span>
                   </div>
                   <Badge
@@ -351,11 +351,11 @@ onMounted(() => {
         <!-- 선택 안내 -->
         <template v-else>
           <div class="empty-state">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <p class="mt-2 text-sm text-gray-500">부서를 선택하면 상세 정보를 볼 수 있습니다.</p>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">부서를 선택하면 상세 정보를 볼 수 있습니다.</p>
           </div>
         </template>
       </div>
@@ -369,19 +369,19 @@ onMounted(() => {
 }
 
 .department-detail {
-  @apply bg-white rounded-lg border border-gray-200;
+  @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 
 .detail-header {
-  @apply flex items-center justify-between p-4 border-b border-gray-200;
+  @apply flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700;
 }
 
 .dept-icon {
-  @apply w-12 h-12 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center;
+  @apply w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 flex items-center justify-center;
 }
 
 .detail-info {
-  @apply p-4 border-b border-gray-200 space-y-2;
+  @apply p-4 border-b border-gray-200 dark:border-gray-700 space-y-2;
 }
 
 .info-row {
@@ -397,13 +397,13 @@ onMounted(() => {
 }
 
 .detail-actions {
-  @apply flex items-center gap-2 p-4 border-b border-gray-200;
+  @apply flex items-center gap-2 p-4 border-b border-gray-200 dark:border-gray-700;
 }
 
 .btn-secondary {
   @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium
-         text-gray-700 bg-white border border-gray-300 rounded-lg
-         hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+         text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
+         hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          transition-colors duration-150;
 }
 
@@ -424,12 +424,12 @@ onMounted(() => {
 }
 
 .user-item {
-  @apply flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50;
+  @apply flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700;
 }
 
 .user-avatar {
-  @apply w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center
-         text-sm font-medium text-gray-600;
+  @apply w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center
+         text-sm font-medium text-gray-600 dark:text-gray-400;
 }
 
 .user-info {
@@ -449,10 +449,10 @@ onMounted(() => {
 }
 
 .external-notice {
-  @apply p-4 border-b border-gray-200 text-center;
+  @apply p-4 border-b border-gray-200 dark:border-gray-700 text-center;
 }
 
 .empty-state {
-  @apply text-center py-12 bg-white rounded-lg border border-gray-200;
+  @apply text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 </style>

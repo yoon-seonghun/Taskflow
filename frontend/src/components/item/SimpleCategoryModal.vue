@@ -101,9 +101,9 @@ onUnmounted(() => {
   >
     <div class="space-y-4">
       <!-- 업무 제목 표시 -->
-      <div v-if="itemTitle" class="px-3 py-2 bg-gray-50 rounded-lg">
-        <p class="text-sm text-gray-600">
-          <span class="font-medium text-gray-700">{{ itemTitle }}</span>
+      <div v-if="itemTitle" class="px-3 py-2 bg-gray-50 rounded-lg dark:bg-gray-800">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          <span class="font-medium text-gray-700 dark:text-gray-300">{{ itemTitle }}</span>
         </p>
       </div>
 
@@ -117,10 +117,10 @@ onUnmounted(() => {
 
       <!-- 카테고리 선택 -->
       <div v-else class="space-y-2">
-        <label class="block text-sm font-medium text-gray-700">카테고리</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">카테고리</label>
         <select
           v-model="selectedCategoryId"
-          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
         >
           <option :value="null">선택 안함</option>
           <option
@@ -132,7 +132,7 @@ onUnmounted(() => {
             <template v-if="cat.isDefault">(기본)</template>
           </option>
         </select>
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
           이 업무에 적용할 카테고리를 선택하세요
         </p>
       </div>

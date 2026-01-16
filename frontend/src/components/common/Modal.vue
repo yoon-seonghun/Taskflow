@@ -113,7 +113,7 @@ onUnmounted(() => {
       >
         <!-- Backdrop -->
         <div
-          class="absolute inset-0 bg-black bg-opacity-50"
+          class="absolute inset-0 bg-black bg-opacity-50 dark:bg-opacity-70"
           @click="handleBackdropClick"
         />
 
@@ -128,22 +128,22 @@ onUnmounted(() => {
         >
           <div
             v-if="modelValue"
-            class="relative bg-white rounded-lg shadow-xl w-full"
+            class="relative bg-white rounded-lg shadow-xl w-full dark:bg-gray-800"
             :class="sizeClasses[size]"
             @click.stop
           >
             <!-- Header -->
             <div
               v-if="title || closable"
-              class="flex items-center justify-between px-4 py-3 border-b border-gray-200"
+              class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700"
             >
-              <h3 class="text-[14px] font-semibold text-gray-900">
+              <h3 class="text-[14px] font-semibold text-gray-900 dark:text-white">
                 {{ title }}
               </h3>
               <button
                 v-if="closable"
                 type="button"
-                class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors dark:hover:text-gray-200 dark:hover:bg-gray-700"
                 @click="close"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,14 +153,14 @@ onUnmounted(() => {
             </div>
 
             <!-- Body -->
-            <div class="px-4 py-4 text-[13px] text-gray-700">
+            <div class="px-4 py-4 text-[13px] text-gray-700 dark:text-gray-300">
               <slot />
             </div>
 
             <!-- Footer -->
             <div
               v-if="showFooter"
-              class="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-lg"
+              class="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-lg dark:border-gray-700 dark:bg-gray-900"
             >
               <slot name="footer">
                 <Button

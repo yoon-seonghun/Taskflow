@@ -77,7 +77,7 @@ const sizeClasses = computed(() => {
     <!-- 라벨 (선택적) -->
     <span
       v-if="showLabel && !compact"
-      class="text-gray-500"
+      class="text-gray-500 dark:text-gray-400"
       :class="sizeClasses.text"
     >
       진행률
@@ -86,7 +86,7 @@ const sizeClasses = computed(() => {
     <div class="flex items-center gap-1.5 w-full">
       <!-- 프로그레스 바 -->
       <div
-        class="flex-1 bg-gray-200 rounded-full overflow-hidden"
+        class="flex-1 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700"
         :class="[sizeClasses.bar, sizeClasses.wrapper]"
         :title="`${completedChildCount}/${childCount} 완료 (${percentage}%)`"
       >
@@ -100,7 +100,7 @@ const sizeClasses = computed(() => {
       <!-- 숫자 표시 -->
       <span
         v-if="showCount"
-        class="flex-shrink-0 text-gray-500 tabular-nums"
+        class="flex-shrink-0 text-gray-500 tabular-nums dark:text-gray-400"
         :class="sizeClasses.text"
       >
         {{ completedChildCount }}/{{ childCount }}

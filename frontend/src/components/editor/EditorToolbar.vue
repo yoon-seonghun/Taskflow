@@ -233,14 +233,14 @@ const isTableActive = computed(() => props.editor.isActive('table'))
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-gray-50">
+  <div class="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
     <!-- 텍스트 서식 -->
     <div class="flex items-center gap-0.5">
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('bold') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="굵게 (Ctrl+B)"
         @click="editor.chain().focus().toggleBold().run()"
@@ -252,8 +252,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('italic') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="기울임 (Ctrl+I)"
         @click="editor.chain().focus().toggleItalic().run()"
@@ -265,8 +265,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('underline') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('underline') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="밑줄 (Ctrl+U)"
         @click="editor.chain().focus().toggleUnderline().run()"
@@ -278,8 +278,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('strike') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('strike') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="취소선"
         @click="editor.chain().focus().toggleStrike().run()"
@@ -291,8 +291,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('highlight') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('highlight') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="하이라이트"
         @click="editor.chain().focus().toggleHighlight().run()"
@@ -303,7 +303,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       </button>
     </div>
 
-    <div class="w-px h-5 bg-gray-300 mx-1" />
+    <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
     <!-- 색상 선택 -->
     <div class="relative color-picker-container">
@@ -325,14 +325,14 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <!-- 색상 팔레트 -->
       <div
         v-if="showColorPicker"
-        class="absolute top-full left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 grid grid-cols-6 gap-1"
+        class="absolute top-full left-0 mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 grid grid-cols-6 gap-1"
         @click.stop
       >
         <button
           v-for="color in colors"
           :key="color"
           type="button"
-          class="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
+          class="w-6 h-6 rounded border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
           :style="{ backgroundColor: color }"
           :title="color"
           @click="setColor(color)"
@@ -340,7 +340,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       </div>
     </div>
 
-    <div class="w-px h-5 bg-gray-300 mx-1" />
+    <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
     <!-- 제목 -->
     <div class="flex items-center gap-0.5">
@@ -348,7 +348,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
         type="button"
         :class="[
           'p-1.5 rounded hover:bg-gray-200 transition-colors text-[12px] font-bold',
-          editor.isActive('heading', { level: 1 }) ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          editor.isActive('heading', { level: 1 }) ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="제목 1"
         @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
@@ -359,7 +359,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
         type="button"
         :class="[
           'p-1.5 rounded hover:bg-gray-200 transition-colors text-[12px] font-bold',
-          editor.isActive('heading', { level: 2 }) ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          editor.isActive('heading', { level: 2 }) ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="제목 2"
         @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
@@ -370,7 +370,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
         type="button"
         :class="[
           'p-1.5 rounded hover:bg-gray-200 transition-colors text-[12px] font-bold',
-          editor.isActive('heading', { level: 3 }) ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          editor.isActive('heading', { level: 3 }) ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="제목 3"
         @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
@@ -379,15 +379,15 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       </button>
     </div>
 
-    <div class="w-px h-5 bg-gray-300 mx-1" />
+    <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
     <!-- 목록 -->
     <div class="flex items-center gap-0.5">
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('bulletList') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="불릿 목록"
         @click="editor.chain().focus().toggleBulletList().run()"
@@ -402,8 +402,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('orderedList') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('orderedList') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="번호 목록"
         @click="editor.chain().focus().toggleOrderedList().run()"
@@ -418,8 +418,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('taskList') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('taskList') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="체크리스트"
         @click="editor.chain().focus().toggleTaskList().run()"
@@ -430,15 +430,15 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       </button>
     </div>
 
-    <div class="w-px h-5 bg-gray-300 mx-1" />
+    <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
     <!-- 정렬 -->
     <div class="flex items-center gap-0.5">
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive({ textAlign: 'left' }) ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive({ textAlign: 'left' }) ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="왼쪽 정렬"
         @click="editor.chain().focus().setTextAlign('left').run()"
@@ -450,8 +450,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive({ textAlign: 'center' }) ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive({ textAlign: 'center' }) ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="가운데 정렬"
         @click="editor.chain().focus().setTextAlign('center').run()"
@@ -463,8 +463,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive({ textAlign: 'right' }) ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive({ textAlign: 'right' }) ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="오른쪽 정렬"
         @click="editor.chain().focus().setTextAlign('right').run()"
@@ -475,15 +475,15 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       </button>
     </div>
 
-    <div class="w-px h-5 bg-gray-300 mx-1" />
+    <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
     <!-- 삽입 -->
     <div class="flex items-center gap-0.5">
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('link') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('link') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="링크"
         @click="openLinkModal"
@@ -505,8 +505,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          isTableActive ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          isTableActive ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="테이블"
         @click="insertTable"
@@ -518,8 +518,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('codeBlock') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('codeBlock') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="코드 블록"
         @click="editor.chain().focus().toggleCodeBlock().run()"
@@ -531,8 +531,8 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       <button
         type="button"
         :class="[
-          'p-1.5 rounded hover:bg-gray-200 transition-colors',
-          editor.isActive('blockquote') ? 'bg-gray-200 text-primary-600' : 'text-gray-600'
+          'p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          editor.isActive('blockquote') ? 'bg-gray-200 dark:bg-gray-700 text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'
         ]"
         title="인용문"
         @click="editor.chain().focus().toggleBlockquote().run()"
@@ -553,7 +553,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       </button>
     </div>
 
-    <div class="w-px h-5 bg-gray-300 mx-1" />
+    <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
     <!-- 실행 취소 -->
     <div class="flex items-center gap-0.5">
@@ -583,7 +583,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
 
     <!-- 테이블 컨트롤 (테이블 내에서만 표시) -->
     <template v-if="isTableActive">
-      <div class="w-px h-5 bg-gray-300 mx-1" />
+      <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
       <div class="flex items-center gap-0.5">
         <button
           type="button"
@@ -652,27 +652,27 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       @click.self="closeLinkModal"
     >
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-4">
-        <h3 class="text-lg font-semibold mb-4">링크 추가</h3>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-4">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">링크 추가</h3>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">URL</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label>
             <input
               v-model="linkUrl"
               type="url"
               placeholder="https://example.com"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               @keyup.enter="setLink"
             />
           </div>
-          <div v-if="linkText" class="text-sm text-gray-500">
+          <div v-if="linkText" class="text-sm text-gray-500 dark:text-gray-400">
             선택된 텍스트: {{ linkText }}
           </div>
         </div>
         <div class="flex justify-end gap-2 mt-4">
           <button
             type="button"
-            class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             @click="closeLinkModal"
           >
             취소
@@ -680,7 +680,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
           <button
             v-if="editor.isActive('link')"
             type="button"
-            class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            class="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
             @click="() => { linkUrl = ''; setLink() }"
           >
             링크 제거
@@ -704,17 +704,17 @@ const isTableActive = computed(() => props.editor.isActive('table'))
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       @click.self="closeImageModal"
     >
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div class="p-4 border-b border-gray-200">
-          <h3 class="text-lg font-semibold">이미지 추가</h3>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">이미지 추가</h3>
         </div>
 
         <!-- 탭 -->
-        <div class="flex border-b border-gray-200">
+        <div class="flex border-b border-gray-200 dark:border-gray-700">
           <button
             type="button"
             class="flex-1 px-4 py-2.5 text-sm font-medium transition-colors"
-            :class="imageTab === 'upload' ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50' : 'text-gray-500 hover:text-gray-700'"
+            :class="imageTab === 'upload' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 bg-primary-50 dark:bg-primary-900/30' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
             @click="imageTab = 'upload'"
           >
             파일 업로드
@@ -722,7 +722,7 @@ const isTableActive = computed(() => props.editor.isActive('table'))
           <button
             type="button"
             class="flex-1 px-4 py-2.5 text-sm font-medium transition-colors"
-            :class="imageTab === 'url' ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50' : 'text-gray-500 hover:text-gray-700'"
+            :class="imageTab === 'url' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 bg-primary-50 dark:bg-primary-900/30' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
             @click="imageTab = 'url'"
           >
             URL 입력
@@ -743,24 +743,24 @@ const isTableActive = computed(() => props.editor.isActive('table'))
 
             <!-- 업로드 영역 -->
             <div
-              class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-400 hover:bg-primary-50 transition-colors cursor-pointer"
+              class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors cursor-pointer"
               :class="{ 'pointer-events-none opacity-50': isUploading }"
               @click="triggerFileInput"
             >
-              <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <p class="text-sm text-gray-600 mb-1">클릭하여 이미지 선택</p>
-              <p class="text-xs text-gray-400">또는 에디터에 직접 붙여넣기/드래그</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-1">클릭하여 이미지 선택</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500">또는 에디터에 직접 붙여넣기/드래그</p>
             </div>
 
             <!-- 업로드 진행률 -->
             <div v-if="isUploading" class="space-y-2">
               <div class="flex items-center justify-between text-sm">
-                <span class="text-gray-600">업로드 중...</span>
-                <span class="text-primary-600 font-medium">{{ uploadProgress }}%</span>
+                <span class="text-gray-600 dark:text-gray-300">업로드 중...</span>
+                <span class="text-primary-600 dark:text-primary-400 font-medium">{{ uploadProgress }}%</span>
               </div>
-              <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div
                   class="h-full bg-primary-600 transition-all duration-300"
                   :style="{ width: `${uploadProgress}%` }"
@@ -769,11 +769,11 @@ const isTableActive = computed(() => props.editor.isActive('table'))
             </div>
 
             <!-- 에러 메시지 -->
-            <div v-if="uploadError" class="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p class="text-sm text-red-600">{{ uploadError }}</p>
+            <div v-if="uploadError" class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+              <p class="text-sm text-red-600 dark:text-red-400">{{ uploadError }}</p>
             </div>
 
-            <p class="text-xs text-gray-500 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
               지원 형식: JPG, PNG, GIF, WEBP, SVG (최대 10MB)
             </p>
           </div>
@@ -781,26 +781,26 @@ const isTableActive = computed(() => props.editor.isActive('table'))
           <!-- URL 입력 탭 -->
           <div v-else class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">이미지 URL</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">이미지 URL</label>
               <input
                 v-model="imageUrl"
                 type="url"
                 placeholder="https://example.com/image.jpg"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 @keyup.enter="addImageByUrl"
               />
             </div>
-            <p class="text-sm text-gray-500">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
               외부 이미지 URL을 입력하세요.
             </p>
           </div>
         </div>
 
         <!-- 하단 버튼 -->
-        <div class="flex justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <button
             type="button"
-            class="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+            class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             :disabled="isUploading"
             @click="closeImageModal"
           >

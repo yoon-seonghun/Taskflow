@@ -77,15 +77,15 @@ function selectType(type: HistoryType) {
 
 <style scoped>
 .history-switch {
-  @apply inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1;
+  @apply inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-1;
 }
 
 .switch-btn {
   @apply flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150;
-  @apply text-gray-600 hover:text-gray-900;
+  @apply text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100;
 }
 
 .switch-btn.active {
-  @apply bg-white text-primary-700 shadow-sm;
+  @apply bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-400 shadow-sm;
 }
 </style>

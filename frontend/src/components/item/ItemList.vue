@@ -187,7 +187,7 @@ watch(() => props.boardId, () => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden">
+  <div class="h-full flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
     <!-- 로딩 상태 -->
     <div v-if="loading" class="flex-1 flex items-center justify-center">
       <Spinner size="lg" />
@@ -227,14 +227,14 @@ watch(() => props.boardId, () => {
         </div>
 
         <!-- 활성 아이템 없음 -->
-        <div v-else class="px-4 py-8 text-center text-gray-500 text-[13px]">
+        <div v-else class="px-4 py-8 text-center text-gray-500 text-[13px] dark:text-gray-400">
           진행 중인 업무가 없습니다.
         </div>
 
         <!-- 완료된 아이템 섹션 -->
-        <div v-if="completedItems.length > 0" class="border-t border-gray-200">
+        <div v-if="completedItems.length > 0" class="border-t border-gray-200 dark:border-gray-700">
           <button
-            class="w-full px-4 py-3 flex items-center justify-between text-[13px] text-gray-600 hover:bg-gray-50 transition-colors"
+            class="w-full px-4 py-3 flex items-center justify-between text-[13px] text-gray-600 hover:bg-gray-50 transition-colors dark:text-gray-300 dark:hover:bg-gray-700"
             @click="toggleCompleted"
           >
             <span class="flex items-center gap-2">
@@ -249,7 +249,7 @@ watch(() => props.boardId, () => {
               </svg>
               완료됨
             </span>
-            <span class="text-gray-400">{{ completedItems.length }}</span>
+            <span class="text-gray-400 dark:text-gray-500">{{ completedItems.length }}</span>
           </button>
 
           <!-- 완료된 아이템 목록 -->
@@ -261,7 +261,7 @@ watch(() => props.boardId, () => {
             leave-from-class="opacity-100 max-h-[2000px]"
             leave-to-class="opacity-0 max-h-0"
           >
-            <div v-if="showCompleted" class="overflow-hidden bg-gray-50">
+            <div v-if="showCompleted" class="overflow-hidden bg-gray-50 dark:bg-gray-900/50">
               <ItemListRow
                 v-for="item in completedItems"
                 :key="item.itemId"
@@ -277,8 +277,8 @@ watch(() => props.boardId, () => {
       </div>
 
       <!-- 하단 요약 -->
-      <div class="flex-shrink-0 px-4 py-2 border-t border-gray-200 bg-gray-50">
-        <div class="flex items-center justify-between text-[12px] text-gray-500">
+      <div class="flex-shrink-0 px-4 py-2 border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50">
+        <div class="flex items-center justify-between text-[12px] text-gray-500 dark:text-gray-400">
           <span>{{ activeItems.length }}개 진행 중</span>
           <span>{{ completedItems.length }}개 완료</span>
         </div>

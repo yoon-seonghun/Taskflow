@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  /* 레이아웃 변수 */
   --font-size-compact: 13px;
   --font-size-table: 14px;
   --row-height: 36px;
@@ -13,14 +14,41 @@
   --spacing-xl: 24px;
   --sidebar-width: 240px;
   --panel-width: 400px;
+
+  /* 라이트 모드 색상 변수 */
+  --color-bg-primary: #f9fafb;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f3f4f6;
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-thumb-hover: #9ca3af;
+}
+
+/* 다크 모드 색상 변수 */
+.dark {
+  --color-bg-primary: #111827;
+  --color-bg-secondary: #1f2937;
+  --color-bg-tertiary: #374151;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-text-tertiary: #9ca3af;
+  --color-border: #374151;
+  --color-border-light: #1f2937;
+  --scrollbar-thumb: #4b5563;
+  --scrollbar-thumb-hover: #6b7280;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: var(--font-size-compact);
   line-height: 1.5;
-  color: #1f2937;
-  background-color: #f9fafb;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* 스크롤바 스타일링 */
@@ -34,12 +62,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: var(--scrollbar-thumb-hover);
 }
 
 @layer base {
@@ -56,19 +84,19 @@ body {
   }
 
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+    @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 dark:bg-primary-500 dark:hover:bg-primary-600 dark:active:bg-primary-700;
   }
 
   .btn-secondary {
-    @apply bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300;
+    @apply bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:active:bg-gray-500;
   }
 
   .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+    @apply bg-red-600 text-white hover:bg-red-700 active:bg-red-800 dark:bg-red-500 dark:hover:bg-red-600 dark:active:bg-red-700;
   }
 
   .btn-ghost {
-    @apply bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200;
+    @apply bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 dark:active:bg-gray-600;
   }
 
   .btn-sm {
@@ -80,12 +108,12 @@ body {
   }
 
   .btn-icon {
-    @apply p-1.5 rounded hover:bg-gray-100;
+    @apply p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700;
   }
 
   /* 입력 필드 */
   .input {
-    @apply w-full px-3 py-1.5 border border-gray-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow;
+    @apply w-full px-3 py-1.5 border border-gray-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400;
   }
 
   .input-sm {
@@ -93,34 +121,34 @@ body {
   }
 
   .input-error {
-    @apply border-red-500 focus:ring-red-500;
+    @apply border-red-500 focus:ring-red-500 dark:border-red-400;
   }
 
   /* 라벨 */
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300;
   }
 
   /* 테이블 */
   .table-row {
-    @apply h-9 border-b border-gray-100 hover:bg-gray-50 transition-colors;
+    @apply h-9 border-b border-gray-100 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:hover:bg-gray-800;
   }
 
   .table-cell {
-    @apply px-2 py-1.5 text-sm text-gray-700 truncate;
+    @apply px-2 py-1.5 text-sm text-gray-700 truncate dark:text-gray-300;
   }
 
   .table-header {
-    @apply px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200;
+    @apply px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700;
   }
 
   /* 카드 */
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700;
   }
 
   .card-header {
-    @apply px-4 py-3 border-b border-gray-200;
+    @apply px-4 py-3 border-b border-gray-200 dark:border-gray-700;
   }
 
   .card-body {
@@ -128,25 +156,25 @@ body {
   }
 
   .card-footer {
-    @apply px-4 py-3 border-t border-gray-200 bg-gray-50;
+    @apply px-4 py-3 border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900;
   }
 
   /* 칸반 카드 */
   .kanban-card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow;
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700;
   }
 
   /* 드롭다운 */
   .dropdown {
-    @apply absolute z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px];
+    @apply absolute z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] dark:bg-gray-800 dark:border-gray-700;
   }
 
   .dropdown-item {
-    @apply px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2;
+    @apply px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2 dark:text-gray-200 dark:hover:bg-gray-700;
   }
 
   .dropdown-divider {
-    @apply my-1 border-t border-gray-200;
+    @apply my-1 border-t border-gray-200 dark:border-gray-700;
   }
 
   /* 태그/뱃지 */
@@ -155,70 +183,70 @@ body {
   }
 
   .tag-status-not-started {
-    @apply bg-gray-100 text-gray-700;
+    @apply bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300;
   }
 
   .tag-status-in-progress {
-    @apply bg-blue-100 text-blue-700;
+    @apply bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300;
   }
 
   .tag-status-completed {
-    @apply bg-green-100 text-green-700;
+    @apply bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300;
   }
 
   .tag-status-deleted {
-    @apply bg-red-100 text-red-700;
+    @apply bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300;
   }
 
   .tag-priority-urgent {
-    @apply bg-red-100 text-red-700;
+    @apply bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300;
   }
 
   .tag-priority-high {
-    @apply bg-orange-100 text-orange-700;
+    @apply bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300;
   }
 
   .tag-priority-normal {
-    @apply bg-gray-100 text-gray-700;
+    @apply bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300;
   }
 
   .tag-priority-low {
-    @apply bg-gray-50 text-gray-500;
+    @apply bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400;
   }
 
   /* 사이드바 */
   .sidebar {
-    @apply fixed left-0 top-0 h-full w-sidebar bg-white border-r border-gray-200 z-sidebar;
+    @apply fixed left-0 top-0 h-full w-sidebar bg-white border-r border-gray-200 z-sidebar dark:bg-gray-900 dark:border-gray-700;
   }
 
   .sidebar-item {
-    @apply flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer transition-colors;
+    @apply flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer transition-colors dark:text-gray-300 dark:hover:bg-gray-800;
   }
 
   .sidebar-item-active {
-    @apply bg-primary-50 text-primary-700 font-medium;
+    @apply bg-primary-50 text-primary-700 font-medium dark:bg-primary-900/50 dark:text-primary-400;
   }
 
   /* 슬라이드오버 패널 */
   .slide-over {
-    @apply fixed right-0 top-0 h-full w-panel bg-white border-l border-gray-200 z-panel shadow-xl;
+    @apply fixed right-0 top-0 h-full w-panel bg-white border-l border-gray-200 z-panel shadow-xl dark:bg-gray-900 dark:border-gray-700;
   }
 
   .slide-over-backdrop {
-    @apply fixed inset-0 bg-black bg-opacity-30 z-panel;
+    @apply fixed inset-0 bg-black bg-opacity-30 z-panel dark:bg-opacity-50;
   }
 
   /* 모달 */
   .modal-backdrop {
-    @apply fixed inset-0 bg-black bg-opacity-50 z-modal flex items-center justify-center;
+    @apply fixed inset-0 bg-black bg-opacity-50 z-modal flex items-center justify-center dark:bg-opacity-70;
   }
 
   .modal {
-    @apply bg-white rounded-lg shadow-xl max-w-md w-full mx-4;
+    @apply bg-white rounded-lg shadow-xl max-w-md w-full mx-4 dark:bg-gray-800;
   }
 
   .modal-header {
-    @apply px-4 py-3 border-b border-gray-200 flex items-center justify-between;
+    @apply px-4 py-3 border-b border-gray-200 flex items-center justify-between dark:border-gray-700;
   }
 
   .modal-body {
@@ -226,7 +254,7 @@ body {
   }
 
   .modal-footer {
-    @apply px-4 py-3 border-t border-gray-200 flex items-center justify-end gap-2;
+    @apply px-4 py-3 border-t border-gray-200 flex items-center justify-end gap-2 dark:border-gray-700;
   }
 
   /* 토스트 */
@@ -239,29 +267,29 @@ body {
   }
 
   .toast-success {
-    @apply bg-green-600 text-white;
+    @apply bg-green-600 text-white dark:bg-green-700;
   }
 
   .toast-error {
-    @apply bg-red-600 text-white;
+    @apply bg-red-600 text-white dark:bg-red-700;
   }
 
   .toast-warning {
-    @apply bg-yellow-500 text-white;
+    @apply bg-yellow-500 text-white dark:bg-yellow-600;
   }
 
   .toast-info {
-    @apply bg-blue-600 text-white;
+    @apply bg-blue-600 text-white dark:bg-blue-700;
   }
 
   /* 툴팁 */
   .tooltip {
-    @apply absolute z-tooltip px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg;
+    @apply absolute z-tooltip px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg dark:bg-gray-700;
   }
 
   /* 로딩 스피너 */
   .spinner {
-    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600 dark:border-gray-600 dark:border-t-primary-400;
   }
 
   .spinner-sm {
@@ -278,16 +306,16 @@ body {
 
   /* 빈 상태 */
   .empty-state {
-    @apply flex flex-col items-center justify-center py-12 text-gray-500;
+    @apply flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400;
   }
 
   /* 인라인 편집 */
   .inline-edit {
-    @apply px-1 py-0.5 -mx-1 -my-0.5 rounded hover:bg-gray-100 cursor-text;
+    @apply px-1 py-0.5 -mx-1 -my-0.5 rounded hover:bg-gray-100 cursor-text dark:hover:bg-gray-700;
   }
 
   .inline-edit-active {
-    @apply bg-white border border-primary-500 shadow-sm;
+    @apply bg-white border border-primary-500 shadow-sm dark:bg-gray-800;
   }
 }
 

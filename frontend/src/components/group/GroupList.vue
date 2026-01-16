@@ -122,21 +122,21 @@ function getMemberCountText(count?: number) {
 
     <!-- 로딩 상태 -->
     <div v-if="isLoading" class="py-8 text-center">
-      <svg class="animate-spin h-8 w-8 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24">
+      <svg class="animate-spin h-8 w-8 mx-auto text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
       </svg>
-      <p class="mt-2 text-sm text-gray-500">그룹 목록을 불러오는 중...</p>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">그룹 목록을 불러오는 중...</p>
     </div>
 
     <!-- 빈 상태 -->
     <div v-else-if="isEmpty" class="py-8 text-center">
-      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
           d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
-      <p class="mt-2 text-sm text-gray-500">등록된 그룹이 없습니다.</p>
-      <button type="button" class="mt-3 text-sm text-primary-600 hover:text-primary-700" @click="handleAdd">
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">등록된 그룹이 없습니다.</p>
+      <button type="button" class="mt-3 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300" @click="handleAdd">
         + 첫 번째 그룹 추가하기
       </button>
     </div>
@@ -227,21 +227,21 @@ function getMemberCountText(count?: number) {
 
 <style scoped>
 .group-list {
-  @apply bg-white rounded-lg border border-gray-200;
+  @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 
 .list-header {
-  @apply flex items-center justify-between px-4 py-3 border-b border-gray-200;
+  @apply flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700;
 }
 
 .list-title {
-  @apply text-sm font-medium text-gray-900;
+  @apply text-sm font-medium text-gray-900 dark:text-gray-100;
 }
 
 .add-btn {
   @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
-         text-primary-600 bg-primary-50 rounded-md
-         hover:bg-primary-100 transition-colors;
+         text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-md
+         hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors;
 }
 
 .cards-container {
@@ -250,14 +250,14 @@ function getMemberCountText(count?: number) {
 }
 
 .group-card {
-  @apply relative bg-white rounded-lg border border-gray-200 cursor-pointer
+  @apply relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer
          hover:shadow-md transition-all duration-150 overflow-hidden;
   border-left-width: 4px;
   border-left-color: #9CA3AF;
 }
 
 .group-card.selected {
-  @apply ring-2 ring-primary-500 border-gray-200;
+  @apply ring-2 ring-primary-500 border-gray-200 dark:border-gray-700;
 }
 
 .group-card.inactive {
@@ -265,7 +265,7 @@ function getMemberCountText(count?: number) {
 }
 
 .group-card.drag-over {
-  @apply ring-2 ring-primary-300 bg-primary-50;
+  @apply ring-2 ring-primary-300 bg-primary-50 dark:bg-primary-900/20;
 }
 
 .color-bar {
@@ -285,15 +285,15 @@ function getMemberCountText(count?: number) {
 }
 
 .group-name {
-  @apply text-sm font-medium text-gray-900 truncate;
+  @apply text-sm font-medium text-gray-900 dark:text-gray-100 truncate;
 }
 
 .group-name.inactive {
-  @apply text-gray-500;
+  @apply text-gray-500 dark:text-gray-400;
 }
 
 .group-code {
-  @apply text-xs text-gray-400;
+  @apply text-xs text-gray-400 dark:text-gray-500;
 }
 
 .card-actions {
@@ -305,15 +305,15 @@ function getMemberCountText(count?: number) {
 }
 
 .action-btn {
-  @apply p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors;
+  @apply p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors;
 }
 
 .action-btn.danger {
-  @apply hover:bg-red-50 hover:text-red-600;
+  @apply hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400;
 }
 
 .group-description {
-  @apply mt-2 text-xs text-gray-500 line-clamp-2;
+  @apply mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2;
 }
 
 .card-footer {
@@ -321,24 +321,24 @@ function getMemberCountText(count?: number) {
 }
 
 .member-count {
-  @apply flex items-center gap-1 text-xs text-gray-500;
+  @apply flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400;
 }
 
 .inactive-badge {
-  @apply px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded;
+  @apply px-1.5 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded;
 }
 
 .toggle-btn {
   @apply flex items-center gap-1.5 px-2 py-1 rounded-md text-xs
-         hover:bg-gray-100 transition-colors;
+         hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
 }
 
 .toggle-track {
-  @apply relative w-7 h-4 bg-gray-300 rounded-full transition-colors;
+  @apply relative w-7 h-4 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors;
 }
 
 .toggle-btn.active .toggle-track {
-  @apply bg-primary-500;
+  @apply bg-primary-500 dark:bg-primary-600;
 }
 
 .toggle-thumb {
@@ -350,10 +350,10 @@ function getMemberCountText(count?: number) {
 }
 
 .toggle-label {
-  @apply text-gray-500;
+  @apply text-gray-500 dark:text-gray-400;
 }
 
 .toggle-btn.active .toggle-label {
-  @apply text-primary-600;
+  @apply text-primary-600 dark:text-primary-400;
 }
 </style>

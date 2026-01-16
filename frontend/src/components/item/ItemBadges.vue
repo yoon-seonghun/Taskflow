@@ -44,8 +44,8 @@ const badges = computed<BadgeInfo[]>(() => {
       type: 'assigned',
       label: '배당',
       ownerName: props.item.assignedByUserName,
-      color: 'text-green-700',
-      bgColor: 'bg-green-100',
+      color: 'text-green-700 dark:text-green-400',
+      bgColor: 'bg-green-100 dark:bg-green-900/50',
       icon: 'assigned',
       title: props.item.assignedByUserName
         ? `${props.item.assignedByUserName}님이 배당`
@@ -58,8 +58,8 @@ const badges = computed<BadgeInfo[]>(() => {
       type: 'assigned',
       label: '배당됨',
       ownerName: props.item.assignedToUserName,
-      color: 'text-emerald-700',
-      bgColor: 'bg-emerald-100',
+      color: 'text-emerald-700 dark:text-emerald-400',
+      bgColor: 'bg-emerald-100 dark:bg-emerald-900/50',
       icon: 'assigned',
       title: props.item.assignedToUserName
         ? `${props.item.assignedToUserName}님에게 배당`
@@ -73,8 +73,8 @@ const badges = computed<BadgeInfo[]>(() => {
       type: 'shared',
       label: '공유',
       ownerName: props.item.sharedByUserName,
-      color: 'text-blue-700',
-      bgColor: 'bg-blue-100',
+      color: 'text-blue-700 dark:text-blue-400',
+      bgColor: 'bg-blue-100 dark:bg-blue-900/50',
       icon: 'share',
       title: props.item.sharedByUserName
         ? `${props.item.sharedByUserName}님이 공유`
@@ -88,8 +88,8 @@ const badges = computed<BadgeInfo[]>(() => {
       type: 'transferred',
       label: '이관',
       ownerName: props.item.transferredByUserName,
-      color: 'text-purple-700',
-      bgColor: 'bg-purple-100',
+      color: 'text-purple-700 dark:text-purple-400',
+      bgColor: 'bg-purple-100 dark:bg-purple-900/50',
       icon: 'transfer',
       title: props.item.transferredByUserName
         ? `${props.item.transferredByUserName}님이 이관`
@@ -162,7 +162,7 @@ const sizeClasses = computed(() => {
     <span
       v-if="hiddenCount > 0"
       :class="[
-        'inline-flex items-center font-medium rounded text-gray-600 bg-gray-100',
+        'inline-flex items-center font-medium rounded text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-700',
         sizeClasses.badge
       ]"
       :title="`${hiddenCount}개 더 있음`"

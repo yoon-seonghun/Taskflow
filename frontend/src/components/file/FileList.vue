@@ -41,7 +41,7 @@ function handleDelete(fileId: number) {
         @delete="handleDelete"
       />
     </template>
-    <div v-else class="px-2 py-3 text-center text-[12px] text-gray-400">
+    <div v-else class="px-2 py-3 text-center text-[12px] text-gray-400 dark:text-gray-500">
       첨부된 파일이 없습니다
     </div>
   </div>

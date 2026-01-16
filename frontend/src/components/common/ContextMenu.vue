@@ -138,7 +138,7 @@ function getIconPath(icon: string): string {
     <!-- Trigger Button -->
     <button
       type="button"
-      class="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      class="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:hover:bg-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
       :disabled="disabled"
       @click.stop="toggleMenu"
     >
@@ -178,12 +178,12 @@ function getIconPath(icon: string): string {
         <div
           v-if="isOpen"
           ref="menuRef"
-          class="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px]"
+          class="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] dark:bg-gray-800 dark:border-gray-700"
           :style="{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }"
         >
           <template v-for="item in items" :key="item.id">
             <!-- Divider -->
-            <div v-if="item.divider" class="my-1 border-t border-gray-200" />
+            <div v-if="item.divider" class="my-1 border-t border-gray-200 dark:border-gray-700" />
 
             <!-- Menu Item -->
             <button
@@ -192,10 +192,10 @@ function getIconPath(icon: string): string {
               class="w-full px-3 py-2 text-left text-[13px] flex items-center gap-2 transition-colors"
               :class="[
                 item.disabled
-                  ? 'text-gray-400 cursor-not-allowed'
+                  ? 'text-gray-400 cursor-not-allowed dark:text-gray-500'
                   : item.danger
-                    ? 'text-red-600 hover:bg-red-50'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
               ]"
               :disabled="item.disabled"
               @click="handleSelect(item)"

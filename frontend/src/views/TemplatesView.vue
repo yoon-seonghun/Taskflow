@@ -133,8 +133,8 @@ onMounted(() => {
   <div class="templates-view">
     <!-- 헤더 -->
     <div class="mb-6">
-      <h1 class="text-xl font-semibold text-gray-900">작업 등록 메뉴</h1>
-      <p class="mt-1 text-sm text-gray-500">
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">작업 등록 메뉴</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         자주 사용하는 작업을 템플릿으로 등록하여 업무 등록 시 빠르게 입력할 수 있습니다.
       </p>
     </div>
@@ -143,7 +143,7 @@ onMounted(() => {
       <!-- 왼쪽: 등록/수정 폼 -->
       <div class="lg:col-span-1">
         <div class="sticky top-4">
-          <h2 class="text-sm font-medium text-gray-700 mb-3">
+          <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             {{ selectedTemplate ? '템플릿 수정' : '새 템플릿 등록' }}
           </h2>
           <TemplateForm
@@ -159,13 +159,13 @@ onMounted(() => {
       <!-- 오른쪽: 템플릿 목록 -->
       <div class="lg:col-span-2">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-medium text-gray-700">
+          <h2 class="text-sm font-medium text-gray-700 dark:text-gray-300">
             등록된 템플릿 ({{ templates.length }}건)
           </h2>
           <button
             v-if="selectedTemplate"
             type="button"
-            class="text-sm text-gray-500 hover:text-gray-700"
+            class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             @click="handleCancel"
           >
             선택 해제

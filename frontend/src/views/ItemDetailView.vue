@@ -53,7 +53,7 @@ function handleNavigate(newItemId: number) {
       @navigate="handleNavigate"
     />
     <div v-else class="h-full flex items-center justify-center">
-      <p class="text-gray-500">잘못된 접근입니다.</p>
+      <p class="text-gray-500 dark:text-gray-400">잘못된 접근입니다.</p>
     </div>
   </div>
 </template>

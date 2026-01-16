@@ -877,7 +877,7 @@ defineExpose({ resetForm })
 
 <style scoped>
 .user-form {
-  @apply p-4 bg-white rounded-lg border border-gray-200;
+  @apply p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 
 .form-field {
@@ -885,39 +885,41 @@ defineExpose({ resetForm })
 }
 
 .input-field {
-  @apply w-full px-3 py-1.5 text-[13px] h-8 rounded border border-gray-300
+  @apply w-full px-3 py-1.5 text-[13px] h-8 rounded border border-gray-300 dark:border-gray-600
+         bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-         placeholder:text-gray-400 transition-all duration-150;
+         placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150;
 }
 
 .input-field:disabled {
-  @apply bg-gray-100 cursor-not-allowed text-gray-500;
+  @apply bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400;
 }
 
 .select-trigger {
   @apply w-full h-8 px-3 flex items-center justify-between
-         text-[13px] rounded border border-gray-300 bg-white cursor-pointer
-         hover:border-gray-400 transition-colors;
+         text-[13px] rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700
+         text-gray-900 dark:text-gray-100 cursor-pointer
+         hover:border-gray-400 dark:hover:border-gray-500 transition-colors;
 }
 
 .select-trigger.disabled {
-  @apply bg-gray-100 cursor-not-allowed text-gray-500;
+  @apply bg-gray-100 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-400;
 }
 
 .clear-btn {
-  @apply p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600;
+  @apply p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300;
 }
 
 .dropdown {
-  @apply absolute z-20 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200;
+  @apply absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700;
 }
 
 .dropdown-search {
-  @apply flex items-center gap-2 px-3 py-2 border-b border-gray-100;
+  @apply flex items-center gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-700;
 }
 
 .dropdown-search-input {
-  @apply flex-1 text-sm outline-none placeholder:text-gray-400;
+  @apply flex-1 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 bg-transparent text-gray-900 dark:text-gray-100;
 }
 
 .dropdown-list {
@@ -925,20 +927,20 @@ defineExpose({ resetForm })
 }
 
 .dropdown-item {
-  @apply w-full flex items-center gap-2 px-3 py-2 text-sm text-left
-         hover:bg-gray-50 transition-colors;
+  @apply w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-300
+         hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
 }
 
 .dropdown-item.selected {
-  @apply bg-primary-50 text-primary-700;
+  @apply bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300;
 }
 
 .dropdown-empty {
-  @apply px-3 py-4 text-sm text-gray-500 text-center;
+  @apply px-3 py-4 text-sm text-gray-500 dark:text-gray-400 text-center;
 }
 
 .tree-indent {
-  @apply text-gray-300 mr-1;
+  @apply text-gray-300 dark:text-gray-600 mr-1;
 }
 
 .group-item {
@@ -971,7 +973,7 @@ defineExpose({ resetForm })
 }
 
 .tag-remove {
-  @apply p-0.5 rounded hover:bg-black/10 text-gray-500 hover:text-gray-700
+  @apply p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200
          transition-colors;
 }
 
@@ -983,20 +985,21 @@ defineExpose({ resetForm })
 }
 
 .btn-secondary {
-  @apply px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg
-         hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg
+         hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          disabled:opacity-50 disabled:cursor-not-allowed
          transition-colors duration-150;
 }
 
 /* 권한 옵션 스타일 */
 .role-option {
-  @apply flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300
-         cursor-pointer transition-all duration-150 hover:border-gray-400;
+  @apply flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600
+         bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300
+         cursor-pointer transition-all duration-150 hover:border-gray-400 dark:hover:border-gray-500;
 }
 
 .role-option-selected {
-  @apply border-primary-500 bg-primary-50 text-primary-700;
+  @apply border-primary-500 bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300;
 }
 
 .role-dot {

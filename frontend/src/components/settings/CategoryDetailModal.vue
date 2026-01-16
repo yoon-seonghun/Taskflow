@@ -471,25 +471,25 @@ watch(() => props.modelValue, (isOpen) => {
         <div class="absolute inset-0 bg-black/50" @click="closeModal" />
 
         <!-- Modal -->
-        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col" @click.stop>
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col" @click.stop>
           <!-- Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-3">
               <div
                 v-if="category?.categoryColor"
                 class="w-4 h-4 rounded"
                 :style="{ backgroundColor: category.categoryColor }"
               ></div>
-              <h2 class="text-lg font-semibold text-gray-900">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                 {{ category?.categoryName || '카테고리 상세' }}
               </h2>
-              <span v-if="category?.categoryCode" class="text-sm text-gray-500">
+              <span v-if="category?.categoryCode" class="text-sm text-gray-500 dark:text-gray-400">
                 ({{ category.categoryCode }})
               </span>
             </div>
             <button
               type="button"
-              class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
               @click="closeModal"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,25 +509,25 @@ watch(() => props.modelValue, (isOpen) => {
           <!-- Content -->
           <div v-else-if="category" class="flex-1 overflow-hidden flex flex-col">
             <!-- 카테고리 기본 정보 -->
-            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
               <div class="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span class="text-gray-500">소유자:</span>
-                  <span class="ml-2 font-medium text-gray-900">{{ category.ownerName || category.ownerUsername }}</span>
+                  <span class="text-gray-500 dark:text-gray-400">소유자:</span>
+                  <span class="ml-2 font-medium text-gray-900 dark:text-white">{{ category.ownerName || category.ownerUsername }}</span>
                 </div>
                 <div v-if="category.description">
-                  <span class="text-gray-500">설명:</span>
-                  <span class="ml-2 text-gray-700">{{ category.description }}</span>
+                  <span class="text-gray-500 dark:text-gray-400">설명:</span>
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">{{ category.description }}</span>
                 </div>
                 <div>
-                  <span class="text-gray-500">사용 보드:</span>
-                  <span class="ml-2 text-gray-700">{{ category.boardCount || 0 }}개</span>
+                  <span class="text-gray-500 dark:text-gray-400">사용 보드:</span>
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">{{ category.boardCount || 0 }}개</span>
                 </div>
                 <div>
-                  <span class="text-gray-500">상태:</span>
+                  <span class="text-gray-500 dark:text-gray-400">상태:</span>
                   <span
                     class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full"
-                    :class="category.useYn === 'Y' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                    :class="category.useYn === 'Y' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'"
                   >
                     {{ category.useYn === 'Y' ? '활성' : '비활성' }}
                   </span>
@@ -536,18 +536,18 @@ watch(() => props.modelValue, (isOpen) => {
             </div>
 
             <!-- 탭 -->
-            <div class="border-b border-gray-200">
+            <div class="border-b border-gray-200 dark:border-gray-700">
               <div class="flex px-6">
                 <button
                   type="button"
                   class="px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px"
                   :class="activeTab === 'shares'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
                   @click="activeTab = 'shares'"
                 >
                   공유 관리
-                  <span class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+                  <span class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                     {{ category.shares?.length || 0 }}
                   </span>
                 </button>
@@ -555,12 +555,12 @@ watch(() => props.modelValue, (isOpen) => {
                   type="button"
                   class="px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px"
                   :class="activeTab === 'properties'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
                   @click="activeTab = 'properties'"
                 >
                   속성 관리
-                  <span class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+                  <span class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                     {{ category.properties?.length || 0 }}
                   </span>
                 </button>
@@ -586,12 +586,12 @@ watch(() => props.modelValue, (isOpen) => {
                 </div>
 
                 <!-- 공유 추가 폼 -->
-                <div v-if="showAddShareForm" class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 class="text-sm font-medium text-gray-900 mb-3">새 공유 추가</h4>
+                <div v-if="showAddShareForm" class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">새 공유 추가</h4>
 
                   <!-- 공유 타입 선택 -->
                   <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-500 mb-2">공유 대상</label>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">공유 대상</label>
                     <div class="flex gap-4">
                       <label class="inline-flex items-center">
                         <input
@@ -600,7 +600,7 @@ watch(() => props.modelValue, (isOpen) => {
                           value="USER"
                           class="text-primary-600 focus:ring-primary-500"
                         />
-                        <span class="ml-2 text-sm text-gray-700">사용자</span>
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">사용자</span>
                       </label>
                       <label class="inline-flex items-center">
                         <input
@@ -609,7 +609,7 @@ watch(() => props.modelValue, (isOpen) => {
                           value="DEPARTMENT"
                           class="text-primary-600 focus:ring-primary-500"
                         />
-                        <span class="ml-2 text-sm text-gray-700">부서</span>
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">부서</span>
                       </label>
                     </div>
                   </div>
@@ -625,10 +625,10 @@ watch(() => props.modelValue, (isOpen) => {
 
                   <!-- 부서 선택 -->
                   <div v-else class="mb-4">
-                    <label class="block text-xs font-medium text-gray-500 mb-1">부서 선택</label>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">부서 선택</label>
                     <select
                       v-model="selectedDepartment"
-                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:ring-primary-500 focus:border-primary-500"
                     >
                       <option :value="null">부서를 선택하세요</option>
                       <option
@@ -644,10 +644,10 @@ watch(() => props.modelValue, (isOpen) => {
 
                   <!-- 권한 선택 -->
                   <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-500 mb-1">권한</label>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">권한</label>
                     <select
                       v-model="sharePermission"
-                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:ring-primary-500 focus:border-primary-500"
                     >
                       <option value="VIEW">읽기</option>
                       <option value="EDIT">편집</option>
@@ -658,7 +658,7 @@ watch(() => props.modelValue, (isOpen) => {
                   <div class="flex justify-end gap-2">
                     <button
                       type="button"
-                      class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                      class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                       @click="handleCancelAddShare"
                       :disabled="saving"
                     >
@@ -676,34 +676,34 @@ watch(() => props.modelValue, (isOpen) => {
                 </div>
 
                 <!-- 공유 목록 -->
-                <div v-if="category.shares && category.shares.length > 0" class="border rounded-lg overflow-hidden">
+                <div v-if="category.shares && category.shares.length > 0" class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <table class="w-full text-sm">
-                    <thead class="bg-gray-50 border-b border-gray-200">
+                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                       <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">유형</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">대상</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">권한</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">공유일</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">유형</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">대상</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">권한</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">공유일</th>
                         <th class="px-4 py-3 w-24"></th>
                       </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
-                      <tr v-for="share in category.shares" :key="share.shareId" class="hover:bg-gray-50">
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                      <tr v-for="share in category.shares" :key="share.shareId" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                         <td class="px-4 py-3">
                           <span
                             class="px-2 py-0.5 text-xs font-medium rounded-full"
-                            :class="share.shareType === 'USER' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'"
+                            :class="share.shareType === 'USER' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400'"
                           >
                             {{ share.shareType === 'USER' ? '사용자' : '부서' }}
                           </span>
                         </td>
-                        <td class="px-4 py-3 font-medium text-gray-900">
+                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
                           {{ share.shareTargetName || share.shareTarget }}
                         </td>
                         <td class="px-4 py-3">
                           <select
                             :value="share.permission"
-                            class="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-primary-500 focus:border-primary-500"
+                            class="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-primary-500 focus:border-primary-500"
                             @change="handleUpdateSharePermission(share, ($event.target as HTMLSelectElement).value as 'READ' | 'EDIT')"
                             :disabled="saving"
                           >
@@ -711,13 +711,13 @@ watch(() => props.modelValue, (isOpen) => {
                             <option value="EDIT">편집</option>
                           </select>
                         </td>
-                        <td class="px-4 py-3 text-gray-500 text-xs">
+                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                           {{ share.sharedAt ? new Date(share.sharedAt).toLocaleDateString() : '-' }}
                         </td>
                         <td class="px-4 py-3">
                           <button
                             type="button"
-                            class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                            class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
                             title="공유 해제"
                             @click="handleRemoveShare(share)"
                             :disabled="saving"
@@ -735,11 +735,11 @@ watch(() => props.modelValue, (isOpen) => {
 
                 <!-- 공유 없음 -->
                 <div v-else-if="!showAddShareForm" class="py-8 text-center">
-                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                       d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  <p class="mt-2 text-sm text-gray-500">아직 공유된 사용자/부서가 없습니다.</p>
+                  <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">아직 공유된 사용자/부서가 없습니다.</p>
                 </div>
               </div>
 
@@ -761,15 +761,15 @@ watch(() => props.modelValue, (isOpen) => {
                 </div>
 
                 <!-- 속성 추가 폼 -->
-                <div v-if="showAddPropertyForm" class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 class="text-sm font-medium text-gray-900 mb-3">속성 추가</h4>
+                <div v-if="showAddPropertyForm" class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">속성 추가</h4>
 
                   <!-- 속성 선택 -->
                   <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-500 mb-1">속성 선택</label>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">속성 선택</label>
                     <select
                       v-model="selectedPropertyId"
-                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:ring-primary-500 focus:border-primary-500"
                     >
                       <option :value="null">속성을 선택하세요</option>
                       <option v-for="prop in selectableProperties" :key="prop.propertyId" :value="prop.propertyId">
@@ -780,11 +780,11 @@ watch(() => props.modelValue, (isOpen) => {
 
                   <!-- 기본값 입력 -->
                   <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-500 mb-1">기본값 (선택)</label>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">기본값 (선택)</label>
                     <input
                       v-model="propertyDefaultValue"
                       type="text"
-                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:ring-primary-500 focus:border-primary-500"
                       placeholder="이 카테고리의 업무에 적용될 기본값"
                     />
                   </div>
@@ -793,7 +793,7 @@ watch(() => props.modelValue, (isOpen) => {
                   <div class="flex justify-end gap-2">
                     <button
                       type="button"
-                      class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                      class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                       @click="handleCancelAddProperty"
                       :disabled="saving"
                     >
@@ -811,24 +811,24 @@ watch(() => props.modelValue, (isOpen) => {
                 </div>
 
                 <!-- 속성 목록 -->
-                <div v-if="category.properties && category.properties.length > 0" class="border rounded-lg overflow-hidden">
+                <div v-if="category.properties && category.properties.length > 0" class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <table class="w-full text-sm">
-                    <thead class="bg-gray-50 border-b border-gray-200">
+                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                       <tr>
                         <th class="w-10 px-2 py-3"></th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">순서</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">속성명</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">타입</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">기본값</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">순서</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">속성명</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">타입</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">기본값</th>
                         <th class="px-4 py-3 w-20"></th>
                       </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                       <tr
                         v-for="(property, index) in category.properties"
                         :key="property.propertyId"
                         draggable="true"
-                        class="hover:bg-gray-50 transition-all duration-150 sortable-item"
+                        class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-150 sortable-item"
                         :class="{
                           'sortable-dragging': draggedPropertyIndex === index,
                           'sortable-drag-over': dropTargetIndex === index && draggedPropertyIndex !== null && draggedPropertyIndex !== index
@@ -841,26 +841,26 @@ watch(() => props.modelValue, (isOpen) => {
                       >
                         <!-- 드래그 핸들 -->
                         <td class="w-10 px-2 py-3">
-                          <div class="sortable-handle text-gray-400 hover:text-gray-600">
+                          <div class="sortable-handle text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
                             </svg>
                           </div>
                         </td>
-                        <td class="px-4 py-3 text-gray-500">{{ property.sortOrder || index + 1 }}</td>
-                        <td class="px-4 py-3 font-medium text-gray-900">{{ property.propertyName }}</td>
+                        <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ property.sortOrder || index + 1 }}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ property.propertyName }}</td>
                         <td class="px-4 py-3">
-                          <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                          <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300">
                             {{ getPropertyTypeLabel(property.propertyType) }}
                           </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-600">
+                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
                           {{ property.defaultValue || '-' }}
                         </td>
                         <td class="px-4 py-3">
                           <button
                             type="button"
-                            class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                            class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
                             title="속성 제거"
                             @click="handleRemoveProperty(property)"
                             :disabled="saving"
@@ -878,22 +878,22 @@ watch(() => props.modelValue, (isOpen) => {
 
                 <!-- 속성 없음 -->
                 <div v-else-if="!showAddPropertyForm" class="py-8 text-center">
-                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <p class="mt-2 text-sm text-gray-500">아직 연결된 속성이 없습니다.</p>
+                  <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">아직 연결된 속성이 없습니다.</p>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Footer -->
-          <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+          <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
             <div class="flex justify-end">
               <button
                 type="button"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                 @click="closeModal"
               >
                 닫기

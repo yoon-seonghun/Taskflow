@@ -146,20 +146,20 @@ const emptyMessage = computed(() => {
   <div class="history-table-wrapper">
     <!-- 로딩 상태 -->
     <div v-if="loading" class="py-12 text-center">
-      <svg class="animate-spin h-8 w-8 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24">
+      <svg class="animate-spin h-8 w-8 mx-auto text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
       </svg>
-      <p class="mt-2 text-sm text-gray-500">이력을 불러오는 중...</p>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">이력을 불러오는 중...</p>
     </div>
 
     <!-- 빈 상태 -->
     <div v-else-if="isEmpty" class="py-12 text-center">
-      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <p class="mt-2 text-sm text-gray-500">
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
         {{ emptyMessage }}
       </p>
     </div>
@@ -180,14 +180,14 @@ const emptyMessage = computed(() => {
       </thead>
       <tbody>
         <tr v-for="item in itemHistories" :key="item.itemId" class="group">
-          <td class="font-medium text-gray-900">
+          <td class="font-medium text-gray-900 dark:text-gray-100">
             <div class="flex items-center gap-2">
               <span class="truncate flex-1" :title="item.title">
                 {{ item.title }}
               </span>
               <!-- Notion 스타일 '열기' 버튼 (hover 시 표시) -->
               <button
-                class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded"
+                class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded"
                 title="상세 패널 열기"
                 @click="emit('openItem', item.itemId, item.boardId)"
               >
@@ -223,7 +223,7 @@ const emptyMessage = computed(() => {
       </thead>
       <tbody>
         <tr v-for="template in templateHistories" :key="template.templateId">
-          <td class="font-medium text-gray-900">
+          <td class="font-medium text-gray-900 dark:text-gray-100">
             <div class="truncate max-w-[400px]" :title="template.content">
               {{ template.content }}
             </div>
@@ -256,7 +256,7 @@ const emptyMessage = computed(() => {
       <tbody>
         <tr v-for="log in managementHistories" :key="log.logId">
           <td>
-            <span class="text-xs px-2 py-1 bg-gray-100 rounded text-gray-600">
+            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400">
               {{ getTargetTypeLabel(log.targetType) }}
             </span>
           </td>
@@ -265,13 +265,13 @@ const emptyMessage = computed(() => {
               {{ getActionBadge(log.action).label }}
             </Badge>
           </td>
-          <td class="font-medium text-gray-900">
+          <td class="font-medium text-gray-900 dark:text-gray-100">
             <div class="truncate max-w-[200px]" :title="log.targetName || String(log.targetId)">
               {{ log.targetName || `#${log.targetId}` }}
             </div>
           </td>
           <td>
-            <div class="truncate max-w-[250px] text-gray-600" :title="log.description || ''">
+            <div class="truncate max-w-[250px] text-gray-600 dark:text-gray-400" :title="log.description || ''">
               {{ log.description || '-' }}
             </div>
           </td>
@@ -294,22 +294,22 @@ const emptyMessage = computed(() => {
 }
 
 .history-table thead {
-  @apply bg-gray-50 border-y border-gray-200;
+  @apply bg-gray-50 dark:bg-gray-900 border-y border-gray-200 dark:border-gray-700;
 }
 
 .history-table th {
-  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
 }
 
 .history-table tbody {
-  @apply divide-y divide-gray-100;
+  @apply divide-y divide-gray-100 dark:divide-gray-700;
 }
 
 .history-table td {
-  @apply px-4 py-3 text-gray-600 whitespace-nowrap;
+  @apply px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap;
 }
 
 .history-table tbody tr {
-  @apply hover:bg-gray-50 transition-colors;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors;
 }
 </style>

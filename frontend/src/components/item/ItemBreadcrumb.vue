@@ -101,7 +101,7 @@ onMounted(() => {
   <nav v-if="isChildItem || breadcrumbItems.length > 1" class="item-breadcrumb flex items-center gap-1 text-[12px]">
     <!-- 홈 아이콘 -->
     <button
-      class="flex items-center gap-1 px-1.5 py-0.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+      class="flex items-center gap-1 px-1.5 py-0.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors dark:text-gray-400 dark:hover:bg-primary-900/30"
       title="루트 업무 목록"
       @click="$emit('navigate', { itemId: 0, itemDepth: -1, title: '목록', status: 'NOT_STARTED' })"
     >
@@ -112,14 +112,14 @@ onMounted(() => {
 
     <!-- 로딩 표시 -->
     <template v-if="loading">
-      <span class="text-gray-400">로딩...</span>
+      <span class="text-gray-400 dark:text-gray-500">로딩...</span>
     </template>
 
     <!-- Breadcrumb 항목들 -->
     <template v-else>
       <template v-for="(breadcrumb, index) in breadcrumbItems" :key="breadcrumb.itemId">
         <!-- 구분자 -->
-        <svg class="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-3 h-3 text-gray-400 flex-shrink-0 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
 
@@ -127,8 +127,8 @@ onMounted(() => {
         <button
           class="flex items-center gap-1 px-1.5 py-0.5 max-w-[150px] rounded transition-colors"
           :class="breadcrumb.isCurrent
-            ? 'text-gray-900 font-medium cursor-default'
-            : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50'"
+            ? 'text-gray-900 font-medium cursor-default dark:text-white'
+            : 'text-gray-600 hover:text-primary-600 hover:bg-primary-50 dark:text-gray-300 dark:hover:bg-primary-900/30'"
           :title="breadcrumb.title"
           @click="handleClick(breadcrumb)"
         >

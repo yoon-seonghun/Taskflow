@@ -35,11 +35,11 @@ const hasContent = computed(() => {
 
 // 상태별 색상
 const statusColors: Record<ItemStatus, { bg: string; text: string }> = {
-  NOT_STARTED: { bg: 'bg-gray-100', text: 'text-gray-600' },
-  IN_PROGRESS: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  COMPLETED: { bg: 'bg-green-100', text: 'text-green-700' },
-  DELETED: { bg: 'bg-red-100', text: 'text-red-600' }
+  NOT_STARTED: { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-300' },
+  IN_PROGRESS: { bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-700 dark:text-blue-400' },
+  PENDING: { bg: 'bg-yellow-100 dark:bg-yellow-900/50', text: 'text-yellow-700 dark:text-yellow-400' },
+  COMPLETED: { bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-700 dark:text-green-400' },
+  DELETED: { bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-600 dark:text-red-400' }
 }
 
 // 상태 라벨
@@ -65,7 +65,7 @@ function handleNavigate(item: ParentInfo) {
   <div v-if="hasContent" class="parent-info-tooltip group relative inline-flex">
     <!-- 트리거 아이콘 -->
     <button
-      class="flex items-center justify-center w-5 h-5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+      class="flex items-center justify-center w-5 h-5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors dark:hover:text-gray-300 dark:hover:bg-gray-700"
       title="상위 업무 정보"
     >
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +83,8 @@ function handleNavigate(item: ParentInfo) {
       class="absolute z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100
              transition-all duration-200 delay-300
              bg-white rounded-lg shadow-lg border border-gray-200
-             min-w-[220px] max-w-[320px] p-3"
+             min-w-[220px] max-w-[320px] p-3
+             dark:bg-gray-800 dark:border-gray-700"
       :class="{
         'bottom-full left-1/2 -translate-x-1/2 mb-2': placement === 'top',
         'top-full left-1/2 -translate-x-1/2 mt-2': placement === 'bottom',
@@ -93,10 +94,10 @@ function handleNavigate(item: ParentInfo) {
     >
       <!-- 설명 섹션 -->
       <div v-if="description" class="tooltip-section">
-        <span class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+        <span class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 dark:text-gray-500">
           설명
         </span>
-        <p class="text-[13px] text-gray-700 leading-relaxed line-clamp-3">
+        <p class="text-[13px] text-gray-700 leading-relaxed line-clamp-3 dark:text-gray-200">
           {{ description }}
         </p>
       </div>
@@ -104,12 +105,12 @@ function handleNavigate(item: ParentInfo) {
       <!-- 구분선 -->
       <div
         v-if="description && (parent || root)"
-        class="my-2 border-t border-gray-100"
+        class="my-2 border-t border-gray-100 dark:border-gray-700"
       />
 
       <!-- 상위 업무 정보 섹션 -->
       <div v-if="parent || root" class="tooltip-section">
-        <span class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
+        <span class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2 dark:text-gray-500">
           상위 업무
         </span>
 
@@ -119,7 +120,8 @@ function handleNavigate(item: ParentInfo) {
           <button
             v-if="showBothParentAndRoot && root"
             class="inline-flex items-center gap-1 px-2 py-1 text-[12px] rounded
-                   bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                   bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors
+                   dark:bg-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/70"
             @click="handleNavigate(root)"
           >
             <span class="truncate max-w-[100px]">{{ root.title }}</span>
@@ -128,7 +130,7 @@ function handleNavigate(item: ParentInfo) {
           <!-- 화살표 구분자 -->
           <svg
             v-if="showBothParentAndRoot"
-            class="w-3 h-3 text-gray-400 flex-shrink-0"
+            class="w-3 h-3 text-gray-400 flex-shrink-0 dark:text-gray-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -140,7 +142,8 @@ function handleNavigate(item: ParentInfo) {
           <button
             v-if="parent"
             class="inline-flex items-center gap-1 px-2 py-1 text-[12px] rounded
-                   bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                   bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors
+                   dark:bg-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900/70"
             @click="handleNavigate(parent)"
           >
             <span class="truncate max-w-[120px]">{{ parent.title }}</span>
@@ -149,7 +152,7 @@ function handleNavigate(item: ParentInfo) {
 
         <!-- 상태 표시 -->
         <div v-if="parent" class="mt-2 flex items-center gap-2">
-          <span class="text-[11px] text-gray-500">상태:</span>
+          <span class="text-[11px] text-gray-500 dark:text-gray-400">상태:</span>
           <span
             class="inline-flex items-center px-1.5 py-0.5 text-[11px] rounded"
             :class="[statusColors[parent.status].bg, statusColors[parent.status].text]"
@@ -161,7 +164,7 @@ function handleNavigate(item: ParentInfo) {
 
       <!-- 툴팁 화살표 -->
       <div
-        class="absolute w-2 h-2 bg-white border border-gray-200 transform rotate-45"
+        class="absolute w-2 h-2 bg-white border border-gray-200 transform rotate-45 dark:bg-gray-800 dark:border-gray-700"
         :class="{
           'top-full left-1/2 -translate-x-1/2 -mt-1 border-t-0 border-l-0': placement === 'top',
           'bottom-full left-1/2 -translate-x-1/2 -mb-1 border-b-0 border-r-0': placement === 'bottom',

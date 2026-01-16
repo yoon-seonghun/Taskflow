@@ -408,8 +408,8 @@ onMounted(() => {
   <div class="history-view">
     <!-- 헤더 -->
     <div class="mb-6">
-      <h1 class="text-xl font-semibold text-gray-900">이력관리</h1>
-      <p class="mt-1 text-sm text-gray-500">
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-white">이력관리</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         작업 처리 이력과 작업 등록 이력을 조회합니다.
       </p>
     </div>
@@ -514,7 +514,7 @@ onMounted(() => {
       <!-- 사용자 지정 날짜 입력 -->
       <div v-if="selectedPeriod === 'custom'" class="mt-4 flex items-center gap-4">
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-600">시작일</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">시작일</span>
           <input
             v-model="customStartDate"
             type="date"
@@ -524,7 +524,7 @@ onMounted(() => {
         </div>
         <span class="text-gray-400">~</span>
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-600">종료일</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">종료일</span>
           <input
             v-model="customEndDate"
             type="date"
@@ -546,16 +546,16 @@ onMounted(() => {
     <template v-if="historyType === 'all'">
       <!-- 전체 결과 정보 -->
       <div class="flex items-center justify-between mb-4">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
           전체
-          <span class="font-medium text-gray-900">{{ totalAllElements }}</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{ totalAllElements }}</span>
           건
           <span class="text-gray-400 mx-2">|</span>
           작업 처리
-          <span class="font-medium text-blue-600">{{ itemTotalElements }}</span>
+          <span class="font-medium text-blue-600 dark:text-blue-400">{{ itemTotalElements }}</span>
           건,
           작업 등록
-          <span class="font-medium text-green-600">{{ templateTotalElements }}</span>
+          <span class="font-medium text-green-600 dark:text-green-400">{{ templateTotalElements }}</span>
           건
         </p>
       </div>
@@ -623,9 +623,9 @@ onMounted(() => {
     <template v-else>
       <!-- 결과 정보 -->
       <div class="flex items-center justify-between mb-4">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
           총
-          <span class="font-medium text-gray-900">
+          <span class="font-medium text-gray-900 dark:text-white">
             {{ historyType === 'item' ? itemTotalElements : historyType === 'template' ? templateTotalElements : managementTotalElements }}
           </span>
           건
@@ -665,7 +665,8 @@ onMounted(() => {
 }
 
 .filter-section {
-  @apply p-4 bg-white rounded-lg border border-gray-200 mb-6;
+  @apply p-4 bg-white rounded-lg border border-gray-200 mb-6
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .section-header {
@@ -673,11 +674,13 @@ onMounted(() => {
 }
 
 .section-title {
-  @apply flex items-center gap-2 text-base font-semibold text-gray-800;
+  @apply flex items-center gap-2 text-base font-semibold text-gray-800
+         dark:text-gray-200;
 }
 
 .table-container {
-  @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  @apply bg-white rounded-lg border border-gray-200 overflow-hidden
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .btn-primary {
@@ -691,11 +694,13 @@ onMounted(() => {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150;
+         transition-colors duration-150
+         dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600;
 }
 
 .date-input {
   @apply px-3 py-1.5 text-sm border border-gray-300 rounded-lg
-         focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+         focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-700 dark:border-gray-600 dark:text-white;
 }
 </style>

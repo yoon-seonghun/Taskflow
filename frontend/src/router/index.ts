@@ -30,6 +30,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '공유받은 업무' }
       },
       {
+        path: 'all-tasks',
+        name: 'AllTasks',
+        component: () => import('@/views/AllTasksView.vue'),
+        meta: { title: '전체 업무' }
+      },
+      {
         path: 'overdue',
         name: 'Overdue',
         component: () => import('@/views/OverdueView.vue'),

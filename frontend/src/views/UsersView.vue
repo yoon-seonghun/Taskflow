@@ -259,8 +259,8 @@ onMounted(async () => {
   <div class="users-view">
     <!-- 헤더 -->
     <div class="mb-6">
-      <h1 class="text-xl font-semibold text-gray-900">사용자 관리</h1>
-      <p class="mt-1 text-sm text-gray-500">
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-white">사용자 관리</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         <template v-if="isExternalMode">
           외부 시스템과 연동되어 사용자 정보를 조회만 할 수 있습니다.
         </template>
@@ -274,7 +274,7 @@ onMounted(async () => {
       <!-- 왼쪽: 사용자 폼 (Internal 모드일 때만 표시) -->
       <div v-if="userCrudEnabled" class="lg:col-span-1">
         <div class="sticky top-4">
-          <h2 class="text-base font-medium text-gray-900 mb-3">
+          <h2 class="text-base font-medium text-gray-900 dark:text-white mb-3">
             {{ selectedUser ? '사용자 수정' : '사용자 등록' }}
           </h2>
           <UserForm
@@ -325,10 +325,10 @@ onMounted(async () => {
 
         <!-- 결과 정보 -->
         <div class="flex items-center justify-between mb-3">
-          <p class="text-sm text-gray-600">
-            총 <span class="font-medium text-gray-900">{{ totalElements }}</span>명
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            총 <span class="font-medium text-gray-900 dark:text-white">{{ totalElements }}</span>명
           </p>
-          <p v-if="isExternalMode" class="text-xs text-amber-600">
+          <p v-if="isExternalMode" class="text-xs text-amber-600 dark:text-amber-400">
             외부 연동 모드 (조회 전용)
           </p>
         </div>
@@ -368,17 +368,20 @@ onMounted(async () => {
 }
 
 .filter-section {
-  @apply p-3 bg-white rounded-lg border border-gray-200;
+  @apply p-3 bg-white rounded-lg border border-gray-200
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .table-container {
-  @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  @apply bg-white rounded-lg border border-gray-200 overflow-hidden
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .btn-primary {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-white bg-primary-600 rounded-lg
          hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150;
+         transition-colors duration-150
+         dark:focus:ring-offset-gray-900;
 }
 </style>

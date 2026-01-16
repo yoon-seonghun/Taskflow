@@ -999,4 +999,372 @@
         WHERE ITEM_ID = #{itemId}
     </select>
 
+    <!-- ============================================= -->
+    <!-- v2.1: 전체 업무 조회 (All Tasks) -->
+    <!-- ============================================= -->
+
+    <!-- AllItems ResultMap (sourceType 포함) -->
+    <resultMap id="AllItemResultMap" type="com.taskflow.domain.Item" extends="ItemResultMap">
+        <result property="sourceType" column="SOURCE_TYPE"/>
+        <result property="boardColor" column="BOARD_COLOR"/>
+        <result property="shareType" column="SHARE_TYPE"/>
+        <result property="permission" column="PERMISSION"/>
+        <result property="sharedAt" column="SHARED_AT"/>
+    </resultMap>
+
+    <!-- 전체 업무 공통 SELECT -->
+    <sql id="selectAllItems">
+        SELECT
+            i.ITEM_ID,
+            i.BOARD_ID,
+            i.OWNER_USERNAME,
+            i.GROUP_ID,
+            i.CATEGORY_ID,
+            i.CONTENT AS TITLE,
+            i.CONTENT,
+            i.DESCRIPTION,
+            i.STATUS,
+            i.PRIORITY,
+            i.ASSIGNEE_USERNAME,
+            i.REQUEST_DATE,
+            i.DUE_DATE,
+            i.PREVIOUS_STATUS,
+            i.COMPLETED_BY,
+            i.DELETED_AT,
+            i.DELETED_BY,
+            i.TRANSFERRED_FROM,
+            i.TRANSFERRED_AT,
+            i.SORT_ORDER,
+            i.CREATED_AT,
+            i.CREATED_BY,
+            i.UPDATED_AT,
+            i.UPDATED_BY,
+            /* 하위 업무 필드 */
+            i.PARENT_ITEM_ID,
+            i.ITEM_DEPTH,
+            i.CHILD_SORT_ORDER,
+            (SELECT COUNT(*) FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS != 'DELETED') AS CHILD_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS = 'COMPLETED') AS COMPLETED_CHILD_COUNT,
+            (EXISTS (SELECT 1 FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS != 'DELETED')) AS HAS_CHILDREN,
+            (COALESCE(i.ITEM_DEPTH, 0) &lt; 2) AS CAN_CREATE_CHILD,
+            parent.CONTENT AS PARENT_TITLE,
+            parent.STATUS AS PARENT_STATUS,
+            COALESCE(grandparent.ITEM_ID, parent.ITEM_ID) AS ROOT_ITEM_ID,
+            COALESCE(grandparent.CONTENT, parent.CONTENT) AS ROOT_TITLE,
+            COALESCE(grandparent.STATUS, parent.STATUS) AS ROOT_STATUS,
+            /* 보드 정보 */
+            b.BOARD_NAME,
+            b.COLOR AS BOARD_COLOR,
+            uo.NAME AS OWNER_NAME,
+            g.GROUP_NAME,
+            g.GROUP_COLOR,
+            cat.CATEGORY_NAME,
+            cat.CATEGORY_COLOR,
+            ua.NAME AS ASSIGNEE_NAME,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME,
+            (SELECT COUNT(*) FROM TB_COMMENT c WHERE c.ITEM_ID = i.ITEM_ID) AS COMMENT_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM_SHARE s WHERE s.ITEM_ID = i.ITEM_ID AND s.DELETED_AT IS NULL) AS SHARE_COUNT,
+            /* 이관 정보 */
+            tb_orig.OWNER_USERNAME AS TRANSFERRED_BY_USERNAME,
+            ut.NAME AS TRANSFERRED_BY_USER_NAME
+    </sql>
+
+    <!-- 전체 업무 조회 (UNION ALL로 4가지 출처 통합) -->
+    <select id="findAllItems" resultMap="AllItemResultMap">
+        SELECT * FROM (
+            /* 1. 소유 보드 업무 (OWNED) */
+            <include refid="selectAllItems"/>,
+            'OWNED' AS SOURCE_TYPE,
+            NULL AS SHARE_TYPE,
+            'FULL' AS PERMISSION,
+            NULL AS IS_SHARED_TO_ME,
+            NULL AS SHARED_BY_USERNAME,
+            NULL AS SHARED_BY_USER_NAME,
+            NULL AS SHARED_AT,
+            FALSE AS IS_ASSIGNED_TO_ME,
+            NULL AS ASSIGNED_BY_USERNAME,
+            NULL AS ASSIGNED_BY_USER_NAME,
+            NULL AS ASSIGNED_AT,
+            NULL AS ASSIGNED_TO_USERNAME,
+            NULL AS ASSIGNED_TO_USER_NAME
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.OWNER_USERNAME = #{username} AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+            LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+            LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+            LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+            LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+            LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+            LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+            LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+            WHERE 1=1
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 2. 공유 보드 업무 (BOARD_SHARED) */
+            <include refid="selectAllItems"/>,
+            'BOARD_SHARED' AS SOURCE_TYPE,
+            NULL AS SHARE_TYPE,
+            bs.PERMISSION AS PERMISSION,
+            FALSE AS IS_SHARED_TO_ME,
+            bs.CREATED_BY AS SHARED_BY_USERNAME,
+            usb.NAME AS SHARED_BY_USER_NAME,
+            bs.CREATED_AT AS SHARED_AT,
+            FALSE AS IS_ASSIGNED_TO_ME,
+            NULL AS ASSIGNED_BY_USERNAME,
+            NULL AS ASSIGNED_BY_USER_NAME,
+            NULL AS ASSIGNED_AT,
+            NULL AS ASSIGNED_TO_USERNAME,
+            NULL AS ASSIGNED_TO_USER_NAME
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username} AND bs.DELETED_AT IS NULL
+            LEFT JOIN TB_USER usb ON bs.CREATED_BY = usb.USERNAME
+            LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+            LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+            LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+            LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+            LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+            LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+            LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+            LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 3. 개별 공유 업무 (ITEM_SHARED) */
+            <include refid="selectAllItems"/>,
+            'ITEM_SHARED' AS SOURCE_TYPE,
+            ish.SHARE_TYPE AS SHARE_TYPE,
+            ish.PERMISSION AS PERMISSION,
+            TRUE AS IS_SHARED_TO_ME,
+            ish.CREATED_BY AS SHARED_BY_USERNAME,
+            uss.NAME AS SHARED_BY_USER_NAME,
+            ish.CREATED_AT AS SHARED_AT,
+            FALSE AS IS_ASSIGNED_TO_ME,
+            NULL AS ASSIGNED_BY_USERNAME,
+            NULL AS ASSIGNED_BY_USER_NAME,
+            NULL AS ASSIGNED_AT,
+            NULL AS ASSIGNED_TO_USERNAME,
+            NULL AS ASSIGNED_TO_USER_NAME
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'SHARE' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER uss ON ish.CREATED_BY = uss.USERNAME
+            LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+            LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+            LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+            LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+            LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+            LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+            LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+            LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 4. 배당받은 업무 (ASSIGNED) */
+            <include refid="selectAllItems"/>,
+            'ASSIGNED' AS SOURCE_TYPE,
+            ish.SHARE_TYPE AS SHARE_TYPE,
+            ish.PERMISSION AS PERMISSION,
+            FALSE AS IS_SHARED_TO_ME,
+            NULL AS SHARED_BY_USERNAME,
+            NULL AS SHARED_BY_USER_NAME,
+            NULL AS SHARED_AT,
+            TRUE AS IS_ASSIGNED_TO_ME,
+            ish.ASSIGNED_BY AS ASSIGNED_BY_USERNAME,
+            usa.NAME AS ASSIGNED_BY_USER_NAME,
+            ish.ASSIGNED_AT AS ASSIGNED_AT,
+            NULL AS ASSIGNED_TO_USERNAME,
+            NULL AS ASSIGNED_TO_USER_NAME
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'ASSIGN' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER usa ON ish.ASSIGNED_BY = usa.USERNAME
+            LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+            LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+            LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+            LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+            LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+            LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+            LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+            LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+        ) all_items
+        <where>
+            <if test="request.sourceType != null and request.sourceType != '' and request.sourceType != 'ALL'">
+                AND SOURCE_TYPE = #{request.sourceType}
+            </if>
+            <if test="request.assignedByUsername != null and request.assignedByUsername != ''">
+                AND ASSIGNED_BY_USERNAME = #{request.assignedByUsername}
+            </if>
+        </where>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 전체 업무 총 개수 조회 -->
+    <select id="countAllItems" resultType="long">
+        SELECT COUNT(*) FROM (
+            /* 1. 소유 보드 업무 */
+            SELECT i.ITEM_ID, 'OWNED' AS SOURCE_TYPE, NULL AS ASSIGNED_BY_USERNAME
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.OWNER_USERNAME = #{username} AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE 1=1
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 2. 공유 보드 업무 */
+            SELECT i.ITEM_ID, 'BOARD_SHARED' AS SOURCE_TYPE, NULL AS ASSIGNED_BY_USERNAME
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username} AND bs.DELETED_AT IS NULL
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 3. 개별 공유 업무 */
+            SELECT i.ITEM_ID, 'ITEM_SHARED' AS SOURCE_TYPE, NULL AS ASSIGNED_BY_USERNAME
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'SHARE' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 4. 배당받은 업무 */
+            SELECT i.ITEM_ID, 'ASSIGNED' AS SOURCE_TYPE, ish.ASSIGNED_BY AS ASSIGNED_BY_USERNAME
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'ASSIGN' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+        ) all_items
+        <where>
+            <if test="request.sourceType != null and request.sourceType != '' and request.sourceType != 'ALL'">
+                AND SOURCE_TYPE = #{request.sourceType}
+            </if>
+            <if test="request.assignedByUsername != null and request.assignedByUsername != ''">
+                AND ASSIGNED_BY_USERNAME = #{request.assignedByUsername}
+            </if>
+        </where>
+    </select>
+
+    <!-- 전체 업무 통계 조회 -->
+    <select id="getItemsStats" resultType="java.util.HashMap">
+        SELECT
+            SOURCE_TYPE,
+            STATUS,
+            PRIORITY,
+            COALESCE(ITEM_DEPTH, 0) AS ITEM_DEPTH,
+            COUNT(*) AS CNT
+        FROM (
+            /* 1. 소유 보드 업무 */
+            SELECT i.STATUS, i.PRIORITY, i.ITEM_DEPTH, 'OWNED' AS SOURCE_TYPE
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.OWNER_USERNAME = #{username} AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE 1=1
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 2. 공유 보드 업무 */
+            SELECT i.STATUS, i.PRIORITY, i.ITEM_DEPTH, 'BOARD_SHARED' AS SOURCE_TYPE
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username} AND bs.DELETED_AT IS NULL
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 3. 개별 공유 업무 */
+            SELECT i.STATUS, i.PRIORITY, i.ITEM_DEPTH, 'ITEM_SHARED' AS SOURCE_TYPE
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'SHARE' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 4. 배당받은 업무 */
+            SELECT i.STATUS, i.PRIORITY, i.ITEM_DEPTH, 'ASSIGNED' AS SOURCE_TYPE
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'ASSIGN' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+        ) all_items
+        GROUP BY SOURCE_TYPE, STATUS, PRIORITY, ITEM_DEPTH
+    </select>
+
+    <!-- 전체 업무 필터 조건 -->
+    <sql id="allItemsFilterConditions">
+        <if test="request.keyword != null and request.keyword != ''">
+            AND i.CONTENT LIKE CONCAT('%', #{request.keyword}, '%')
+        </if>
+        <if test="request.status != null and request.status != ''">
+            AND i.STATUS = #{request.status}
+        </if>
+        <if test="request.priority != null and request.priority != ''">
+            AND i.PRIORITY = #{request.priority}
+        </if>
+        <if test="request.assigneeUsername != null and request.assigneeUsername != ''">
+            AND i.ASSIGNEE_USERNAME = #{request.assigneeUsername}
+        </if>
+        <if test="request.boardId != null">
+            AND i.BOARD_ID = #{request.boardId}
+        </if>
+        <if test="request.groupId != null">
+            AND i.GROUP_ID = #{request.groupId}
+        </if>
+        <if test="request.startDate != null">
+            AND DATE(i.CREATED_AT) >= #{request.startDate}
+        </if>
+        <if test="request.endDate != null">
+            AND DATE(i.CREATED_AT) &lt;= #{request.endDate}
+        </if>
+        <if test="request.includeCompleted == null or request.includeCompleted == false">
+            AND i.STATUS != 'COMPLETED'
+        </if>
+        <if test="request.includeDeleted == null or request.includeDeleted == false">
+            AND i.STATUS != 'DELETED'
+        </if>
+        <if test="request.includeChildren == null or request.includeChildren == false">
+            AND (i.PARENT_ITEM_ID IS NULL OR i.ITEM_DEPTH = 0)
+        </if>
+        <if test="request.parentItemId != null">
+            AND i.PARENT_ITEM_ID = #{request.parentItemId}
+        </if>
+        <if test="request.depthFilter != null">
+            AND COALESCE(i.ITEM_DEPTH, 0) = #{request.depthFilter}
+        </if>
+    </sql>
+
 </mapper>

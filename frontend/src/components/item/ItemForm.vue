@@ -331,18 +331,18 @@ function getUserDisplayName(propertyId: number): string {
         <label class="form-label">담당자</label>
         <button
           type="button"
-          class="w-full h-8 px-3 text-left text-[13px] border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-150 flex items-center justify-between"
-          :class="{ 'bg-gray-100 cursor-not-allowed text-gray-500': disabled }"
+          class="w-full h-8 px-3 text-left text-[13px] border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-150 flex items-center justify-between dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200"
+          :class="{ 'bg-gray-100 cursor-not-allowed text-gray-500 dark:bg-gray-700 dark:text-gray-400': disabled }"
           :disabled="disabled"
           @click="showUserSelectModal = true"
         >
           <span v-if="currentAssigneeDisplay" class="flex items-center gap-2 truncate">
-            <span class="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-[10px] font-medium flex items-center justify-center flex-shrink-0">
+            <span class="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-[10px] font-medium flex items-center justify-center flex-shrink-0 dark:bg-primary-900 dark:text-primary-300">
               {{ currentAssigneeDisplay.name.charAt(0) }}
             </span>
             <span class="truncate">{{ currentAssigneeDisplay.name }}</span>
           </span>
-          <span v-else class="text-gray-400">담당자 선택</span>
+          <span v-else class="text-gray-400 dark:text-gray-500">담당자 선택</span>
           <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -377,8 +377,8 @@ function getUserDisplayName(propertyId: number): string {
     </div>
 
     <!-- 동적 속성 -->
-    <div v-if="customProperties.length > 0" class="pt-3 border-t border-gray-200">
-      <h4 class="text-[12px] font-medium text-gray-500 uppercase tracking-wide mb-3">
+    <div v-if="customProperties.length > 0" class="pt-3 border-t border-gray-200 dark:border-gray-700">
+      <h4 class="text-[12px] font-medium text-gray-500 uppercase tracking-wide mb-3 dark:text-gray-400">
         추가 속성
       </h4>
       <div class="space-y-3">
@@ -419,6 +419,6 @@ function getUserDisplayName(propertyId: number): string {
 }
 
 .form-label {
-  @apply text-[12px] font-medium text-gray-600 mb-1;
+  @apply text-[12px] font-medium text-gray-600 mb-1 dark:text-gray-400;
 }
 </style>

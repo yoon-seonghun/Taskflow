@@ -233,17 +233,17 @@ onUnmounted(() => {
 <template>
   <div
     ref="menuRef"
-    class="absolute z-50 top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
+    class="absolute z-50 top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1"
     @click.stop
   >
     <!-- 헤더: 속성 이름 (편집 가능) -->
-    <div class="px-3 py-2 border-b border-gray-100">
+    <div class="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
       <template v-if="isEditing">
         <input
           ref="inputRef"
           v-model="editedName"
           type="text"
-          class="w-full px-2 py-1 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+          class="w-full px-2 py-1 text-[13px] border border-primary-500 dark:border-primary-600 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:text-gray-100"
           @blur="saveRename"
           @keydown.enter="saveRename"
           @keydown.escape="cancelRename"
@@ -251,10 +251,10 @@ onUnmounted(() => {
       </template>
       <template v-else>
         <div class="flex items-center gap-2">
-          <span class="text-[13px] font-medium text-gray-900 truncate">
+          <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100 truncate">
             {{ property.propertyName }}
           </span>
-          <span class="text-[11px] text-gray-400 px-1.5 py-0.5 bg-gray-100 rounded">
+          <span class="text-[11px] text-gray-400 dark:text-gray-500 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
             {{ property.propertyType }}
           </span>
         </div>
@@ -265,7 +265,7 @@ onUnmounted(() => {
     <div class="py-1">
       <template v-for="item in menuItems" :key="item.id">
         <!-- 구분선 -->
-        <div v-if="item.divider" class="my-1 border-t border-gray-100" />
+        <div v-if="item.divider" class="my-1 border-t border-gray-100 dark:border-gray-700" />
 
         <!-- 메뉴 항목 -->
         <button
@@ -273,10 +273,10 @@ onUnmounted(() => {
           class="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] transition-colors"
           :class="[
             item.disabled
-              ? 'text-gray-300 cursor-not-allowed'
+              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
               : item.danger
-                ? 'text-red-600 hover:bg-red-50'
-                : 'text-gray-700 hover:bg-gray-50'
+                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
           :disabled="item.disabled"
           @click="!item.disabled && item.action?.()"

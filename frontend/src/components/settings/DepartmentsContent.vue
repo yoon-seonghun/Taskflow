@@ -364,19 +364,23 @@ onMounted(() => {
 }
 
 .department-detail {
-  @apply bg-white rounded-lg border border-gray-200;
+  @apply bg-white rounded-lg border border-gray-200
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .detail-header {
-  @apply flex items-center justify-between p-4 border-b border-gray-200;
+  @apply flex items-center justify-between p-4 border-b border-gray-200
+         dark:border-gray-700;
 }
 
 .dept-icon {
-  @apply w-12 h-12 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center;
+  @apply w-12 h-12 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center
+         dark:bg-primary-900/50 dark:text-primary-400;
 }
 
 .detail-info {
-  @apply p-4 border-b border-gray-200 space-y-2;
+  @apply p-4 border-b border-gray-200 space-y-2
+         dark:border-gray-700;
 }
 
 .info-row {
@@ -384,22 +388,25 @@ onMounted(() => {
 }
 
 .info-label {
-  @apply text-gray-500;
+  @apply text-gray-500 dark:text-gray-400;
 }
 
 .info-value {
-  @apply text-gray-900 font-medium;
+  @apply text-gray-900 font-medium dark:text-white;
 }
 
 .detail-actions {
-  @apply flex items-center gap-2 p-4 border-b border-gray-200;
+  @apply flex items-center gap-2 p-4 border-b border-gray-200
+         dark:border-gray-700;
 }
 
 .btn-secondary {
   @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium
          text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150;
+         transition-colors duration-150
+         dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600
+         dark:focus:ring-offset-gray-900;
 }
 
 .users-section {
@@ -407,11 +414,13 @@ onMounted(() => {
 }
 
 .section-title {
-  @apply flex items-center gap-2 text-sm font-medium text-gray-900 mb-3;
+  @apply flex items-center gap-2 text-sm font-medium text-gray-900 mb-3
+         dark:text-white;
 }
 
 .empty-users {
-  @apply text-center py-6 text-sm text-gray-500;
+  @apply text-center py-6 text-sm text-gray-500
+         dark:text-gray-400;
 }
 
 .users-list {
@@ -419,12 +428,14 @@ onMounted(() => {
 }
 
 .user-item {
-  @apply flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50;
+  @apply flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50
+         dark:hover:bg-gray-700;
 }
 
 .user-avatar {
   @apply w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center
-         text-sm font-medium text-gray-600;
+         text-sm font-medium text-gray-600
+         dark:bg-gray-700 dark:text-gray-300;
 }
 
 .user-info {
@@ -432,22 +443,27 @@ onMounted(() => {
 }
 
 .user-name {
-  @apply block text-sm font-medium text-gray-900 truncate;
+  @apply block text-sm font-medium text-gray-900 truncate
+         dark:text-white;
 }
 
 .user-meta {
-  @apply block text-xs text-gray-500;
+  @apply block text-xs text-gray-500
+         dark:text-gray-400;
 }
 
 .head-avatar {
-  @apply bg-amber-100 text-amber-700 ring-2 ring-amber-300;
+  @apply bg-amber-100 text-amber-700 ring-2 ring-amber-300
+         dark:bg-amber-900/50 dark:text-amber-400 dark:ring-amber-600;
 }
 
 .external-notice {
-  @apply p-4 border-b border-gray-200 text-center;
+  @apply p-4 border-b border-gray-200 text-center
+         dark:border-gray-700;
 }
 
 .empty-state {
-  @apply text-center py-12 bg-white rounded-lg border border-gray-200;
+  @apply text-center py-12 bg-white rounded-lg border border-gray-200
+         dark:bg-gray-800 dark:border-gray-700;
 }
 </style>

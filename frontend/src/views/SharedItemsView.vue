@@ -191,11 +191,11 @@ function getStatusText(status: ItemStatus): string {
 // 상태 색상
 function getStatusColor(status: ItemStatus): string {
   const map: Record<ItemStatus, string> = {
-    NOT_STARTED: 'bg-gray-100 text-gray-600',
-    IN_PROGRESS: 'bg-blue-100 text-blue-700',
-    PENDING: 'bg-yellow-100 text-yellow-700',
-    COMPLETED: 'bg-green-100 text-green-700',
-    DELETED: 'bg-red-100 text-red-700'
+    NOT_STARTED: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+    IN_PROGRESS: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+    PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+    COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+    DELETED: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'
   }
   return map[status]
 }
@@ -243,42 +243,42 @@ onMounted(() => {
     <!-- 헤더 -->
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           공유받은 업무
           <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
           </svg>
         </h2>
-        <p class="text-sm text-gray-500 mt-1">다른 사용자가 공유해준 업무를 관리합니다.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">다른 사용자가 공유해준 업무를 관리합니다.</p>
       </div>
     </div>
 
     <!-- 통계 카드 -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-      <div class="bg-white rounded-lg border border-gray-200 p-4">
-        <div class="text-2xl font-bold text-blue-600">{{ stats.total }}</div>
-        <div class="text-sm text-gray-500">전체 공유</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.total }}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">전체 공유</div>
       </div>
-      <div class="bg-white rounded-lg border border-gray-200 p-4">
-        <div class="text-2xl font-bold text-blue-500">{{ stats.inProgress }}</div>
-        <div class="text-sm text-gray-500">진행중</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-2xl font-bold text-blue-500 dark:text-blue-400">{{ stats.inProgress }}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">진행중</div>
       </div>
-      <div class="bg-white rounded-lg border border-gray-200 p-4">
-        <div class="text-2xl font-bold text-yellow-500">{{ stats.pending }}</div>
-        <div class="text-sm text-gray-500">보류</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-2xl font-bold text-yellow-500 dark:text-yellow-400">{{ stats.pending }}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">보류</div>
       </div>
-      <div class="bg-white rounded-lg border border-gray-200 p-4">
-        <div class="text-2xl font-bold text-gray-500">{{ stats.notStarted }}</div>
-        <div class="text-sm text-gray-500">시작전</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div class="text-2xl font-bold text-gray-500 dark:text-gray-400">{{ stats.notStarted }}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">시작전</div>
       </div>
     </div>
 
     <!-- 필터 영역 -->
-    <div class="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
       <div class="flex flex-wrap items-center gap-4">
         <!-- 보드 필터 -->
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-700 whitespace-nowrap">보드:</span>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">보드:</span>
           <Select
             v-model="selectedBoardId"
             :options="boardOptions"
@@ -289,7 +289,7 @@ onMounted(() => {
 
         <!-- 우선순위 필터 -->
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-700 whitespace-nowrap">우선순위:</span>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">우선순위:</span>
           <Select
             v-model="priorityFilter"
             :options="priorityOptions"
@@ -300,7 +300,7 @@ onMounted(() => {
 
         <!-- 상태 필터 -->
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-700 whitespace-nowrap">상태:</span>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">상태:</span>
           <Select
             v-model="statusFilter"
             :options="statusOptions"
@@ -309,14 +309,14 @@ onMounted(() => {
           />
         </div>
 
-        <div class="ml-auto text-sm text-gray-500">
+        <div class="ml-auto text-sm text-gray-500 dark:text-gray-400">
           {{ sharedItems.length }}건 / 총 {{ totalElements }}건
         </div>
       </div>
     </div>
 
     <!-- 테이블 -->
-    <div class="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col">
+    <div class="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
       <!-- 로딩 상태 -->
       <div v-if="loading" class="flex-1 flex items-center justify-center">
         <Spinner size="lg" />
@@ -336,36 +336,36 @@ onMounted(() => {
       <template v-else>
         <div class="flex-1 overflow-auto">
           <table class="w-full">
-            <thead class="sticky top-0 bg-gray-50 z-10">
-              <tr class="border-b border-gray-200">
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+            <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700 z-10">
+              <tr class="border-b border-gray-200 dark:border-gray-600">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   공유/배당자
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap min-w-[250px]">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap min-w-[250px]">
                   작업 내용
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   상태
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   마감일
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   우선순위
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   담당자
                 </th>
-                <th class="px-4 h-10 text-center text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-center text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   처리
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
               <tr
                 v-for="item in sharedItems"
                 :key="item.itemId"
-                class="group hover:bg-gray-50 transition-colors cursor-pointer"
+                class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                 @click="handleItemClick(item)"
               >
                 <!-- 공유/배당자 -->
@@ -373,11 +373,11 @@ onMounted(() => {
                   <div class="flex items-center gap-2">
                     <div
                       class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium"
-                      :class="item.isAssignedToMe ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'"
+                      :class="item.isAssignedToMe ? 'bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400'"
                     >
                       {{ (item.isAssignedToMe ? item.assignedByUserName : item.sharedByUserName)?.charAt(0) || item.ownerName?.charAt(0) || '?' }}
                     </div>
-                    <span class="text-[13px] text-gray-700">
+                    <span class="text-[13px] text-gray-700 dark:text-gray-300">
                       {{ item.isAssignedToMe ? item.assignedByUserName : (item.sharedByUserName || item.ownerName) || '-' }}
                     </span>
                   </div>
@@ -399,7 +399,7 @@ onMounted(() => {
                         placement="right"
                         class="flex-shrink-0"
                       />
-                      <span class="text-[13px] text-gray-900 truncate" :title="item.title">
+                      <span class="text-[13px] text-gray-900 dark:text-white truncate" :title="item.title">
                         {{ item.title }}
                       </span>
                     </div>
@@ -407,13 +407,13 @@ onMounted(() => {
                     <div class="flex items-center gap-2 flex-shrink-0">
                       <!-- Notion 스타일 '열기' 버튼 -->
                       <button
-                        class="opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded"
+                        class="opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 dark:text-gray-400 dark:hover:text-primary-400 dark:hover:bg-primary-900/30 rounded"
                         title="상세 패널 열기"
                         @click.stop="handleItemClick(item)"
                       >
                         열기
                       </button>
-                      <span v-if="item.boardName" class="px-1.5 py-0.5 text-[11px] bg-gray-100 text-gray-500 rounded">
+                      <span v-if="item.boardName" class="px-1.5 py-0.5 text-[11px] bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 rounded">
                         {{ item.boardName }}
                       </span>
                     </div>
@@ -431,7 +431,7 @@ onMounted(() => {
                 </td>
 
                 <!-- 마감일 -->
-                <td class="px-4 h-12 text-[13px] text-gray-600 whitespace-nowrap">
+                <td class="px-4 h-12 text-[13px] text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   {{ formatDate(item.dueDate) }}
                 </td>
 
@@ -452,9 +452,9 @@ onMounted(() => {
                 </td>
 
                 <!-- 담당자 -->
-                <td class="px-4 h-12 text-[13px] text-gray-600 whitespace-nowrap">
+                <td class="px-4 h-12 text-[13px] text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-[11px] font-medium">
+                    <div class="w-6 h-6 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400 flex items-center justify-center text-[11px] font-medium">
                       {{ item.assigneeName?.charAt(0) || '?' }}
                     </div>
                     <span>{{ item.assigneeName || '-' }}</span>
@@ -476,7 +476,7 @@ onMounted(() => {
         </div>
 
         <!-- 페이징 -->
-        <div v-if="totalPages > 1" class="flex-shrink-0 border-t border-gray-200 px-4 py-3">
+        <div v-if="totalPages > 1" class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
           <Pagination
             :current-page="currentPage"
             :total-pages="totalPages"

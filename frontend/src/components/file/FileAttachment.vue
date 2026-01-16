@@ -189,7 +189,7 @@ onMounted(() => {
 
 <template>
   <div
-    class="file-attachment border-t border-gray-200 bg-gray-50"
+    class="file-attachment border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
     :class="{ 'ring-2 ring-primary-500 ring-inset': isDragging }"
     @dragenter="handleDragEnter"
     @dragleave="handleDragLeave"
@@ -207,13 +207,13 @@ onMounted(() => {
 
     <!-- 헤더 -->
     <div
-      class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 select-none"
+      class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
       @click="toggleCollapse"
     >
       <div class="flex items-center gap-2">
         <!-- 접기/펼치기 아이콘 -->
         <svg
-          class="w-4 h-4 text-gray-400 transition-transform"
+          class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform"
           :class="{ '-rotate-90': isCollapsed }"
           fill="none"
           stroke="currentColor"
@@ -222,9 +222,9 @@ onMounted(() => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
 
-        <span class="text-[12px] font-medium text-gray-600">
+        <span class="text-[12px] font-medium text-gray-600 dark:text-gray-300">
           첨부파일
-          <span v-if="files.length > 0" class="ml-1 text-gray-400">({{ files.length }})</span>
+          <span v-if="files.length > 0" class="ml-1 text-gray-400 dark:text-gray-500">({{ files.length }})</span>
         </span>
 
         <!-- 로딩/업로드 표시 -->
@@ -257,7 +257,7 @@ onMounted(() => {
     </div>
 
     <!-- 옵션 2: 헤더 아래 안내 텍스트 -->
-    <div v-show="!isCollapsed" class="px-3 py-1 text-[11px] text-gray-400 bg-gray-50 border-t border-gray-100">
+    <div v-show="!isCollapsed" class="px-3 py-1 text-[11px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
       <span class="inline-flex items-center gap-1">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -267,7 +267,7 @@ onMounted(() => {
     </div>
 
     <!-- 파일 목록 (접힘 상태가 아닐 때) -->
-    <div v-show="!isCollapsed" class="border-t border-gray-200">
+    <div v-show="!isCollapsed" class="border-t border-gray-200 dark:border-gray-700">
       <!-- 드래그 오버레이 -->
       <div
         v-if="isDragging"
@@ -281,14 +281,14 @@ onMounted(() => {
       <!-- 옵션 3: 빈 목록일 때 드래그 안내 -->
       <div
         v-else-if="files.length === 0 && !isLoading"
-        class="px-3 py-4 text-center cursor-pointer hover:bg-gray-100 transition-colors"
+        class="px-3 py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         @click="triggerFileInput"
       >
         <div class="flex flex-col items-center gap-1">
-          <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <span class="text-[12px] text-gray-400">
+          <span class="text-[12px] text-gray-400 dark:text-gray-500">
             파일을 드래그하거나 클릭하여 추가
           </span>
         </div>

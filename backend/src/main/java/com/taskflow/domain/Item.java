@@ -180,6 +180,11 @@ public class Item {
     private String boardName;
 
     /**
+     * 보드 색상 (조인)
+     */
+    private String boardColor;
+
+    /**
      * 소유자 이름 (조인)
      */
     private String ownerName;
@@ -232,6 +237,27 @@ public class Item {
     // =============================================
     // 공유/이관 정보 (Mapper에서 JOIN으로 설정)
     // =============================================
+
+    /**
+     * 업무 출처 타입 (전체 업무 조회용)
+     * OWNED, BOARD_SHARED, ITEM_SHARED, ASSIGNED
+     */
+    private String sourceType;
+
+    /**
+     * 공유 유형 (SHARE/ASSIGN)
+     */
+    private String shareType;
+
+    /**
+     * 공유/배당 권한 (VIEW/EDIT/FULL)
+     */
+    private String permission;
+
+    /**
+     * 공유 일시
+     */
+    private LocalDateTime sharedAt;
 
     /**
      * 공유받은 업무 여부 (현재 사용자 기준)
@@ -617,5 +643,79 @@ public class Item {
      */
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
+    }
+
+    // =============================================
+    // 전체 업무 조회용 필드 getter/setter (v2.1)
+    // =============================================
+
+    /**
+     * 출처 타입 getter
+     */
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    /**
+     * 출처 타입 setter
+     */
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    /**
+     * 공유 유형 getter
+     */
+    public String getShareType() {
+        return shareType;
+    }
+
+    /**
+     * 공유 유형 setter
+     */
+    public void setShareType(String shareType) {
+        this.shareType = shareType;
+    }
+
+    /**
+     * 권한 getter
+     */
+    public String getPermission() {
+        return permission;
+    }
+
+    /**
+     * 권한 setter
+     */
+    public void setPermission(String permission) {
+        this.permission = permission;
+    }
+
+    /**
+     * 공유 일시 getter
+     */
+    public LocalDateTime getSharedAt() {
+        return sharedAt;
+    }
+
+    /**
+     * 공유 일시 setter
+     */
+    public void setSharedAt(LocalDateTime sharedAt) {
+        this.sharedAt = sharedAt;
+    }
+
+    /**
+     * 보드 색상 getter
+     */
+    public String getBoardColor() {
+        return boardColor;
+    }
+
+    /**
+     * 보드 색상 setter
+     */
+    public void setBoardColor(String boardColor) {
+        this.boardColor = boardColor;
     }
 }

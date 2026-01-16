@@ -177,31 +177,31 @@ function handleIgnore() {
 <style scoped>
 .conflict-overlay {
   @apply fixed inset-0 z-50 flex items-center justify-center
-         bg-black/50 backdrop-blur-sm;
+         bg-black/50 backdrop-blur-sm dark:bg-black/70;
 }
 
 .conflict-dialog {
-  @apply w-full max-w-md mx-4 p-0 bg-white rounded-xl shadow-2xl;
+  @apply w-full max-w-md mx-4 p-0 bg-white rounded-xl shadow-2xl dark:bg-gray-800;
 }
 
 .dialog-header {
-  @apply flex items-start gap-3 p-4 border-b border-gray-200 bg-yellow-50 rounded-t-xl;
+  @apply flex items-start gap-3 p-4 border-b border-gray-200 bg-yellow-50 rounded-t-xl dark:border-gray-700 dark:bg-yellow-900/30;
 }
 
 .header-icon {
-  @apply flex-shrink-0 p-2 bg-yellow-100 rounded-full;
+  @apply flex-shrink-0 p-2 bg-yellow-100 rounded-full dark:bg-yellow-900/50;
 }
 
 .dialog-title {
-  @apply text-lg font-semibold text-gray-900;
+  @apply text-lg font-semibold text-gray-900 dark:text-white;
 }
 
 .dialog-subtitle {
-  @apply text-sm text-gray-600 mt-0.5;
+  @apply text-sm text-gray-600 mt-0.5 dark:text-gray-400;
 }
 
 .conflict-info {
-  @apply px-4 py-3 bg-gray-50 border-b border-gray-100;
+  @apply px-4 py-3 bg-gray-50 border-b border-gray-100 dark:bg-gray-900 dark:border-gray-700;
 }
 
 .info-row {
@@ -213,11 +213,11 @@ function handleIgnore() {
 }
 
 .info-label {
-  @apply text-gray-500;
+  @apply text-gray-500 dark:text-gray-400;
 }
 
 .info-value {
-  @apply font-medium text-gray-700;
+  @apply font-medium text-gray-700 dark:text-gray-200;
 }
 
 .comparison-section {
@@ -229,19 +229,19 @@ function handleIgnore() {
 }
 
 .comparison-box.local {
-  @apply border-blue-200 bg-blue-50/50;
+  @apply border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/30;
 }
 
 .comparison-box.server {
-  @apply border-green-200 bg-green-50/50;
+  @apply border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-900/30;
 }
 
 .box-header {
-  @apply flex items-center justify-between px-3 py-1.5 bg-white/50;
+  @apply flex items-center justify-between px-3 py-1.5 bg-white/50 dark:bg-gray-800/50;
 }
 
 .box-title {
-  @apply text-xs font-medium text-gray-700;
+  @apply text-xs font-medium text-gray-700 dark:text-gray-300;
 }
 
 .box-badge {
@@ -249,11 +249,11 @@ function handleIgnore() {
 }
 
 .comparison-box.local .box-badge {
-  @apply bg-blue-100 text-blue-700;
+  @apply bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300;
 }
 
 .comparison-box.server .box-badge {
-  @apply bg-green-100 text-green-700;
+  @apply bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300;
 }
 
 .box-content {
@@ -269,19 +269,19 @@ function handleIgnore() {
 }
 
 .item-label {
-  @apply text-gray-500 mr-1;
+  @apply text-gray-500 mr-1 dark:text-gray-400;
 }
 
 .item-value {
-  @apply text-gray-900;
+  @apply text-gray-900 dark:text-gray-100;
 }
 
 .resolution-section {
-  @apply px-4 py-3 border-t border-gray-100;
+  @apply px-4 py-3 border-t border-gray-100 dark:border-gray-700;
 }
 
 .resolution-label {
-  @apply text-sm font-medium text-gray-700 mb-3;
+  @apply text-sm font-medium text-gray-700 mb-3 dark:text-gray-300;
 }
 
 .resolution-buttons {
@@ -294,15 +294,15 @@ function handleIgnore() {
 }
 
 .btn-local {
-  @apply bg-blue-600 text-white hover:bg-blue-700;
+  @apply bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600;
 }
 
 .btn-server {
-  @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
+  @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600;
 }
 
 .btn-ignore {
-  @apply bg-white text-gray-500 border border-gray-200 hover:bg-gray-50;
+  @apply bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-600;
 }
 
 .help-text {

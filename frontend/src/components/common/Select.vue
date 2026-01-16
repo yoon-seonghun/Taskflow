@@ -104,11 +104,11 @@ const triggerClasses = computed(() => {
     ? 'border-red-500 focus:ring-red-500'
     : isOpen.value
       ? 'border-primary-500 ring-2 ring-primary-500'
-      : 'border-gray-300 focus:ring-primary-500'
+      : 'border-gray-300 focus:ring-primary-500 dark:border-gray-600'
 
   const disabled = props.disabled
-    ? 'bg-gray-100 cursor-not-allowed text-gray-500'
-    : 'bg-white cursor-pointer hover:border-gray-400'
+    ? 'bg-gray-100 cursor-not-allowed text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+    : 'bg-white cursor-pointer hover:border-gray-400 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-gray-500'
 
   return [...base, sizes[props.size], states, disabled].join(' ')
 })
@@ -208,7 +208,7 @@ function getOptionColorStyle(color?: string) {
 <template>
   <div ref="containerRef" class="relative w-full">
     <!-- Label -->
-    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1">
+    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1 dark:text-gray-300">
       {{ label }}
       <span v-if="required" class="text-red-500 ml-0.5">*</span>
     </label>
@@ -271,16 +271,16 @@ function getOptionColorStyle(color?: string) {
         v-if="isOpen"
         ref="dropdownRef"
         data-popover
-        class="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden"
+        class="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden dark:bg-gray-800 dark:border-gray-700"
         style="min-width: 120px;"
       >
         <!-- Search Input -->
-        <div v-if="searchable" class="p-2 border-b border-gray-100">
+        <div v-if="searchable" class="p-2 border-b border-gray-100 dark:border-gray-700">
           <input
             ref="searchInputRef"
             v-model="searchQuery"
             type="text"
-            class="w-full px-2 py-1.5 text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+            class="w-full px-2 py-1.5 text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-400"
             placeholder="검색..."
             @keydown="handleKeydown"
           />
@@ -293,9 +293,9 @@ function getOptionColorStyle(color?: string) {
             :key="option.value"
             class="px-3 py-2 text-[13px] cursor-pointer flex items-center gap-2"
             :class="[
-              option.disabled ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50',
-              highlightedIndex === index ? 'bg-gray-100' : '',
-              option.value === modelValue ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
+              option.disabled ? 'text-gray-400 cursor-not-allowed dark:text-gray-500' : 'hover:bg-gray-50 dark:hover:bg-gray-700',
+              highlightedIndex === index ? 'bg-gray-100 dark:bg-gray-700' : '',
+              option.value === modelValue ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200'
             ]"
             @click="selectOption(option)"
             @mouseenter="highlightedIndex = index"
@@ -323,14 +323,14 @@ function getOptionColorStyle(color?: string) {
           </div>
 
           <!-- Empty State -->
-          <div v-if="filteredOptions.length === 0 && !canCreate" class="px-3 py-4 text-center text-gray-500 text-[13px]">
+          <div v-if="filteredOptions.length === 0 && !canCreate" class="px-3 py-4 text-center text-gray-500 text-[13px] dark:text-gray-400">
             검색 결과가 없습니다
           </div>
 
           <!-- Create Option -->
           <div
             v-if="canCreate"
-            class="px-3 py-2 text-[13px] text-primary-600 cursor-pointer hover:bg-primary-50 flex items-center gap-2 border-t border-gray-100"
+            class="px-3 py-2 text-[13px] text-primary-600 cursor-pointer hover:bg-primary-50 flex items-center gap-2 border-t border-gray-100 dark:text-primary-400 dark:hover:bg-primary-900/30 dark:border-gray-700"
             @click="createOption"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

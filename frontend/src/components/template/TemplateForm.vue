@@ -203,10 +203,10 @@ function getOwnerTypeLabel(ownerType: string): string {
 // ownerType 색상
 function getOwnerTypeColor(ownerType: string): string {
   const colors: Record<string, string> = {
-    GLOBAL: 'bg-blue-100 text-blue-700',
-    MANAGER: 'bg-purple-100 text-purple-700'
+    GLOBAL: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+    MANAGER: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400'
   }
-  return colors[ownerType] || 'bg-gray-100 text-gray-700'
+  return colors[ownerType] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
 }
 
 // 폼 초기화
@@ -340,13 +340,13 @@ defineExpose({ resetForm })
 
       <!-- 편집 모드 시 소유 유형 표시 (읽기 전용) -->
       <div v-if="isEditMode && template?.ownerType" class="owner-type-badge">
-        <label class="text-sm font-medium text-gray-700 mb-1 block">템플릿 유형</label>
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">템플릿 유형</label>
         <span
           class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
           :class="{
-            'bg-green-100 text-green-700': template.ownerType === 'GLOBAL',
-            'bg-purple-100 text-purple-700': template.ownerType === 'MANAGER',
-            'bg-blue-100 text-blue-700': template.ownerType === 'USER'
+            'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400': template.ownerType === 'GLOBAL',
+            'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400': template.ownerType === 'MANAGER',
+            'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400': template.ownerType === 'USER'
           }"
         >
           {{ template.ownerType === 'GLOBAL' ? '글로벌' : template.ownerType === 'MANAGER' ? '매니저' : '개인' }}
@@ -387,10 +387,10 @@ defineExpose({ resetForm })
       <!-- 속성 선택 -->
       <div v-if="allProperties.length > 0" class="property-section">
         <div class="flex items-center justify-between mb-2">
-          <label class="text-sm font-medium text-gray-700">템플릿 속성</label>
-          <span class="text-xs text-gray-400">{{ selectedPropertyIds.size }}개 선택</span>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">템플릿 속성</label>
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ selectedPropertyIds.size }}개 선택</span>
         </div>
-        <p class="text-xs text-gray-500 mb-3">템플릿 적용 시 자동으로 지정할 속성을 선택하세요</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">템플릿 적용 시 자동으로 지정할 속성을 선택하세요</p>
 
         <div class="property-list">
           <div
@@ -403,7 +403,7 @@ defineExpose({ resetForm })
               <input
                 type="checkbox"
                 :checked="isPropertySelected(prop.propertyId)"
-                class="w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer"
+                class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded cursor-pointer bg-white dark:bg-gray-700"
                 @change="toggleProperty(prop.propertyId)"
               />
               <span
@@ -413,7 +413,7 @@ defineExpose({ resetForm })
                   'bg-purple-500': prop.ownerType === 'MANAGER'
                 }"
               ></span>
-              <span class="text-sm text-gray-700">{{ prop.propertyName }}</span>
+              <span class="text-sm text-gray-700 dark:text-gray-200">{{ prop.propertyName }}</span>
               <span
                 class="px-1.5 py-0.5 text-[10px] font-medium rounded"
                 :class="getOwnerTypeColor(prop.ownerType)"
@@ -426,7 +426,7 @@ defineExpose({ resetForm })
             <div v-if="isPropertySelected(prop.propertyId)" class="mt-2 pl-6">
               <input
                 type="text"
-                class="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-blue-400"
+                class="w-full px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="기본값 (선택사항)"
                 :value="propertyDefaults[prop.propertyId] || ''"
                 @input="updatePropertyDefault(prop.propertyId, ($event.target as HTMLInputElement).value)"
@@ -435,7 +435,7 @@ defineExpose({ resetForm })
           </div>
         </div>
 
-        <div v-if="allProperties.length === 0" class="text-center py-4 text-gray-400 text-sm">
+        <div v-if="allProperties.length === 0" class="text-center py-4 text-gray-400 dark:text-gray-500 text-sm">
           선택 가능한 속성이 없습니다.
         </div>
       </div>
@@ -474,7 +474,7 @@ defineExpose({ resetForm })
 
 <style scoped>
 .template-form {
-  @apply p-4 bg-white rounded-lg border border-gray-200;
+  @apply p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 
 .btn-primary {
@@ -485,14 +485,14 @@ defineExpose({ resetForm })
 }
 
 .btn-secondary {
-  @apply px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg
-         hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg
+         hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          disabled:opacity-50 disabled:cursor-not-allowed
          transition-colors duration-150;
 }
 
 .property-section {
-  @apply bg-gray-50 rounded-lg p-4 border border-gray-100;
+  @apply bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-100 dark:border-gray-700;
 }
 
 .property-list {
@@ -500,14 +500,14 @@ defineExpose({ resetForm })
 }
 
 .property-item {
-  @apply p-2.5 bg-white rounded-lg border border-gray-200 transition-colors;
+  @apply p-2.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors;
 }
 
 .property-item.selected {
-  @apply bg-blue-50 border-blue-200;
+  @apply bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-700;
 }
 
 .property-item:hover:not(.selected) {
-  @apply border-gray-300;
+  @apply border-gray-300 dark:border-gray-600;
 }
 </style>

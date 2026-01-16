@@ -341,11 +341,11 @@ defineExpose({ resetForm })
 
 <style scoped>
 .group-form {
-  @apply p-4 bg-white rounded-lg border border-gray-200;
+  @apply p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 
 .form-title {
-  @apply text-base font-medium text-gray-900 mb-4;
+  @apply text-base font-medium text-gray-900 dark:text-gray-100 mb-4;
 }
 
 .form-field {
@@ -353,13 +353,14 @@ defineExpose({ resetForm })
 }
 
 .field-label {
-  @apply block text-sm font-medium text-gray-700;
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
 }
 
 .textarea {
-  @apply w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+  @apply w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
+         bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-         disabled:bg-gray-50 disabled:text-gray-500
+         disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400
          resize-none;
 }
 
@@ -368,9 +369,9 @@ defineExpose({ resetForm })
 }
 
 .color-preview {
-  @apply w-full h-10 rounded-lg border border-gray-300 cursor-pointer
+  @apply w-full h-10 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer
          flex items-center justify-center
-         hover:border-gray-400 transition-colors
+         hover:border-gray-400 dark:hover:border-gray-500 transition-colors
          disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
@@ -379,7 +380,7 @@ defineExpose({ resetForm })
 }
 
 .color-picker {
-  @apply absolute z-10 mt-2 p-3 bg-white rounded-lg shadow-lg border border-gray-200;
+  @apply absolute z-10 mt-2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700;
 }
 
 .preset-colors {
@@ -392,11 +393,11 @@ defineExpose({ resetForm })
 }
 
 .color-swatch.selected {
-  @apply ring-2 ring-offset-2 ring-gray-900;
+  @apply ring-2 ring-offset-2 ring-gray-900 dark:ring-gray-100;
 }
 
 .custom-color {
-  @apply flex items-center gap-2 pt-2 border-t border-gray-100;
+  @apply flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700;
 }
 
 .color-input {
@@ -404,7 +405,8 @@ defineExpose({ resetForm })
 }
 
 .color-text {
-  @apply flex-1 px-2 py-1 text-sm border border-gray-300 rounded
+  @apply flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded
+         bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
          focus:outline-none focus:ring-1 focus:ring-primary-500;
 }
 
@@ -416,8 +418,8 @@ defineExpose({ resetForm })
 }
 
 .btn-secondary {
-  @apply px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg
-         hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+  @apply px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg
+         hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          disabled:opacity-50 disabled:cursor-not-allowed
          transition-colors duration-150;
 }

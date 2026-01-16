@@ -30,7 +30,7 @@ const colorClasses: Record<string, string> = {
 
 <template>
   <div
-    class="animate-spin rounded-full border-gray-200"
+    class="animate-spin rounded-full border-gray-200 dark:border-gray-700"
     :class="[sizeClasses[size], colorClasses[color] || colorClasses.primary]"
     style="border-top-color: currentColor"
   />

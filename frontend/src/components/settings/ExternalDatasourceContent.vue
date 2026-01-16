@@ -333,7 +333,8 @@ onMounted(() => {
 
 .form-select {
   @apply px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white
-         focus:ring-primary-500 focus:border-primary-500;
+         focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-700 dark:border-gray-600 dark:text-white;
 }
 
 .search-box {
@@ -346,14 +347,16 @@ onMounted(() => {
 
 .search-input {
   @apply pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-64
-         focus:ring-primary-500 focus:border-primary-500;
+         focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400;
 }
 
 .btn-primary {
   @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
          text-white bg-primary-600 rounded-lg
          hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150;
+         transition-colors duration-150
+         dark:focus:ring-offset-gray-900;
 }
 
 .loading-state {
@@ -366,11 +369,13 @@ onMounted(() => {
 
 .datasource-card {
   @apply bg-white rounded-lg border border-gray-200 overflow-hidden
-         hover:shadow-md transition-shadow;
+         hover:shadow-md transition-shadow
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .card-header {
-  @apply flex items-center justify-between p-4 border-b border-gray-100;
+  @apply flex items-center justify-between p-4 border-b border-gray-100
+         dark:border-gray-700;
 }
 
 .db-icon {
@@ -386,7 +391,7 @@ onMounted(() => {
 }
 
 .db-mssql {
-  @apply bg-gray-700;
+  @apply bg-gray-700 dark:bg-gray-500;
 }
 
 .db-tibero {
@@ -394,11 +399,11 @@ onMounted(() => {
 }
 
 .card-title {
-  @apply text-base font-medium text-gray-900;
+  @apply text-base font-medium text-gray-900 dark:text-white;
 }
 
 .card-code {
-  @apply text-xs text-gray-500 font-mono;
+  @apply text-xs text-gray-500 font-mono dark:text-gray-400;
 }
 
 .card-body {
@@ -414,19 +419,20 @@ onMounted(() => {
 }
 
 .info-label {
-  @apply block text-xs text-gray-500;
+  @apply block text-xs text-gray-500 dark:text-gray-400;
 }
 
 .info-value {
-  @apply block text-sm text-gray-900 font-medium truncate;
+  @apply block text-sm text-gray-900 font-medium truncate dark:text-white;
 }
 
 .card-footer {
-  @apply flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100;
+  @apply flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100
+         dark:bg-gray-700/50 dark:border-gray-700;
 }
 
 .footer-meta {
-  @apply text-sm text-gray-500;
+  @apply text-sm text-gray-500 dark:text-gray-400;
 }
 
 .footer-actions {
@@ -439,15 +445,18 @@ onMounted(() => {
 }
 
 .action-btn.test {
-  @apply text-primary-600 bg-primary-50 hover:bg-primary-100;
+  @apply text-primary-600 bg-primary-50 hover:bg-primary-100
+         dark:text-primary-400 dark:bg-primary-900/50 dark:hover:bg-primary-900/70;
 }
 
 .action-btn.edit {
-  @apply text-gray-600 bg-gray-100 hover:bg-gray-200;
+  @apply text-gray-600 bg-gray-100 hover:bg-gray-200
+         dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600;
 }
 
 .action-btn.delete {
-  @apply text-red-600 bg-red-50 hover:bg-red-100;
+  @apply text-red-600 bg-red-50 hover:bg-red-100
+         dark:text-red-400 dark:bg-red-900/50 dark:hover:bg-red-900/70;
 }
 
 .action-btn:disabled {
@@ -455,6 +464,7 @@ onMounted(() => {
 }
 
 .empty-state {
-  @apply text-center py-12 bg-white rounded-lg border border-gray-200;
+  @apply text-center py-12 bg-white rounded-lg border border-gray-200
+         dark:bg-gray-800 dark:border-gray-700;
 }
 </style>

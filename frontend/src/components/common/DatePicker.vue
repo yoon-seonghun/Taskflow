@@ -150,11 +150,11 @@ const triggerClasses = computed(() => {
     ? 'border-red-500 focus:ring-red-500'
     : isOpen.value
       ? 'border-primary-500 ring-2 ring-primary-500'
-      : 'border-gray-300 focus:ring-primary-500'
+      : 'border-gray-300 focus:ring-primary-500 dark:border-gray-600'
 
   const disabled = props.disabled
-    ? 'bg-gray-100 cursor-not-allowed text-gray-500'
-    : 'bg-white cursor-pointer hover:border-gray-400'
+    ? 'bg-gray-100 cursor-not-allowed text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+    : 'bg-white cursor-pointer hover:border-gray-400 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-gray-500'
 
   return [...base, sizes[props.size], states, disabled].join(' ')
 })
@@ -275,7 +275,7 @@ function clearValue(event: Event) {
 <template>
   <div ref="containerRef" class="relative w-full" :class="{ 'z-[200]': isOpen }">
     <!-- Label -->
-    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1">
+    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1 dark:text-gray-300">
       {{ label }}
       <span v-if="required" class="text-red-500 ml-0.5">*</span>
     </label>
@@ -299,7 +299,7 @@ function clearValue(event: Event) {
       <!-- Clear Button -->
       <span
         v-if="clearable && modelValue && !disabled"
-        class="text-gray-400 hover:text-gray-600 p-0.5"
+        class="text-gray-400 hover:text-gray-600 p-0.5 dark:hover:text-gray-300"
         @click="clearValue"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +320,7 @@ function clearValue(event: Event) {
       <div
         v-if="isOpen"
         data-popover
-        class="absolute z-[100] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3"
+        class="absolute z-[100] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 dark:bg-gray-800 dark:border-gray-700"
         :class="mode === 'time' ? 'w-40' : 'w-72'"
       >
         <!-- Time Only Mode -->
@@ -329,15 +329,15 @@ function clearValue(event: Event) {
             v-model="hours"
             type="text"
             maxlength="2"
-            class="w-12 px-2 py-1 text-center text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="w-12 px-2 py-1 text-center text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             @change="updateTime"
           />
-          <span class="text-gray-500">:</span>
+          <span class="text-gray-500 dark:text-gray-400">:</span>
           <input
             v-model="minutes"
             type="text"
             maxlength="2"
-            class="w-12 px-2 py-1 text-center text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="w-12 px-2 py-1 text-center text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             @change="updateTime"
           />
         </div>
@@ -348,7 +348,7 @@ function clearValue(event: Event) {
           <div class="flex items-center justify-between mb-2">
             <button
               type="button"
-              class="p-1 hover:bg-gray-100 rounded"
+              class="p-1 hover:bg-gray-100 rounded dark:hover:bg-gray-700"
               @click="prevMonth"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,13 +356,13 @@ function clearValue(event: Event) {
               </svg>
             </button>
 
-            <span class="text-[13px] font-medium">
+            <span class="text-[13px] font-medium dark:text-gray-200">
               {{ currentYear }}년 {{ monthNames[currentMonth] }}
             </span>
 
             <button
               type="button"
-              class="p-1 hover:bg-gray-100 rounded"
+              class="p-1 hover:bg-gray-100 rounded dark:hover:bg-gray-700"
               @click="nextMonth"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,7 +376,7 @@ function clearValue(event: Event) {
             <div
               v-for="day in dayNames"
               :key="day"
-              class="text-center text-[11px] text-gray-500 py-1"
+              class="text-center text-[11px] text-gray-500 py-1 dark:text-gray-400"
             >
               {{ day }}
             </div>
@@ -388,11 +388,11 @@ function clearValue(event: Event) {
               v-for="(day, index) in calendarDays"
               :key="index"
               type="button"
-              class="w-8 h-8 text-[12px] rounded flex items-center justify-center transition-colors"
+              class="w-8 h-8 text-[12px] rounded flex items-center justify-center transition-colors dark:text-gray-200"
               :class="[
-                day.isCurrentMonth ? '' : 'text-gray-300',
+                day.isCurrentMonth ? '' : 'text-gray-300 dark:text-gray-600',
                 day.isToday ? 'font-bold' : '',
-                day.isSelected ? 'bg-primary-600 text-white' : 'hover:bg-gray-100',
+                day.isSelected ? 'bg-primary-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700',
                 day.isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
               ]"
               :disabled="day.isDisabled"
@@ -403,39 +403,39 @@ function clearValue(event: Event) {
           </div>
 
           <!-- Time Picker (DateTime mode) -->
-          <div v-if="mode === 'datetime'" class="mt-3 pt-3 border-t border-gray-200">
+          <div v-if="mode === 'datetime'" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-center gap-2">
-              <span class="text-[13px] text-gray-600">시간:</span>
+              <span class="text-[13px] text-gray-600 dark:text-gray-400">시간:</span>
               <input
                 v-model="hours"
                 type="text"
                 maxlength="2"
-                class="w-10 px-1 py-0.5 text-center text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                class="w-10 px-1 py-0.5 text-center text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 @change="updateTime"
               />
-              <span class="text-gray-500">:</span>
+              <span class="text-gray-500 dark:text-gray-400">:</span>
               <input
                 v-model="minutes"
                 type="text"
                 maxlength="2"
-                class="w-10 px-1 py-0.5 text-center text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                class="w-10 px-1 py-0.5 text-center text-[13px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 @change="updateTime"
               />
             </div>
           </div>
 
           <!-- Footer -->
-          <div class="mt-3 pt-3 border-t border-gray-200 flex justify-between">
+          <div class="mt-3 pt-3 border-t border-gray-200 flex justify-between dark:border-gray-700">
             <button
               type="button"
-              class="text-[12px] text-primary-600 hover:text-primary-700"
+              class="text-[12px] text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
               @click="selectToday"
             >
               오늘
             </button>
             <button
               type="button"
-              class="text-[12px] text-gray-500 hover:text-gray-700"
+              class="text-[12px] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               @click="closeDropdown"
             >
               닫기

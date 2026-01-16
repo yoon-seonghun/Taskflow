@@ -223,27 +223,27 @@ onMounted(() => {
     <!-- 헤더 -->
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           삭제된 작업
           <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
         </h2>
-        <p class="text-sm text-gray-500 mt-1">{{ currentPeriodText }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ currentPeriodText }}</p>
       </div>
 
-      <div class="flex items-center gap-2 text-sm text-gray-600">
+      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
         <span>총 {{ pagination.totalElements }}건</span>
       </div>
     </div>
 
     <!-- 필터 영역 -->
-    <div class="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
       <div class="flex flex-wrap items-center gap-4">
         <!-- 기간 필터 버튼 -->
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-700">기간:</span>
-          <div class="flex rounded-lg border border-gray-200 overflow-hidden">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">기간:</span>
+          <div class="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
             <button
               v-for="option in periodOptions"
               :key="option.value"
@@ -251,7 +251,7 @@ onMounted(() => {
               :class="[
                 periodFilter === option.value
                   ? 'bg-primary-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
               ]"
               @click="selectPeriod(option.value as PeriodFilter)"
             >
@@ -273,27 +273,27 @@ onMounted(() => {
             <input
               v-model="customStartDate"
               type="date"
-              class="px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              class="px-3 py-1.5 text-[13px] border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
             <span class="text-gray-400">~</span>
             <input
               v-model="customEndDate"
               type="date"
-              class="px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              class="px-3 py-1.5 text-[13px] border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
         </Transition>
 
         <!-- 정렬 버튼 -->
         <div class="ml-auto flex items-center gap-2">
-          <span class="text-sm text-gray-600">삭제시간순</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">삭제시간순</span>
           <button
-            class="p-1.5 rounded hover:bg-gray-100 transition-colors"
+            class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             :title="sortDirection === 'desc' ? '내림차순 (최신순)' : '오름차순 (오래된순)'"
             @click="toggleSort"
           >
             <svg
-              class="w-4 h-4 text-gray-600 transition-transform"
+              class="w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform"
               :class="{ 'rotate-180': sortDirection === 'asc' }"
               fill="none"
               stroke="currentColor"
@@ -307,7 +307,7 @@ onMounted(() => {
     </div>
 
     <!-- 테이블 -->
-    <div class="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col">
+    <div class="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
       <!-- 로딩 상태 -->
       <div v-if="loading" class="flex-1 flex items-center justify-center">
         <Spinner size="lg" />
@@ -327,9 +327,9 @@ onMounted(() => {
       <template v-else>
         <div class="flex-1 overflow-auto">
           <table class="w-full">
-            <thead class="sticky top-0 bg-gray-50 z-10">
-              <tr class="border-b border-gray-200">
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+            <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700 z-10">
+              <tr class="border-b border-gray-200 dark:border-gray-600">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   <div class="flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -337,7 +337,7 @@ onMounted(() => {
                     등록시간
                   </div>
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   <div class="flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -345,7 +345,7 @@ onMounted(() => {
                     삭제시간
                   </div>
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap min-w-[250px]">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap min-w-[250px]">
                   <div class="flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
@@ -353,7 +353,7 @@ onMounted(() => {
                     삭제 내용
                   </div>
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   <div class="flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -361,7 +361,7 @@ onMounted(() => {
                     삭제 전 상태
                   </div>
                 </th>
-                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-left text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   <div class="flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -369,29 +369,29 @@ onMounted(() => {
                     작업자
                   </div>
                 </th>
-                <th class="px-4 h-10 text-center text-[13px] font-medium text-gray-600 whitespace-nowrap">
+                <th class="px-4 h-10 text-center text-[13px] font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
                   처리
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
               <tr
                 v-for="item in items"
                 :key="item.itemId"
-                class="hover:bg-gray-50 transition-colors"
+                class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               >
-                <td class="px-4 h-10 text-[13px] text-gray-600 whitespace-nowrap">
+                <td class="px-4 h-10 text-[13px] text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   {{ formatDateTime(item.createdAt) }}
                 </td>
-                <td class="px-4 h-10 text-[13px] text-red-600 font-medium whitespace-nowrap">
+                <td class="px-4 h-10 text-[13px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap">
                   {{ formatDateTime(item.deletedAt) }}
                 </td>
-                <td class="px-4 h-10 text-[13px] text-gray-900">
+                <td class="px-4 h-10 text-[13px] text-gray-900 dark:text-white">
                   <div class="flex items-center gap-2">
                     <span class="truncate max-w-[350px]" :title="item.title">
                       {{ item.title }}
                     </span>
-                    <span v-if="item.boardName" class="px-1.5 py-0.5 text-[11px] bg-gray-100 text-gray-500 rounded flex-shrink-0">
+                    <span v-if="item.boardName" class="px-1.5 py-0.5 text-[11px] bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 rounded flex-shrink-0">
                       {{ item.boardName }}
                     </span>
                   </div>
@@ -404,9 +404,9 @@ onMounted(() => {
                     {{ getPreviousStatusText(item.previousStatus) }}
                   </Badge>
                 </td>
-                <td class="px-4 h-10 text-[13px] text-gray-600 whitespace-nowrap">
+                <td class="px-4 h-10 text-[13px] text-gray-600 dark:text-gray-400 whitespace-nowrap">
                   <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[11px] font-medium">
+                    <div class="w-6 h-6 rounded-full bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400 flex items-center justify-center text-[11px] font-medium">
                       {{ item.workerName?.charAt(0) || '?' }}
                     </div>
                     <span>{{ item.workerName || '-' }}</span>
@@ -426,8 +426,8 @@ onMounted(() => {
         </div>
 
         <!-- 페이지네이션 -->
-        <div v-if="pagination.totalPages > 1" class="border-t border-gray-200 px-4 py-3 flex items-center justify-between">
-          <div class="text-sm text-gray-500">
+        <div v-if="pagination.totalPages > 1" class="border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
             {{ pagination.page * pagination.size + 1 }} -
             {{ Math.min((pagination.page + 1) * pagination.size, pagination.totalElements) }} /
             {{ pagination.totalElements }}건

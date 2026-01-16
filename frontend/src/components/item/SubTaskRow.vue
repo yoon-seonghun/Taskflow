@@ -58,11 +58,11 @@ const canCreateChild = computed(() => {
 
 // 상태별 스타일
 const statusStyles: Record<ItemStatus, { dot: string; text: string }> = {
-  NOT_STARTED: { dot: 'bg-gray-400', text: 'text-gray-500' },
-  IN_PROGRESS: { dot: 'bg-blue-500', text: 'text-blue-600' },
-  PENDING: { dot: 'bg-yellow-500', text: 'text-yellow-600' },
-  COMPLETED: { dot: 'bg-green-500', text: 'text-green-600' },
-  DELETED: { dot: 'bg-red-400', text: 'text-red-500' }
+  NOT_STARTED: { dot: 'bg-gray-400', text: 'text-gray-500 dark:text-gray-400' },
+  IN_PROGRESS: { dot: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400' },
+  PENDING: { dot: 'bg-yellow-500', text: 'text-yellow-600 dark:text-yellow-400' },
+  COMPLETED: { dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
+  DELETED: { dot: 'bg-red-400', text: 'text-red-500 dark:text-red-400' }
 }
 
 // 상태 라벨
@@ -111,7 +111,8 @@ function handleCreateChild(e: Event) {
 <template>
   <div
     class="sub-task-row group flex items-center h-9 border-b border-gray-100
-           hover:bg-gray-50 cursor-pointer transition-colors"
+           hover:bg-gray-50 cursor-pointer transition-colors
+           dark:border-gray-700 dark:hover:bg-gray-800"
     :class="[
       depthBorderColor,
       { 'border-l-3': depth > 0 }
@@ -125,17 +126,17 @@ function handleCreateChild(e: Event) {
       <!-- 세로선 + 꺾인선 -->
       <div class="relative w-4 h-full">
         <div
-          class="absolute left-1/2 top-0 bottom-1/2 w-px bg-gray-300"
-          :class="{ 'bg-blue-300': depth === 1, 'bg-purple-300': depth === 2 }"
+          class="absolute left-1/2 top-0 bottom-1/2 w-px bg-gray-300 dark:bg-gray-600"
+          :class="{ 'bg-blue-300 dark:bg-blue-500': depth === 1, 'bg-purple-300 dark:bg-purple-500': depth === 2 }"
         />
         <div
-          class="absolute left-1/2 top-1/2 w-2 h-px bg-gray-300"
-          :class="{ 'bg-blue-300': depth === 1, 'bg-purple-300': depth === 2 }"
+          class="absolute left-1/2 top-1/2 w-2 h-px bg-gray-300 dark:bg-gray-600"
+          :class="{ 'bg-blue-300 dark:bg-blue-500': depth === 1, 'bg-purple-300 dark:bg-purple-500': depth === 2 }"
         />
       </div>
 
       <!-- 하위 업무 아이콘 -->
-      <svg class="w-3.5 h-3.5 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-3.5 h-3.5 text-gray-400 mr-1 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
       </svg>
     </div>
@@ -145,7 +146,7 @@ function handleCreateChild(e: Event) {
       class="flex-shrink-0 w-4 h-4 mr-2 border rounded transition-colors"
       :class="isCompleted
         ? 'bg-green-500 border-green-500 text-white'
-        : 'border-gray-300 hover:border-green-500'"
+        : 'border-gray-300 hover:border-green-500 dark:border-gray-600 dark:hover:border-green-500'"
       :disabled="readonly"
       @click="handleComplete"
     >
@@ -157,7 +158,7 @@ function handleCreateChild(e: Event) {
     <!-- 제목 -->
     <span
       class="flex-1 text-[13px] truncate mr-2"
-      :class="isCompleted ? 'line-through text-gray-400' : 'text-gray-700'"
+      :class="isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'"
     >
       {{ item.title || item.content }}
     </span>
@@ -174,7 +175,7 @@ function handleCreateChild(e: Event) {
     <!-- 담당자 -->
     <span
       v-if="item.assigneeName"
-      class="flex-shrink-0 text-[11px] text-gray-500 mr-2"
+      class="flex-shrink-0 text-[11px] text-gray-500 mr-2 dark:text-gray-400"
     >
       {{ item.assigneeName }}
     </span>
@@ -193,7 +194,7 @@ function handleCreateChild(e: Event) {
     </span>
 
     <!-- 마감일 -->
-    <span class="flex-shrink-0 text-[11px] text-gray-400 mr-2 w-10 text-right">
+    <span class="flex-shrink-0 text-[11px] text-gray-400 mr-2 w-10 text-right dark:text-gray-500">
       {{ formatDate(item.dueDate) }}
     </span>
 
@@ -211,7 +212,7 @@ function handleCreateChild(e: Event) {
       <!-- 하위 업무 추가 -->
       <button
         v-if="canCreateChild"
-        class="p-1 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+        class="p-1 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors dark:hover:bg-primary-900/30"
         title="하위 업무 추가"
         @click="handleCreateChild"
       >
@@ -223,7 +224,7 @@ function handleCreateChild(e: Event) {
       <!-- 삭제 -->
       <button
         v-if="!readonly"
-        class="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+        class="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors dark:hover:bg-red-900/30"
         title="삭제"
         @click="handleDelete"
       >

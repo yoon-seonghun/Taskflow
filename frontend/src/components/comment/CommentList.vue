@@ -165,10 +165,10 @@ defineExpose({ commentCount, refresh: loadComments })
 <template>
   <div class="flex flex-col h-full">
     <!-- 헤더 -->
-    <div class="flex items-center justify-between pb-3 border-b border-gray-200">
-      <h3 class="text-[14px] font-medium text-gray-900">
+    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-[14px] font-medium text-gray-900 dark:text-gray-100">
         댓글
-        <span v-if="commentCount > 0" class="text-gray-500 font-normal">
+        <span v-if="commentCount > 0" class="text-gray-500 dark:text-gray-400 font-normal">
           ({{ commentCount }})
         </span>
       </h3>
@@ -183,10 +183,10 @@ defineExpose({ commentCount, refresh: loadComments })
 
       <!-- 빈 상태 -->
       <div v-else-if="comments.length === 0" class="text-center py-8">
-        <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
-        <p class="text-[13px] text-gray-500">댓글이 없습니다.</p>
+        <p class="text-[13px] text-gray-500 dark:text-gray-400">댓글이 없습니다.</p>
       </div>
 
       <!-- 댓글 아이템들 -->
@@ -200,18 +200,18 @@ defineExpose({ commentCount, refresh: loadComments })
           <div class="flex items-center justify-between mb-1">
             <div class="flex items-center gap-2">
               <!-- 아바타 -->
-              <div class="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center">
-                <span class="text-[11px] font-medium text-primary-700">
+              <div class="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+                <span class="text-[11px] font-medium text-primary-700 dark:text-primary-300">
                   {{ (comment.createdByName || '?').charAt(0) }}
                 </span>
               </div>
-              <span class="text-[13px] font-medium text-gray-900">
+              <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100">
                 {{ comment.createdByName || '알 수 없음' }}
               </span>
-              <span class="text-[12px] text-gray-400">
+              <span class="text-[12px] text-gray-400 dark:text-gray-500">
                 {{ formatTime(comment.createdAt) }}
               </span>
-              <span v-if="comment.edited" class="text-[11px] text-gray-400">
+              <span v-if="comment.edited" class="text-[11px] text-gray-400 dark:text-gray-500">
                 (수정됨)
               </span>
             </div>
@@ -220,7 +220,7 @@ defineExpose({ commentCount, refresh: loadComments })
             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 v-if="editingId !== comment.commentId"
-                class="p-1 text-gray-400 hover:text-gray-600 rounded"
+                class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded"
                 title="수정"
                 @click="startEdit(comment)"
               >
@@ -229,7 +229,7 @@ defineExpose({ commentCount, refresh: loadComments })
                 </svg>
               </button>
               <button
-                class="p-1 text-gray-400 hover:text-red-500 rounded"
+                class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded"
                 title="삭제"
                 @click="handleDelete(comment.commentId)"
               >
@@ -246,14 +246,14 @@ defineExpose({ commentCount, refresh: loadComments })
             <div v-if="editingId === comment.commentId" class="space-y-2">
               <textarea
                 v-model="editContent"
-                class="w-full px-3 py-2 text-[13px] border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                class="w-full px-3 py-2 text-[13px] border border-gray-300 dark:border-gray-600 rounded-lg resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 rows="2"
                 @keydown.enter.exact.prevent="handleUpdate(comment.commentId)"
                 @keydown.escape="cancelEdit"
               />
               <div class="flex justify-end gap-2">
                 <button
-                  class="px-2.5 py-1 text-[12px] text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  class="px-2.5 py-1 text-[12px] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                   @click="cancelEdit"
                 >
                   취소
@@ -268,7 +268,7 @@ defineExpose({ commentCount, refresh: loadComments })
             </div>
 
             <!-- 읽기 모드 -->
-            <p v-else class="text-[13px] text-gray-700 whitespace-pre-wrap break-words">
+            <p v-else class="text-[13px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
               {{ comment.content }}
             </p>
           </div>
@@ -277,7 +277,7 @@ defineExpose({ commentCount, refresh: loadComments })
     </div>
 
     <!-- 댓글 입력 -->
-    <div class="pt-3 border-t border-gray-200">
+    <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
       <CommentInput
         :loading="isSubmitting"
         @submit="handleSubmit"

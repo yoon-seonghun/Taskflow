@@ -187,10 +187,10 @@ watch(() => props.modelValue, (isOpen) => {
       <div class="fixed inset-0 bg-black/50" @click="handleClose" />
 
       <!-- 모달 컨테이너 -->
-      <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col dark:bg-gray-800">
         <!-- 헤더 -->
-        <div class="px-6 py-4 border-b">
-          <h3 class="text-lg font-semibold text-gray-900">{{ modalTitle }}</h3>
+        <div class="px-6 py-4 border-b dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ modalTitle }}</h3>
         </div>
 
         <!-- 본문 -->
@@ -198,30 +198,30 @@ watch(() => props.modelValue, (isOpen) => {
           <div class="space-y-4">
             <!-- 이름 필드 -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
                 {{ nameLabelText }}
                 <span v-if="nameRequired" class="text-red-500">*</span>
               </label>
               <input
                 v-model="formData.name"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-400"
               />
             </div>
 
             <!-- 설명 필드 -->
             <div v-if="showDescription">
-              <label class="block text-sm font-medium text-gray-700 mb-1">설명</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">설명</label>
               <textarea
                 v-model="formData.description"
                 rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-400"
               />
             </div>
 
             <!-- 색상 선택 -->
             <div v-if="showColor">
-              <label class="block text-sm font-medium text-gray-700 mb-2">색상</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">색상</label>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="color in colorOptions"
@@ -229,7 +229,7 @@ watch(() => props.modelValue, (isOpen) => {
                   type="button"
                   @click="formData.color = color"
                   class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
-                  :class="formData.color === color ? 'border-gray-900 scale-110' : 'border-transparent'"
+                  :class="formData.color === color ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'"
                   :style="{ backgroundColor: color }"
                 />
               </div>
@@ -237,26 +237,26 @@ watch(() => props.modelValue, (isOpen) => {
 
             <!-- 카테고리 선택 -->
             <div v-if="categories.length > 0">
-              <label class="block text-sm font-medium text-gray-700 mb-2">카테고리 (선택)</label>
-              <div class="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-1">
+              <label class="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">카테고리 (선택)</label>
+              <div class="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-1 dark:border-gray-700">
                 <!-- 보드용: 다중 선택 (체크박스) -->
                 <template v-if="mode === 'board'">
                   <label
                     v-for="cat in categories"
                     :key="cat.categoryId"
-                    class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
+                    class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer dark:hover:bg-gray-700"
                   >
                     <input
                       type="checkbox"
                       :value="cat.categoryId"
                       v-model="formData.categoryIds"
-                      class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                     />
                     <div
                       class="w-3 h-3 rounded"
                       :style="{ backgroundColor: cat.categoryColor || '#6B7280' }"
                     />
-                    <span class="text-sm text-gray-700">{{ cat.categoryName }}</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-200">{{ cat.categoryName }}</span>
                   </label>
                 </template>
 
@@ -264,40 +264,40 @@ watch(() => props.modelValue, (isOpen) => {
                 <template v-else>
                   <!-- 선택 안함 옵션 -->
                   <label
-                    class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
-                    :class="{ 'bg-blue-50': formData.categoryId === null }"
+                    class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer dark:hover:bg-gray-700"
+                    :class="{ 'bg-blue-50 dark:bg-blue-900/30': formData.categoryId === null }"
                   >
                     <input
                       type="radio"
                       name="category-radio"
                       :checked="formData.categoryId === null"
-                      class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                       @change="handleCategoryRadioChange(null)"
                     />
-                    <span class="text-sm text-gray-500">선택 안함</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">선택 안함</span>
                   </label>
                   <label
                     v-for="cat in categories"
                     :key="cat.categoryId"
-                    class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer"
-                    :class="{ 'bg-blue-50': formData.categoryId === cat.categoryId }"
+                    class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer dark:hover:bg-gray-700"
+                    :class="{ 'bg-blue-50 dark:bg-blue-900/30': formData.categoryId === cat.categoryId }"
                   >
                     <input
                       type="radio"
                       name="category-radio"
                       :checked="formData.categoryId === cat.categoryId"
-                      class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                       @change="handleCategoryRadioChange(cat.categoryId)"
                     />
                     <div
                       class="w-3 h-3 rounded"
                       :style="{ backgroundColor: cat.categoryColor || '#6B7280' }"
                     />
-                    <span class="text-sm text-gray-700">{{ cat.categoryName }}</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-200">{{ cat.categoryName }}</span>
                   </label>
                 </template>
               </div>
-              <p class="mt-1 text-xs text-gray-500">
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {{ mode === 'board' ? '보드에서 사용할 카테고리를 선택하세요' : '업무에 적용할 카테고리를 선택하세요' }}
               </p>
             </div>
@@ -318,11 +318,11 @@ watch(() => props.modelValue, (isOpen) => {
         </div>
 
         <!-- 푸터 -->
-        <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+        <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 dark:bg-gray-700/50 dark:border-gray-700">
           <button
             type="button"
             @click="handleCancel"
-            class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+            class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg dark:text-gray-300 dark:hover:bg-gray-600"
           >
             취소
           </button>

@@ -197,19 +197,19 @@ onMounted(() => {
 <template>
   <div class="user-search-selector">
     <!-- Label -->
-    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-2">
+    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-2 dark:text-gray-300">
       {{ label }}
       <span v-if="required" class="text-red-500 ml-0.5">*</span>
     </label>
 
     <!-- 탭 전환 -->
-    <div class="flex border-b border-gray-200 mb-3">
+    <div class="flex border-b border-gray-200 mb-3 dark:border-gray-700">
       <button
         type="button"
         class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
         :class="activeTab === 'department'
-          ? 'border-primary-500 text-primary-600'
-          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'"
         :disabled="disabled"
         @click="changeTab('department')"
       >
@@ -219,8 +219,8 @@ onMounted(() => {
         type="button"
         class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
         :class="activeTab === 'name'
-          ? 'border-primary-500 text-primary-600'
-          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'"
         :disabled="disabled"
         @click="changeTab('name')"
       >
@@ -232,8 +232,8 @@ onMounted(() => {
     <div v-if="activeTab === 'department'" class="department-search">
       <div class="flex gap-3 h-64">
         <!-- 부서 트리 -->
-        <div class="w-1/2 border rounded-lg overflow-hidden">
-          <div class="bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b">
+        <div class="w-1/2 border rounded-lg overflow-hidden dark:border-gray-700">
+          <div class="bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
             부서 선택
           </div>
           <div class="overflow-y-auto h-[calc(100%-32px)]">
@@ -246,10 +246,10 @@ onMounted(() => {
         </div>
 
         <!-- 사용자 목록 -->
-        <div class="w-1/2 border rounded-lg overflow-hidden">
-          <div class="bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b">
+        <div class="w-1/2 border rounded-lg overflow-hidden dark:border-gray-700">
+          <div class="bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 border-b dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
             사용자 목록
-            <span v-if="selectedDepartmentId && displayDepartmentUsers.length > 0" class="text-gray-400">
+            <span v-if="selectedDepartmentId && displayDepartmentUsers.length > 0" class="text-gray-400 dark:text-gray-500">
               ({{ displayDepartmentUsers.length }}명)
             </span>
           </div>
@@ -263,12 +263,12 @@ onMounted(() => {
             </div>
 
             <!-- 부서 미선택 -->
-            <div v-else-if="!selectedDepartmentId" class="flex items-center justify-center h-full text-gray-400 text-sm">
+            <div v-else-if="!selectedDepartmentId" class="flex items-center justify-center h-full text-gray-400 text-sm dark:text-gray-500">
               부서를 선택하세요
             </div>
 
             <!-- 사용자 없음 -->
-            <div v-else-if="displayDepartmentUsers.length === 0" class="flex items-center justify-center h-full text-gray-400 text-sm">
+            <div v-else-if="displayDepartmentUsers.length === 0" class="flex items-center justify-center h-full text-gray-400 text-sm dark:text-gray-500">
               사용자가 없습니다
             </div>
 
@@ -277,25 +277,25 @@ onMounted(() => {
               <div
                 v-for="user in displayDepartmentUsers"
                 :key="user.userId"
-                class="flex items-center gap-2 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 transition-colors"
-                :class="selectedUser?.userId === user.userId ? 'bg-primary-50' : ''"
+                class="flex items-center gap-2 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-gray-700"
+                :class="selectedUser?.userId === user.userId ? 'bg-primary-50 dark:bg-primary-900/50' : ''"
                 @click="handleUserSelect(user)"
               >
                 <!-- 라디오 표시 -->
                 <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                   :class="selectedUser?.userId === user.userId
                     ? 'border-primary-500 bg-primary-500'
-                    : 'border-gray-300'"
+                    : 'border-gray-300 dark:border-gray-600'"
                 >
                   <div v-if="selectedUser?.userId === user.userId" class="w-1.5 h-1.5 rounded-full bg-white"></div>
                 </div>
 
                 <!-- 사용자 정보 -->
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium text-gray-700 truncate">
+                  <div class="text-sm font-medium text-gray-700 truncate dark:text-gray-200">
                     {{ user.name || user.userName }}
                   </div>
-                  <div class="text-xs text-gray-400 truncate">
+                  <div class="text-xs text-gray-400 truncate dark:text-gray-500">
                     {{ user.departmentName || '-' }}{{ user.email ? `, ${user.email}` : '' }}
                   </div>
                 </div>
@@ -313,22 +313,22 @@ onMounted(() => {
         <input
           v-model="searchQuery"
           type="text"
-          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-500"
           placeholder="이름, 부서, 이메일로 검색..."
           :disabled="disabled"
         />
       </div>
 
       <!-- 검색 결과 -->
-      <div class="border rounded-lg overflow-hidden h-56">
+      <div class="border rounded-lg overflow-hidden h-56 dark:border-gray-700">
         <div class="overflow-y-auto h-full">
           <!-- 검색어 없음 -->
-          <div v-if="!searchQuery" class="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div v-if="!searchQuery" class="flex items-center justify-center h-full text-gray-400 text-sm dark:text-gray-500">
             검색어를 입력하세요
           </div>
 
           <!-- 검색 결과 없음 -->
-          <div v-else-if="filteredUsers.length === 0" class="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div v-else-if="filteredUsers.length === 0" class="flex items-center justify-center h-full text-gray-400 text-sm dark:text-gray-500">
             검색 결과가 없습니다
           </div>
 
@@ -337,24 +337,24 @@ onMounted(() => {
             <div
               v-for="user in filteredUsers"
               :key="user.userId"
-              class="flex items-center gap-2 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 transition-colors"
-              :class="selectedUser?.userId === user.userId ? 'bg-primary-50' : ''"
+              class="flex items-center gap-2 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-gray-700"
+              :class="selectedUser?.userId === user.userId ? 'bg-primary-50 dark:bg-primary-900/50' : ''"
               @click="handleUserSelect(user)"
             >
               <!-- 라디오 표시 -->
               <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                 :class="selectedUser?.userId === user.userId
                   ? 'border-primary-500 bg-primary-500'
-                  : 'border-gray-300'"
+                  : 'border-gray-300 dark:border-gray-600'"
               >
                 <div v-if="selectedUser?.userId === user.userId" class="w-1.5 h-1.5 rounded-full bg-white"></div>
               </div>
 
               <!-- 사용자 정보 -->
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-gray-700 truncate">
+                <div class="text-sm font-medium text-gray-700 truncate dark:text-gray-200">
                   {{ user.name || user.userName }}
-                  <span class="font-normal text-gray-500">
+                  <span class="font-normal text-gray-500 dark:text-gray-400">
                     ({{ user.departmentName || '-' }}{{ user.email ? `, ${user.email}` : '' }})
                   </span>
                 </div>
@@ -366,15 +366,15 @@ onMounted(() => {
     </div>
 
     <!-- 선택된 사용자 표시 -->
-    <div class="mt-3 px-3 py-2 bg-gray-50 rounded-lg border" v-if="selectedUser">
+    <div class="mt-3 px-3 py-2 bg-gray-50 rounded-lg border dark:bg-gray-800 dark:border-gray-700" v-if="selectedUser">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">선택됨:</span>
-          <span class="text-sm font-medium text-gray-700">{{ selectedUserDisplay }}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">선택됨:</span>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ selectedUserDisplay }}</span>
         </div>
         <button
           type="button"
-          class="text-gray-400 hover:text-gray-600"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           :disabled="disabled"
           @click="clearSelection"
         >
@@ -386,7 +386,7 @@ onMounted(() => {
     </div>
 
     <!-- 미선택 상태 -->
-    <div class="mt-3 px-3 py-2 bg-gray-50 rounded-lg border text-gray-400 text-sm" v-else>
+    <div class="mt-3 px-3 py-2 bg-gray-50 rounded-lg border text-gray-400 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500" v-else>
       {{ placeholder }}
     </div>
   </div>

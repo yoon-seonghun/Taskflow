@@ -963,7 +963,7 @@ onMounted(() => {
               <!-- 조회 모드 -->
               <template v-else>
                 <div class="flex-1 flex items-center gap-3">
-                  <span class="font-medium text-gray-900">{{ property.propertyName }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ property.propertyName }}</span>
                   <span class="type-badge">{{ getPropertyTypeLabel(property.propertyType) }}</span>
                   <span v-if="property.requiredYn === 'Y'" class="text-xs text-red-500">필수</span>
                   <span v-if="property.visibleYn === 'N'" class="text-xs text-gray-400">숨김</span>
@@ -1025,7 +1025,7 @@ onMounted(() => {
               class="options-panel"
             >
               <div class="options-panel-header">
-                <span class="text-sm font-medium text-gray-700">옵션 관리</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">옵션 관리</span>
                 <span class="text-xs text-gray-400">{{ propertyOptions.length }}개</span>
               </div>
 
@@ -1093,7 +1093,7 @@ onMounted(() => {
                   <template v-else>
                     <div class="flex-1 flex items-center gap-2">
                       <span class="option-color" :style="{ backgroundColor: option.color || '#6B7280' }" />
-                      <span class="text-sm text-gray-700">{{ option.optionName }}</span>
+                      <span class="text-sm text-gray-700 dark:text-gray-200">{{ option.optionName }}</span>
                       <span v-if="option.usageCount" class="text-xs text-gray-400">({{ option.usageCount }}건 사용)</span>
                     </div>
                     <div class="flex items-center gap-0.5">
@@ -1220,11 +1220,13 @@ onMounted(() => {
 }
 
 .settings-card {
-  @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  @apply bg-white rounded-lg border border-gray-200 overflow-hidden
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .settings-card-title {
-  @apply px-4 py-3 text-base font-medium text-gray-900 bg-gray-50 border-b border-gray-200;
+  @apply px-4 py-3 text-base font-medium text-gray-900 bg-gray-50 border-b border-gray-200
+         dark:text-white dark:bg-gray-700 dark:border-gray-600;
 }
 
 .settings-card-content {
@@ -1234,26 +1236,32 @@ onMounted(() => {
 .btn-add {
   @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
          text-primary-600 bg-primary-50 rounded-md
-         hover:bg-primary-100 transition-colors;
+         hover:bg-primary-100 transition-colors
+         dark:text-primary-400 dark:bg-primary-900/50 dark:hover:bg-primary-900/70;
 }
 
 .btn-primary {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-white bg-primary-600 rounded-lg
          hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+         transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed
+         dark:focus:ring-offset-gray-900;
 }
 
 .btn-cancel {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150 disabled:opacity-50;
+         transition-colors duration-150 disabled:opacity-50
+         dark:text-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600
+         dark:focus:ring-offset-gray-900;
 }
 
 .form-input {
   @apply w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md
-         focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed;
+         focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed
+         dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400
+         dark:disabled:bg-gray-800;
 }
 
 /* 그룹 인디케이터 */
@@ -1285,20 +1293,21 @@ onMounted(() => {
 
 .property-item {
   @apply flex items-center gap-3 px-3 py-2 rounded-lg border border-transparent
-         bg-gray-50 transition-all duration-150;
+         bg-gray-50 transition-all duration-150
+         dark:bg-gray-700/50;
   cursor: grab;
 }
 
 .property-item:hover {
-  @apply bg-gray-100;
+  @apply bg-gray-100 dark:bg-gray-700;
 }
 
 .property-item.dragging {
-  @apply opacity-50 border-dashed border-gray-300;
+  @apply opacity-50 border-dashed border-gray-300 dark:border-gray-600;
 }
 
 .property-item.drag-over {
-  @apply border-primary-500 border-2 bg-primary-50;
+  @apply border-primary-500 border-2 bg-primary-50 dark:bg-primary-900/30;
 }
 
 .property-item:active {
@@ -1314,54 +1323,61 @@ onMounted(() => {
 }
 
 .type-badge {
-  @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-blue-50 text-blue-700;
+  @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-blue-50 text-blue-700
+         dark:bg-blue-900/50 dark:text-blue-300;
 }
 
 .icon-btn {
-  @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-50;
+  @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-50
+         dark:hover:bg-gray-600 dark:text-gray-400;
 }
 
 /* 소유 유형 선택 옵션 */
 .owner-type-option {
   @apply flex flex-col p-3 rounded-lg border-2 border-gray-200 cursor-pointer
-         transition-all duration-150 hover:border-gray-300 hover:bg-gray-50;
+         transition-all duration-150 hover:border-gray-300 hover:bg-gray-50
+         dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700;
 }
 
 .owner-type-option.selected {
-  @apply border-primary-500 bg-primary-50;
+  @apply border-primary-500 bg-primary-50
+         dark:bg-primary-900/30;
 }
 
 .owner-type-label {
-  @apply text-sm font-medium text-gray-900;
+  @apply text-sm font-medium text-gray-900 dark:text-white;
 }
 
 .owner-type-desc {
-  @apply text-xs text-gray-500 mt-0.5;
+  @apply text-xs text-gray-500 mt-0.5 dark:text-gray-400;
 }
 
 .owner-type-option.selected .owner-type-label {
-  @apply text-primary-700;
+  @apply text-primary-700 dark:text-primary-400;
 }
 
 .owner-type-option.selected .owner-type-desc {
-  @apply text-primary-600;
+  @apply text-primary-600 dark:text-primary-500;
 }
 
 /* v2.0.5: 옵션 관리 패널 스타일 */
 .options-panel {
-  @apply ml-7 mt-1 mb-2 bg-white border border-gray-200 rounded-lg overflow-hidden;
+  @apply ml-7 mt-1 mb-2 bg-white border border-gray-200 rounded-lg overflow-hidden
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .options-panel-header {
-  @apply flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100;
+  @apply flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100
+         dark:bg-gray-700 dark:border-gray-600;
 }
 
 .options-list {
-  @apply divide-y divide-gray-100;
+  @apply divide-y divide-gray-100 dark:divide-gray-700;
 }
 
 .option-item {
-  @apply flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors;
+  @apply flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors
+         dark:hover:bg-gray-700;
 }
 
 .option-color {
@@ -1370,11 +1386,13 @@ onMounted(() => {
 
 .option-input {
   @apply px-2 py-1 text-sm border border-gray-300 rounded
-         focus:ring-1 focus:ring-primary-500 focus:border-primary-500;
+         focus:ring-1 focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-700 dark:border-gray-600 dark:text-white;
 }
 
 .add-option-form {
-  @apply px-3 py-2 bg-gray-50 border-t border-gray-100;
+  @apply px-3 py-2 bg-gray-50 border-t border-gray-100
+         dark:bg-gray-700 dark:border-gray-600;
 }
 
 .add-option-btn {
@@ -1386,7 +1404,8 @@ onMounted(() => {
 
 .icon-btn-sm {
   @apply p-1 rounded hover:bg-gray-100 text-gray-400 transition-colors
-         disabled:opacity-50 disabled:cursor-not-allowed;
+         disabled:opacity-50 disabled:cursor-not-allowed
+         dark:hover:bg-gray-600;
 }
 
 /* 색상 선택 드롭다운 */
@@ -1396,13 +1415,15 @@ onMounted(() => {
 
 .color-btn {
   @apply w-6 h-6 rounded border border-gray-300 cursor-pointer
-         hover:ring-2 hover:ring-offset-1 hover:ring-gray-400;
+         hover:ring-2 hover:ring-offset-1 hover:ring-gray-400
+         dark:border-gray-600;
 }
 
 .color-palette {
   @apply absolute z-10 top-full left-0 mt-1 p-1.5 bg-white border border-gray-200
          rounded-lg shadow-lg grid grid-cols-5 gap-1
-         opacity-0 invisible transition-all duration-150;
+         opacity-0 invisible transition-all duration-150
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .color-picker-wrapper:hover .color-palette,
@@ -1420,27 +1441,29 @@ onMounted(() => {
 .data-source-option {
   @apply flex flex-col p-2 rounded-lg border-2 border-gray-200 cursor-pointer
          transition-all duration-150 hover:border-gray-300 hover:bg-gray-50
-         flex-1 max-w-[200px];
+         flex-1 max-w-[200px]
+         dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700;
 }
 
 .data-source-option.selected {
-  @apply border-primary-500 bg-primary-50;
+  @apply border-primary-500 bg-primary-50
+         dark:bg-primary-900/30;
 }
 
 .data-source-label {
-  @apply text-sm font-medium text-gray-900;
+  @apply text-sm font-medium text-gray-900 dark:text-white;
 }
 
 .data-source-desc {
-  @apply text-xs text-gray-500 mt-0.5;
+  @apply text-xs text-gray-500 mt-0.5 dark:text-gray-400;
 }
 
 .data-source-option.selected .data-source-label {
-  @apply text-primary-700;
+  @apply text-primary-700 dark:text-primary-400;
 }
 
 .data-source-option.selected .data-source-desc {
-  @apply text-primary-600;
+  @apply text-primary-600 dark:text-primary-500;
 }
 
 /* v2.0.6: 외부 쿼리 섹션 */
@@ -1452,16 +1475,19 @@ onMounted(() => {
   @apply inline-flex items-center px-3 py-1.5 text-xs font-medium
          text-primary-600 bg-primary-50 border border-primary-200 rounded-md
          hover:bg-primary-100 transition-colors
-         disabled:opacity-50 disabled:cursor-not-allowed;
+         disabled:opacity-50 disabled:cursor-not-allowed
+         dark:text-primary-400 dark:bg-primary-900/50 dark:border-primary-700 dark:hover:bg-primary-900/70;
 }
 
 /* v2.0.6: 미리보기 결과 */
 .preview-result {
-  @apply border border-gray-200 rounded-lg overflow-hidden bg-white;
+  @apply border border-gray-200 rounded-lg overflow-hidden bg-white
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .preview-header {
-  @apply px-3 py-2 bg-gray-50 border-b border-gray-100;
+  @apply px-3 py-2 bg-gray-50 border-b border-gray-100
+         dark:bg-gray-700 dark:border-gray-600;
 }
 
 .preview-list {
@@ -1469,7 +1495,8 @@ onMounted(() => {
 }
 
 .preview-item {
-  @apply flex items-center gap-2 px-3 py-1.5 text-sm border-b border-gray-50 last:border-b-0;
+  @apply flex items-center gap-2 px-3 py-1.5 text-sm border-b border-gray-50 last:border-b-0
+         dark:border-gray-700;
 }
 
 .preview-color {
@@ -1477,16 +1504,17 @@ onMounted(() => {
 }
 
 .preview-value {
-  @apply text-gray-500 text-xs min-w-[80px];
+  @apply text-gray-500 text-xs min-w-[80px] dark:text-gray-400;
 }
 
 .preview-label {
-  @apply text-gray-700;
+  @apply text-gray-700 dark:text-gray-200;
 }
 
 /* v2.0.6: 외부 쿼리 배지 */
 .external-query-badge {
   @apply inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium
-         rounded bg-emerald-50 text-emerald-700 border border-emerald-200;
+         rounded bg-emerald-50 text-emerald-700 border border-emerald-200
+         dark:bg-emerald-900/50 dark:text-emerald-400 dark:border-emerald-800;
 }
 </style>

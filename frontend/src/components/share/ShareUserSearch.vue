@@ -90,18 +90,18 @@ function handleAdd() {
             <label
               v-for="opt in permissionOptions"
               :key="opt.value"
-              class="flex items-center gap-3 p-3 bg-white border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-              :class="selectedPermission === opt.value ? 'border-primary-500 ring-1 ring-primary-500' : 'border-gray-200'"
+              class="flex items-center gap-3 p-3 bg-white dark:bg-gray-700 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              :class="selectedPermission === opt.value ? 'border-primary-500 ring-1 ring-primary-500' : 'border-gray-200 dark:border-gray-600'"
             >
               <input
                 type="radio"
                 v-model="selectedPermission"
                 :value="opt.value"
-                class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 focus:ring-primary-500"
               />
               <div>
-                <p class="text-[13px] font-medium text-gray-700">{{ opt.label }}</p>
-                <p class="text-[12px] text-gray-500">{{ opt.description }}</p>
+                <p class="text-[13px] font-medium text-gray-700 dark:text-gray-300">{{ opt.label }}</p>
+                <p class="text-[12px] text-gray-500 dark:text-gray-400">{{ opt.description }}</p>
               </div>
             </label>
           </div>
@@ -132,8 +132,8 @@ function handleAdd() {
       </template>
 
       <!-- 안내 메시지 (사용자 미선택 시) -->
-      <div v-else class="p-3 bg-gray-50 rounded-lg">
-        <p class="text-[12px] text-gray-500">
+      <div v-else class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+        <p class="text-[12px] text-gray-500 dark:text-gray-400">
           부서에서 찾기 또는 이름으로 검색하여 공유할 사용자를 선택하세요.
         </p>
       </div>
@@ -143,7 +143,7 @@ function handleAdd() {
 
 <style scoped>
 .share-user-search {
-  @apply p-4 bg-white rounded-lg border border-gray-200;
+  @apply p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
 }
 
 .btn-primary {

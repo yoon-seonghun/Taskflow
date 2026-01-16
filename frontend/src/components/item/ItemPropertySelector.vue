@@ -481,13 +481,13 @@ onUnmounted(() => {
     <!-- 접힘/펼침 헤더 -->
     <button
       type="button"
-      class="w-full flex items-center justify-between px-3 py-2 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+      class="w-full flex items-center justify-between px-3 py-2 text-left bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors"
       @click="toggleExpanded"
     >
       <div class="flex items-center gap-2">
         <!-- 화살표 아이콘 -->
         <svg
-          class="w-4 h-4 text-gray-500 transition-transform duration-200"
+          class="w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform duration-200"
           :class="{ 'rotate-90': expanded }"
           fill="none"
           stroke="currentColor"
@@ -495,9 +495,9 @@ onUnmounted(() => {
         >
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
-        <span class="text-sm font-medium text-gray-700">속성 편집</span>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">속성 편집</span>
       </div>
-      <span class="text-xs text-gray-500">({{ summaryText }})</span>
+      <span class="text-xs text-gray-500 dark:text-gray-400">({{ summaryText }})</span>
     </button>
 
     <!-- 펼침 내용 -->
@@ -520,10 +520,10 @@ onUnmounted(() => {
 
         <!-- 에러 표시 -->
         <div v-else-if="loadError" class="text-center py-4">
-          <p class="text-red-500 text-xs mb-2">{{ loadError }}</p>
+          <p class="text-red-500 dark:text-red-400 text-xs mb-2">{{ loadError }}</p>
           <button
             type="button"
-            class="text-xs text-blue-600 hover:underline"
+            class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
             @click="loadData"
           >
             다시 시도
@@ -534,14 +534,14 @@ onUnmounted(() => {
           <!-- 카테고리 선택 -->
           <div v-if="boardCategories.length > 0" class="property-group">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">카테고리</span>
-              <span v-if="defaultCategory" class="text-xs text-gray-400">
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">카테고리</span>
+              <span v-if="defaultCategory" class="text-xs text-gray-400 dark:text-gray-500">
                 기본: {{ defaultCategory.categoryName }}
               </span>
             </div>
             <select
               :value="selectedCategoryId"
-              class="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               @change="updateCategory(($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
             >
               <option :value="null">선택 안함</option>
@@ -568,8 +568,8 @@ onUnmounted(() => {
           </div>
           <div v-else-if="filteredCategoryProperties.length > 0" class="property-group">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-orange-600 uppercase tracking-wide">카테고리 속성</span>
-              <span class="text-xs text-gray-400">
+              <span class="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">카테고리 속성</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">
                 {{ filteredCategoryProperties.filter(p => isSelected(p.propertyId)).length }}/{{ filteredCategoryProperties.length }}
               </span>
             </div>
@@ -579,8 +579,8 @@ onUnmounted(() => {
                 :key="prop.propertyId"
                 class="flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-colors"
                 :class="isSelected(prop.propertyId)
-                  ? 'bg-orange-50 border border-orange-200'
-                  : 'bg-white border border-gray-200 hover:border-gray-300'"
+                  ? 'bg-orange-50 border border-orange-200 dark:bg-orange-900/30 dark:border-orange-800'
+                  : 'bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500'"
                 @click.prevent="toggleProperty(prop.propertyId)"
               >
                 <input
@@ -588,7 +588,7 @@ onUnmounted(() => {
                   :checked="isSelected(prop.propertyId)"
                   class="w-3.5 h-3.5 text-orange-600 border-gray-300 rounded cursor-pointer focus:ring-orange-500 pointer-events-none"
                 />
-                <span class="flex-1" :class="isSelected(prop.propertyId) ? 'text-orange-700' : 'text-gray-600'">
+                <span class="flex-1" :class="isSelected(prop.propertyId) ? 'text-orange-700 dark:text-orange-300' : 'text-gray-600 dark:text-gray-300'">
                   {{ prop.propertyName }}
                   <span v-if="prop.requiredYn === 'Y'" class="text-red-500 ml-0.5">*</span>
                 </span>
@@ -597,7 +597,7 @@ onUnmounted(() => {
                   <select
                     v-if="prop.propertyType === 'SELECT'"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-orange-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-orange-500"
                     @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value)"
                     @click.stop
                   >
@@ -614,7 +614,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'TEXT'"
                     type="text"
                     :value="propertyValues[prop.propertyId]"
-                    class="w-24 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-orange-500"
+                    class="w-24 px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-orange-500"
                     placeholder="값 입력"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
@@ -623,7 +623,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'NUMBER'"
                     type="number"
                     :value="propertyValues[prop.propertyId]"
-                    class="w-20 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-orange-500"
+                    class="w-20 px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-orange-500"
                     placeholder="0"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
@@ -632,7 +632,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'DATE'"
                     type="date"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-orange-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-orange-500"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
                   />
@@ -647,8 +647,8 @@ onUnmounted(() => {
                       :key="opt.optionId"
                       class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded cursor-pointer"
                       :class="isMultiSelectOptionSelected(prop.propertyId, opt.optionId)
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
                     >
                       <input
                         type="checkbox"
@@ -672,7 +672,7 @@ onUnmounted(() => {
                   <select
                     v-else-if="prop.propertyType === 'USER'"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-orange-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-orange-500"
                     @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value)"
                     @click.stop
                   >
@@ -685,7 +685,7 @@ onUnmounted(() => {
                       {{ user.name }} ({{ user.username }})
                     </option>
                   </select>
-                  <span v-else-if="prop.defaultValue" class="text-xs text-gray-400">
+                  <span v-else-if="prop.defaultValue" class="text-xs text-gray-400 dark:text-gray-500">
                     기본: {{ prop.defaultValue }}
                   </span>
                 </template>
@@ -696,14 +696,14 @@ onUnmounted(() => {
           <!-- 기본 속성 (필수) -->
           <div class="property-group">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">기본 속성</span>
-              <span class="text-xs text-gray-400">필수</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">기본 속성</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">필수</span>
             </div>
             <div class="flex flex-wrap gap-1.5">
               <span
                 v-for="prop in basicProperties"
                 :key="prop.id"
-                class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-500 rounded text-xs"
+                class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 rounded text-xs"
               >
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -716,8 +716,8 @@ onUnmounted(() => {
           <!-- 글로벌 속성 -->
           <div v-if="globalProperties.length > 0" class="property-group">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">글로벌 속성</span>
-              <span class="text-xs text-gray-400">
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">글로벌 속성</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">
                 {{ globalProperties.filter(p => isSelected(p.propertyId)).length }}/{{ globalProperties.length }}
               </span>
             </div>
@@ -727,8 +727,8 @@ onUnmounted(() => {
                 :key="prop.propertyId"
                 class="flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-colors"
                 :class="isSelected(prop.propertyId)
-                  ? 'bg-blue-50 border border-blue-200'
-                  : 'bg-white border border-gray-200 hover:border-gray-300'"
+                  ? 'bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800'
+                  : 'bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500'"
                 @click.prevent="toggleProperty(prop.propertyId)"
               >
                 <input
@@ -736,7 +736,7 @@ onUnmounted(() => {
                   :checked="isSelected(prop.propertyId)"
                   class="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500 pointer-events-none"
                 />
-                <span class="flex-1" :class="isSelected(prop.propertyId) ? 'text-blue-700' : 'text-gray-600'">
+                <span class="flex-1" :class="isSelected(prop.propertyId) ? 'text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'">
                   {{ prop.propertyName }}
                 </span>
                 <!-- 값 입력 (선택된 경우) -->
@@ -744,7 +744,7 @@ onUnmounted(() => {
                   <select
                     v-if="prop.propertyType === 'SELECT'"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-blue-500"
                     @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value)"
                     @click.stop
                   >
@@ -761,7 +761,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'TEXT'"
                     type="text"
                     :value="propertyValues[prop.propertyId]"
-                    class="w-24 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
+                    class="w-24 px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-blue-500"
                     placeholder="값 입력"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
@@ -770,7 +770,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'NUMBER'"
                     type="number"
                     :value="propertyValues[prop.propertyId]"
-                    class="w-20 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
+                    class="w-20 px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-blue-500"
                     placeholder="0"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
@@ -779,7 +779,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'DATE'"
                     type="date"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-blue-500"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
                   />
@@ -794,8 +794,8 @@ onUnmounted(() => {
                       :key="opt.optionId"
                       class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded cursor-pointer"
                       :class="isMultiSelectOptionSelected(prop.propertyId, opt.optionId)
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
                     >
                       <input
                         type="checkbox"
@@ -819,7 +819,7 @@ onUnmounted(() => {
                   <select
                     v-else-if="prop.propertyType === 'USER'"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-blue-500"
                     @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value)"
                     @click.stop
                   >
@@ -832,7 +832,7 @@ onUnmounted(() => {
                       {{ user.name }} ({{ user.username }})
                     </option>
                   </select>
-                  <span v-else-if="prop.defaultValue" class="text-xs text-gray-400">
+                  <span v-else-if="prop.defaultValue" class="text-xs text-gray-400 dark:text-gray-500">
                     기본: {{ prop.defaultValue }}
                   </span>
                 </template>
@@ -843,8 +843,8 @@ onUnmounted(() => {
           <!-- 매니저 속성 -->
           <div v-if="managerProperties.length > 0" class="property-group">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">매니저 속성</span>
-              <span class="text-xs text-gray-400">
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">매니저 속성</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">
                 {{ managerProperties.filter(p => isSelected(p.propertyId)).length }}/{{ managerProperties.length }}
               </span>
             </div>
@@ -854,8 +854,8 @@ onUnmounted(() => {
                 :key="prop.propertyId"
                 class="flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-colors"
                 :class="isSelected(prop.propertyId)
-                  ? 'bg-purple-50 border border-purple-200'
-                  : 'bg-white border border-gray-200 hover:border-gray-300'"
+                  ? 'bg-purple-50 border border-purple-200 dark:bg-purple-900/30 dark:border-purple-800'
+                  : 'bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500'"
                 @click.prevent="toggleProperty(prop.propertyId)"
               >
                 <input
@@ -863,7 +863,7 @@ onUnmounted(() => {
                   :checked="isSelected(prop.propertyId)"
                   class="w-3.5 h-3.5 text-purple-600 border-gray-300 rounded cursor-pointer focus:ring-purple-500 pointer-events-none"
                 />
-                <span class="flex-1" :class="isSelected(prop.propertyId) ? 'text-purple-700' : 'text-gray-600'">
+                <span class="flex-1" :class="isSelected(prop.propertyId) ? 'text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300'">
                   {{ prop.propertyName }}
                 </span>
                 <!-- 값 입력 (선택된 경우) -->
@@ -871,7 +871,7 @@ onUnmounted(() => {
                   <select
                     v-if="prop.propertyType === 'SELECT'"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-purple-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-purple-500"
                     @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value)"
                     @click.stop
                   >
@@ -888,7 +888,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'TEXT'"
                     type="text"
                     :value="propertyValues[prop.propertyId]"
-                    class="w-24 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-purple-500"
+                    class="w-24 px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-purple-500"
                     placeholder="값 입력"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
@@ -897,7 +897,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'NUMBER'"
                     type="number"
                     :value="propertyValues[prop.propertyId]"
-                    class="w-20 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-purple-500"
+                    class="w-20 px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-purple-500"
                     placeholder="0"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
@@ -906,7 +906,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'DATE'"
                     type="date"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-purple-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-purple-500"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
                   />
@@ -921,8 +921,8 @@ onUnmounted(() => {
                       :key="opt.optionId"
                       class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded cursor-pointer"
                       :class="isMultiSelectOptionSelected(prop.propertyId, opt.optionId)
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
                     >
                       <input
                         type="checkbox"
@@ -946,7 +946,7 @@ onUnmounted(() => {
                   <select
                     v-else-if="prop.propertyType === 'USER'"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-purple-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-purple-500"
                     @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value)"
                     @click.stop
                   >
@@ -959,7 +959,7 @@ onUnmounted(() => {
                       {{ user.name }} ({{ user.username }})
                     </option>
                   </select>
-                  <span v-else-if="prop.defaultValue" class="text-xs text-gray-400">
+                  <span v-else-if="prop.defaultValue" class="text-xs text-gray-400 dark:text-gray-500">
                     기본: {{ prop.defaultValue }}
                   </span>
                 </template>
@@ -970,8 +970,8 @@ onUnmounted(() => {
           <!-- 사용자 속성 -->
           <div v-if="userProperties.length > 0" class="property-group">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">사용자 속성</span>
-              <span class="text-xs text-gray-400">
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">사용자 속성</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">
                 {{ userProperties.filter(p => isSelected(p.propertyId)).length }}/{{ userProperties.length }}
               </span>
             </div>
@@ -981,8 +981,8 @@ onUnmounted(() => {
                 :key="prop.propertyId"
                 class="flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-colors"
                 :class="isSelected(prop.propertyId)
-                  ? 'bg-green-50 border border-green-200'
-                  : 'bg-white border border-gray-200 hover:border-gray-300'"
+                  ? 'bg-green-50 border border-green-200 dark:bg-green-900/30 dark:border-green-800'
+                  : 'bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500'"
                 @click.prevent="toggleProperty(prop.propertyId)"
               >
                 <input
@@ -990,7 +990,7 @@ onUnmounted(() => {
                   :checked="isSelected(prop.propertyId)"
                   class="w-3.5 h-3.5 text-green-600 border-gray-300 rounded cursor-pointer focus:ring-green-500 pointer-events-none"
                 />
-                <span class="flex-1" :class="isSelected(prop.propertyId) ? 'text-green-700' : 'text-gray-600'">
+                <span class="flex-1" :class="isSelected(prop.propertyId) ? 'text-green-700 dark:text-green-300' : 'text-gray-600 dark:text-gray-300'">
                   {{ prop.propertyName }}
                 </span>
                 <!-- 값 입력 (선택된 경우) -->
@@ -998,7 +998,7 @@ onUnmounted(() => {
                   <select
                     v-if="prop.propertyType === 'SELECT'"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-green-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-green-500"
                     @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value)"
                     @click.stop
                   >
@@ -1015,7 +1015,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'TEXT'"
                     type="text"
                     :value="propertyValues[prop.propertyId]"
-                    class="w-24 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-green-500"
+                    class="w-24 px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-green-500"
                     placeholder="값 입력"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
@@ -1024,7 +1024,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'NUMBER'"
                     type="number"
                     :value="propertyValues[prop.propertyId]"
-                    class="w-20 px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-green-500"
+                    class="w-20 px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-green-500"
                     placeholder="0"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
@@ -1033,7 +1033,7 @@ onUnmounted(() => {
                     v-else-if="prop.propertyType === 'DATE'"
                     type="date"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-green-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-green-500"
                     @input="updatePropertyValue(prop.propertyId, ($event.target as HTMLInputElement).value)"
                     @click.stop
                   />
@@ -1048,8 +1048,8 @@ onUnmounted(() => {
                       :key="opt.optionId"
                       class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded cursor-pointer"
                       :class="isMultiSelectOptionSelected(prop.propertyId, opt.optionId)
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'"
                     >
                       <input
                         type="checkbox"
@@ -1073,7 +1073,7 @@ onUnmounted(() => {
                   <select
                     v-else-if="prop.propertyType === 'USER'"
                     :value="propertyValues[prop.propertyId]"
-                    class="px-1.5 py-0.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-green-500"
+                    class="px-1.5 py-0.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 rounded focus:ring-1 focus:ring-green-500"
                     @change="updatePropertyValue(prop.propertyId, ($event.target as HTMLSelectElement).value)"
                     @click.stop
                   >
@@ -1086,7 +1086,7 @@ onUnmounted(() => {
                       {{ user.name }} ({{ user.username }})
                     </option>
                   </select>
-                  <span v-else-if="prop.defaultValue" class="text-xs text-gray-400">
+                  <span v-else-if="prop.defaultValue" class="text-xs text-gray-400 dark:text-gray-500">
                     기본: {{ prop.defaultValue }}
                   </span>
                 </template>
@@ -1097,7 +1097,7 @@ onUnmounted(() => {
           <!-- 빈 상태 -->
           <div
             v-if="boardProperties.length === 0 && !loading"
-            class="text-center py-4 text-gray-400 text-xs"
+            class="text-center py-4 text-gray-400 dark:text-gray-500 text-xs"
           >
             <p>이 보드에 설정된 추가 속성이 없습니다.</p>
           </div>
@@ -1109,10 +1109,10 @@ onUnmounted(() => {
 
 <style scoped>
 .item-property-selector {
-  @apply border border-gray-200 rounded-lg overflow-hidden;
+  @apply border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden;
 }
 
 .property-group {
-  @apply bg-white rounded-lg p-2.5 border border-gray-100;
+  @apply bg-white dark:bg-gray-800 rounded-lg p-2.5 border border-gray-100 dark:border-gray-700;
 }
 </style>

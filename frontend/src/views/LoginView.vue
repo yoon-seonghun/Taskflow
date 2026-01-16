@@ -87,7 +87,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+  <div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
     <div class="w-full max-w-sm">
       <!-- Logo & Title -->
       <div class="text-center mb-8">
@@ -96,16 +96,16 @@ onMounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900">TaskFlow</h1>
-        <p class="text-sm text-gray-500 mt-1">업무 관리 시스템</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">TaskFlow</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">업무 관리 시스템</p>
       </div>
 
       <!-- Login Form -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <!-- Session Expired Message -->
         <div
           v-if="sessionExpired"
-          class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm"
+          class="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg text-yellow-700 dark:text-yellow-400 text-sm"
         >
           세션이 만료되었습니다. 다시 로그인해주세요.
         </div>
@@ -113,7 +113,7 @@ onMounted(() => {
         <!-- Error Message -->
         <div
           v-if="loginError"
-          class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+          class="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400 text-sm"
         >
           {{ loginError }}
         </div>
@@ -154,9 +154,9 @@ onMounted(() => {
               <input
                 v-model="rememberMe"
                 type="checkbox"
-                class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
               />
-              <span class="text-sm text-gray-600">아이디 저장</span>
+              <span class="text-sm text-gray-600 dark:text-gray-300">아이디 저장</span>
             </label>
           </div>
 
@@ -175,7 +175,7 @@ onMounted(() => {
       </div>
 
       <!-- Footer -->
-      <p class="text-center text-xs text-gray-400 mt-6">
+      <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
         &copy; {{ new Date().getFullYear() }} TaskFlow. All rights reserved.
       </p>
     </div>

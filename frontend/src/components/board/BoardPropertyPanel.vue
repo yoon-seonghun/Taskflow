@@ -162,17 +162,17 @@ defineExpose({
 </script>
 
 <template>
-  <div class="board-property-panel bg-white border border-gray-200 rounded-lg">
+  <div class="board-property-panel bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
     <!-- 헤더 -->
-    <div class="px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+    <div class="px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 rounded-t-lg">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium text-gray-700 flex items-center gap-2">
-          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+          <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
           보드 속성 정보
         </h3>
-        <span v-if="loading" class="text-xs text-gray-400">로딩 중...</span>
+        <span v-if="loading" class="text-xs text-gray-400 dark:text-gray-500">로딩 중...</span>
       </div>
     </div>
 
@@ -189,12 +189,12 @@ defineExpose({
       <!-- 카테고리 섹션 -->
       <div v-if="boardCategories.length > 0" class="space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">카테고리</span>
-          <span class="text-xs text-gray-400">{{ boardCategories.length }}개</span>
+          <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">카테고리</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ boardCategories.length }}개</span>
         </div>
         <select
           :value="selectedCategoryId"
-          class="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          class="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200"
           @change="handleCategoryChange(($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
         >
           <option :value="null">선택 안함</option>
@@ -210,8 +210,8 @@ defineExpose({
       </div>
 
       <!-- 카테고리 속성 -->
-      <div v-if="categoryLoading" class="flex items-center gap-2 text-xs text-gray-500">
-        <svg class="animate-spin h-4 w-4 text-orange-500" fill="none" viewBox="0 0 24 24">
+      <div v-if="categoryLoading" class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <svg class="animate-spin h-4 w-4 text-orange-500 dark:text-orange-400" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -219,14 +219,14 @@ defineExpose({
       </div>
       <div v-else-if="categoryProperties.length > 0" class="space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-orange-600 uppercase tracking-wide">카테고리 속성</span>
-          <span class="text-xs text-gray-400">{{ categoryProperties.length }}개</span>
+          <span class="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">카테고리 속성</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ categoryProperties.length }}개</span>
         </div>
         <div class="flex flex-wrap gap-1">
           <span
             v-for="prop in categoryProperties"
             :key="prop.propertyId"
-            class="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs border border-orange-200"
+            class="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded text-xs border border-orange-200 dark:border-orange-800"
           >
             <span class="w-4 h-4 flex items-center justify-center text-[10px]">{{ getPropertyTypeIcon(prop.propertyType) }}</span>
             {{ prop.propertyName }}
@@ -238,14 +238,14 @@ defineExpose({
       <!-- 글로벌 속성 -->
       <div v-if="globalProperties.length > 0" class="space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-blue-600 uppercase tracking-wide">글로벌 속성</span>
-          <span class="text-xs text-gray-400">{{ globalProperties.length }}개</span>
+          <span class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">글로벌 속성</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ globalProperties.length }}개</span>
         </div>
         <div class="flex flex-wrap gap-1">
           <span
             v-for="prop in globalProperties"
             :key="prop.propertyId"
-            class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs border border-blue-200"
+            class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-xs border border-blue-200 dark:border-blue-800"
           >
             <span class="w-4 h-4 flex items-center justify-center text-[10px]">{{ getPropertyTypeIcon(prop.propertyType) }}</span>
             {{ prop.propertyName }}
@@ -257,14 +257,14 @@ defineExpose({
       <!-- 매니저 속성 -->
       <div v-if="managerProperties.length > 0" class="space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-purple-600 uppercase tracking-wide">매니저 속성</span>
-          <span class="text-xs text-gray-400">{{ managerProperties.length }}개</span>
+          <span class="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">매니저 속성</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ managerProperties.length }}개</span>
         </div>
         <div class="flex flex-wrap gap-1">
           <span
             v-for="prop in managerProperties"
             :key="prop.propertyId"
-            class="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs border border-purple-200"
+            class="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded text-xs border border-purple-200 dark:border-purple-800"
           >
             <span class="w-4 h-4 flex items-center justify-center text-[10px]">{{ getPropertyTypeIcon(prop.propertyType) }}</span>
             {{ prop.propertyName }}
@@ -276,14 +276,14 @@ defineExpose({
       <!-- 사용자 속성 -->
       <div v-if="userProperties.length > 0" class="space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-green-600 uppercase tracking-wide">사용자 속성</span>
-          <span class="text-xs text-gray-400">{{ userProperties.length }}개</span>
+          <span class="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">사용자 속성</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ userProperties.length }}개</span>
         </div>
         <div class="flex flex-wrap gap-1">
           <span
             v-for="prop in userProperties"
             :key="prop.propertyId"
-            class="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs border border-green-200"
+            class="inline-flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs border border-green-200 dark:border-green-800"
           >
             <span class="w-4 h-4 flex items-center justify-center text-[10px]">{{ getPropertyTypeIcon(prop.propertyType) }}</span>
             {{ prop.propertyName }}
@@ -295,7 +295,7 @@ defineExpose({
       <!-- 빈 상태 -->
       <div
         v-if="!loading && boardCategories.length === 0 && boardProperties.length === 0"
-        class="text-center py-4 text-gray-400 text-xs"
+        class="text-center py-4 text-gray-400 dark:text-gray-500 text-xs"
       >
         이 보드에 설정된 카테고리나 속성이 없습니다.
       </div>

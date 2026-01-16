@@ -238,19 +238,19 @@ watch(isVisible, (visible) => {
       >
         <!-- 오버레이 배경 (패널 왼쪽만 덮도록) -->
         <div
-          class="absolute inset-0 bg-black/30"
+          class="absolute inset-0 bg-black/30 dark:bg-black/50"
           :style="{ right: `${panelWidth}px` }"
         />
 
         <!-- 패널 -->
         <div
-          class="absolute inset-y-0 right-0 flex bg-white shadow-2xl"
+          class="absolute inset-y-0 right-0 flex bg-white shadow-2xl dark:bg-gray-900"
           :style="{ width: `${panelWidth}px` }"
           @click="handlePanelClick"
         >
           <!-- 리사이즈 핸들 (패널 내부 왼쪽) - 진한 색상으로 명확히 표시 -->
           <div
-            class="w-5 flex-shrink-0 bg-gray-300 hover:bg-primary-400 cursor-ew-resize flex items-center justify-center group border-r-2 border-gray-400 transition-colors"
+            class="w-5 flex-shrink-0 bg-gray-300 hover:bg-primary-400 cursor-ew-resize flex items-center justify-center group border-r-2 border-gray-400 transition-colors dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-primary-600"
             :class="{ 'bg-primary-500': isResizing }"
             @mousedown.stop.prevent="startResize"
             @dblclick.stop="resetWidth"
@@ -258,11 +258,11 @@ watch(isVisible, (visible) => {
           >
             <!-- 그립 점 (더 진하고 크게) -->
             <div class="flex flex-col gap-1.5">
-              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white" />
-              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white" />
-              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white" />
-              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white" />
-              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white" />
+              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white dark:bg-gray-400" />
+              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white dark:bg-gray-400" />
+              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white dark:bg-gray-400" />
+              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white dark:bg-gray-400" />
+              <div class="w-1.5 h-1.5 rounded-full bg-gray-500 group-hover:bg-white dark:bg-gray-400" />
             </div>
           </div>
 
@@ -270,10 +270,10 @@ watch(isVisible, (visible) => {
           <div class="flex-1 h-full overflow-hidden">
             <!-- 런타임 에러 표시 -->
             <div v-if="capturedError" class="flex flex-col items-center justify-center h-full p-4 text-center">
-              <div class="text-red-500 mb-2">컴포넌트 에러 발생</div>
-              <div class="text-sm text-gray-600 mb-2">{{ capturedError.message }}</div>
+              <div class="text-red-500 mb-2 dark:text-red-400">컴포넌트 에러 발생</div>
+              <div class="text-sm text-gray-600 mb-2 dark:text-gray-400">{{ capturedError.message }}</div>
               <button
-                class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
                 @click="capturedError = null"
               >
                 다시 시도
@@ -288,7 +288,7 @@ watch(isVisible, (visible) => {
               @navigate="handleNavigate"
             />
             <!-- 디버그: resolvedComponent가 없는 경우 -->
-            <div v-else class="flex flex-col items-center justify-center h-full text-gray-500">
+            <div v-else class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
               <div class="text-sm mb-2">컴포넌트를 로드하지 못했습니다.</div>
               <div class="text-xs">componentName: {{ componentName }}</div>
               <div class="text-xs">props: {{ JSON.stringify(componentProps) }}</div>

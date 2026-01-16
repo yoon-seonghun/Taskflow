@@ -122,10 +122,10 @@ function cancelTypeChange() {
 </script>
 
 <template>
-  <div class="w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1" @click.stop>
+  <div class="w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1" @click.stop>
     <!-- 헤더 -->
-    <div class="px-3 py-2 border-b border-gray-100">
-      <span class="text-[13px] font-medium text-gray-700">속성 타입 선택</span>
+    <div class="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+      <span class="text-[13px] font-medium text-gray-700 dark:text-gray-300">속성 타입 선택</span>
     </div>
 
     <!-- 경고 화면 -->
@@ -135,8 +135,8 @@ function cancelTypeChange() {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
         <div>
-          <p class="text-[13px] font-medium text-gray-900 mb-1">데이터 변환 경고</p>
-          <p class="text-[12px] text-gray-600">
+          <p class="text-[13px] font-medium text-gray-900 dark:text-gray-100 mb-1">데이터 변환 경고</p>
+          <p class="text-[12px] text-gray-600 dark:text-gray-400">
             타입 변경 시 기존 데이터가 손실되거나 변환될 수 있습니다.
           </p>
         </div>
@@ -144,7 +144,7 @@ function cancelTypeChange() {
 
       <div class="flex justify-end gap-2">
         <button
-          class="px-3 py-1.5 text-[13px] text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          class="px-3 py-1.5 text-[13px] text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
           @click="cancelTypeChange"
         >
           취소
@@ -166,8 +166,8 @@ function cancelTypeChange() {
         class="w-full flex items-start gap-3 px-3 py-2 transition-colors"
         :class="[
           option.type === currentType
-            ? 'bg-primary-50 text-primary-700'
-            : 'text-gray-700 hover:bg-gray-50'
+            ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
         ]"
         @click="handleSelect(option.type)"
       >
@@ -209,7 +209,7 @@ function cancelTypeChange() {
             <span class="text-[13px] font-medium">{{ option.label }}</span>
             <svg
               v-if="option.type === currentType"
-              class="w-4 h-4 text-primary-500"
+              class="w-4 h-4 text-primary-500 dark:text-primary-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -217,7 +217,7 @@ function cancelTypeChange() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p class="text-[11px] text-gray-500">{{ option.description }}</p>
+          <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ option.description }}</p>
         </div>
       </button>
     </div>

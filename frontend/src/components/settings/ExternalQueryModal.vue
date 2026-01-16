@@ -455,23 +455,28 @@ onMounted(() => {
 }
 
 .modal-container {
-  @apply bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col;
+  @apply bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col
+         dark:bg-gray-800;
 }
 
 .modal-header {
-  @apply flex items-start justify-between px-6 py-4 border-b border-gray-200;
+  @apply flex items-start justify-between px-6 py-4 border-b border-gray-200
+         dark:border-gray-700;
 }
 
 .modal-title {
-  @apply text-lg font-semibold text-gray-900;
+  @apply text-lg font-semibold text-gray-900
+         dark:text-white;
 }
 
 .modal-subtitle {
-  @apply text-sm text-gray-500 mt-0.5;
+  @apply text-sm text-gray-500 mt-0.5
+         dark:text-gray-400;
 }
 
 .close-btn {
-  @apply p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors;
+  @apply p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors
+         dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700;
 }
 
 .modal-body {
@@ -479,7 +484,8 @@ onMounted(() => {
 }
 
 .modal-footer {
-  @apply flex items-center justify-end px-6 py-4 border-t border-gray-200 bg-gray-50;
+  @apply flex items-center justify-end px-6 py-4 border-t border-gray-200 bg-gray-50
+         dark:border-gray-700 dark:bg-gray-900;
 }
 
 .form-section {
@@ -487,7 +493,8 @@ onMounted(() => {
 }
 
 .section-title {
-  @apply text-sm font-medium text-gray-700 border-b border-gray-200 pb-2;
+  @apply text-sm font-medium text-gray-700 border-b border-gray-200 pb-2
+         dark:text-gray-300 dark:border-gray-700;
 }
 
 .form-grid {
@@ -519,7 +526,8 @@ onMounted(() => {
 }
 
 .form-label {
-  @apply block text-sm font-medium text-gray-700;
+  @apply block text-sm font-medium text-gray-700
+         dark:text-gray-300;
 }
 
 .form-label.required::after {
@@ -529,39 +537,47 @@ onMounted(() => {
 
 .form-input {
   @apply w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
-         focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+         focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-500;
 }
 
 .form-input.readonly {
-  @apply bg-gray-100 cursor-not-allowed;
+  @apply bg-gray-100 cursor-not-allowed
+         dark:bg-gray-900;
 }
 
 .form-hint {
-  @apply text-xs text-gray-500;
+  @apply text-xs text-gray-500
+         dark:text-gray-400;
 }
 
 .sql-input {
   @apply w-full px-3 py-2 text-sm font-mono border border-gray-300 rounded-lg
-         focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none;
+         focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-500;
 }
 
 .sample-btn {
-  @apply px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded hover:bg-gray-200 transition-colors;
+  @apply px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded hover:bg-gray-200 transition-colors
+         dark:text-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600;
 }
 
 .radio-label {
-  @apply flex items-center gap-2 text-sm text-gray-700 cursor-pointer;
+  @apply flex items-center gap-2 text-sm text-gray-700 cursor-pointer
+         dark:text-gray-300;
 }
 
 .radio-input {
-  @apply w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500;
+  @apply w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500
+         dark:border-gray-600 dark:bg-gray-700;
 }
 
 .btn-cancel {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors;
+         transition-colors
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600;
 }
 
 .btn-primary {

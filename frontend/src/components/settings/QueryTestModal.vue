@@ -298,23 +298,28 @@ onMounted(() => {
 }
 
 .modal-container {
-  @apply bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col;
+  @apply bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col
+         dark:bg-gray-800;
 }
 
 .modal-header {
-  @apply flex items-start justify-between px-6 py-4 border-b border-gray-200;
+  @apply flex items-start justify-between px-6 py-4 border-b border-gray-200
+         dark:border-gray-700;
 }
 
 .modal-title {
-  @apply text-lg font-semibold text-gray-900;
+  @apply text-lg font-semibold text-gray-900
+         dark:text-white;
 }
 
 .modal-subtitle {
-  @apply text-sm text-gray-500 mt-0.5;
+  @apply text-sm text-gray-500 mt-0.5
+         dark:text-gray-400;
 }
 
 .close-btn {
-  @apply p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors;
+  @apply p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors
+         dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700;
 }
 
 .modal-body {
@@ -322,23 +327,28 @@ onMounted(() => {
 }
 
 .modal-footer {
-  @apply flex items-center justify-end px-6 py-4 border-t border-gray-200 bg-gray-50;
+  @apply flex items-center justify-end px-6 py-4 border-t border-gray-200 bg-gray-50
+         dark:border-gray-700 dark:bg-gray-900;
 }
 
 .datasource-info {
-  @apply flex items-center gap-2 p-3 bg-gray-50 rounded-lg text-sm;
+  @apply flex items-center gap-2 p-3 bg-gray-50 rounded-lg text-sm
+         dark:bg-gray-700;
 }
 
 .info-label {
-  @apply text-gray-500;
+  @apply text-gray-500
+         dark:text-gray-400;
 }
 
 .info-value {
-  @apply font-medium text-gray-900;
+  @apply font-medium text-gray-900
+         dark:text-white;
 }
 
 .info-host {
-  @apply text-gray-400 text-xs;
+  @apply text-gray-400 text-xs
+         dark:text-gray-500;
 }
 
 .sql-section {
@@ -346,20 +356,24 @@ onMounted(() => {
 }
 
 .section-label {
-  @apply block text-sm font-medium text-gray-700;
+  @apply block text-sm font-medium text-gray-700
+         dark:text-gray-300;
 }
 
 .max-rows-select {
-  @apply ml-1 px-2 py-0.5 text-xs border border-gray-300 rounded;
+  @apply ml-1 px-2 py-0.5 text-xs border border-gray-300 rounded
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200;
 }
 
 .sql-textarea {
   @apply w-full px-3 py-2 text-sm font-mono border border-gray-300 rounded-lg
-         focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none;
+         focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-500;
 }
 
 .column-mapping {
-  @apply flex items-end gap-3 p-3 bg-gray-50 rounded-lg;
+  @apply flex items-end gap-3 p-3 bg-gray-50 rounded-lg
+         dark:bg-gray-700;
 }
 
 .mapping-item {
@@ -367,12 +381,14 @@ onMounted(() => {
 }
 
 .mapping-label {
-  @apply block text-xs font-medium text-gray-500;
+  @apply block text-xs font-medium text-gray-500
+         dark:text-gray-400;
 }
 
 .mapping-input {
   @apply w-full px-2 py-1.5 text-sm border border-gray-300 rounded
-         focus:ring-primary-500 focus:border-primary-500;
+         focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-500;
 }
 
 .test-btn {
@@ -383,11 +399,13 @@ onMounted(() => {
 }
 
 .error-message {
-  @apply flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm;
+  @apply flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm
+         dark:bg-red-900/30 dark:text-red-400;
 }
 
 .result-section {
-  @apply space-y-4 p-4 bg-green-50 rounded-lg;
+  @apply space-y-4 p-4 bg-green-50 rounded-lg
+         dark:bg-green-900/30;
 }
 
 .result-header {
@@ -399,11 +417,13 @@ onMounted(() => {
 }
 
 .stat-item {
-  @apply flex items-center gap-1 text-gray-600;
+  @apply flex items-center gap-1 text-gray-600
+         dark:text-gray-300;
 }
 
 .result-columns {
-  @apply text-xs text-gray-500 font-mono;
+  @apply text-xs text-gray-500 font-mono
+         dark:text-gray-400;
 }
 
 .options-preview {
@@ -411,7 +431,8 @@ onMounted(() => {
 }
 
 .preview-title {
-  @apply text-sm font-medium text-gray-700;
+  @apply text-sm font-medium text-gray-700
+         dark:text-gray-300;
 }
 
 .options-list {
@@ -419,7 +440,8 @@ onMounted(() => {
 }
 
 .option-item {
-  @apply flex items-center gap-2 px-3 py-2 bg-white rounded border border-gray-200 text-sm;
+  @apply flex items-center gap-2 px-3 py-2 bg-white rounded border border-gray-200 text-sm
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .option-color {
@@ -427,11 +449,13 @@ onMounted(() => {
 }
 
 .option-label {
-  @apply flex-1 truncate text-gray-900;
+  @apply flex-1 truncate text-gray-900
+         dark:text-white;
 }
 
 .option-value {
-  @apply text-xs text-gray-400 font-mono;
+  @apply text-xs text-gray-400 font-mono
+         dark:text-gray-500;
 }
 
 .raw-data {
@@ -439,11 +463,13 @@ onMounted(() => {
 }
 
 .data-summary {
-  @apply text-sm text-gray-600 cursor-pointer hover:text-gray-900;
+  @apply text-sm text-gray-600 cursor-pointer hover:text-gray-900
+         dark:text-gray-400 dark:hover:text-gray-200;
 }
 
 .data-table-wrapper {
-  @apply mt-2 max-h-60 overflow-auto border border-gray-200 rounded-lg;
+  @apply mt-2 max-h-60 overflow-auto border border-gray-200 rounded-lg
+         dark:border-gray-700;
 }
 
 .data-table {
@@ -451,17 +477,20 @@ onMounted(() => {
 }
 
 .data-table th {
-  @apply px-3 py-2 bg-gray-100 text-left font-medium text-gray-600 sticky top-0;
+  @apply px-3 py-2 bg-gray-100 text-left font-medium text-gray-600 sticky top-0
+         dark:bg-gray-700 dark:text-gray-300;
 }
 
 .data-table td {
-  @apply px-3 py-2 border-t border-gray-100 text-gray-700;
+  @apply px-3 py-2 border-t border-gray-100 text-gray-700
+         dark:border-gray-700 dark:text-gray-300;
 }
 
 .btn-close {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors;
+         transition-colors
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600;
 }
 </style>

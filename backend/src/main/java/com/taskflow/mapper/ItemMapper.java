@@ -1,12 +1,14 @@
 package com.taskflow.mapper;
 
 import com.taskflow.domain.Item;
+import com.taskflow.dto.item.AllItemsSearchRequest;
 import com.taskflow.dto.item.CrossBoardSearchRequest;
 import com.taskflow.dto.item.ItemSearchRequest;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -535,4 +537,38 @@ public interface ItemMapper {
      * @return 하위 업무 여부
      */
     boolean isChildItem(@Param("itemId") Long itemId);
+
+    // =============================================
+    // v2.1: 전체 업무 조회 (All Tasks)
+    // =============================================
+
+    /**
+     * 전체 업무 목록 조회 (소유 보드 + 공유 보드 + 개별 공유/배당 업무)
+     *
+     * @param username 사용자 USERNAME
+     * @param request  검색 조건
+     * @return 전체 업무 목록
+     */
+    List<Item> findAllItems(@Param("username") String username,
+                            @Param("request") AllItemsSearchRequest request);
+
+    /**
+     * 전체 업무 총 개수 조회
+     *
+     * @param username 사용자 USERNAME
+     * @param request  검색 조건
+     * @return 전체 업무 개수
+     */
+    long countAllItems(@Param("username") String username,
+                       @Param("request") AllItemsSearchRequest request);
+
+    /**
+     * 전체 업무 통계 조회
+     *
+     * @param username 사용자 USERNAME
+     * @param request  검색 조건 (필터만 적용, 페이징 무시)
+     * @return 출처별/상태별/우선순위별 개수
+     */
+    List<Map<String, Object>> getItemsStats(@Param("username") String username,
+                                            @Param("request") AllItemsSearchRequest request);
 }

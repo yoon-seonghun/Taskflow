@@ -146,7 +146,7 @@ function handleBlur() {
         :placeholder="placeholder"
         :maxlength="maxlength"
         :rows="rows"
-        class="w-full px-2 py-1 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+        class="w-full px-2 py-1 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500"
         @input="handleInput"
         @keydown="handleKeydown"
         @blur="handleBlur"
@@ -160,14 +160,14 @@ function handleBlur() {
         :value="localValue"
         :placeholder="placeholder"
         :maxlength="maxlength"
-        class="w-full px-2 py-1 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 h-8"
+        class="w-full px-2 py-1 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 h-8 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500"
         @input="handleInput"
         @keydown="handleKeydown"
         @blur="handleBlur"
       />
 
       <!-- Help Text -->
-      <p v-if="type === 'textarea'" class="mt-1 text-[11px] text-gray-400">
+      <p v-if="type === 'textarea'" class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
         Ctrl+Enter로 저장, ESC로 취소
       </p>
     </div>
@@ -177,8 +177,8 @@ function handleBlur() {
       v-else
       class="min-h-[32px] px-2 py-1 rounded cursor-text transition-colors"
       :class="[
-        disabled ? 'cursor-default' : 'hover:bg-gray-100',
-        !displayValue ? 'text-gray-400' : 'text-gray-900'
+        disabled ? 'cursor-default' : 'hover:bg-gray-100 dark:hover:bg-gray-700',
+        !displayValue ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
       ]"
       @click="startEditing"
     >

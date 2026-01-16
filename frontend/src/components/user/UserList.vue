@@ -104,7 +104,7 @@ function handleUnsetHead(event: Event, user: User) {
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
       </svg>
-      <p class="mt-2 text-sm text-gray-500">사용자 목록을 불러오는 중...</p>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">사용자 목록을 불러오는 중...</p>
     </div>
 
     <!-- 빈 상태 -->
@@ -113,7 +113,7 @@ function handleUnsetHead(event: Event, user: User) {
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
           d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
-      <p class="mt-2 text-sm text-gray-500">등록된 사용자가 없습니다.</p>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">등록된 사용자가 없습니다.</p>
     </div>
 
     <!-- 사용자 테이블 -->
@@ -136,22 +136,22 @@ function handleUnsetHead(event: Event, user: User) {
           v-for="user in users"
           :key="user.userId"
           class="cursor-pointer"
-          :class="{ 'bg-primary-50': selectedUserId === user.userId }"
+          :class="{ 'bg-primary-50 dark:bg-primary-900/30': selectedUserId === user.userId }"
           @click="handleRowClick(user)"
         >
-          <td class="font-medium text-gray-900">
+          <td class="font-medium text-gray-900 dark:text-white">
             {{ user.userName || user.name }}
           </td>
-          <td class="text-gray-600">
+          <td class="text-gray-600 dark:text-gray-300">
             {{ user.username }}
           </td>
-          <td class="text-gray-600 truncate max-w-[150px]" :title="user.email">
+          <td class="text-gray-600 dark:text-gray-300 truncate max-w-[150px]" :title="user.email">
             {{ user.email || '-' }}
           </td>
-          <td class="text-gray-600">
+          <td class="text-gray-600 dark:text-gray-300">
             {{ user.departmentName || '-' }}
           </td>
-          <td class="text-gray-600">
+          <td class="text-gray-600 dark:text-gray-300">
             <span class="flex items-center gap-1">
               {{ user.positionName || '-' }}
               <Badge v-if="user.headYn === 'Y'" variant="primary" size="xs">팀장</Badge>
@@ -173,7 +173,7 @@ function handleUnsetHead(event: Event, user: User) {
               {{ user.useYn === 'Y' ? '활성' : '비활성' }}
             </Badge>
           </td>
-          <td class="text-gray-500">
+          <td class="text-gray-500 dark:text-gray-400">
             {{ formatDateTime(user.createdAt) }}
           </td>
           <td>
@@ -257,26 +257,26 @@ function handleUnsetHead(event: Event, user: User) {
 }
 
 .user-table thead {
-  @apply bg-gray-50 border-y border-gray-200;
+  @apply bg-gray-50 dark:bg-gray-900 border-y border-gray-200 dark:border-gray-700;
 }
 
 .user-table th {
-  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
 }
 
 .user-table tbody {
-  @apply divide-y divide-gray-100;
+  @apply divide-y divide-gray-100 dark:divide-gray-700;
 }
 
 .user-table td {
-  @apply px-4 py-3 whitespace-nowrap;
+  @apply px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100;
 }
 
 .user-table tbody tr {
-  @apply hover:bg-gray-50 transition-colors;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
 }
 
 .action-btn {
-  @apply p-1.5 rounded hover:bg-gray-100 transition-colors;
+  @apply p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
 }
 </style>

@@ -106,10 +106,10 @@ const canGoNext = computed(() => props.currentPage < props.totalPages - 1)
     <!-- 이전 버튼 -->
     <button
       type="button"
-      class="p-1.5 rounded text-gray-600 transition-colors"
+      class="p-1.5 rounded text-gray-600 transition-colors dark:text-gray-400"
       :class="[
         canGoPrev
-          ? 'hover:bg-gray-100 cursor-pointer'
+          ? 'hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-700'
           : 'opacity-40 cursor-not-allowed'
       ]"
       :disabled="!canGoPrev"
@@ -123,7 +123,7 @@ const canGoNext = computed(() => props.currentPage < props.totalPages - 1)
     <!-- 페이지 번호 -->
     <template v-for="(page, index) in pages" :key="index">
       <!-- 구분자 -->
-      <span v-if="page === 'dots'" class="px-2 text-gray-400 text-[13px]">
+      <span v-if="page === 'dots'" class="px-2 text-gray-400 text-[13px] dark:text-gray-500">
         ...
       </span>
 
@@ -135,7 +135,7 @@ const canGoNext = computed(() => props.currentPage < props.totalPages - 1)
         :class="[
           page === currentPage
             ? 'bg-primary-500 text-white'
-            : 'text-gray-600 hover:bg-gray-100'
+            : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
         ]"
         @click="goToPage(page)"
       >
@@ -146,10 +146,10 @@ const canGoNext = computed(() => props.currentPage < props.totalPages - 1)
     <!-- 다음 버튼 -->
     <button
       type="button"
-      class="p-1.5 rounded text-gray-600 transition-colors"
+      class="p-1.5 rounded text-gray-600 transition-colors dark:text-gray-400"
       :class="[
         canGoNext
-          ? 'hover:bg-gray-100 cursor-pointer'
+          ? 'hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-700'
           : 'opacity-40 cursor-not-allowed'
       ]"
       :disabled="!canGoNext"

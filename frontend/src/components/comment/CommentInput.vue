@@ -87,7 +87,7 @@ defineExpose({ focus, clear })
         :disabled="disabled || loading"
         :autofocus="autofocus"
         rows="1"
-        class="w-full px-3 py-2 text-[13px] border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+        class="w-full px-3 py-2 text-[13px] border border-gray-300 dark:border-gray-600 rounded-lg resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed placeholder-gray-400 dark:placeholder-gray-500"
         style="min-height: 38px; max-height: 120px;"
         @input="adjustHeight"
         @keydown="handleKeydown"

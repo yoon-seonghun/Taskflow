@@ -330,7 +330,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="markdown-editor border border-gray-300 rounded-lg overflow-hidden bg-white h-full flex flex-col relative"
+    class="markdown-editor border border-gray-300 rounded-lg overflow-hidden bg-white h-full flex flex-col relative dark:bg-gray-800 dark:border-gray-700"
     :class="{ 'ring-2 ring-primary-500 ring-opacity-50': isDragging }"
     @dragenter="handleDragEnter"
     @dragleave="handleDragLeave"
@@ -349,50 +349,50 @@ onUnmounted(() => {
     <!-- 드래그 오버레이 -->
     <div
       v-if="isDragging"
-      class="absolute inset-0 bg-primary-50 bg-opacity-90 flex items-center justify-center z-10 pointer-events-none"
+      class="absolute inset-0 bg-primary-50 bg-opacity-90 flex items-center justify-center z-10 pointer-events-none dark:bg-primary-900/90"
     >
       <div class="text-center">
-        <svg class="w-12 h-12 mx-auto text-primary-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-12 h-12 mx-auto text-primary-500 mb-2 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
-        <p class="text-primary-600 font-medium">이미지를 여기에 놓으세요</p>
+        <p class="text-primary-600 font-medium dark:text-primary-400">이미지를 여기에 놓으세요</p>
       </div>
     </div>
 
     <!-- 업로드 진행률 -->
     <div
       v-if="isUploading"
-      class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-20"
+      class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-20 dark:bg-gray-800/80"
     >
       <div class="text-center">
-        <div class="w-48 h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
+        <div class="w-48 h-2 bg-gray-200 rounded-full overflow-hidden mb-2 dark:bg-gray-700">
           <div
             class="h-full bg-primary-500 transition-all duration-300"
             :style="{ width: `${uploadProgress}%` }"
           />
         </div>
-        <p class="text-sm text-gray-600">업로드 중... {{ uploadProgress }}%</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">업로드 중... {{ uploadProgress }}%</p>
       </div>
     </div>
 
     <!-- 에러 메시지 -->
     <div
       v-if="uploadError"
-      class="absolute top-2 left-1/2 -translate-x-1/2 bg-red-100 text-red-700 px-4 py-2 rounded-lg shadow-lg z-30 text-sm"
+      class="absolute top-2 left-1/2 -translate-x-1/2 bg-red-100 text-red-700 px-4 py-2 rounded-lg shadow-lg z-30 text-sm dark:bg-red-900/50 dark:text-red-400"
     >
       {{ uploadError }}
     </div>
 
     <!-- 헤더: 탭 + 툴바 -->
-    <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-2 py-1">
+    <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-2 py-1 dark:border-gray-700 dark:bg-gray-700/50">
       <!-- 탭 -->
       <div class="flex gap-1">
         <button
           type="button"
           class="px-3 py-1.5 text-[12px] font-medium rounded transition-colors"
           :class="activeTab === 'edit'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-500 hover:text-gray-700'"
+            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
           @click="activeTab = 'edit'"
         >
           편집
@@ -401,8 +401,8 @@ onUnmounted(() => {
           type="button"
           class="px-3 py-1.5 text-[12px] font-medium rounded transition-colors"
           :class="activeTab === 'preview'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-500 hover:text-gray-700'"
+            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
           @click="activeTab = 'preview'"
         >
           미리보기
@@ -415,7 +415,7 @@ onUnmounted(() => {
           v-for="btn in toolbarButtons"
           :key="btn.icon"
           type="button"
-          class="px-1.5 py-1 text-[11px] font-mono text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+          class="px-1.5 py-1 text-[11px] font-mono text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600"
           :class="{ 'opacity-50 cursor-not-allowed': disabled }"
           :title="btn.title"
           :disabled="disabled"
@@ -424,11 +424,11 @@ onUnmounted(() => {
           {{ btn.icon }}
         </button>
         <!-- 구분선 -->
-        <div class="w-px h-4 bg-gray-300 mx-1" />
+        <div class="w-px h-4 bg-gray-300 mx-1 dark:bg-gray-600" />
         <!-- 이미지 업로드 버튼 -->
         <button
           type="button"
-          class="px-1.5 py-1 text-[11px] text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors flex items-center gap-1"
+          class="px-1.5 py-1 text-[11px] text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors flex items-center gap-1 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600"
           :class="{ 'opacity-50 cursor-not-allowed': disabled || isUploading }"
           title="이미지 첨부 (드래그앤드롭 또는 붙여넣기 가능)"
           :disabled="disabled || isUploading"
@@ -450,7 +450,7 @@ onUnmounted(() => {
         :value="localValue"
         :placeholder="placeholder"
         :disabled="disabled"
-        class="w-full h-full p-3 text-[13px] font-mono resize-none focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+        class="w-full h-full p-3 text-[13px] font-mono resize-none focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700"
         @input="handleInput"
         @blur="handleBlur"
         @keydown="handleKeydown"
@@ -470,11 +470,11 @@ onUnmounted(() => {
 <style scoped>
 /* 마크다운 렌더링 스타일 */
 .prose {
-  @apply text-gray-900;
+  @apply text-gray-900 dark:text-gray-100;
 }
 
 .prose :deep(h1) {
-  @apply text-xl font-bold mt-4 mb-2 pb-1 border-b border-gray-200;
+  @apply text-xl font-bold mt-4 mb-2 pb-1 border-b border-gray-200 dark:border-gray-700;
 }
 
 .prose :deep(h2) {
@@ -507,11 +507,11 @@ onUnmounted(() => {
 }
 
 .prose :deep(code) {
-  @apply bg-gray-100 text-red-600 px-1 py-0.5 rounded text-[12px] font-mono;
+  @apply bg-gray-100 text-red-600 px-1 py-0.5 rounded text-[12px] font-mono dark:bg-gray-700 dark:text-red-400;
 }
 
 .prose :deep(pre) {
-  @apply bg-gray-800 text-gray-100 p-3 rounded-lg my-2 overflow-x-auto;
+  @apply bg-gray-800 text-gray-100 p-3 rounded-lg my-2 overflow-x-auto dark:bg-gray-900;
 }
 
 .prose :deep(pre code) {
@@ -519,15 +519,15 @@ onUnmounted(() => {
 }
 
 .prose :deep(blockquote) {
-  @apply border-l-4 border-gray-300 pl-3 my-2 text-gray-600 italic;
+  @apply border-l-4 border-gray-300 pl-3 my-2 text-gray-600 italic dark:border-gray-600 dark:text-gray-400;
 }
 
 .prose :deep(hr) {
-  @apply my-4 border-gray-200;
+  @apply my-4 border-gray-200 dark:border-gray-700;
 }
 
 .prose :deep(a) {
-  @apply text-primary-600 hover:underline;
+  @apply text-primary-600 hover:underline dark:text-primary-400;
 }
 
 .prose :deep(strong) {
@@ -539,7 +539,7 @@ onUnmounted(() => {
 }
 
 .prose :deep(del) {
-  @apply line-through text-gray-400;
+  @apply line-through text-gray-400 dark:text-gray-500;
 }
 
 /* 체크박스 스타일 */
@@ -554,15 +554,15 @@ onUnmounted(() => {
 
 .prose :deep(th),
 .prose :deep(td) {
-  @apply border border-gray-300 px-2 py-1 text-[12px];
+  @apply border border-gray-300 px-2 py-1 text-[12px] dark:border-gray-600;
 }
 
 .prose :deep(th) {
-  @apply bg-gray-100 font-semibold;
+  @apply bg-gray-100 font-semibold dark:bg-gray-700;
 }
 
 /* 이미지 스타일 */
 .prose :deep(img) {
-  @apply max-w-full h-auto rounded-lg my-2 border border-gray-200;
+  @apply max-w-full h-auto rounded-lg my-2 border border-gray-200 dark:border-gray-700;
 }
 </style>

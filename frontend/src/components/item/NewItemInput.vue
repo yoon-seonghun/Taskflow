@@ -314,21 +314,21 @@ defineExpose({ focus, clear })
     >
       <div
         v-if="selectedTemplate"
-        class="mt-2 px-3 py-2 bg-primary-50 border border-primary-200 rounded-lg flex items-center justify-between"
+        class="mt-2 px-3 py-2 bg-primary-50 dark:bg-primary-900/50 border border-primary-200 dark:border-primary-800 rounded-lg flex items-center justify-between"
       >
         <div class="flex items-center gap-2">
           <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <span class="text-[13px] text-primary-700">
+          <span class="text-[13px] text-primary-700 dark:text-primary-300">
             템플릿 선택됨
           </span>
-          <span v-if="selectedTemplate.useCount > 0" class="text-[11px] text-primary-500">
+          <span v-if="selectedTemplate.useCount > 0" class="text-[11px] text-primary-500 dark:text-primary-400">
             (사용 {{ selectedTemplate.useCount }}회)
           </span>
         </div>
         <button
-          class="p-1 text-primary-400 hover:text-primary-600 rounded transition-colors"
+          class="p-1 text-primary-400 dark:text-primary-500 hover:text-primary-600 dark:hover:text-primary-300 rounded transition-colors"
           @click="selectedTemplate = null"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

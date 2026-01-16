@@ -143,18 +143,18 @@ watch(() => props.show, (newShow) => {
   >
     <div class="space-y-5">
       <!-- 업무 정보 -->
-      <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <p class="text-[12px] text-gray-500 mb-1">이관할 업무</p>
-        <p class="text-[14px] font-medium text-gray-900">{{ item.title }}</p>
+      <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <p class="text-[12px] text-gray-500 dark:text-gray-400 mb-1">이관할 업무</p>
+        <p class="text-[14px] font-medium text-gray-900 dark:text-white">{{ item.title }}</p>
       </div>
 
       <!-- 이관 대상 선택 (라디오 버튼) -->
       <div>
-        <label class="block text-[13px] font-medium text-gray-700 mb-3">이관 대상</label>
+        <label class="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-3">이관 대상</label>
         <div class="space-y-2">
           <!-- 본인 보드로 이관 -->
-          <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-            :class="transferTarget === 'self' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'"
+          <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            :class="transferTarget === 'self' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/50' : 'border-gray-200 dark:border-gray-700'"
           >
             <input
               type="radio"
@@ -163,14 +163,14 @@ watch(() => props.show, (newShow) => {
               class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
             />
             <div>
-              <p class="text-[13px] font-medium text-gray-700">본인 보드로 이관</p>
-              <p class="text-[12px] text-gray-500">내 다른 보드로 업무를 이관합니다</p>
+              <p class="text-[13px] font-medium text-gray-700 dark:text-gray-200">본인 보드로 이관</p>
+              <p class="text-[12px] text-gray-500 dark:text-gray-400">내 다른 보드로 업무를 이관합니다</p>
             </div>
           </label>
 
           <!-- 다른 사용자에게 이관 -->
-          <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-            :class="transferTarget === 'user' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'"
+          <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            :class="transferTarget === 'user' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/50' : 'border-gray-200 dark:border-gray-700'"
           >
             <input
               type="radio"
@@ -179,8 +179,8 @@ watch(() => props.show, (newShow) => {
               class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
             />
             <div>
-              <p class="text-[13px] font-medium text-gray-700">다른 사용자에게 이관</p>
-              <p class="text-[12px] text-gray-500">다른 사용자에게 업무를 이관합니다</p>
+              <p class="text-[13px] font-medium text-gray-700 dark:text-gray-200">다른 사용자에게 이관</p>
+              <p class="text-[12px] text-gray-500 dark:text-gray-400">다른 사용자에게 업무를 이관합니다</p>
             </div>
           </label>
         </div>
@@ -188,10 +188,10 @@ watch(() => props.show, (newShow) => {
 
       <!-- 본인 보드 선택 -->
       <div v-if="transferTarget === 'self'" class="animate-fadeIn">
-        <label class="block text-[13px] font-medium text-gray-700 mb-2">이관할 보드</label>
+        <label class="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-2">이관할 보드</label>
         <select
           v-model="selectedBoardId"
-          class="w-full px-3 py-2 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          class="w-full px-3 py-2 text-[13px] border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
           <option :value="null">보드를 선택하세요</option>
           <option v-for="board in ownBoards" :key="board.boardId" :value="board.boardId">
@@ -199,7 +199,7 @@ watch(() => props.show, (newShow) => {
             <template v-if="board.itemCount !== undefined"> ({{ board.itemCount }}건)</template>
           </option>
         </select>
-        <p v-if="ownBoards.length === 0" class="mt-2 text-[12px] text-amber-600">
+        <p v-if="ownBoards.length === 0" class="mt-2 text-[12px] text-amber-600 dark:text-amber-400">
           이관 가능한 보드가 없습니다. 새 보드를 생성해주세요.
         </p>
       </div>
@@ -213,11 +213,11 @@ watch(() => props.show, (newShow) => {
           placeholder="사용자를 선택하세요"
           @select="handleUserSelect"
         />
-        <div class="mt-3 flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div class="mt-3 flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
           <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p class="text-[12px] text-blue-700">
+          <p class="text-[12px] text-blue-700 dark:text-blue-300">
             선택한 사용자의 <strong>"업무이관"</strong> 보드로 업무가 이관됩니다.
             해당 보드가 없으면 자동으로 생성됩니다.
           </p>
@@ -226,11 +226,11 @@ watch(() => props.show, (newShow) => {
 
       <!-- 사유 입력 (선택) -->
       <div>
-        <label class="block text-[13px] font-medium text-gray-700 mb-2">이관 사유 (선택)</label>
+        <label class="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-2">이관 사유 (선택)</label>
         <textarea
           v-model="reason"
           rows="2"
-          class="w-full px-3 py-2 text-[13px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+          class="w-full px-3 py-2 text-[13px] border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
           placeholder="이관 사유를 입력하세요..."
         />
       </div>

@@ -88,13 +88,13 @@ function getNotificationIcon(type: string): string {
 function getNotificationColor(type: string): string {
   switch (type) {
     case 'ITEM_ASSIGNED':
-      return 'text-green-600 bg-green-100'
+      return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/50'
     case 'ITEM_SHARED':
-      return 'text-blue-600 bg-blue-100'
+      return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/50'
     case 'ITEM_COMPLETED':
-      return 'text-purple-600 bg-purple-100'
+      return 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/50'
     default:
-      return 'text-gray-600 bg-gray-100'
+      return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-700'
   }
 }
 
@@ -113,7 +113,7 @@ onUnmounted(() => {
     <!-- 알림 버튼 -->
     <button
       @click="toggleDropdown"
-      class="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+      class="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -138,18 +138,18 @@ onUnmounted(() => {
     >
       <div
         v-if="isOpen"
-        class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+        class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
       >
         <!-- 헤더 -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h3 class="font-medium text-gray-900">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+          <h3 class="font-medium text-gray-900 dark:text-white">
             알림
-            <span v-if="hasUnread" class="ml-1 text-sm text-gray-500">({{ unreadCount }})</span>
+            <span v-if="hasUnread" class="ml-1 text-sm text-gray-500 dark:text-gray-400">({{ unreadCount }})</span>
           </h3>
           <button
             v-if="hasUnread"
             @click="handleMarkAllAsRead"
-            class="text-xs text-primary-600 hover:text-primary-700"
+            class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
           >
             모두 읽음
           </button>
@@ -166,7 +166,7 @@ onUnmounted(() => {
           </div>
 
           <!-- 빈 상태 -->
-          <div v-else-if="notifications.length === 0" class="py-8 text-center text-gray-500 text-sm">
+          <div v-else-if="notifications.length === 0" class="py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
             알림이 없습니다
           </div>
 
@@ -176,8 +176,8 @@ onUnmounted(() => {
               v-for="notification in notifications"
               :key="notification.notificationId"
               @click="handleNotificationClick(notification)"
-              class="w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left"
-              :class="{ 'bg-blue-50/50': !notification.isRead }"
+              class="w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
+              :class="{ 'bg-blue-50/50 dark:bg-blue-900/20': !notification.isRead }"
             >
               <!-- 아이콘 -->
               <div
@@ -191,13 +191,13 @@ onUnmounted(() => {
 
               <!-- 내용 -->
               <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-900" :class="{ 'font-medium': !notification.isRead }">
+                <p class="text-sm text-gray-900 dark:text-white" :class="{ 'font-medium': !notification.isRead }">
                   {{ notification.title }}
                 </p>
-                <p v-if="notification.message" class="text-xs text-gray-500 mt-0.5 truncate">
+                <p v-if="notification.message" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                   {{ notification.message }}
                 </p>
-                <p class="text-xs text-gray-400 mt-1">
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   {{ formatTime(notification.createdAt) }}
                 </p>
               </div>
@@ -209,10 +209,10 @@ onUnmounted(() => {
         </div>
 
         <!-- 푸터 -->
-        <div class="px-4 py-2 border-t border-gray-100 text-center">
+        <div class="px-4 py-2 border-t border-gray-100 dark:border-gray-700 text-center">
           <router-link
             to="/notifications"
-            class="text-sm text-primary-600 hover:text-primary-700"
+            class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
             @click="isOpen = false"
           >
             전체 알림 보기

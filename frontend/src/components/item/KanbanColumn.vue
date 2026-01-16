@@ -154,7 +154,7 @@ function toggleCollapse() {
 
 <template>
   <div
-    class="flex flex-col bg-gray-100 rounded-lg min-w-[280px] max-w-[320px] h-full"
+    class="flex flex-col bg-gray-100 dark:bg-gray-800 rounded-lg min-w-[280px] max-w-[320px] h-full"
     :class="{ 'w-12 min-w-[48px]': isCollapsed }"
   >
     <!-- 컬럼 헤더 -->
@@ -171,12 +171,12 @@ function toggleCollapse() {
         <!-- 접힌 상태 -->
         <div class="flex flex-col items-center py-4">
           <span
-            class="text-[13px] font-semibold text-gray-700 writing-mode-vertical"
+            class="text-[13px] font-semibold text-gray-700 dark:text-gray-200 writing-mode-vertical"
             style="writing-mode: vertical-rl; text-orientation: mixed;"
           >
             {{ title }}
           </span>
-          <span class="mt-2 text-[12px] text-gray-500 bg-white px-1.5 py-0.5 rounded-full">
+          <span class="mt-2 text-[12px] text-gray-500 bg-white dark:bg-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full">
             {{ itemCount }}
           </span>
         </div>
@@ -188,7 +188,7 @@ function toggleCollapse() {
             <!-- 접기 버튼 -->
             <button
               v-if="collapsible"
-              class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors"
+              class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 dark:text-gray-400 rounded transition-colors"
               @click.stop="toggleCollapse"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,16 +204,16 @@ function toggleCollapse() {
             />
 
             <!-- 타이틀 -->
-            <h3 class="text-[13px] font-semibold text-gray-700">{{ title }}</h3>
+            <h3 class="text-[13px] font-semibold text-gray-700 dark:text-gray-200">{{ title }}</h3>
 
             <!-- 카운트 -->
-            <span class="text-[12px] text-gray-500 bg-white px-1.5 py-0.5 rounded-full">
+            <span class="text-[12px] text-gray-500 bg-white dark:bg-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full">
               {{ itemCount }}
             </span>
           </div>
 
           <!-- 메뉴 버튼 -->
-          <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors">
+          <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
             </svg>
@@ -250,14 +250,14 @@ function toggleCollapse() {
       <!-- 빈 상태 -->
       <div
         v-if="items.length === 0"
-        class="flex items-center justify-center h-20 text-[13px] text-gray-400 border-2 border-dashed border-gray-300 rounded-lg"
+        class="flex items-center justify-center h-20 text-[13px] text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
       >
         카드를 여기에 놓으세요
       </div>
 
       <!-- 새 아이템 추가 버튼 -->
       <button
-        class="w-full py-2 text-[13px] text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors flex items-center justify-center gap-1"
+        class="w-full py-2 text-[13px] text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center justify-center gap-1"
         @click="handleAddItem"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

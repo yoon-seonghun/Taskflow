@@ -117,11 +117,11 @@ const inputClasses = computed(() => {
     ? 'border-red-500 focus:ring-red-500'
     : isOpen.value
       ? 'border-primary-500 ring-2 ring-primary-500'
-      : 'border-gray-300 focus:ring-primary-500'
+      : 'border-gray-300 focus:ring-primary-500 dark:border-gray-600'
 
   const disabled = props.disabled
-    ? 'bg-gray-100 cursor-not-allowed text-gray-500'
-    : 'bg-white'
+    ? 'bg-gray-100 cursor-not-allowed text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+    : 'bg-white dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500'
 
   return [...base, sizes[props.size], states, disabled].join(' ')
 })
@@ -283,7 +283,7 @@ defineExpose({ focus, clear })
 <template>
   <div ref="containerRef" class="relative w-full">
     <!-- Label -->
-    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1">
+    <label v-if="label" class="block text-[13px] font-medium text-gray-700 mb-1 dark:text-gray-300">
       {{ label }}
       <span v-if="required" class="text-red-500 ml-0.5">*</span>
     </label>
@@ -361,10 +361,10 @@ defineExpose({ focus, clear })
       <div
         v-if="showDropdown"
         ref="dropdownRef"
-        class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+        class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto dark:bg-gray-800 dark:border-gray-700"
       >
         <!-- Loading State -->
-        <div v-if="loading" class="px-3 py-4 text-center text-[13px] text-gray-500">
+        <div v-if="loading" class="px-3 py-4 text-center text-[13px] text-gray-500 dark:text-gray-400">
           검색 중...
         </div>
 
@@ -377,13 +377,13 @@ defineExpose({ focus, clear })
             data-option
             class="px-3 py-2 cursor-pointer transition-colors"
             :class="[
-              highlightedIndex === index ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50'
+              highlightedIndex === index ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700'
             ]"
             @click="selectOption(option)"
             @mouseenter="highlightedIndex = index"
           >
             <div class="text-[13px] font-medium truncate">{{ option.label }}</div>
-            <div v-if="option.description" class="text-[11px] text-gray-500 truncate mt-0.5">
+            <div v-if="option.description" class="text-[11px] text-gray-500 truncate mt-0.5 dark:text-gray-400">
               {{ option.description }}
             </div>
           </div>
@@ -391,7 +391,7 @@ defineExpose({ focus, clear })
           <!-- Empty State -->
           <div
             v-if="displayOptions.length === 0 && !canCreate"
-            class="px-3 py-4 text-center text-[13px] text-gray-500"
+            class="px-3 py-4 text-center text-[13px] text-gray-500 dark:text-gray-400"
           >
             {{ emptyMessage }}
           </div>
@@ -400,9 +400,9 @@ defineExpose({ focus, clear })
           <div
             v-if="canCreate"
             data-option
-            class="px-3 py-2 cursor-pointer border-t border-gray-100 transition-colors flex items-center gap-2"
+            class="px-3 py-2 cursor-pointer border-t border-gray-100 transition-colors flex items-center gap-2 dark:border-gray-700"
             :class="[
-              highlightedIndex === displayOptions.length ? 'bg-primary-50 text-primary-700' : 'text-primary-600 hover:bg-primary-50'
+              highlightedIndex === displayOptions.length ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400' : 'text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30'
             ]"
             @click="createNew"
             @mouseenter="highlightedIndex = displayOptions.length"

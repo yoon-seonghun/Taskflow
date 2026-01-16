@@ -40,7 +40,7 @@ function handleDelete() {
 </script>
 
 <template>
-  <div class="file-list-item flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded group">
+  <div class="file-list-item flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 rounded group">
     <!-- 파일 아이콘 -->
     <div
       class="flex-shrink-0 w-8 h-8 rounded flex items-center justify-center"
@@ -64,10 +64,10 @@ function handleDelete() {
 
     <!-- 파일 정보 -->
     <div class="flex-1 min-w-0">
-      <div class="text-[13px] text-gray-900 truncate" :title="file.originalName">
+      <div class="text-[13px] text-gray-900 dark:text-gray-100 truncate" :title="file.originalName">
         {{ file.originalName }}
       </div>
-      <div class="text-[11px] text-gray-400">
+      <div class="text-[11px] text-gray-400 dark:text-gray-500">
         {{ file.fileSizeDisplay }}
       </div>
     </div>

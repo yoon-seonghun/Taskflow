@@ -161,10 +161,10 @@ const depthBorderClass = computed(() => {
 
 // 행 클래스 (Compact UI: 32px)
 const rowClasses = computed(() => [
-  'flex items-center h-8 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer',
-  props.selected ? 'bg-primary-50' : '',
+  'flex items-center h-8 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer dark:border-gray-700 dark:hover:bg-gray-700/50',
+  props.selected ? 'bg-primary-50 dark:bg-primary-900/30' : '',
   isInactive.value ? 'opacity-60' : '',
-  props.dragClass?.['sortable-dragging'] ? 'opacity-50 bg-gray-100' : '',
+  props.dragClass?.['sortable-dragging'] ? 'opacity-50 bg-gray-100 dark:bg-gray-700' : '',
   props.isDragOver ? 'border-t-2 border-t-primary-500' : '',
   depthBorderClass.value
 ])
@@ -492,7 +492,7 @@ onUnmounted(() => {
     <!-- 드래그 핸들 (draggable일 때만 표시) -->
     <div
       v-if="draggable"
-      class="w-6 h-full flex items-center justify-center flex-shrink-0 cursor-grab hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+      class="w-6 h-full flex items-center justify-center flex-shrink-0 cursor-grab hover:bg-gray-100 text-gray-400 hover:text-gray-600 dark:hover:bg-gray-700 dark:text-gray-500 dark:hover:text-gray-300"
     >
       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
         <path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0z" />
@@ -500,7 +500,7 @@ onUnmounted(() => {
     </div>
     <!-- 제목 컬럼 -->
     <div
-      class="group/title px-2 flex items-center gap-2 h-full border-r border-gray-200 relative"
+      class="group/title px-2 flex items-center gap-2 h-full border-r border-gray-200 relative dark:border-gray-700"
       :style="{ width: `${columnWidths.title}px`, minWidth: '150px' }"
       @click.stop="handleCellClick($event, 'title')"
     >
@@ -509,7 +509,7 @@ onUnmounted(() => {
         <input
           v-model="editValue"
           type="text"
-          class="w-full h-7 px-2 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+          class="w-full h-7 px-2 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:text-gray-100 dark:border-primary-400"
           @blur="finishEdit"
           @keydown.enter="finishEdit"
           @keydown.escape="cancelEdit"
@@ -518,27 +518,26 @@ onUnmounted(() => {
         />
       </template>
       <template v-else>
-        <!-- v2.2: 깊이별 인덴트 -->
-        <div
-          v-if="itemDepth > 0"
-          class="flex-shrink-0"
-          :style="{ width: `${itemDepth * 24}px` }"
-        >
-          <!-- 계층 연결선 -->
-          <div class="flex items-center h-full">
-            <div class="relative w-4 h-full flex items-center">
-              <div
-                class="absolute left-1/2 w-2.5 h-px"
-                :class="itemDepth === 1 ? 'bg-blue-300' : 'bg-purple-300'"
-              />
-            </div>
+        <!-- v2.2: 깊이별 인덴트 - 각 depth마다 24px 공간 + 연결선 -->
+        <template v-if="itemDepth > 0">
+          <div
+            v-for="d in itemDepth"
+            :key="d"
+            class="flex-shrink-0 w-6 flex items-center justify-center"
+          >
+            <!-- 마지막 depth에만 연결선 표시 -->
+            <div
+              v-if="d === itemDepth"
+              class="w-3 h-px"
+              :class="itemDepth === 1 ? 'bg-blue-300' : 'bg-purple-300'"
+            />
           </div>
-        </div>
+        </template>
 
         <!-- v2.2: 확장/축소 토글 버튼 -->
         <button
           v-if="hasChildren"
-          class="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 transition-colors"
+          class="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 transition-colors dark:hover:bg-gray-600"
           :title="expanded ? '접기' : '펼치기'"
           @click.stop="emit('toggleExpand', item.itemId)"
         >
@@ -568,15 +567,15 @@ onUnmounted(() => {
           class="mr-1"
         />
 
-        <span class="truncate text-[13px] text-gray-900 flex-1">{{ item.title }}</span>
+        <span class="truncate text-[13px] text-gray-900 flex-1 dark:text-gray-100">{{ item.title }}</span>
 
         <!-- v2.2: 하위 업무 진행률 배지 -->
         <span
           v-if="(item.childCount ?? 0) > 0"
           class="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded mr-1"
           :class="(item.completedChildCount ?? 0) === item.childCount
-            ? 'text-green-700 bg-green-100'
-            : 'text-gray-500 bg-gray-100'"
+            ? 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/50'
+            : 'text-gray-500 bg-gray-100 dark:text-gray-400 dark:bg-gray-700'"
           :title="`하위 업무 ${item.completedChildCount ?? 0}/${item.childCount} 완료`"
         >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -588,7 +587,7 @@ onUnmounted(() => {
         <!-- 지연 표시 -->
         <span
           v-if="isOverdue"
-          class="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-red-700 bg-red-100 rounded"
+          class="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-red-700 bg-red-100 rounded dark:text-red-400 dark:bg-red-900/50"
           :title="`마감일 ${overdueDays}일 초과`"
         >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -599,7 +598,7 @@ onUnmounted(() => {
 
         <!-- Notion 스타일 '열기' 버튼 (hover 시 표시) -->
         <button
-          class="flex-shrink-0 opacity-0 group-hover/title:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded"
+          class="flex-shrink-0 opacity-0 group-hover/title:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded dark:text-gray-400 dark:hover:text-primary-400 dark:hover:bg-primary-900/30"
           title="상세 패널 열기"
           @click.stop="handleRowClick"
         >
@@ -610,7 +609,7 @@ onUnmounted(() => {
 
     <!-- 상태 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      class="px-2 flex items-center h-full border-r border-gray-200 relative dark:border-gray-700"
       :style="{ width: `${columnWidths.status}px`, minWidth: '50px' }"
       @click.stop="handleCellClick($event, 'status')"
     >
@@ -624,7 +623,7 @@ onUnmounted(() => {
         {{ statusOptions.find(o => o.value === item.status)?.label || '-' }}
       </span>
       <!-- 팝오버 에디터 -->
-      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 100px;">
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1 dark:bg-gray-800 dark:border-gray-700" style="min-width: 100px;">
         <Select
           :model-value="item.status"
           :options="statusOptions"
@@ -638,7 +637,7 @@ onUnmounted(() => {
 
     <!-- 우선순위 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      class="px-2 flex items-center h-full border-r border-gray-200 relative dark:border-gray-700"
       :style="{ width: `${columnWidths.priority}px`, minWidth: '50px' }"
       @click.stop="handleCellClick($event, 'priority')"
     >
@@ -652,7 +651,7 @@ onUnmounted(() => {
         {{ priorityOptions.find(o => o.value === item.priority)?.label || '-' }}
       </span>
       <!-- 팝오버 에디터 -->
-      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 90px;">
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1 dark:bg-gray-800 dark:border-gray-700" style="min-width: 90px;">
         <Select
           :model-value="item.priority"
           :options="priorityOptions"
@@ -666,20 +665,20 @@ onUnmounted(() => {
 
     <!-- 담당자 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      class="px-2 flex items-center h-full border-r border-gray-200 relative dark:border-gray-700"
       :style="{ width: `${columnWidths.assignee}px`, minWidth: '50px' }"
       @click.stop="handleCellClick($event, 'assigneeUsername')"
     >
       <!-- 텍스트 라벨 (기본 표시) -->
       <span
         v-if="editingField !== 'assigneeUsername'"
-        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700 dark:text-gray-300 dark:hover:text-primary-400"
         :title="sharedUsers?.find(u => u.username === item.assigneeUsername)?.userName || item.assigneeName"
       >
         {{ sharedUsers?.find(u => u.username === item.assigneeUsername)?.userName || item.assigneeName || '-' }}
       </span>
       <!-- 팝오버 에디터 -->
-      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 180px;">
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1 dark:bg-gray-800 dark:border-gray-700" style="min-width: 180px;">
         <UserSelect
           :model-value="item.assigneeUsername"
           :users="sharedUsers || []"
@@ -695,19 +694,19 @@ onUnmounted(() => {
 
     <!-- 요청일 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      class="px-2 flex items-center h-full border-r border-gray-200 relative dark:border-gray-700"
       :style="{ width: `${columnWidths.requestDate}px`, minWidth: '80px' }"
       @click.stop="handleCellClick($event, 'requestDate')"
     >
       <!-- 텍스트 라벨 (기본 표시) -->
       <span
         v-if="editingField !== 'requestDate'"
-        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700 dark:text-gray-300 dark:hover:text-primary-400"
       >
         {{ formatDateShort(item.requestDate) }}
       </span>
       <!-- 팝오버 에디터 -->
-      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 160px;">
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1 dark:bg-gray-800 dark:border-gray-700" style="min-width: 160px;">
         <DatePicker
           :model-value="item.requestDate"
           size="sm"
@@ -721,19 +720,19 @@ onUnmounted(() => {
 
     <!-- 마감일 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      class="px-2 flex items-center h-full border-r border-gray-200 relative dark:border-gray-700"
       :style="{ width: `${columnWidths.dueDate}px`, minWidth: '80px' }"
       @click.stop="handleCellClick($event, 'dueDate')"
     >
       <!-- 텍스트 라벨 (기본 표시) -->
       <span
         v-if="editingField !== 'dueDate'"
-        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700"
+        class="text-[13px] cursor-pointer hover:text-primary-600 truncate text-gray-700 dark:text-gray-300 dark:hover:text-primary-400"
       >
         {{ formatDateShort(item.dueDate) }}
       </span>
       <!-- 팝오버 에디터 -->
-      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 160px;">
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1 dark:bg-gray-800 dark:border-gray-700" style="min-width: 160px;">
         <DatePicker
           :model-value="item.dueDate"
           size="sm"
@@ -747,7 +746,7 @@ onUnmounted(() => {
 
     <!-- 카테고리 컬럼 - 텍스트 라벨 + 클릭 시 팝오버 -->
     <div
-      class="px-2 flex items-center h-full border-r border-gray-200 relative"
+      class="px-2 flex items-center h-full border-r border-gray-200 relative dark:border-gray-700"
       :style="{ width: `${columnWidths.category}px`, minWidth: '60px' }"
       @click.stop="handleCellClick($event, 'categoryId')"
     >
@@ -761,7 +760,7 @@ onUnmounted(() => {
         {{ categoryOptions.find(o => o.value === item.categoryId)?.label || '-' }}
       </span>
       <!-- 팝오버 에디터 -->
-      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1" style="min-width: 120px;">
+      <div v-else data-item-popover @click.stop class="absolute left-0 top-full mt-1 z-50 bg-white shadow-lg rounded border border-gray-200 p-1 dark:bg-gray-800 dark:border-gray-700" style="min-width: 120px;">
         <Select
           :model-value="item.categoryId"
           :options="categoryOptions"
@@ -777,7 +776,7 @@ onUnmounted(() => {
     <!-- 동적 속성 컬럼들 -->
     <template v-for="property in properties" :key="property.propertyId">
       <div
-        class="px-2 flex items-center h-full border-r border-gray-200"
+        class="px-2 flex items-center h-full border-r border-gray-200 dark:border-gray-700"
         :style="{
           width: `${propertyWidths[property.propertyId] || 150}px`,
           minWidth: `${propertyWidths[property.propertyId] || 150}px`
@@ -791,7 +790,7 @@ onUnmounted(() => {
             <input
               v-model="editPropertyValue"
               type="text"
-              class="w-full h-7 px-2 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+              class="w-full h-7 px-2 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:text-gray-100 dark:border-primary-400"
               @blur="finishPropertyEdit(property.propertyId)"
               @keydown.enter="finishPropertyEdit(property.propertyId)"
               @keydown.escape="cancelPropertyEdit"
@@ -800,7 +799,7 @@ onUnmounted(() => {
             />
           </template>
           <template v-else>
-            <span class="truncate text-[13px] text-gray-700 cursor-pointer hover:text-primary-600">
+            <span class="truncate text-[13px] text-gray-700 cursor-pointer hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">
               {{ getPropertyValue(property.propertyId) || '-' }}
             </span>
           </template>
@@ -813,7 +812,7 @@ onUnmounted(() => {
             <input
               v-model.number="editPropertyValue"
               type="number"
-              class="w-full h-7 px-2 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+              class="w-full h-7 px-2 text-[13px] border border-primary-500 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:text-gray-100 dark:border-primary-400"
               @blur="finishPropertyEdit(property.propertyId)"
               @keydown.enter="finishPropertyEdit(property.propertyId)"
               @keydown.escape="cancelPropertyEdit"
@@ -822,7 +821,7 @@ onUnmounted(() => {
             />
           </template>
           <template v-else>
-            <span class="truncate text-[13px] text-gray-700 cursor-pointer hover:text-primary-600">
+            <span class="truncate text-[13px] text-gray-700 cursor-pointer hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">
               {{ getPropertyValue(property.propertyId) ?? '-' }}
             </span>
           </template>
@@ -874,7 +873,7 @@ onUnmounted(() => {
           <input
             type="checkbox"
             :checked="getPropertyValue(property.propertyId) as boolean"
-            class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+            class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700"
             @change="handlePropertyChange(property.propertyId, ($event.target as HTMLInputElement).checked)"
             @click.stop
           />
@@ -899,10 +898,10 @@ onUnmounted(() => {
 
     <!-- 댓글 수 컬럼 -->
     <div
-      class="px-2 flex items-center justify-center h-full border-r border-gray-200"
+      class="px-2 flex items-center justify-center h-full border-r border-gray-200 dark:border-gray-700"
       :style="{ width: `${columnWidths.comments}px`, minWidth: '40px' }"
     >
-      <div class="flex items-center gap-1 text-[13px] text-gray-500">
+      <div class="flex items-center gap-1 text-[13px] text-gray-500 dark:text-gray-400">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
@@ -918,7 +917,7 @@ onUnmounted(() => {
       <template v-if="isInactive">
         <!-- 복원 버튼 -->
         <button
-          class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+          class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors dark:text-gray-500 dark:hover:text-primary-400 dark:hover:bg-primary-900/50"
           title="복원"
           @click.stop="handleRestore"
         >
@@ -930,7 +929,7 @@ onUnmounted(() => {
       <template v-else>
         <!-- 완료 버튼 -->
         <button
-          class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+          class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors dark:text-gray-500 dark:hover:text-green-400 dark:hover:bg-green-900/50"
           title="완료"
           @click.stop="handleComplete"
         >
@@ -940,7 +939,7 @@ onUnmounted(() => {
         </button>
         <!-- 삭제 버튼 -->
         <button
-          class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+          class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors dark:text-gray-500 dark:hover:text-red-400 dark:hover:bg-red-900/50"
           title="삭제"
           @click.stop="handleDelete"
         >

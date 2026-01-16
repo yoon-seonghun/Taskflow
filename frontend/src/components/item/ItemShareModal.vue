@@ -182,9 +182,9 @@ onMounted(() => {
   >
     <div class="space-y-4">
       <!-- 업무 정보 -->
-      <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <p class="text-[12px] text-gray-500 mb-1">공유할 업무</p>
-        <p class="text-[14px] font-medium text-gray-900">{{ item.title }}</p>
+      <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <p class="text-[12px] text-gray-500 dark:text-gray-400 mb-1">공유할 업무</p>
+        <p class="text-[14px] font-medium text-gray-900 dark:text-white">{{ item.title }}</p>
       </div>
 
       <!-- 로딩 -->
@@ -196,9 +196,9 @@ onMounted(() => {
         <!-- 공유 목록 -->
         <div>
           <div class="flex items-center justify-between mb-3">
-            <label class="text-[13px] font-medium text-gray-700">
+            <label class="text-[13px] font-medium text-gray-700 dark:text-gray-300">
               공유된 사용자
-              <span v-if="shares.length > 0" class="text-gray-400 font-normal">({{ shares.length }}명)</span>
+              <span v-if="shares.length > 0" class="text-gray-400 dark:text-gray-500 font-normal">({{ shares.length }}명)</span>
             </label>
             <Button
               v-if="!showAddForm"
@@ -214,7 +214,7 @@ onMounted(() => {
           </div>
 
           <!-- 공유 추가 폼 -->
-          <div v-if="showAddForm" class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <div v-if="showAddForm" class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
             <div class="space-y-4">
               <!-- 사용자 선택 (UserSearchSelector) -->
               <UserSearchSelector
@@ -227,13 +227,13 @@ onMounted(() => {
 
               <!-- 권한 선택 -->
               <div>
-                <label class="block text-[13px] font-medium text-gray-700 mb-2">권한</label>
+                <label class="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-2">권한</label>
                 <div class="space-y-2">
                   <label
                     v-for="opt in permissionOptions"
                     :key="opt.value"
-                    class="flex items-center gap-3 p-3 bg-white border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                    :class="newPermission === opt.value ? 'border-primary-500 ring-1 ring-primary-500' : 'border-gray-200'"
+                    class="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    :class="newPermission === opt.value ? 'border-primary-500 ring-1 ring-primary-500' : 'border-gray-200 dark:border-gray-600'"
                   >
                     <input
                       type="radio"
@@ -242,8 +242,8 @@ onMounted(() => {
                       class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
                     />
                     <div>
-                      <p class="text-[13px] font-medium text-gray-700">{{ opt.label }}</p>
-                      <p class="text-[12px] text-gray-500">{{ opt.description }}</p>
+                      <p class="text-[13px] font-medium text-gray-700 dark:text-gray-200">{{ opt.label }}</p>
+                      <p class="text-[12px] text-gray-500 dark:text-gray-400">{{ opt.description }}</p>
                     </div>
                   </label>
                 </div>
@@ -269,19 +269,19 @@ onMounted(() => {
             <div
               v-for="share in shares"
               :key="share.username"
-              class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+              class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
             >
               <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center">
-                  <span class="text-[13px] font-medium text-primary-700">
+                <div class="w-9 h-9 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
+                  <span class="text-[13px] font-medium text-primary-700 dark:text-primary-300">
                     {{ (share.userName || share.username || '?').charAt(0).toUpperCase() }}
                   </span>
                 </div>
                 <div>
-                  <p class="text-[13px] font-medium text-gray-900">
+                  <p class="text-[13px] font-medium text-gray-900 dark:text-white">
                     {{ share.userName || share.username }}
                   </p>
-                  <p class="text-[11px] text-gray-500">
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400">
                     {{ share.departmentName || '소속없음' }}
                   </p>
                 </div>
@@ -290,7 +290,7 @@ onMounted(() => {
               <div class="flex items-center gap-2">
                 <select
                   :value="share.permission"
-                  class="px-2 py-1.5 text-[12px] border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                  class="px-2 py-1.5 text-[12px] border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                   @change="handleUpdatePermission(share, ($event.target as HTMLSelectElement).value as SharePermission)"
                 >
                   <option v-for="opt in permissionOptions" :key="opt.value" :value="opt.value">
@@ -299,7 +299,7 @@ onMounted(() => {
                 </select>
 
                 <button
-                  class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
                   title="공유 해제"
                   @click="handleRemoveShare(share)"
                 >
@@ -313,10 +313,10 @@ onMounted(() => {
 
           <!-- 공유 없음 -->
           <div v-else class="py-8 text-center">
-            <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <p class="text-[13px] text-gray-500 mb-3">공유된 사용자가 없습니다.</p>
+            <p class="text-[13px] text-gray-500 dark:text-gray-400 mb-3">공유된 사용자가 없습니다.</p>
             <Button
               v-if="!showAddForm"
               variant="primary"

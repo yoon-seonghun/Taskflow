@@ -211,12 +211,12 @@ onUnmounted(() => {
 <template>
   <div
     ref="containerRef"
-    class="relative flex items-center h-8 px-2 text-[13px] font-medium text-gray-600 bg-gray-50 border-b border-r border-gray-200 select-none cursor-pointer hover:bg-gray-100 transition-colors"
+    class="relative flex items-center h-8 px-2 text-[13px] font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 border-b border-r border-gray-200 dark:border-gray-700 select-none cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
     :style="{ width: `${width}px`, minWidth: `${width}px` }"
     @click="toggleMenu"
   >
     <!-- 속성 타입 아이콘 -->
-    <svg class="w-4 h-4 mr-1.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="w-4 h-4 mr-1.5 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="typeIcon" />
     </svg>
 
@@ -224,7 +224,7 @@ onUnmounted(() => {
     <span class="truncate flex-1">{{ property.propertyName }}</span>
 
     <!-- 필수 표시 -->
-    <span v-if="property.requiredYn === 'Y'" class="text-red-500 ml-0.5">*</span>
+    <span v-if="property.requiredYn === 'Y'" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
 
     <!-- 드롭다운 메뉴 -->
     <Transition
@@ -238,39 +238,39 @@ onUnmounted(() => {
       <div
         v-if="isMenuOpen"
         ref="menuRef"
-        class="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+        class="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
         @click.stop
       >
         <!-- 정렬 -->
         <template v-if="sortable">
           <button
-            class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
             @click="handleSort('asc')"
           >
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
             </svg>
             오름차순 정렬
           </button>
           <button
-            class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
             @click="handleSort('desc')"
           >
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
             </svg>
             내림차순 정렬
           </button>
-          <div class="my-1 border-t border-gray-100" />
+          <div class="my-1 border-t border-gray-100 dark:border-gray-700" />
         </template>
 
         <!-- 속성 이름 변경 -->
         <button
           v-if="!isSystemProperty"
-          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
           @click="handleRename"
         >
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
           속성 이름 변경
@@ -279,55 +279,55 @@ onUnmounted(() => {
         <!-- 속성 타입 변경 -->
         <button
           v-if="!isSystemProperty"
-          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
           @click="handleChangeType"
         >
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
           </svg>
           속성 타입 변경
         </button>
 
-        <div v-if="!isSystemProperty" class="my-1 border-t border-gray-100" />
+        <div v-if="!isSystemProperty" class="my-1 border-t border-gray-100 dark:border-gray-700" />
 
         <!-- 순서 변경 -->
         <button
-          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
           @click="handleMoveLeft"
         >
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
           </svg>
           왼쪽으로 이동
         </button>
         <button
-          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
           @click="handleMoveRight"
         >
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
           </svg>
           오른쪽으로 이동
         </button>
 
-        <div class="my-1 border-t border-gray-100" />
+        <div class="my-1 border-t border-gray-100 dark:border-gray-700" />
 
         <!-- 숨기기 -->
         <button
-          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+          class="w-full px-3 py-1.5 text-left text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
           @click="handleHide"
         >
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
           </svg>
           숨기기
         </button>
 
-        <div class="my-1 border-t border-gray-100" />
+        <div class="my-1 border-t border-gray-100 dark:border-gray-700" />
 
         <!-- 새 속성 추가 -->
         <button
-          class="w-full px-3 py-1.5 text-left text-[13px] text-primary-600 hover:bg-primary-50 flex items-center gap-2"
+          class="w-full px-3 py-1.5 text-left text-[13px] text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 flex items-center gap-2"
           @click="handleAddProperty"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -339,7 +339,7 @@ onUnmounted(() => {
         <!-- 속성 삭제 -->
         <button
           v-if="!isSystemProperty"
-          class="w-full px-3 py-1.5 text-left text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
+          class="w-full px-3 py-1.5 text-left text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2"
           @click="handleDelete"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

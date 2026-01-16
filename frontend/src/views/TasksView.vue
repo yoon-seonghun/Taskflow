@@ -400,7 +400,7 @@ onMounted(() => {
             <!-- 변경 버튼 -->
             <button
               type="button"
-              class="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap flex-shrink-0"
+              class="px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap flex-shrink-0 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800 dark:hover:bg-blue-900/50"
               @click="openBoardEditModal"
             >
               변경
@@ -408,13 +408,13 @@ onMounted(() => {
           </div>
 
           <!-- 뷰 타입 선택 -->
-          <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+          <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800">
             <button
               type="button"
               class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap"
               :class="viewType === 'table'
-                ? 'bg-white text-primary-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'"
+                ? 'bg-white text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-400'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'"
               @click="handleViewTypeChange('table')"
             >
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,8 +427,8 @@ onMounted(() => {
               type="button"
               class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap"
               :class="viewType === 'kanban'
-                ? 'bg-white text-primary-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'"
+                ? 'bg-white text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-400'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'"
               @click="handleViewTypeChange('kanban')"
             >
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -441,8 +441,8 @@ onMounted(() => {
               type="button"
               class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap"
               :class="viewType === 'list'
-                ? 'bg-white text-primary-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'"
+                ? 'bg-white text-primary-700 shadow-sm dark:bg-gray-700 dark:text-primary-400'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'"
               @click="handleViewTypeChange('list')"
             >
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -458,15 +458,15 @@ onMounted(() => {
 
     <!-- 필터 탭 -->
     <div v-if="currentBoardId && !isLoading" class="flex-shrink-0 mb-4">
-      <div class="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
+      <div class="flex items-center gap-1 p-1 bg-gray-100 rounded-lg dark:bg-gray-800">
         <button
           v-for="tab in filterTabs"
           :key="tab.value"
           class="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors"
           :class="[
             statusFilter === tab.value
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700'
           ]"
           @click="handleFilterChange(tab.value as StatusFilter)"
         >
@@ -475,8 +475,8 @@ onMounted(() => {
             class="px-1.5 py-0.5 text-[11px] rounded-full"
             :class="[
               statusFilter === tab.value
-                ? tab.warning ? 'bg-red-100 text-red-700' : 'bg-primary-100 text-primary-700'
-                : tab.warning && tab.count > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-200 text-gray-600'
+                ? tab.warning ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' : 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400'
+                : tab.warning && tab.count > 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
             ]"
           >
             {{ tab.count }}
@@ -513,10 +513,10 @@ onMounted(() => {
       <!-- 보드 미선택 상태 -->
       <div v-else-if="!currentBoardId" class="h-full flex items-center justify-center">
         <div class="text-center">
-          <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
-          <p class="text-gray-500">보드를 선택해주세요.</p>
+          <p class="text-gray-500 dark:text-gray-400">보드를 선택해주세요.</p>
         </div>
       </div>
 

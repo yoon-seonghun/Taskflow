@@ -141,23 +141,23 @@ function handleRemove(share: BoardShare) {
 }
 
 .share-table thead {
-  @apply bg-gray-50 border-y border-gray-200;
+  @apply bg-gray-50 dark:bg-gray-900 border-y border-gray-200 dark:border-gray-700;
 }
 
 .share-table th {
-  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
 }
 
 .share-table tbody {
-  @apply divide-y divide-gray-100;
+  @apply divide-y divide-gray-100 dark:divide-gray-700;
 }
 
 .share-table td {
-  @apply px-4 py-3 whitespace-nowrap;
+  @apply px-4 py-3 whitespace-nowrap text-gray-900 dark:text-gray-100;
 }
 
 .share-table tbody tr {
-  @apply hover:bg-gray-50 transition-colors;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
 }
 
 .action-btn {

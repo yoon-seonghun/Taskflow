@@ -75,6 +75,7 @@ function getBoardColor(board: Board): string {
 
 const menuItems = [
   { name: 'Tasks', label: '업무 페이지', icon: 'clipboard' },
+  { name: 'AllTasks', label: '전체 업무', icon: 'viewAll' },
   { name: 'SharedItems', label: '공유받은 업무', icon: 'share' },
   { name: 'Overdue', label: '지연 업무', icon: 'alert', warning: true },
   { name: 'Pending', label: '보류 업무', icon: 'pause' },
@@ -111,7 +112,7 @@ const menuItems = [
   </Transition>
 
   <aside
-    class="fixed left-0 top-14 bottom-0 w-60 bg-white border-r border-gray-200 transition-transform duration-300 z-40"
+    class="fixed left-0 top-14 bottom-0 w-60 bg-white border-r border-gray-200 transition-transform duration-300 z-40 dark:bg-gray-900 dark:border-gray-700"
     :class="[
       open ? 'translate-x-0' : '-translate-x-full',
       { 'md:translate-x-0': open }
@@ -119,16 +120,16 @@ const menuItems = [
   >
     <nav class="p-2">
       <template v-for="(item, index) in menuItems" :key="index">
-        <div v-if="item.divider" class="my-2 border-t border-gray-100" />
+        <div v-if="item.divider" class="my-2 border-t border-gray-100 dark:border-gray-800" />
         <RouterLink
           v-else
           :to="{ name: item.name }"
           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
           :class="route.name === item.name
-            ? 'bg-primary-50 text-primary-700'
+            ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400'
             : item.warning
-              ? 'text-red-600 hover:bg-red-50'
-              : 'text-gray-700 hover:bg-gray-100'"
+              ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30'
+              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'"
           @click="handleMenuClick"
         >
           <!-- Icons -->
@@ -136,6 +137,10 @@ const menuItems = [
             <!-- Clipboard -->
             <svg v-if="item.icon === 'clipboard'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <!-- ViewAll (전체 업무) -->
+            <svg v-else-if="item.icon === 'viewAll'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
             </svg>
             <!-- Alert (지연) -->
             <svg v-else-if="item.icon === 'alert'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,12 +202,12 @@ const menuItems = [
 
       <!-- 보드 목록 섹션 (활성 보드만 표시) -->
       <div v-if="myPrivateBoards.length > 0 || mySharedBoards.length > 0 || receivedBoards.length > 0" class="mt-1">
-        <div class="my-2 border-t border-gray-100" />
+        <div class="my-2 border-t border-gray-100 dark:border-gray-800" />
 
         <!-- 내 보드 섹션 -->
         <template v-if="myPrivateBoards.length > 0">
           <div
-            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded"
+            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded dark:hover:bg-gray-800"
             @click="showMyBoards = !showMyBoards"
           >
             <svg
@@ -214,7 +219,7 @@ const menuItems = [
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
-            <span class="text-xs font-medium text-gray-500">내 보드 ({{ myPrivateBoards.length }})</span>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">내 보드 ({{ myPrivateBoards.length }})</span>
           </div>
           <div v-show="showMyBoards" class="space-y-0.5">
             <div
@@ -222,8 +227,8 @@ const menuItems = [
               :key="board.boardId"
               class="flex items-center gap-2 px-3 pl-6 py-1.5 cursor-pointer rounded-md mx-1 transition-colors"
               :class="currentBoardId === board.boardId
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-700 hover:bg-gray-100'"
+                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'"
               @click="selectBoard(board)"
             >
               <span
@@ -238,7 +243,7 @@ const menuItems = [
         <!-- 공유해준 보드 섹션 -->
         <template v-if="mySharedBoards.length > 0">
           <div
-            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded mt-1"
+            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded mt-1 dark:hover:bg-gray-800"
             @click="showMySharedBoards = !showMySharedBoards"
           >
             <svg
@@ -250,7 +255,7 @@ const menuItems = [
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
-            <span class="text-xs font-medium text-gray-500">공유해준 보드 ({{ mySharedBoards.length }})</span>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">공유해준 보드 ({{ mySharedBoards.length }})</span>
           </div>
           <div v-show="showMySharedBoards" class="space-y-0.5">
             <div
@@ -258,8 +263,8 @@ const menuItems = [
               :key="board.boardId"
               class="flex items-center gap-2 px-3 pl-6 py-1.5 cursor-pointer rounded-md mx-1 transition-colors"
               :class="currentBoardId === board.boardId
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-700 hover:bg-gray-100'"
+                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'"
               @click="selectBoard(board)"
             >
               <span
@@ -280,7 +285,7 @@ const menuItems = [
         <!-- 공유받은 보드 섹션 -->
         <template v-if="receivedBoards.length > 0">
           <div
-            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded mt-1"
+            class="flex items-center gap-1 px-3 py-1.5 cursor-pointer select-none hover:bg-gray-50 rounded mt-1 dark:hover:bg-gray-800"
             @click="showReceivedBoards = !showReceivedBoards"
           >
             <svg
@@ -292,7 +297,7 @@ const menuItems = [
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
-            <span class="text-xs font-medium text-gray-500">공유받은 보드 ({{ receivedBoards.length }})</span>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">공유받은 보드 ({{ receivedBoards.length }})</span>
           </div>
           <div v-show="showReceivedBoards" class="space-y-0.5">
             <div
@@ -300,8 +305,8 @@ const menuItems = [
               :key="board.boardId"
               class="flex items-center gap-2 px-3 pl-6 py-1.5 cursor-pointer rounded-md mx-1 transition-colors"
               :class="currentBoardId === board.boardId
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-700 hover:bg-gray-100'"
+                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'"
               @click="selectBoard(board)"
             >
               <span

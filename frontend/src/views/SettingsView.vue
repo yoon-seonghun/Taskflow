@@ -321,14 +321,14 @@ onMounted(async () => {
   <div class="settings-view">
     <!-- 헤더 -->
     <div class="mb-6">
-      <h1 class="text-xl font-semibold text-gray-900">설정</h1>
-      <p class="mt-1 text-sm text-gray-500">
+      <h1 class="text-xl font-semibold text-gray-900 dark:text-white">설정</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         시스템 설정을 관리합니다.
       </p>
     </div>
 
     <!-- 탭 네비게이션 -->
-    <div class="mb-6 border-b border-gray-200">
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
       <nav class="flex gap-1">
         <button
           v-for="tab in tabs"
@@ -381,22 +381,22 @@ onMounted(async () => {
         <h2 class="settings-card-title">사용자 정보</h2>
         <div class="settings-card-content">
           <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-              <span class="text-lg font-medium text-primary-600">
+            <div class="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center">
+              <span class="text-lg font-medium text-primary-600 dark:text-primary-400">
                 {{ authStore.user?.userName?.charAt(0) || 'U' }}
               </span>
             </div>
             <div>
-              <p class="font-medium text-gray-900">
+              <p class="font-medium text-gray-900 dark:text-white">
                 {{ authStore.user?.userName || '사용자' }}
-                <span v-if="authStore.user?.positionName || authStore.user?.departmentName" class="text-gray-400 font-normal">
+                <span v-if="authStore.user?.positionName || authStore.user?.departmentName" class="text-gray-400 dark:text-gray-500 font-normal">
                   ｜
-                  <span v-if="authStore.user?.positionName" class="text-gray-600">{{ authStore.user.positionName }}</span>
-                  <span v-if="authStore.user?.positionName && authStore.user?.departmentName" class="text-gray-400"> · </span>
-                  <span v-if="authStore.user?.departmentName" class="text-gray-600">{{ authStore.user.departmentName }}</span>
+                  <span v-if="authStore.user?.positionName" class="text-gray-600 dark:text-gray-400">{{ authStore.user.positionName }}</span>
+                  <span v-if="authStore.user?.positionName && authStore.user?.departmentName" class="text-gray-400 dark:text-gray-500"> · </span>
+                  <span v-if="authStore.user?.departmentName" class="text-gray-600 dark:text-gray-400">{{ authStore.user.departmentName }}</span>
                 </span>
               </p>
-              <p class="text-sm text-gray-500">{{ authStore.user?.username || '-' }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ authStore.user?.username || '-' }}</p>
             </div>
           </div>
         </div>
@@ -412,9 +412,9 @@ onMounted(async () => {
                 type="radio"
                 v-model="theme"
                 :value="option.value"
-                class="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 focus:ring-primary-500"
               />
-              <span class="text-sm text-gray-700">{{ option.label }}</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{ option.label }}</span>
             </label>
           </div>
         </div>
@@ -425,11 +425,11 @@ onMounted(async () => {
         <h2 class="settings-card-title">알림</h2>
         <div class="settings-card-content">
           <label class="flex items-center justify-between cursor-pointer">
-            <span class="text-sm text-gray-700">알림 활성화</span>
+            <span class="text-sm text-gray-700 dark:text-gray-300">알림 활성화</span>
             <input
               type="checkbox"
               v-model="notificationsEnabled"
-              class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
             />
           </label>
         </div>
@@ -441,7 +441,7 @@ onMounted(async () => {
         <div class="settings-card-content">
           <select
             v-model="language"
-            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+            class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:ring-primary-500 focus:border-primary-500"
           >
             <option v-for="option in languageOptions" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -526,8 +526,8 @@ onMounted(async () => {
           </div>
 
           <!-- 직급 추가 폼 -->
-          <div v-if="showAddForm" class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 class="text-sm font-medium text-gray-900 mb-3">새 직급 추가</h4>
+          <div v-if="showAddForm" class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">새 직급 추가</h4>
             <div class="grid grid-cols-3 gap-3">
               <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">직급 코드</label>
@@ -590,7 +590,7 @@ onMounted(async () => {
                       class="form-input w-16"
                     />
                   </td>
-                  <td class="text-gray-500">
+                  <td class="text-gray-500 dark:text-gray-400">
                     {{ position.positionCode }}
                   </td>
                   <td>
@@ -626,7 +626,7 @@ onMounted(async () => {
                 <template v-else>
                   <td>
                     <div class="flex items-center gap-1">
-                      <span class="text-gray-600">{{ position.sortOrder }}</span>
+                      <span class="text-gray-600 dark:text-gray-300">{{ position.sortOrder }}</span>
                       <div v-if="positionCrudEnabled" class="flex flex-col">
                         <button
                           type="button"
@@ -651,10 +651,10 @@ onMounted(async () => {
                       </div>
                     </div>
                   </td>
-                  <td class="font-mono text-sm text-gray-500">
+                  <td class="font-mono text-sm text-gray-500 dark:text-gray-400">
                     {{ position.positionCode }}
                   </td>
-                  <td class="font-medium text-gray-900">
+                  <td class="font-medium text-gray-900 dark:text-white">
                     {{ position.positionName }}
                   </td>
                   <td>
@@ -704,8 +704,8 @@ onMounted(async () => {
           </div>
 
           <!-- External 모드 안내 -->
-          <div v-if="isExternalMode" class="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p class="text-sm text-blue-700">
+          <div v-if="isExternalMode" class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+            <p class="text-sm text-blue-700 dark:text-blue-400">
               <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -726,11 +726,13 @@ onMounted(async () => {
 
 .tab-btn {
   @apply inline-flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent
-         hover:text-gray-700 hover:border-gray-300 transition-colors;
+         hover:text-gray-700 hover:border-gray-300 transition-colors
+         dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600;
 }
 
 .tab-btn.active {
-  @apply text-primary-600 border-primary-600;
+  @apply text-primary-600 border-primary-600
+         dark:text-primary-400 dark:border-primary-400;
 }
 
 .tab-icon {
@@ -738,11 +740,13 @@ onMounted(async () => {
 }
 
 .settings-card {
-  @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  @apply bg-white rounded-lg border border-gray-200 overflow-hidden
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .settings-card-title {
-  @apply px-4 py-3 text-base font-medium text-gray-900 bg-gray-50 border-b border-gray-200;
+  @apply px-4 py-3 text-base font-medium text-gray-900 bg-gray-50 border-b border-gray-200
+         dark:text-white dark:bg-gray-700 dark:border-gray-700;
 }
 
 .settings-card-content {
@@ -760,18 +764,21 @@ onMounted(async () => {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium
          text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150;
+         transition-colors duration-150
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600;
 }
 
 .btn-add {
   @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
          text-primary-600 bg-primary-50 rounded-md
-         hover:bg-primary-100 transition-colors;
+         hover:bg-primary-100 transition-colors
+         dark:text-primary-400 dark:bg-primary-900/30 dark:hover:bg-primary-900/50;
 }
 
 .form-input {
   @apply w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md
-         focus:ring-primary-500 focus:border-primary-500;
+         focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200;
 }
 
 /* 직급 테이블 */
@@ -780,15 +787,18 @@ onMounted(async () => {
 }
 
 .position-table thead {
-  @apply bg-gray-50 border-y border-gray-200;
+  @apply bg-gray-50 border-y border-gray-200
+         dark:bg-gray-700 dark:border-gray-600;
 }
 
 .position-table th {
-  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider
+         dark:text-gray-400;
 }
 
 .position-table tbody {
-  @apply divide-y divide-gray-100;
+  @apply divide-y divide-gray-100
+         dark:divide-gray-700;
 }
 
 .position-table td {
@@ -796,7 +806,8 @@ onMounted(async () => {
 }
 
 .position-table tbody tr {
-  @apply hover:bg-gray-50 transition-colors;
+  @apply hover:bg-gray-50 transition-colors
+         dark:hover:bg-gray-700/50;
 }
 
 .status-badge {
@@ -804,18 +815,22 @@ onMounted(async () => {
 }
 
 .status-badge.active {
-  @apply bg-green-100 text-green-700;
+  @apply bg-green-100 text-green-700
+         dark:bg-green-900/50 dark:text-green-400;
 }
 
 .status-badge.inactive {
-  @apply bg-gray-100 text-gray-600;
+  @apply bg-gray-100 text-gray-600
+         dark:bg-gray-600 dark:text-gray-300;
 }
 
 .icon-btn {
-  @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 transition-colors;
+  @apply p-1.5 rounded hover:bg-gray-100 text-gray-500 transition-colors
+         dark:hover:bg-gray-700 dark:text-gray-400;
 }
 
 .order-btn {
-  @apply p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed;
+  @apply p-0.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed
+         dark:text-gray-500 dark:hover:text-gray-300;
 }
 </style>

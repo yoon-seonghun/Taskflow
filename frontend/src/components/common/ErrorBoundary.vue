@@ -210,7 +210,8 @@ defineExpose({
 <style scoped>
 .error-fallback {
   @apply flex flex-col items-center justify-center min-h-[300px] p-8
-         bg-white rounded-lg border border-gray-200;
+         bg-white rounded-lg border border-gray-200
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .error-icon {
@@ -218,11 +219,11 @@ defineExpose({
 }
 
 .error-title {
-  @apply text-lg font-semibold text-gray-900 mb-2 text-center;
+  @apply text-lg font-semibold text-gray-900 mb-2 text-center dark:text-white;
 }
 
 .error-message {
-  @apply text-sm text-gray-600 mb-4 text-center max-w-md;
+  @apply text-sm text-gray-600 mb-4 text-center max-w-md dark:text-gray-400;
 }
 
 .error-details {
@@ -231,11 +232,12 @@ defineExpose({
 
 .details-summary {
   @apply cursor-pointer text-sm text-gray-500 hover:text-gray-700
-         py-2 px-3 bg-gray-50 rounded-lg;
+         py-2 px-3 bg-gray-50 rounded-lg
+         dark:bg-gray-700 dark:text-gray-400 dark:hover:text-gray-200;
 }
 
 .details-content {
-  @apply mt-2 p-3 bg-gray-50 rounded-lg text-xs font-mono;
+  @apply mt-2 p-3 bg-gray-50 rounded-lg text-xs font-mono dark:bg-gray-700;
 }
 
 .detail-row {
@@ -247,16 +249,16 @@ defineExpose({
 }
 
 .detail-label {
-  @apply text-gray-500 min-w-[80px];
+  @apply text-gray-500 min-w-[80px] dark:text-gray-400;
 }
 
 .detail-value {
-  @apply text-gray-700;
+  @apply text-gray-700 dark:text-gray-200;
 }
 
 .detail-stack {
   @apply mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto whitespace-pre-wrap
-         max-h-40 overflow-y-auto;
+         max-h-40 overflow-y-auto dark:bg-gray-800;
 }
 
 .error-actions {
@@ -274,10 +276,11 @@ defineExpose({
   @apply inline-flex items-center gap-2 px-4 py-2
          text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors;
+         transition-colors
+         dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600;
 }
 
 .error-count {
-  @apply mt-4 text-xs text-gray-400;
+  @apply mt-4 text-xs text-gray-400 dark:text-gray-500;
 }
 </style>

@@ -287,12 +287,12 @@ function getOwnerTypeLabel(ownerType: string): string {
 // ownerType 색상
 function getOwnerTypeColor(ownerType: string): string {
   const colors: Record<string, string> = {
-    GLOBAL: 'bg-blue-100 text-blue-700',
-    MANAGER: 'bg-purple-100 text-purple-700',
-    USER: 'bg-green-100 text-green-700',
-    CATEGORY: 'bg-orange-100 text-orange-700'
+    GLOBAL: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+    MANAGER: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400',
+    USER: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+    CATEGORY: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400'
   }
-  return colors[ownerType] || 'bg-gray-100 text-gray-700'
+  return colors[ownerType] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
 }
 
 // 드래그 시작
@@ -749,8 +749,8 @@ onUnmounted(() => {
 <template>
   <div class="board-property-selector">
     <div class="mb-3">
-      <h4 class="text-sm font-medium text-gray-700 mb-1">속성 선택</h4>
-      <p class="text-xs text-gray-500">보드에서 사용할 속성을 선택하세요</p>
+      <h4 class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">속성 선택</h4>
+      <p class="text-xs text-gray-500 dark:text-gray-400">보드에서 사용할 속성을 선택하세요</p>
     </div>
 
     <!-- 로딩 -->
@@ -766,20 +766,20 @@ onUnmounted(() => {
         <!-- 기본 속성 (필수) -->
         <div class="property-group">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">기본 속성</span>
-            <span class="text-xs text-gray-400">필수</span>
+            <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">기본 속성</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">필수</span>
           </div>
           <div class="flex flex-wrap gap-2">
             <label
               v-for="prop in basicProperties"
               :key="prop.id"
-              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 text-gray-500 rounded text-xs cursor-not-allowed"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded text-xs cursor-not-allowed"
             >
               <input
                 type="checkbox"
                 :checked="true"
                 disabled
-                class="w-3.5 h-3.5 text-gray-400 border-gray-300 rounded cursor-not-allowed"
+                class="w-3.5 h-3.5 text-gray-400 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
               />
               <span>{{ prop.name }}</span>
             </label>
@@ -791,9 +791,9 @@ onUnmounted(() => {
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-              <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">글로벌 속성</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">글로벌 속성</span>
             </div>
-            <span class="text-xs text-gray-400">{{ globalProperties.filter(p => isSelected(p.propertyId)).length }}/{{ globalProperties.length }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{ globalProperties.filter(p => isSelected(p.propertyId)).length }}/{{ globalProperties.length }}</span>
           </div>
           <div class="flex flex-wrap gap-2">
             <label
@@ -801,15 +801,15 @@ onUnmounted(() => {
               :key="prop.propertyId"
               class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs cursor-pointer transition-colors group"
               :class="isSelected(prop.propertyId)
-                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'"
+                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500'"
               :title="`ID: ${prop.propertyId} | 유형: 글로벌 | 타입: ${prop.propertyType}`"
               @click.prevent="toggleProperty(prop.propertyId)"
             >
               <input
                 type="checkbox"
                 :checked="isSelected(prop.propertyId)"
-                class="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500 pointer-events-none"
+                class="w-3.5 h-3.5 text-blue-600 border-gray-300 dark:border-gray-600 rounded cursor-pointer focus:ring-blue-500 pointer-events-none"
               />
               <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               <span>{{ prop.propertyName }}</span>
@@ -822,9 +822,9 @@ onUnmounted(() => {
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-              <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">매니저 속성</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">매니저 속성</span>
             </div>
-            <span class="text-xs text-gray-400">{{ managerProperties.filter(p => isSelected(p.propertyId)).length }}/{{ managerProperties.length }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{ managerProperties.filter(p => isSelected(p.propertyId)).length }}/{{ managerProperties.length }}</span>
           </div>
           <div class="flex flex-wrap gap-2">
             <label
@@ -832,15 +832,15 @@ onUnmounted(() => {
               :key="prop.propertyId"
               class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs cursor-pointer transition-colors group"
               :class="isSelected(prop.propertyId)
-                ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'"
+                ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800'
+                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500'"
               :title="`ID: ${prop.propertyId} | 유형: 매니저 | 타입: ${prop.propertyType}`"
               @click.prevent="toggleProperty(prop.propertyId)"
             >
               <input
                 type="checkbox"
                 :checked="isSelected(prop.propertyId)"
-                class="w-3.5 h-3.5 text-purple-600 border-gray-300 rounded cursor-pointer focus:ring-purple-500 pointer-events-none"
+                class="w-3.5 h-3.5 text-purple-600 border-gray-300 dark:border-gray-600 rounded cursor-pointer focus:ring-purple-500 pointer-events-none"
               />
               <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
               <span>{{ prop.propertyName }}</span>
@@ -853,9 +853,9 @@ onUnmounted(() => {
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-green-500"></span>
-              <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">카테고리 속성</span>
+              <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">카테고리 속성</span>
             </div>
-            <span class="text-xs text-gray-400">{{ categoryProperties.filter(item => isSelected(item.property.propertyId)).length }}/{{ categoryProperties.length }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{ categoryProperties.filter(item => isSelected(item.property.propertyId)).length }}/{{ categoryProperties.length }}</span>
           </div>
           <div class="space-y-2">
             <div
@@ -863,8 +863,8 @@ onUnmounted(() => {
               :key="item.property.propertyId"
               class="flex items-center justify-between px-2.5 py-2 rounded text-xs cursor-pointer transition-colors"
               :class="isSelected(item.property.propertyId)
-                ? 'bg-green-50 border border-green-200'
-                : 'bg-white border border-gray-200 hover:border-gray-300'"
+                ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800'
+                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500'"
               :title="`ID: ${item.property.propertyId} | 유형: 카테고리 (${item.categoryName}) | 타입: ${item.property.propertyType || 'TEXT'}`"
               @click="toggleProperty(item.property.propertyId)"
             >
@@ -872,15 +872,15 @@ onUnmounted(() => {
                 <input
                   type="checkbox"
                   :checked="isSelected(item.property.propertyId)"
-                  class="w-3.5 h-3.5 text-green-600 border-gray-300 rounded cursor-pointer focus:ring-green-500 pointer-events-none"
+                  class="w-3.5 h-3.5 text-green-600 border-gray-300 dark:border-gray-600 rounded cursor-pointer focus:ring-green-500 pointer-events-none"
                 />
                 <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                <span :class="isSelected(item.property.propertyId) ? 'text-green-700' : 'text-gray-600'">{{ item.property.propertyName }}</span>
+                <span :class="isSelected(item.property.propertyId) ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-300'">{{ item.property.propertyName }}</span>
                 <span class="text-green-500 text-[10px]">({{ item.categoryName }})</span>
               </div>
               <div v-if="item.property.defaultValue" class="flex items-center gap-1">
-                <span class="text-gray-400 text-[10px]">기본값:</span>
-                <span class="text-green-600 text-[10px] font-medium">{{ item.property.defaultValue }}</span>
+                <span class="text-gray-400 dark:text-gray-500 text-[10px]">기본값:</span>
+                <span class="text-green-600 dark:text-green-400 text-[10px] font-medium">{{ item.property.defaultValue }}</span>
               </div>
             </div>
           </div>
@@ -888,7 +888,7 @@ onUnmounted(() => {
 
         <!-- 빈 상태 (v2.0.4: showCategoryProperties 여부에 따라 조건 변경) -->
         <div v-if="globalProperties.length === 0 && managerProperties.length === 0 && (!showCategoryProperties || categoryProperties.length === 0)"
-             class="text-center py-6 text-gray-400 text-sm">
+             class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
           <p>선택 가능한 속성이 없습니다.</p>
           <p v-if="showCategoryProperties" class="text-xs mt-1">카테고리를 선택하거나 관리자에게 문의하세요.</p>
           <p v-else class="text-xs mt-1">관리자에게 글로벌 또는 매니저 속성 등록을 문의하세요.</p>
@@ -896,17 +896,17 @@ onUnmounted(() => {
     </div>
 
     <!-- 드래그 앤 드롭 정렬 섹션 (선택된 속성이 있고 enableDragDrop이 true일 때만 표시) -->
-    <div v-if="enableDragDrop && flattenedProperties.length > 0" class="mt-4 pt-4 border-t border-gray-200">
+    <div v-if="enableDragDrop && flattenedProperties.length > 0" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
       <div class="mb-3">
-        <h4 class="text-sm font-medium text-gray-700 mb-1">속성 순서 정렬</h4>
-        <p class="text-xs text-gray-500">드래그하여 속성 표시 순서를 변경하세요</p>
+        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">속성 순서 정렬</h4>
+        <p class="text-xs text-gray-500 dark:text-gray-400">드래그하여 속성 표시 순서를 변경하세요</p>
       </div>
       <div class="space-y-1">
         <div
           v-for="(prop, index) in flattenedProperties"
           :key="`${prop.propertyId}-${prop.ownerType}`"
           draggable="true"
-          class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg cursor-grab hover:bg-gray-50 transition-colors sortable-item"
+          class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-grab hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors sortable-item"
           :class="{
             'sortable-dragging': draggedPropertyIndex === index,
             'sortable-drag-over': dropTargetIndex === index && draggedPropertyIndex !== index
@@ -919,12 +919,12 @@ onUnmounted(() => {
           @drop="handlePropertyDrop(index, $event)"
         >
           <!-- 드래그 핸들 -->
-          <svg class="w-4 h-4 text-gray-400 sortable-handle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 sortable-handle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
           </svg>
 
           <!-- 순서 번호 -->
-          <span class="w-5 h-5 flex items-center justify-center bg-gray-100 text-gray-500 text-xs font-medium rounded">
+          <span class="w-5 h-5 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-medium rounded">
             {{ index + 1 }}
           </span>
 
@@ -939,7 +939,7 @@ onUnmounted(() => {
           ></span>
 
           <!-- 속성명 -->
-          <span class="flex-1 text-sm text-gray-700">{{ prop.propertyName }}</span>
+          <span class="flex-1 text-sm text-gray-700 dark:text-gray-200">{{ prop.propertyName }}</span>
 
           <!-- ownerType 배지 -->
           <span
@@ -950,7 +950,7 @@ onUnmounted(() => {
           </span>
 
           <!-- 카테고리명 (카테고리 속성인 경우) -->
-          <span v-if="prop.categoryName" class="text-[10px] text-gray-400">
+          <span v-if="prop.categoryName" class="text-[10px] text-gray-400 dark:text-gray-500">
             ({{ prop.categoryName }})
           </span>
         </div>
@@ -958,12 +958,12 @@ onUnmounted(() => {
     </div>
 
     <!-- 선택 요약 -->
-    <div class="mt-3 pt-3 border-t border-gray-100">
+    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
       <div class="flex items-center justify-between text-xs">
-        <span class="text-gray-500">
-          선택된 속성: <strong class="text-gray-700">{{ localSelectedIds.size }}개</strong>
+        <span class="text-gray-500 dark:text-gray-400">
+          선택된 속성: <strong class="text-gray-700 dark:text-gray-200">{{ localSelectedIds.size }}개</strong>
         </span>
-        <span class="text-gray-400">
+        <span class="text-gray-400 dark:text-gray-500">
           기본 {{ basicProperties.length }}개 + 선택 {{ localSelectedIds.size }}개
         </span>
       </div>
@@ -973,10 +973,10 @@ onUnmounted(() => {
 
 <style scoped>
 .board-property-selector {
-  @apply bg-gray-50 rounded-lg p-4;
+  @apply bg-gray-50 dark:bg-gray-900 rounded-lg p-4;
 }
 
 .property-group {
-  @apply bg-white rounded-lg p-3 border border-gray-100;
+  @apply bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700;
 }
 </style>

@@ -561,14 +561,14 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
     <!-- 헤더 -->
     <div class="mb-6 flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-semibold text-gray-900">보드 관리</h1>
-        <p class="mt-1 text-sm text-gray-500">
+        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">보드 관리</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           보드를 관리하고 공유 설정을 관리합니다.
         </p>
       </div>
       <button
         @click="openCreateModal"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -588,13 +588,13 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
     <template v-else-if="boardList">
       <!-- 소유한 보드 -->
       <div class="mb-8">
-        <h2 class="text-lg font-medium text-gray-900 mb-4">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
           내 보드 ({{ boardList.totalOwnedCount }}개)
         </h2>
 
-        <div v-if="boardList.ownedBoards.length === 0" class="text-center py-8 bg-gray-50 rounded-lg">
-          <p class="text-gray-500">소유한 보드가 없습니다.</p>
-          <button @click="openCreateModal" class="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
+        <div v-if="boardList.ownedBoards.length === 0" class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-gray-500 dark:text-gray-400">소유한 보드가 없습니다.</p>
+          <button @click="openCreateModal" class="mt-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium">
             새 보드 만들기
           </button>
         </div>
@@ -603,10 +603,10 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
           <div
             v-for="board in boardList.ownedBoards"
             :key="board.boardId"
-            class="board-card bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all cursor-move"
+            class="board-card bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md dark:hover:shadow-gray-900/50 transition-all cursor-move"
             :class="{
               'border-blue-500 border-2': dragOverBoardId === board.boardId && draggedBoardType === 'owned',
-              'ring-2 ring-blue-300': draggedBoard?.boardId === board.boardId
+              'ring-2 ring-blue-300 dark:ring-blue-600': draggedBoard?.boardId === board.boardId
             }"
             draggable="true"
             @dragstart="handleDragStart($event, board, 'owned')"
@@ -618,19 +618,19 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-3">
                 <!-- 드래그 핸들 아이콘 -->
-                <svg class="w-4 h-4 text-gray-400 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
                 </svg>
                 <div
                   class="w-3 h-3 rounded-full flex-shrink-0"
                   :style="{ backgroundColor: board.color || '#3B82F6' }"
                 />
-                <h3 class="font-medium text-gray-900">{{ board.boardName }}</h3>
+                <h3 class="font-medium text-gray-900 dark:text-white">{{ board.boardName }}</h3>
               </div>
               <div class="flex items-center gap-1">
                 <button
                   @click="openShareModal(board)"
-                  class="p-1.5 text-gray-400 hover:text-blue-600 rounded"
+                  class="p-1.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 rounded"
                   title="공유 관리"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -640,7 +640,7 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
                 </button>
                 <button
                   @click="openEditModal(board)"
-                  class="p-1.5 text-gray-400 hover:text-gray-600 rounded"
+                  class="p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded"
                   title="수정"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -650,7 +650,7 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
                 </button>
                 <button
                   @click="openDeleteModal(board)"
-                  class="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                  class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 rounded"
                   title="삭제"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -661,11 +661,11 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
               </div>
             </div>
 
-            <p v-if="board.description" class="text-sm text-gray-500 mb-3 line-clamp-2">
+            <p v-if="board.description" class="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
               {{ board.description }}
             </p>
 
-            <div class="flex items-center gap-4 text-sm text-gray-500">
+            <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
               <span class="flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -694,22 +694,22 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
 
       <!-- 공유받은 보드 -->
       <div>
-        <h2 class="text-lg font-medium text-gray-900 mb-4">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
           공유받은 보드 ({{ boardList.totalSharedCount }}개)
         </h2>
 
-        <div v-if="boardList.sharedBoards.length === 0" class="text-center py-8 bg-gray-50 rounded-lg">
-          <p class="text-gray-500">공유받은 보드가 없습니다.</p>
+        <div v-if="boardList.sharedBoards.length === 0" class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-gray-500 dark:text-gray-400">공유받은 보드가 없습니다.</p>
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div
             v-for="board in boardList.sharedBoards"
             :key="board.boardId"
-            class="board-card bg-white rounded-lg border border-gray-200 p-4 transition-all cursor-move"
+            class="board-card bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md dark:hover:shadow-gray-900/50 transition-all cursor-move"
             :class="{
               'border-blue-500 border-2': dragOverBoardId === board.boardId && draggedBoardType === 'shared',
-              'ring-2 ring-blue-300': draggedBoard?.boardId === board.boardId
+              'ring-2 ring-blue-300 dark:ring-blue-600': draggedBoard?.boardId === board.boardId
             }"
             draggable="true"
             @dragstart="handleDragStart($event, board, 'shared')"
@@ -721,36 +721,36 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-3">
                 <!-- 드래그 핸들 아이콘 -->
-                <svg class="w-4 h-4 text-gray-400 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
                 </svg>
                 <div
                   class="w-3 h-3 rounded-full flex-shrink-0"
                   :style="{ backgroundColor: board.color || '#3B82F6' }"
                 />
-                <h3 class="font-medium text-gray-900">{{ board.boardName }}</h3>
+                <h3 class="font-medium text-gray-900 dark:text-white">{{ board.boardName }}</h3>
               </div>
               <span
                 class="px-2 py-0.5 text-xs font-medium rounded-full"
                 :class="{
-                  'bg-gray-100 text-gray-700': board.currentUserPermission === 'VIEW',
-                  'bg-blue-100 text-blue-700': board.currentUserPermission === 'EDIT',
-                  'bg-green-100 text-green-700': board.currentUserPermission === 'FULL'
+                  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': board.currentUserPermission === 'VIEW',
+                  'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400': board.currentUserPermission === 'EDIT',
+                  'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400': board.currentUserPermission === 'FULL'
                 }"
               >
                 {{ getPermissionLabel(board.currentUserPermission || 'VIEW') }}
               </span>
             </div>
 
-            <p v-if="board.description" class="text-sm text-gray-500 mb-3 line-clamp-2">
+            <p v-if="board.description" class="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
               {{ board.description }}
             </p>
 
             <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-500">
+              <span class="text-gray-500 dark:text-gray-400">
                 소유자: {{ board.ownerName }}
               </span>
-              <span class="flex items-center gap-1 text-gray-500">
+              <span class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -797,28 +797,28 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
     <Teleport to="body">
       <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="fixed inset-0 bg-black/50" @click="showDeleteModal = false" />
-        <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">보드 삭제</h3>
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">보드 삭제</h3>
 
           <div class="mb-4">
-            <p class="text-gray-700">
+            <p class="text-gray-700 dark:text-gray-300">
               <span class="font-medium">{{ selectedBoard?.boardName }}</span> 보드를 삭제하시겠습니까?
             </p>
           </div>
 
           <!-- 미완료 업무가 있는 경우 -->
           <div v-if="transferPreview && transferPreview.totalCount > 0" class="mb-4">
-            <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div class="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg border border-yellow-200 dark:border-yellow-700">
               <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <div>
-                  <p class="text-sm font-medium text-yellow-800">
+                  <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300">
                     미완료 업무가 {{ transferPreview.totalCount }}건 있습니다.
                   </p>
-                  <p class="mt-1 text-sm text-yellow-700">
+                  <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-400">
                     삭제 전에 업무를 다른 사용자에게 이관하거나, 강제 삭제를 선택할 수 있습니다.
                   </p>
                 </div>
@@ -827,17 +827,17 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
 
             <div class="mt-4 space-y-3">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">업무 이관 대상자</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">업무 이관 대상자</label>
                 <select
                   v-model="deleteFormData.targetUserId"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option :value="null">선택 안함</option>
                   <option v-for="user in users" :key="user.userId" :value="user.userId">
                     {{ user.name }} ({{ user.departmentName || '-' }})
                   </option>
                 </select>
-                <p class="mt-1 text-xs text-gray-500">
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   이관 대상자를 선택하면 미완료 업무가 해당 사용자의 새 보드로 이동됩니다.
                 </p>
               </div>
@@ -846,9 +846,9 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
                 <input
                   v-model="deleteFormData.forceDelete"
                   type="checkbox"
-                  class="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                  class="w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 bg-white dark:bg-gray-700"
                 />
-                <span class="text-sm text-gray-700">이관 없이 강제 삭제 (미완료 업무 포함 삭제)</span>
+                <span class="text-sm text-gray-700 dark:text-gray-300">이관 없이 강제 삭제 (미완료 업무 포함 삭제)</span>
               </label>
             </div>
           </div>
@@ -856,7 +856,7 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
           <div class="flex justify-end gap-3 mt-6">
             <button
               @click="showDeleteModal = false"
-              class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
             >
               취소
             </button>
@@ -875,18 +875,18 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
     <Teleport to="body">
       <div v-if="showShareModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="fixed inset-0 bg-black/50" @click="showShareModal = false" />
-        <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
           <!-- 모달 헤더 -->
-          <div class="flex items-center justify-between px-6 py-4 border-b">
+          <div class="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">공유 관리</h3>
-              <p class="mt-0.5 text-sm text-gray-500">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">공유 관리</h3>
+              <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
                 <span class="font-medium">{{ selectedBoard?.boardName }}</span> 보드
               </p>
             </div>
             <button
               @click="showShareModal = false"
-              class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              class="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -905,7 +905,7 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
 
             <!-- 공유 사용자 목록 -->
             <div>
-              <h4 class="text-sm font-medium text-gray-700 mb-3">
+              <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 공유된 사용자 ({{ boardStore.boardShares.length }}명)
               </h4>
               <ShareUserList
@@ -917,10 +917,10 @@ async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 
           </div>
 
           <!-- 모달 푸터 -->
-          <div class="flex justify-end px-6 py-4 border-t bg-gray-50">
+          <div class="flex justify-end px-6 py-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <button
               @click="showShareModal = false"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               닫기
             </button>

@@ -433,24 +433,29 @@ onMounted(() => {
 }
 
 .tab-nav {
-  @apply flex gap-1 bg-gray-100 p-1 rounded-lg;
+  @apply flex gap-1 bg-gray-100 p-1 rounded-lg
+         dark:bg-gray-800;
 }
 
 .tab-btn {
   @apply px-4 py-2 text-sm font-medium rounded-md
-         text-gray-600 hover:text-gray-900 transition-colors;
+         text-gray-600 hover:text-gray-900 transition-colors
+         dark:text-gray-400 dark:hover:text-white;
 }
 
 .tab-btn.active {
-  @apply bg-white text-gray-900 shadow-sm;
+  @apply bg-white text-gray-900 shadow-sm
+         dark:bg-gray-700 dark:text-white;
 }
 
 .tab-count {
-  @apply ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-gray-200 text-gray-600;
+  @apply ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-gray-200 text-gray-600
+         dark:bg-gray-600 dark:text-gray-300;
 }
 
 .tab-btn.active .tab-count {
-  @apply bg-primary-100 text-primary-600;
+  @apply bg-primary-100 text-primary-600
+         dark:bg-primary-900/50 dark:text-primary-400;
 }
 
 .search-box {
@@ -463,14 +468,16 @@ onMounted(() => {
 
 .search-input {
   @apply pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg w-48
-         focus:ring-primary-500 focus:border-primary-500;
+         focus:ring-primary-500 focus:border-primary-500
+         dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400;
 }
 
 .btn-primary {
   @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
          text-white bg-primary-600 rounded-lg
          hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-         transition-colors duration-150;
+         transition-colors duration-150
+         dark:focus:ring-offset-gray-900;
 }
 
 .loading-state {
@@ -483,19 +490,21 @@ onMounted(() => {
 
 .query-card {
   @apply bg-white rounded-lg border border-gray-200 overflow-hidden
-         hover:shadow-md transition-shadow;
+         hover:shadow-md transition-shadow
+         dark:bg-gray-800 dark:border-gray-700;
 }
 
 .card-header {
-  @apply flex items-center justify-between p-4 border-b border-gray-100;
+  @apply flex items-center justify-between p-4 border-b border-gray-100
+         dark:border-gray-700;
 }
 
 .card-title {
-  @apply text-base font-medium text-gray-900;
+  @apply text-base font-medium text-gray-900 dark:text-white;
 }
 
 .card-meta {
-  @apply flex items-center gap-2 mt-1 text-xs text-gray-500;
+  @apply flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400;
 }
 
 .query-code {
@@ -503,11 +512,11 @@ onMounted(() => {
 }
 
 .separator {
-  @apply text-gray-300;
+  @apply text-gray-300 dark:text-gray-600;
 }
 
 .datasource-name {
-  @apply text-primary-600;
+  @apply text-primary-600 dark:text-primary-400;
 }
 
 .card-body {
@@ -515,11 +524,13 @@ onMounted(() => {
 }
 
 .sql-preview {
-  @apply p-3 bg-gray-50 rounded-lg overflow-x-auto;
+  @apply p-3 bg-gray-50 rounded-lg overflow-x-auto
+         dark:bg-gray-700;
 }
 
 .sql-preview code {
-  @apply text-xs text-gray-600 font-mono whitespace-pre-wrap break-all;
+  @apply text-xs text-gray-600 font-mono whitespace-pre-wrap break-all
+         dark:text-gray-300;
 }
 
 .column-info {
@@ -531,23 +542,24 @@ onMounted(() => {
 }
 
 .info-label {
-  @apply text-gray-500;
+  @apply text-gray-500 dark:text-gray-400;
 }
 
 .info-value {
-  @apply font-mono text-gray-700;
+  @apply font-mono text-gray-700 dark:text-gray-200;
 }
 
 .execution-stats {
-  @apply pt-2 border-t border-gray-100;
+  @apply pt-2 border-t border-gray-100 dark:border-gray-700;
 }
 
 .card-footer {
-  @apply flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100;
+  @apply flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100
+         dark:bg-gray-700/50 dark:border-gray-700;
 }
 
 .footer-meta {
-  @apply text-sm text-gray-500;
+  @apply text-sm text-gray-500 dark:text-gray-400;
 }
 
 .footer-actions {
@@ -560,19 +572,23 @@ onMounted(() => {
 }
 
 .action-btn.test {
-  @apply text-purple-600 bg-purple-50 hover:bg-purple-100;
+  @apply text-purple-600 bg-purple-50 hover:bg-purple-100
+         dark:text-purple-400 dark:bg-purple-900/50 dark:hover:bg-purple-900/70;
 }
 
 .action-btn.execute {
-  @apply text-primary-600 bg-primary-50 hover:bg-primary-100;
+  @apply text-primary-600 bg-primary-50 hover:bg-primary-100
+         dark:text-primary-400 dark:bg-primary-900/50 dark:hover:bg-primary-900/70;
 }
 
 .action-btn.edit {
-  @apply text-gray-600 bg-gray-100 hover:bg-gray-200;
+  @apply text-gray-600 bg-gray-100 hover:bg-gray-200
+         dark:text-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600;
 }
 
 .action-btn.delete {
-  @apply text-red-600 bg-red-50 hover:bg-red-100;
+  @apply text-red-600 bg-red-50 hover:bg-red-100
+         dark:text-red-400 dark:bg-red-900/50 dark:hover:bg-red-900/70;
 }
 
 .action-btn:disabled {
@@ -580,6 +596,7 @@ onMounted(() => {
 }
 
 .empty-state {
-  @apply text-center py-12 bg-white rounded-lg border border-gray-200;
+  @apply text-center py-12 bg-white rounded-lg border border-gray-200
+         dark:bg-gray-800 dark:border-gray-700;
 }
 </style>
