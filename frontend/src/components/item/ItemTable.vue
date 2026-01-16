@@ -12,7 +12,7 @@ import { usePropertyStore } from '@/stores/property'
 import { useBoardStore } from '@/stores/board'
 import { useDepartmentStore } from '@/stores/department'
 import { useSlideOver } from '@/composables/useSlideOver'
-import { useSortableDrag } from '@/composables/useSortableDrag'
+import { useSortableDrag, createSubTaskCanDrop } from '@/composables/useSortableDrag'
 import type { UserOption, DepartmentOption } from '@/components/common'
 import { useToast } from '@/composables/useToast'
 import { userApi } from '@/api/user'
@@ -197,6 +197,81 @@ const defaultColumnWidths = columnWidths
 // 드래그 중 로컬 순서 (useSortableDrag에서 사용)
 const localItems = ref<Item[] | null>(null)
 
+// v2.2: 확장된 아이템 ID 목록 (하위 업무 표시용)
+const expandedItemIds = ref<Set<number>>(new Set())
+
+// v2.2: 확장/축소 토글
+function toggleExpand(itemId: number) {
+  if (expandedItemIds.value.has(itemId)) {
+    expandedItemIds.value.delete(itemId)
+  } else {
+    expandedItemIds.value.add(itemId)
+  }
+  // Set 변경 감지를 위해 새 Set 생성
+  expandedItemIds.value = new Set(expandedItemIds.value)
+}
+
+// v2.2: 아이템 확장 여부 확인
+function isExpanded(itemId: number): boolean {
+  return expandedItemIds.value.has(itemId)
+}
+
+// v2.2: 루트 아이템 목록 (필터 적용 + sortOrder 정렬)
+const rootItems = computed(() => {
+  const activeRootItems = itemStore.activeRootItems
+
+  let filtered: Item[]
+  switch (props.filter) {
+    case 'not_started':
+      filtered = activeRootItems.filter(i => i.status === 'NOT_STARTED')
+      break
+    case 'in_progress':
+      filtered = activeRootItems.filter(i => i.status === 'IN_PROGRESS')
+      break
+    case 'overdue':
+      filtered = activeRootItems.filter(i => isItemOverdue(i))
+      break
+    case 'pending':
+      filtered = activeRootItems.filter(i => i.status === 'PENDING')
+      break
+    default:
+      filtered = [...activeRootItems]
+  }
+
+  // sortOrder 기준 정렬 (낮은 순서가 먼저)
+  return [...filtered].sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))
+})
+
+// v2.2: 특정 부모의 하위 업무 가져오기 (활성 상태만)
+function getActiveChildren(parentItemId: number): Item[] {
+  return itemStore.getChildrenFromCache(parentItemId)
+    .filter(item => item.status !== 'COMPLETED' && item.status !== 'DELETED')
+    .sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))
+}
+
+// v2.2: 평탄화된 아이템 목록 (루트 + 확장된 부모의 하위 업무)
+const flattenedItems = computed(() => {
+  const result: Item[] = []
+
+  function addItemWithChildren(item: Item) {
+    result.push(item)
+
+    // 확장된 아이템의 하위 업무 추가
+    if (expandedItemIds.value.has(item.itemId) && (item.childCount ?? 0) > 0) {
+      const children = getActiveChildren(item.itemId)
+      for (const child of children) {
+        addItemWithChildren(child) // 재귀적으로 하위 업무도 처리
+      }
+    }
+  }
+
+  for (const rootItem of rootItems.value) {
+    addItemWithChildren(rootItem)
+  }
+
+  return result
+})
+
 // 아이템 목록 (필터 적용 + sortOrder 정렬)
 const items = computed({
   get() {
@@ -205,34 +280,17 @@ const items = computed({
       return localItems.value
     }
 
-    const activeItems = itemStore.activeItems
-
-    let filtered: Item[]
-    switch (props.filter) {
-      case 'not_started':
-        filtered = activeItems.filter(i => i.status === 'NOT_STARTED')
-        break
-      case 'in_progress':
-        filtered = activeItems.filter(i => i.status === 'IN_PROGRESS')
-        break
-      case 'overdue':
-        filtered = activeItems.filter(i => isItemOverdue(i))
-        break
-      case 'pending':
-        filtered = activeItems.filter(i => i.status === 'PENDING')
-        break
-      default:
-        filtered = [...activeItems]
-    }
-
-    // sortOrder 기준 정렬 (낮은 순서가 먼저)
-    return [...filtered].sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))
+    // v2.2: 평탄화된 계층 구조 사용
+    return flattenedItems.value
   },
   set(newItems: Item[]) {
     // useSortableDrag에서 드래그 중 로컬 순서 업데이트
     localItems.value = newItems
   }
 })
+
+// v2.2: 하위 업무 D&D 제약 적용
+const subTaskCanDrop = createSubTaskCanDrop<Item>((message) => toast.warning(message))
 
 // 드래그 앤 드롭 정렬 설정
 const {
@@ -249,6 +307,8 @@ const {
 } = useSortableDrag<Item>({
   items: items,
   itemKey: 'itemId',
+  // v2.2: 하위 업무 D&D 제약 - 같은 부모 내에서만 이동 가능
+  canDrop: subTaskCanDrop,
   onReorder: async (reorderedItems, fromIndex, toIndex) => {
     const movedItem = reorderedItems[toIndex]
     if (!movedItem) {
@@ -692,6 +752,8 @@ watch(() => props.boardId, () => {
             :draggable="true"
             :drag-class="getDragClass(index)"
             :is-drag-over="dragOverIndex === index && draggedIndex !== index"
+            :expanded="isExpanded(item.itemId)"
+            :has-children="(item.childCount ?? 0) > 0"
             @click="handleItemClick"
             @update="handleItemUpdate"
             @update-property="handlePropertyUpdate"
@@ -699,6 +761,7 @@ watch(() => props.boardId, () => {
             @delete="handleDelete"
             @restore="handleRestore"
             @category-change="handleCategoryChange"
+            @toggle-expand="toggleExpand"
             @dragstart="handleDragStart(index, $event)"
             @dragover="handleDragOver(index, $event)"
             @dragleave="handleDragLeave"
@@ -733,6 +796,8 @@ watch(() => props.boardId, () => {
                 :departments="departments"
                 :board-categories="boardCategories"
                 :selected="selectedItemId === item.itemId"
+                :expanded="false"
+                :has-children="(item.childCount ?? 0) > 0"
                 @click="handleItemClick"
                 @update="handleItemUpdate"
                 @update-property="handlePropertyUpdate"

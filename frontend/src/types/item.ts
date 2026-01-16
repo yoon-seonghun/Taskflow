@@ -11,6 +11,8 @@ export interface Item {
   itemId: number
   boardId: number
   boardName?: string
+  ownerUsername?: string     // 현재 소유자 USERNAME (v2.2.1)
+  ownerName?: string         // 소유자 이름 (v2.2.1)
   groupId?: number
   groupName?: string
   groupColor?: string
@@ -30,6 +32,7 @@ export interface Item {
   completedAt?: string    // 완료일시
   deletedAt?: string      // 삭제일시
   commentCount?: number
+  shareCount?: number     // 공유 사용자 수 (v2.2.1)
   createdAt: string
   createdBy?: string          // 생성자 USERNAME
   createdByName?: string
@@ -52,6 +55,26 @@ export interface Item {
   // 배당 대상 정보 (소유자 화면용 v2.1)
   assignedToUsername?: string    // 배당 대상 사용자 USERNAME
   assignedToUserName?: string    // 배당 대상 사용자 이름
+  // 하위 업무 정보 (v2.2)
+  parentItemId?: number          // 부모 업무 ID (NULL이면 기본 업무)
+  itemDepth?: number             // 업무 깊이 (0=기본, 1~2=하위)
+  childSortOrder?: number        // 하위 업무 내 정렬 순서
+  childCount?: number            // 전체 하위 업무 수
+  completedChildCount?: number   // 완료된 하위 업무 수
+  hasChildren?: boolean          // 하위 업무 존재 여부
+  canCreateChild?: boolean       // 하위 업무 생성 가능 여부 (depth < 2)
+  parentInfo?: ParentInfo        // 부모 업무 정보
+  rootInfo?: ParentInfo          // 최상위 부모 업무 정보
+  children?: Item[]              // 하위 업무 목록 (트리 조회 시)
+}
+
+/**
+ * 부모 업무 간략 정보 (v2.2)
+ */
+export interface ParentInfo {
+  itemId: number
+  title: string
+  status: ItemStatus
 }
 
 export interface ItemProperty {
@@ -205,4 +228,73 @@ export interface PropertySortOrder {
 export interface ItemReorderRequest {
   itemId: number
   newOrder: number
+}
+
+// =============================================
+// v2.2: 하위 업무 (Sub-Task) 관련 타입
+// =============================================
+
+/**
+ * 하위 업무 생성 요청 DTO (v2.2)
+ */
+export interface SubTaskCreateRequest {
+  title: string
+  content?: string
+  description?: string
+  status?: ItemStatus
+  priority?: Priority
+  assigneeUsername?: string
+  requestDate?: string
+  dueDate?: string
+  properties?: Record<number, unknown>
+}
+
+/**
+ * 하위 업무 순서 변경 요청 DTO (v2.2)
+ */
+export interface SubTaskReorderRequest {
+  orders: SubTaskOrderItem[]
+}
+
+/**
+ * 하위 업무 순서 항목 (v2.2)
+ */
+export interface SubTaskOrderItem {
+  itemId: number
+  sortOrder: number
+}
+
+/**
+ * 상위 계층 응답 (Breadcrumb용, v2.2)
+ */
+export interface AncestorResponse {
+  itemId: number
+  itemDepth: number
+  title: string
+  status: ItemStatus
+}
+
+/**
+ * 업무 완료 요청 DTO (v2.2)
+ */
+export interface ItemCompleteRequest {
+  forceComplete?: boolean  // true: 미완료 하위 업무가 있어도 강제 완료
+}
+
+/**
+ * 미완료 하위 업무 응답 DTO (v2.2)
+ */
+export interface IncompleteChildrenResponse {
+  incompleteChildCount: number
+  children: ChildSummary[]
+}
+
+/**
+ * 하위 업무 간략 정보 (v2.2)
+ */
+export interface ChildSummary {
+  itemId: number
+  title: string
+  status: ItemStatus
+  itemDepth: number
 }

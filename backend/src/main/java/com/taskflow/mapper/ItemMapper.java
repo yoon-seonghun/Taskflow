@@ -289,17 +289,40 @@ public interface ItemMapper {
 
     /**
      * 업무 보드 이동 (이관)
+     * v2.2.1: 소유자 변경 및 하위 업무 함께 이관
      *
-     * @param itemId          아이템 ID
-     * @param newBoardId      새 보드 ID
-     * @param originalBoardId 원본 보드 ID
-     * @param updatedBy       수정자 USERNAME
+     * @param itemId           아이템 ID
+     * @param newBoardId       새 보드 ID
+     * @param newOwnerUsername 새 소유자 USERNAME
+     * @param originalBoardId  원본 보드 ID
+     * @param updatedBy        수정자 USERNAME
      * @return 영향받은 행 수
      */
     int transferToBoard(@Param("itemId") Long itemId,
                         @Param("newBoardId") Long newBoardId,
+                        @Param("newOwnerUsername") String newOwnerUsername,
                         @Param("originalBoardId") Long originalBoardId,
                         @Param("updatedBy") String updatedBy);
+
+    /**
+     * 보드 이관 시 업무 소유자 일괄 변경 (v2.2.1)
+     *
+     * @param boardId          보드 ID
+     * @param newOwnerUsername 새 소유자 USERNAME
+     * @param updatedBy        수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int updateOwnerByBoardId(@Param("boardId") Long boardId,
+                             @Param("newOwnerUsername") String newOwnerUsername,
+                             @Param("updatedBy") String updatedBy);
+
+    /**
+     * 특정 소유자의 업무 수 조회 (v2.2.1)
+     *
+     * @param ownerUsername 소유자 USERNAME
+     * @return 업무 수
+     */
+    int countByOwnerUsername(@Param("ownerUsername") String ownerUsername);
 
     /**
      * 다중 업무 보드 이동 (이관)
@@ -370,4 +393,146 @@ public interface ItemMapper {
      * @return 아이템
      */
     Item selectById(@Param("itemId") Long itemId);
+
+    // =============================================
+    // v2.2: 하위 업무(Sub-task) 관련
+    // =============================================
+
+    /**
+     * 하위 업무 목록 조회
+     *
+     * @param parentItemId    부모 업무 ID
+     * @param includeCompleted 완료된 업무 포함 여부
+     * @param includeDeleted   삭제된 업무 포함 여부
+     * @return 하위 업무 목록
+     */
+    List<Item> findChildren(@Param("parentItemId") Long parentItemId,
+                            @Param("includeCompleted") Boolean includeCompleted,
+                            @Param("includeDeleted") Boolean includeDeleted);
+
+    /**
+     * 모든 하위 업무 조회 (재귀)
+     *
+     * @param parentItemId 부모 업무 ID
+     * @return 모든 하위 업무 목록
+     */
+    List<Item> findAllDescendants(@Param("parentItemId") Long parentItemId);
+
+    /**
+     * 상위 계층 조회 (Breadcrumb용)
+     *
+     * @param itemId 현재 업무 ID
+     * @return 상위 계층 목록 (루트부터 현재까지)
+     */
+    List<Item> findAncestors(@Param("itemId") Long itemId);
+
+    /**
+     * 부모 업무 조회
+     *
+     * @param itemId 현재 업무 ID
+     * @return 부모 업무
+     */
+    Item findParent(@Param("itemId") Long itemId);
+
+    /**
+     * 미완료 하위 업무 목록 조회
+     *
+     * @param parentItemId 부모 업무 ID
+     * @return 미완료 하위 업무 목록
+     */
+    List<Item> findIncompleteChildren(@Param("parentItemId") Long parentItemId);
+
+    /**
+     * 모든 미완료 하위 업무 조회 (재귀)
+     *
+     * @param parentItemId 부모 업무 ID
+     * @return 모든 미완료 하위 업무 목록
+     */
+    List<Item> findAllIncompleteDescendants(@Param("parentItemId") Long parentItemId);
+
+    /**
+     * 하위 업무 개수 조회
+     *
+     * @param parentItemId   부모 업무 ID
+     * @param includeDeleted 삭제된 업무 포함 여부
+     * @return 하위 업무 개수
+     */
+    int countChildren(@Param("parentItemId") Long parentItemId,
+                      @Param("includeDeleted") Boolean includeDeleted);
+
+    /**
+     * 하위 업무 정렬 순서 업데이트
+     *
+     * @param itemId         업무 ID
+     * @param childSortOrder 새 정렬 순서
+     * @param updatedBy      수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int updateChildSortOrder(@Param("itemId") Long itemId,
+                             @Param("childSortOrder") Integer childSortOrder,
+                             @Param("updatedBy") String updatedBy);
+
+    /**
+     * 부모 내 최대 정렬 순서 조회
+     *
+     * @param parentItemId 부모 업무 ID
+     * @return 최대 정렬 순서
+     */
+    Integer getMaxChildSortOrder(@Param("parentItemId") Long parentItemId);
+
+    /**
+     * 보드별 기본 업무만 조회 (depth=0)
+     *
+     * @param boardId          보드 ID
+     * @param includeCompleted 완료된 업무 포함 여부
+     * @param includeDeleted   삭제된 업무 포함 여부
+     * @return 기본 업무 목록
+     */
+    List<Item> findRootItemsByBoardId(@Param("boardId") Long boardId,
+                                      @Param("includeCompleted") Boolean includeCompleted,
+                                      @Param("includeDeleted") Boolean includeDeleted);
+
+    /**
+     * 하위 업무 일괄 삭제 (논리 삭제)
+     *
+     * @param parentItemId 부모 업무 ID
+     * @param deletedBy    삭제자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int softDeleteChildren(@Param("parentItemId") Long parentItemId,
+                           @Param("deletedBy") String deletedBy);
+
+    /**
+     * 하위 업무 일괄 완료
+     *
+     * @param parentItemId 부모 업무 ID
+     * @param completedBy  완료자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int completeChildren(@Param("parentItemId") Long parentItemId,
+                         @Param("completedBy") String completedBy);
+
+    /**
+     * 하위 업무 존재 여부 확인
+     *
+     * @param itemId 업무 ID
+     * @return 하위 업무 존재 여부
+     */
+    boolean hasChildren(@Param("itemId") Long itemId);
+
+    /**
+     * 업무 깊이 조회
+     *
+     * @param itemId 업무 ID
+     * @return 업무 깊이
+     */
+    Integer getItemDepth(@Param("itemId") Long itemId);
+
+    /**
+     * 하위 업무 여부 확인
+     *
+     * @param itemId 업무 ID
+     * @return 하위 업무 여부
+     */
+    boolean isChildItem(@Param("itemId") Long itemId);
 }

@@ -298,4 +298,12 @@
         WHERE BOARD_ID = #{boardId}
     </update>
 
+    <!-- 특정 소유자의 보드 수 조회 (v2.2.1) -->
+    <select id="countByOwnerUsername" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_BOARD
+        WHERE OWNER_USERNAME = #{ownerUsername}
+          AND USE_YN = 'Y'
+    </select>
+
 </mapper>

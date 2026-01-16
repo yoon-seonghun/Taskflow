@@ -205,4 +205,12 @@ public interface BoardMapper {
             @Param("newBoardName") String newBoardName,
             @Param("updatedBy") String updatedBy
     );
+
+    /**
+     * 특정 소유자의 보드 수 조회 (v2.2.1)
+     *
+     * @param ownerUsername 소유자 USERNAME
+     * @return 보드 수
+     */
+    int countByOwnerUsername(@Param("ownerUsername") String ownerUsername);
 }

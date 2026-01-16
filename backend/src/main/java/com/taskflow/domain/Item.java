@@ -40,6 +40,13 @@ public class Item {
     private Long boardId;
 
     /**
+     * 현재 소유자 USERNAME (v2.2.1)
+     * 생성 시: CREATED_BY와 동일
+     * 이관 시: 이관 대상자로 변경
+     */
+    private String ownerUsername;
+
+    /**
      * 그룹 ID (FK) - TB_GROUP 연동
      */
     private Long groupId;
@@ -48,6 +55,25 @@ public class Item {
      * 카테고리 ID (FK) - TB_PROPERTY_OPTION 연동
      */
     private Long categoryId;
+
+    // =============================================
+    // 하위 업무 관련 필드 (v2.2)
+    // =============================================
+
+    /**
+     * 부모 업무 ID (NULL=기본 업무)
+     */
+    private Long parentItemId;
+
+    /**
+     * 업무 깊이 (0=기본, 1~2=하위)
+     */
+    private Integer itemDepth;
+
+    /**
+     * 하위 업무 내 정렬 순서
+     */
+    private Integer childSortOrder;
 
     /**
      * 아이템 제목 (DB: CONTENT)
@@ -154,6 +180,11 @@ public class Item {
     private String boardName;
 
     /**
+     * 소유자 이름 (조인)
+     */
+    private String ownerName;
+
+    /**
      * 그룹명
      */
     private String groupName;
@@ -192,6 +223,11 @@ public class Item {
      * 댓글 수
      */
     private Integer commentCount;
+
+    /**
+     * 공유 사용자 수 (v2.2.1)
+     */
+    private Integer shareCount;
 
     // =============================================
     // 공유/이관 정보 (Mapper에서 JOIN으로 설정)
@@ -269,6 +305,61 @@ public class Item {
     private Map<Long, Object> propertyValues = new HashMap<>();
 
     // =============================================
+    // 하위 업무 조인/계산 필드 (v2.2)
+    // =============================================
+
+    /**
+     * 하위 업무 수
+     */
+    private Integer childCount;
+
+    /**
+     * 완료된 하위 업무 수
+     */
+    private Integer completedChildCount;
+
+    /**
+     * 하위 업무 존재 여부
+     */
+    private Boolean hasChildren;
+
+    /**
+     * 하위 업무 생성 가능 여부 (depth < 2)
+     */
+    private Boolean canCreateChild;
+
+    /**
+     * 부모 업무 제목 (조인)
+     */
+    private String parentTitle;
+
+    /**
+     * 부모 업무 상태 (조인)
+     */
+    private String parentStatus;
+
+    /**
+     * 최상위 업무 ID (조인)
+     */
+    private Long rootItemId;
+
+    /**
+     * 최상위 업무 제목 (조인)
+     */
+    private String rootTitle;
+
+    /**
+     * 최상위 업무 상태 (조인)
+     */
+    private String rootStatus;
+
+    /**
+     * 하위 업무 목록 (트리 조회용)
+     */
+    @Builder.Default
+    private List<Item> children = new ArrayList<>();
+
+    // =============================================
     // 상수: 상태
     // =============================================
 
@@ -344,6 +435,58 @@ public class Item {
             propertyValues = new HashMap<>();
         }
         propertyValues.put(propertyId, value);
+    }
+
+    // =============================================
+    // 하위 업무 편의 메서드 (v2.2)
+    // =============================================
+
+    /**
+     * 기본 업무 여부 (depth = 0)
+     */
+    public boolean isRootItem() {
+        return itemDepth == null || itemDepth == 0;
+    }
+
+    /**
+     * 하위 업무 여부 (depth > 0)
+     */
+    public boolean isChildItem() {
+        return itemDepth != null && itemDepth > 0;
+    }
+
+    /**
+     * 하위 업무 생성 가능 여부
+     */
+    public boolean canCreateChild() {
+        return itemDepth == null || itemDepth < 2;
+    }
+
+    /**
+     * 하위 업무 추가
+     */
+    public void addChild(Item child) {
+        if (children == null) {
+            children = new ArrayList<>();
+        }
+        children.add(child);
+    }
+
+    /**
+     * 하위 업무 존재 여부
+     */
+    public boolean hasChildren() {
+        return hasChildren != null && hasChildren;
+    }
+
+    /**
+     * 미완료 하위 업무 수
+     */
+    public int getIncompleteChildCount() {
+        if (childCount == null || completedChildCount == null) {
+            return 0;
+        }
+        return childCount - completedChildCount;
     }
 
     // =============================================
@@ -446,5 +589,33 @@ public class Item {
      */
     public void setSharedByUserName(String sharedByUserName) {
         this.sharedByUserName = sharedByUserName;
+    }
+
+    /**
+     * 소유자 USERNAME getter
+     */
+    public String getOwnerUsername() {
+        return ownerUsername;
+    }
+
+    /**
+     * 소유자 USERNAME setter
+     */
+    public void setOwnerUsername(String ownerUsername) {
+        this.ownerUsername = ownerUsername;
+    }
+
+    /**
+     * 소유자 이름 getter
+     */
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    /**
+     * 소유자 이름 setter
+     */
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
     }
 }

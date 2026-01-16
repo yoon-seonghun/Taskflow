@@ -27,6 +27,18 @@ function handleDeleted() {
   // 삭제 후 목록으로 돌아가기
   router.push({ name: 'Tasks' })
 }
+
+// v2.2: 하위 업무 간 네비게이션
+function handleNavigate(newItemId: number) {
+  // 같은 보드 내에서 다른 아이템으로 이동
+  router.replace({
+    name: 'ItemDetail',
+    params: {
+      boardId: boardId.value,
+      itemId: newItemId
+    }
+  })
+}
 </script>
 
 <template>
@@ -38,6 +50,7 @@ function handleDeleted() {
       @close="handleClose"
       @updated="handleUpdated"
       @deleted="handleDeleted"
+      @navigate="handleNavigate"
     />
     <div v-else class="h-full flex items-center justify-center">
       <p class="text-gray-500">잘못된 접근입니다.</p>

@@ -7,6 +7,8 @@ import com.taskflow.domain.User;
 import com.taskflow.domain.UserGroup;
 import com.taskflow.dto.user.*;
 import com.taskflow.exception.BusinessException;
+import com.taskflow.mapper.BoardMapper;
+import com.taskflow.mapper.ItemMapper;
 import com.taskflow.mapper.UserGroupMapper;
 import com.taskflow.mapper.UserMapper;
 import com.taskflow.service.UserService;
@@ -40,6 +42,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final UserGroupMapper userGroupMapper;
+    private final BoardMapper boardMapper;
+    private final ItemMapper itemMapper;
     private final PasswordEncoder passwordEncoder;
     private final UserManagementProperties userManagementProperties;
 
@@ -233,6 +237,22 @@ public class UserServiceImpl implements UserService {
         // 사용자 존재 확인
         User user = userMapper.findById(userId)
                 .orElseThrow(() -> BusinessException.userNotFound(userId));
+
+        // [v2.2.1] 소유 보드 확인 - 보드가 있으면 먼저 이관 필요
+        int ownedBoardCount = boardMapper.countByOwnerUsername(user.getUsername());
+        if (ownedBoardCount > 0) {
+            throw BusinessException.badRequest(
+                    String.format("사용자가 소유한 보드 %d개를 먼저 이관해야 합니다.", ownedBoardCount)
+            );
+        }
+
+        // [v2.2.1] 소유 업무 확인 - 업무가 있으면 먼저 이관 필요
+        int ownedItemCount = itemMapper.countByOwnerUsername(user.getUsername());
+        if (ownedItemCount > 0) {
+            throw BusinessException.badRequest(
+                    String.format("사용자가 소유한 업무 %d개를 먼저 이관해야 합니다.", ownedItemCount)
+            );
+        }
 
         // 그룹 매핑 삭제 (username 기준)
         userGroupMapper.deleteByUsername(user.getUsername());

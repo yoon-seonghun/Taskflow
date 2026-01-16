@@ -242,8 +242,9 @@ defineExpose({
 </script>
 
 <template>
+  <!-- v2.2.1: h-full + flex로 높이 100% 지원 -->
   <div
-    class="rich-text-editor border rounded-lg overflow-hidden bg-white transition-colors"
+    class="rich-text-editor border rounded-lg overflow-hidden bg-white transition-colors h-full flex flex-col"
     :class="[
       isDragOver ? 'border-primary-400 ring-2 ring-primary-200' : 'border-gray-200'
     ]"
@@ -258,15 +259,15 @@ defineExpose({
       @image-uploading="handleImageUploading"
     />
 
-    <!-- 에디터 본문 -->
+    <!-- 에디터 본문 (v2.2.1: flex-1 + min-h-0 추가) -->
     <div
       :class="[
-        'editor-content-wrapper relative',
+        'editor-content-wrapper relative flex-1 min-h-0',
         readonly ? 'bg-gray-50' : 'bg-white'
       ]"
       :style="{
-        minHeight: minHeight,
-        maxHeight: maxHeight,
+        minHeight: minHeight !== '100%' ? minHeight : undefined,
+        maxHeight: maxHeight !== '100%' ? maxHeight : undefined,
         overflowY: 'auto'
       }"
       @paste="handlePaste"

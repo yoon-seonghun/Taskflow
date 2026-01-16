@@ -27,24 +27,37 @@ INSERT INTO TB_DEPARTMENT (DEPARTMENT_ID, DEPARTMENT_CODE, DEPARTMENT_NAME, PARE
 -- SORT_ORDER: 낮을수록 높은 직급
 -- ============================================
 INSERT INTO TB_POSITION (POSITION_ID, POSITION_CODE, POSITION_NAME, SORT_ORDER, USE_YN, CREATED_BY) VALUES
-(1, 'CEO', '대표', 1, 'Y', 'admin'),
-(2, 'DIRECTOR', '이사', 2, 'Y', 'admin'),
-(3, 'GM', '부장', 3, 'Y', 'admin'),
-(4, 'DGM', '차장', 4, 'Y', 'admin'),
-(5, 'MANAGER', '과장', 5, 'Y', 'admin'),
-(6, 'AM', '대리', 6, 'Y', 'admin'),
-(7, 'STAFF', '사원', 7, 'Y', 'admin'),
-(8, 'INTERN', '인턴', 8, 'Y', 'admin');
+(1, 'T110', '회장', 1, 'Y', 'admin'),
+(2, 'T111', '사장', 2, 'Y', 'admin'),
+(3, 'T101', '대표이사', 3, 'Y', 'admin'),
+(4, 'T102', '부사장', 4, 'Y', 'admin'),
+(5, 'T121', '원장', 5, 'Y', 'admin'),
+(6, 'T122', '사업부장', 6, 'Y', 'admin'),
+(7, 'T123', '국장', 7, 'Y', 'admin'),
+(8, 'T106', '본부장', 8, 'Y', 'admin'),
+(9, 'T124', '센터장', 9, 'Y', 'admin'),
+(10, 'T125', '지서장', 10, 'Y', 'admin'),
+(11, 'T103', '담당임원', 11, 'Y', 'admin'),
+(12, 'T126', '그룹장', 12, 'Y', 'admin'),
+(13, 'T127', '처장', 13, 'Y', 'admin'),
+(14, 'T128', '지점장', 14, 'Y', 'admin'),
+(15, 'T129', '실장', 15, 'Y', 'admin'),
+(16, 'T104', '팀장', 16, 'Y', 'admin'),
+(17, 'T130', '파트장', 17, 'Y', 'admin'),
+(18, 'T105', '팀원', 18, 'Y', 'admin'),
+(19, 'T131', '총무', 19, 'Y', 'admin'),
+(20, 'T120', '고문', 20, 'Y', 'admin');
 
 -- ============================================
 -- 3. 관리자 계정
 -- 비밀번호: admin123 (BCrypt 암호화, Spring 호환)
 -- DEPARTMENT_CODE: 부서 코드 참조
 -- POSITION_CODE: 직급 코드 참조
+-- ROLE: 권한 (ADMIN, MANAGER, USER, GUEST)
 -- HEAD_YN: 팀장 여부
 -- ============================================
-INSERT INTO TB_USER (USER_ID, USERNAME, PASSWORD, NAME, DEPARTMENT_CODE, POSITION_CODE, HEAD_YN, USE_YN, CREATED_BY) VALUES
-(1, 'admin', '$2a$10$XVOOa0vdyud2/ZaoVFNPxOnsj/p6P7l0NIbOPJCW7zFOQo53HOA06', '관리자', 'ROOT', 'CEO', 'Y', 'Y', 'admin');
+INSERT INTO TB_USER (USER_ID, USERNAME, PASSWORD, NAME, DEPARTMENT_CODE, POSITION_CODE, ROLE, HEAD_YN, USE_YN, CREATED_BY) VALUES
+(1, 'admin', '$2a$10$XVOOa0vdyud2/ZaoVFNPxOnsj/p6P7l0NIbOPJCW7zFOQo53HOA06', '관리자', 'ROOT', 'T104', 'ADMIN', 'Y', 'Y', 'admin');
 
 -- ============================================
 -- 3. 기본 그룹 데이터
@@ -68,13 +81,14 @@ INSERT INTO TB_USER_GROUP (USERNAME, GROUP_ID, CREATED_BY) VALUES
 
 -- ============================================
 -- 5. 카테고리 (전역)
+-- CATEGORY_CODE: 고유 코드, OWNER_USERNAME: 소유자
 -- ============================================
-INSERT INTO TB_CATEGORY (CATEGORY_ID, CATEGORY_NAME, COLOR, SORT_ORDER, USE_YN, CREATED_BY) VALUES
-(1, '개발', '#3B82F6', 1, 'Y', 'admin'),
-(2, '기획', '#8B5CF6', 2, 'Y', 'admin'),
-(3, '디자인', '#EC4899', 3, 'Y', 'admin'),
-(4, '운영', '#10B981', 4, 'Y', 'admin'),
-(5, '기타', '#6B7280', 5, 'Y', 'admin');
+INSERT INTO TB_CATEGORY (CATEGORY_ID, CATEGORY_CODE, CATEGORY_NAME, CATEGORY_COLOR, OWNER_USERNAME, SORT_ORDER, USE_YN, CREATED_BY) VALUES
+(1, 'DEV', '개발', '#3B82F6', 'admin', 1, 'Y', 'admin'),
+(2, 'PLAN', '기획', '#8B5CF6', 'admin', 2, 'Y', 'admin'),
+(3, 'DESIGN', '디자인', '#EC4899', 'admin', 3, 'Y', 'admin'),
+(4, 'OPS', '운영', '#10B981', 'admin', 4, 'Y', 'admin'),
+(5, 'ETC', '기타', '#6B7280', 'admin', 5, 'Y', 'admin');
 
 -- ============================================
 -- 6. 기본 보드 생성
@@ -107,6 +121,135 @@ INSERT INTO TB_ITEM (ITEM_ID, BOARD_ID, CONTENT, DESCRIPTION, STATUS, PRIORITY, 
 (3, 1, 'API 명세서 작성', '## REST API 설계\n\n### 인증 API\n- POST /api/auth/login\n- POST /api/auth/logout\n\n### 업무 API\n- GET /api/boards/{id}/items\n- POST /api/boards/{id}/items', 'IN_PROGRESS', 'NORMAL', 1, 3, 'admin', 'admin'),
 (4, 1, '프론트엔드 레이아웃 구현', NULL, 'NOT_STARTED', 'NORMAL', 1, 3, 'admin', 'admin'),
 (5, 1, '로그인 기능 개발', NULL, 'NOT_STARTED', 'HIGH', 1, 3, 'admin', 'admin');
+
+-- ============================================
+-- 9. 글로벌 속성 정의 (시스템 제공)
+-- OWNER_TYPE: GLOBAL = 시스템 전역 속성
+-- ============================================
+
+-- 시작일 속성
+INSERT INTO TB_PROPERTY_DEF (
+    BOARD_ID, OWNER_TYPE, OWNER_USERNAME, OWNER_DEPT_CODE,
+    PROPERTY_NAME, PROPERTY_TYPE, VISIBLE_YN, USE_YN, SORT_ORDER,
+    CREATED_BY
+) VALUES (
+    NULL, 'GLOBAL', NULL, NULL,
+    '시작일', 'DATE', 'Y', 'Y', 1,
+    'system'
+);
+
+-- 완료일 속성
+INSERT INTO TB_PROPERTY_DEF (
+    BOARD_ID, OWNER_TYPE, OWNER_USERNAME, OWNER_DEPT_CODE,
+    PROPERTY_NAME, PROPERTY_TYPE, VISIBLE_YN, USE_YN, SORT_ORDER,
+    CREATED_BY
+) VALUES (
+    NULL, 'GLOBAL', NULL, NULL,
+    '완료일', 'DATE', 'Y', 'Y', 2,
+    'system'
+);
+
+-- 난이도 속성
+INSERT INTO TB_PROPERTY_DEF (
+    BOARD_ID, OWNER_TYPE, OWNER_USERNAME, OWNER_DEPT_CODE,
+    PROPERTY_NAME, PROPERTY_TYPE, VISIBLE_YN, USE_YN, SORT_ORDER,
+    CREATED_BY
+) VALUES (
+    NULL, 'GLOBAL', NULL, NULL,
+    '난이도', 'SELECT', 'Y', 'Y', 3,
+    'system'
+);
+
+-- 범위변경 속성
+INSERT INTO TB_PROPERTY_DEF (
+    BOARD_ID, OWNER_TYPE, OWNER_USERNAME, OWNER_DEPT_CODE,
+    PROPERTY_NAME, PROPERTY_TYPE, VISIBLE_YN, USE_YN, SORT_ORDER,
+    CREATED_BY
+) VALUES (
+    NULL, 'GLOBAL', NULL, NULL,
+    '범위변경', 'SELECT', 'Y', 'Y', 4,
+    'system'
+);
+
+-- 리스크대응 속성
+INSERT INTO TB_PROPERTY_DEF (
+    BOARD_ID, OWNER_TYPE, OWNER_USERNAME, OWNER_DEPT_CODE,
+    PROPERTY_NAME, PROPERTY_TYPE, VISIBLE_YN, USE_YN, SORT_ORDER,
+    CREATED_BY
+) VALUES (
+    NULL, 'GLOBAL', NULL, NULL,
+    '리스크대응', 'SELECT', 'Y', 'Y', 5,
+    'system'
+);
+
+-- ============================================
+-- 10. 글로벌 속성 옵션
+-- ============================================
+
+-- 난이도 옵션
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'Low (반복작업)', '#22C55E', 1, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '난이도' AND OWNER_TYPE = 'GLOBAL';
+
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'Medium (일반)', '#3B82F6', 2, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '난이도' AND OWNER_TYPE = 'GLOBAL';
+
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'High (높음)', '#F59E0B', 3, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '난이도' AND OWNER_TYPE = 'GLOBAL';
+
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'Extreme (어려움)', '#EF4444', 4, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '난이도' AND OWNER_TYPE = 'GLOBAL';
+
+-- 범위변경 옵션
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'None (변경없음)', '#6B7280', 1, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '범위변경' AND OWNER_TYPE = 'GLOBAL';
+
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'Minor (20%이내)', '#22C55E', 2, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '범위변경' AND OWNER_TYPE = 'GLOBAL';
+
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'Major (30%이상)', '#F59E0B', 3, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '범위변경' AND OWNER_TYPE = 'GLOBAL';
+
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'Chaos (엎어짐)', '#EF4444', 4, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '범위변경' AND OWNER_TYPE = 'GLOBAL';
+
+-- 리스크대응 옵션
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'None (이슈없음)', '#6B7280', 1, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '리스크대응' AND OWNER_TYPE = 'GLOBAL';
+
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'Mitigated (이슈해결)', '#3B82F6', 2, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '리스크대응' AND OWNER_TYPE = 'GLOBAL';
+
+INSERT INTO TB_PROPERTY_OPTION (PROPERTY_ID, OPTION_LABEL, COLOR, SORT_ORDER, USE_YN, CREATED_BY)
+SELECT PROPERTY_ID, 'Critical (실패복구)', '#EF4444', 3, 'Y', 'system'
+FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '리스크대응' AND OWNER_TYPE = 'GLOBAL';
+
+-- ============================================
+-- 11. SMTP 기본 설정 데이터
+-- CONFIG_VALUE_ENCRYPTED: 암호화된 값 (비밀번호 등)
+-- ============================================
+INSERT INTO TB_SYSTEM_CONFIG (CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE, DESCRIPTION, CREATED_BY) VALUES
+('SMTP', 'HOST', 'mail.sns-at.co.kr', 'SMTP 서버 주소', 'system'),
+('SMTP', 'PORT', '587', 'SMTP 포트', 'system'),
+('SMTP', 'SECURITY_TYPE', 'STARTTLS', '보안 유형 (STARTTLS, TLS, NONE)', 'system'),
+('SMTP', 'USERNAME', 'sns@sns-at.co.kr', 'SMTP 계정', 'system'),
+('SMTP', 'FROM_ADDRESS', 'TaskFlow <sns@sns-at.co.kr>', '발신자 주소', 'system'),
+('SMTP', 'ADMIN_EMAIL', 'admin@sns-at.co.kr', '관리자 이메일', 'system')
+ON DUPLICATE KEY UPDATE UPDATED_AT = CURRENT_TIMESTAMP;
+
+-- PASSWORD는 암호화되어 저장되므로 별도 처리 필요 (애플리케이션에서 설정)
+INSERT INTO TB_SYSTEM_CONFIG (CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE_ENCRYPTED, DESCRIPTION, CREATED_BY) VALUES
+('SMTP', 'PASSWORD', NULL, 'SMTP 비밀번호 (암호화)', 'system')
+ON DUPLICATE KEY UPDATE UPDATED_AT = CURRENT_TIMESTAMP;
 
 -- ============================================
 -- AUTO_INCREMENT 재설정

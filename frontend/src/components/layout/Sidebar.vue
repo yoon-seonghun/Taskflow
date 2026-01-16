@@ -84,7 +84,8 @@ const menuItems = [
   { name: 'Templates', label: '작업 등록', icon: 'document' },
   { name: 'History', label: '이력관리', icon: 'history' },
   { divider: true },
-  { name: 'Shares', label: '공유 사용자', icon: 'users' },
+  // v2.2.1: 공유 사용자 메뉴 숨김 (보드관리에서 공유 사용자 관리 기능 중복)
+  // { name: 'Shares', label: '공유 사용자', icon: 'users' },
   { name: 'Groups', label: '그룹 관리', icon: 'folder' },
   { name: 'Boards', label: '보드 관리', icon: 'board' },
   { divider: true },

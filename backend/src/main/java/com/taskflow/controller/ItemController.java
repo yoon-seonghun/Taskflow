@@ -4,6 +4,9 @@ import com.taskflow.common.ApiResponse;
 import com.taskflow.dto.assignment.AssignmentRequest;
 import com.taskflow.dto.assignment.AssignmentResponse;
 import com.taskflow.dto.item.ItemAccessInfo;
+import com.taskflow.dto.item.AncestorResponse;
+import com.taskflow.dto.item.IncompleteChildrenResponse;
+import com.taskflow.dto.item.ItemCompleteRequest;
 import com.taskflow.dto.item.ItemCreateRequest;
 import com.taskflow.dto.item.ItemPageResponse;
 import com.taskflow.dto.item.ItemPropertySortRequest;
@@ -12,6 +15,8 @@ import com.taskflow.dto.item.ItemResponse;
 import com.taskflow.dto.item.ItemSearchRequest;
 import com.taskflow.dto.item.ItemTransferRequest;
 import com.taskflow.dto.item.ItemUpdateRequest;
+import com.taskflow.dto.item.SubTaskCreateRequest;
+import com.taskflow.dto.item.SubTaskReorderRequest;
 import com.taskflow.security.SecurityUtils;
 import com.taskflow.service.BoardService;
 import com.taskflow.service.ItemAssignmentService;
@@ -536,5 +541,243 @@ public class ItemController {
 
         ItemAccessInfo accessInfo = itemAssignmentService.getAccessInfo(boardId, itemId, currentUsername);
         return ResponseEntity.ok(ApiResponse.success(accessInfo));
+    }
+
+    // =============================================
+    // v2.2: 하위 업무 (Sub-Task) API
+    // =============================================
+
+    /**
+     * 하위 업무 목록 조회
+     */
+    @GetMapping("/{id}/children")
+    public ResponseEntity<ApiResponse<List<ItemResponse>>> getChildren(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long parentItemId,
+            @RequestParam(value = "includeCompleted", required = false, defaultValue = "false") Boolean includeCompleted,
+            @RequestParam(value = "includeDeleted", required = false, defaultValue = "false") Boolean includeDeleted
+    ) {
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 접근 권한)
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean hasItemAccess = itemShareService.hasItemAccess(parentItemId, currentUsername);
+
+        if (!hasBoardAccess && !hasItemAccess) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("접근 권한이 없습니다"));
+        }
+
+        log.debug("Get children: parentItemId={}, includeCompleted={}, includeDeleted={}",
+                parentItemId, includeCompleted, includeDeleted);
+
+        List<ItemResponse> response = itemService.getChildren(parentItemId, includeCompleted, includeDeleted);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 업무 트리 조회 (부모 + 모든 하위)
+     */
+    @GetMapping("/{id}/tree")
+    public ResponseEntity<ApiResponse<ItemResponse>> getItemTree(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId,
+            @RequestParam(value = "maxDepth", required = false) Integer maxDepth,
+            @RequestParam(value = "includeCompleted", required = false, defaultValue = "false") Boolean includeCompleted
+    ) {
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 접근 권한)
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean hasItemAccess = itemShareService.hasItemAccess(itemId, currentUsername);
+
+        if (!hasBoardAccess && !hasItemAccess) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("접근 권한이 없습니다"));
+        }
+
+        log.debug("Get item tree: itemId={}, maxDepth={}, includeCompleted={}", itemId, maxDepth, includeCompleted);
+
+        ItemResponse response = itemService.getItemTree(itemId, maxDepth, includeCompleted);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 상위 계층 조회 (Breadcrumb용)
+     */
+    @GetMapping("/{id}/ancestors")
+    public ResponseEntity<ApiResponse<List<AncestorResponse>>> getAncestors(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId
+    ) {
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 접근 권한)
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean hasItemAccess = itemShareService.hasItemAccess(itemId, currentUsername);
+
+        if (!hasBoardAccess && !hasItemAccess) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("접근 권한이 없습니다"));
+        }
+
+        log.debug("Get ancestors: itemId={}", itemId);
+
+        List<AncestorResponse> response = itemService.getAncestors(itemId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 부모 업무 조회
+     */
+    @GetMapping("/{id}/parent")
+    public ResponseEntity<ApiResponse<ItemResponse>> getParent(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId
+    ) {
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 접근 권한)
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean hasItemAccess = itemShareService.hasItemAccess(itemId, currentUsername);
+
+        if (!hasBoardAccess && !hasItemAccess) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("접근 권한이 없습니다"));
+        }
+
+        log.debug("Get parent: itemId={}", itemId);
+
+        ItemResponse response = itemService.getParent(itemId);
+        if (response == null) {
+            return ResponseEntity.ok(ApiResponse.success(null, "부모 업무가 없습니다 (루트 업무)"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 루트 업무 목록 조회 (보드별)
+     */
+    @GetMapping("/root")
+    public ResponseEntity<ApiResponse<List<ItemResponse>>> getRootItems(
+            @PathVariable("boardId") Long boardId,
+            @RequestParam(value = "includeCompleted", required = false, defaultValue = "false") Boolean includeCompleted,
+            @RequestParam(value = "includeDeleted", required = false, defaultValue = "false") Boolean includeDeleted
+    ) {
+        // 접근 권한 확인
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+        }
+
+        log.debug("Get root items: boardId={}, includeCompleted={}, includeDeleted={}",
+                boardId, includeCompleted, includeDeleted);
+
+        List<ItemResponse> response = itemService.getRootItemsByBoardId(boardId, includeCompleted, includeDeleted);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * 하위 업무 등록
+     */
+    @PostMapping("/{id}/subtask")
+    public ResponseEntity<ApiResponse<ItemResponse>> createSubTask(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long parentItemId,
+            @Valid @RequestBody SubTaskCreateRequest request
+    ) {
+        // 접근 권한 확인
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+        }
+
+        log.info("Create sub-task: boardId={}, parentItemId={}, title={}", boardId, parentItemId, request.getTitle());
+
+        ItemResponse response = itemService.createSubTask(boardId, parentItemId, request, currentUsername);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "하위 업무가 생성되었습니다"));
+    }
+
+    /**
+     * 하위 업무 순서 변경
+     */
+    @PutMapping("/{id}/subtask/reorder")
+    public ResponseEntity<ApiResponse<Void>> reorderChildren(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long parentItemId,
+            @Valid @RequestBody SubTaskReorderRequest request
+    ) {
+        // 접근 권한 확인
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        if (!boardService.hasAccess(boardId, currentUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("보드에 접근 권한이 없습니다"));
+        }
+
+        log.info("Reorder children: parentItemId={}", parentItemId);
+
+        itemService.reorderChildren(parentItemId, request, currentUsername);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "하위 업무 순서가 변경되었습니다"));
+    }
+
+    /**
+     * 업무 완료 처리 (하위 업무 체크 포함, v2.2)
+     *
+     * @return ItemResponse (성공 시) 또는 IncompleteChildrenResponse (미완료 하위 업무 있을 시)
+     */
+    @PutMapping("/{id}/complete-with-children")
+    public ResponseEntity<ApiResponse<Object>> completeItemWithChildren(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId,
+            @RequestBody(required = false) ItemCompleteRequest request
+    ) {
+        // 접근 권한 확인 (보드 접근 권한 또는 아이템 수정 권한)
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean canEdit = itemShareService.canEditItem(itemId, currentUsername);
+
+        if (!hasBoardAccess && !canEdit) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("완료 처리 권한이 없습니다"));
+        }
+
+        log.info("Complete item with children: itemId={}, forceComplete={}",
+                itemId, request != null && request.isForceComplete());
+
+        Object result = itemService.completeItemWithChildren(itemId, request, currentUsername);
+
+        // 결과 타입에 따라 응답 생성
+        if (result instanceof IncompleteChildrenResponse) {
+            // 미완료 하위 업무가 있는 경우 - 확인 필요
+            return ResponseEntity.ok(ApiResponse.success(result, "미완료 하위 업무가 있습니다. 강제 완료하려면 forceComplete를 true로 설정하세요."));
+        } else {
+            // 완료 성공
+            return ResponseEntity.ok(ApiResponse.success(result, "아이템이 완료되었습니다"));
+        }
+    }
+
+    /**
+     * 미완료 하위 업무 조회
+     */
+    @GetMapping("/{id}/incomplete-children")
+    public ResponseEntity<ApiResponse<IncompleteChildrenResponse>> getIncompleteChildren(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("id") Long itemId
+    ) {
+        // 접근 권한 확인 (보드 접근 또는 아이템 공유 권한)
+        String currentUsername = SecurityUtils.getCurrentUsername();
+        boolean hasBoardAccess = boardService.hasAccess(boardId, currentUsername);
+        boolean hasItemAccess = itemShareService.hasItemAccess(itemId, currentUsername);
+
+        if (!hasBoardAccess && !hasItemAccess) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("접근 권한이 없습니다"));
+        }
+
+        log.debug("Get incomplete children: itemId={}", itemId);
+
+        IncompleteChildrenResponse response = itemService.getIncompleteChildren(itemId);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

@@ -167,8 +167,10 @@ public class ItemServiceImpl implements ItemService {
         Integer sortOrder = (maxSortOrder != null ? maxSortOrder : -1) + 1;
 
         // 아이템 엔티티 생성
+        // v2.2.1: ownerUsername = createdBy (생성자가 최초 소유자)
         Item item = Item.builder()
                 .boardId(boardId)
+                .ownerUsername(createdBy)
                 .groupId(request.getGroupId())
                 .categoryId(categoryId)
                 .title(request.getTitle())
@@ -1050,5 +1052,308 @@ public class ItemServiceImpl implements ItemService {
         // 일괄 업데이트
         int updatedCount = itemPropertyMapper.updateSortOrders(orders, updatedBy);
         log.info("Item property sort orders updated: itemId={}, updatedCount={}", itemId, updatedCount);
+    }
+
+    // =============================================
+    // v2.2: 하위 업무 조회
+    // =============================================
+
+    @Override
+    public List<ItemResponse> getChildren(Long parentItemId, Boolean includeCompleted, Boolean includeDeleted) {
+        log.debug("Get children: parentItemId={}, includeCompleted={}, includeDeleted={}",
+                parentItemId, includeCompleted, includeDeleted);
+
+        // 부모 업무 존재 확인
+        itemMapper.findById(parentItemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(parentItemId));
+
+        List<Item> children = itemMapper.findChildren(parentItemId, includeCompleted, includeDeleted);
+        loadItemPropertiesBatch(children);
+
+        return ItemResponse.fromList(children);
+    }
+
+    @Override
+    public ItemResponse getItemTree(Long itemId, Integer maxDepth, Boolean includeCompleted) {
+        log.debug("Get item tree: itemId={}, maxDepth={}, includeCompleted={}",
+                itemId, maxDepth, includeCompleted);
+
+        // 기본 아이템 조회
+        Item item = itemMapper.findById(itemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(itemId));
+
+        loadItemProperties(item);
+
+        // 하위 업무 재귀 조회
+        loadChildrenRecursive(item, maxDepth, includeCompleted, 0);
+
+        return ItemResponse.from(item);
+    }
+
+    /**
+     * 하위 업무 재귀 로드
+     */
+    private void loadChildrenRecursive(Item parent, Integer maxDepth, Boolean includeCompleted, int currentDepth) {
+        // 깊이 제한 확인
+        if (maxDepth != null && currentDepth >= maxDepth) {
+            return;
+        }
+
+        // 하위 업무 조회
+        List<Item> children = itemMapper.findChildren(parent.getItemId(), includeCompleted, false);
+        if (children.isEmpty()) {
+            return;
+        }
+
+        // 속성값 로드
+        loadItemPropertiesBatch(children);
+
+        // 각 하위 업무에 대해 재귀 호출
+        for (Item child : children) {
+            loadChildrenRecursive(child, maxDepth, includeCompleted, currentDepth + 1);
+        }
+
+        parent.setChildren(children);
+    }
+
+    @Override
+    public List<AncestorResponse> getAncestors(Long itemId) {
+        log.debug("Get ancestors: itemId={}", itemId);
+
+        // 업무 존재 확인
+        itemMapper.findById(itemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(itemId));
+
+        List<Item> ancestors = itemMapper.findAncestors(itemId);
+
+        return ancestors.stream()
+                .map(item -> AncestorResponse.builder()
+                        .itemId(item.getItemId())
+                        .itemDepth(item.getItemDepth())
+                        .title(item.getTitle() != null ? item.getTitle() : item.getContent())
+                        .status(item.getStatus())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ItemResponse getParent(Long itemId) {
+        log.debug("Get parent: itemId={}", itemId);
+
+        // 업무 존재 확인
+        itemMapper.findById(itemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(itemId));
+
+        Item parent = itemMapper.findParent(itemId);
+        if (parent == null) {
+            return null;
+        }
+
+        loadItemProperties(parent);
+        return ItemResponse.from(parent);
+    }
+
+    @Override
+    public List<ItemResponse> getRootItemsByBoardId(Long boardId, Boolean includeCompleted, Boolean includeDeleted) {
+        log.debug("Get root items: boardId={}, includeCompleted={}, includeDeleted={}",
+                boardId, includeCompleted, includeDeleted);
+
+        // 보드 존재 확인
+        boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        List<Item> rootItems = itemMapper.findRootItemsByBoardId(boardId, includeCompleted, includeDeleted);
+        loadItemPropertiesBatch(rootItems);
+
+        return ItemResponse.fromList(rootItems);
+    }
+
+    // =============================================
+    // v2.2: 하위 업무 등록/수정
+    // =============================================
+
+    @Override
+    @Transactional
+    public ItemResponse createSubTask(Long boardId, Long parentItemId, SubTaskCreateRequest request, String createdBy) {
+        log.info("Creating sub-task: boardId={}, parentItemId={}, title={}", boardId, parentItemId, request.getTitle());
+
+        // 보드 존재 확인
+        boardMapper.findById(boardId)
+                .orElseThrow(() -> BusinessException.boardNotFound(boardId));
+
+        // 부모 업무 존재 확인
+        Item parentItem = itemMapper.findById(parentItemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(parentItemId));
+
+        // 부모 업무가 해당 보드에 속하는지 확인
+        if (!boardId.equals(parentItem.getBoardId())) {
+            throw BusinessException.badRequest("부모 업무가 해당 보드에 속하지 않습니다.");
+        }
+
+        // 부모 업무가 완료/삭제 상태인지 확인
+        if (parentItem.isCompleted()) {
+            throw BusinessException.badRequest("완료된 업무에는 하위 업무를 추가할 수 없습니다.");
+        }
+        if (parentItem.isDeleted()) {
+            throw BusinessException.badRequest("삭제된 업무에는 하위 업무를 추가할 수 없습니다.");
+        }
+
+        // 깊이 제한 확인 (최대 2)
+        Integer parentDepth = parentItem.getItemDepth() != null ? parentItem.getItemDepth() : 0;
+        if (parentDepth >= 2) {
+            throw BusinessException.badRequest("하위 업무는 최대 2단계까지만 생성할 수 있습니다.");
+        }
+
+        // 담당자 존재 확인
+        if (request.getAssigneeUsername() != null) {
+            userMapper.findByUsername(request.getAssigneeUsername())
+                    .orElseThrow(() -> BusinessException.userNotFound(request.getAssigneeUsername()));
+        }
+
+        // 기본값 설정
+        String status = request.getStatus() != null ? request.getStatus() : Item.STATUS_NOT_STARTED;
+        String priority = request.getPriority() != null ? request.getPriority() : parentItem.getPriority();
+
+        // 하위 업무 정렬 순서 설정
+        Integer maxChildSortOrder = itemMapper.getMaxChildSortOrder(parentItemId);
+        Integer childSortOrder = (maxChildSortOrder != null ? maxChildSortOrder : -1) + 1;
+
+        // 보드 정렬 순서 설정
+        Integer maxSortOrder = itemMapper.getMaxSortOrder(boardId);
+        Integer sortOrder = (maxSortOrder != null ? maxSortOrder : -1) + 1;
+
+        // 하위 업무 엔티티 생성
+        // v2.2.1: ownerUsername = 부모 업무 소유자 (이관 시 함께 이관되므로)
+        Item subTask = Item.builder()
+                .boardId(boardId)
+                .ownerUsername(parentItem.getOwnerUsername())
+                .parentItemId(parentItemId)
+                .itemDepth(parentDepth + 1)
+                .childSortOrder(childSortOrder)
+                .groupId(parentItem.getGroupId())
+                .categoryId(parentItem.getCategoryId())
+                .title(request.getTitle())
+                .content(request.getContent())
+                .description(request.getDescription())
+                .status(status)
+                .priority(priority)
+                .assigneeUsername(request.getAssigneeUsername())  // v2.2: 담당자는 빈칸 (명시적으로 지정된 경우만 설정)
+                .requestDate(request.getRequestDate())
+                .dueDate(request.getDueDate())
+                .sortOrder(sortOrder)
+                .createdBy(createdBy)
+                .build();
+
+        // 하위 업무 저장
+        itemMapper.insert(subTask);
+        log.info("Sub-task created: id={}, parentId={}, depth={}", subTask.getItemId(), parentItemId, subTask.getItemDepth());
+
+        // 동적 속성값 저장
+        if (request.getProperties() != null && !request.getProperties().isEmpty()) {
+            // Map<Long, String>을 Map<Long, Object>로 변환
+            Map<Long, Object> propertiesAsObject = new HashMap<>(request.getProperties());
+            saveItemProperties(subTask.getItemId(), boardId, propertiesAsObject, null, createdBy);
+        }
+
+        ItemResponse response = getItem(subTask.getItemId());
+
+        // SSE 이벤트 발행
+        sseEventPublisher.publishItemCreated(boardId, response, createdBy);
+
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public void reorderChildren(Long parentItemId, SubTaskReorderRequest request, String updatedBy) {
+        log.info("Reordering children: parentItemId={}, ordersCount={}",
+                parentItemId, request.getOrders() != null ? request.getOrders().size() : 0);
+
+        // 부모 업무 존재 확인
+        Item parentItem = itemMapper.findById(parentItemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(parentItemId));
+
+        if (request.getOrders() == null || request.getOrders().isEmpty()) {
+            log.warn("No orders provided for parentItemId={}", parentItemId);
+            return;
+        }
+
+        // 각 하위 업무의 순서 업데이트
+        for (SubTaskReorderRequest.OrderItem orderItem : request.getOrders()) {
+            // 해당 아이템이 이 부모의 자식인지 확인
+            Item child = itemMapper.findById(orderItem.getItemId())
+                    .orElseThrow(() -> BusinessException.itemNotFound(orderItem.getItemId()));
+
+            if (!parentItemId.equals(child.getParentItemId())) {
+                throw BusinessException.badRequest("아이템이 해당 부모 업무의 하위 업무가 아닙니다: " + orderItem.getItemId());
+            }
+
+            itemMapper.updateChildSortOrder(orderItem.getItemId(), orderItem.getSortOrder(), updatedBy);
+        }
+
+        log.info("Children reordered: parentItemId={}, count={}", parentItemId, request.getOrders().size());
+
+        // SSE 이벤트 발행
+        sseEventPublisher.publishItemUpdated(parentItem.getBoardId(), getItem(parentItemId), updatedBy);
+    }
+
+    // =============================================
+    // v2.2: 하위 업무 완료 처리
+    // =============================================
+
+    @Override
+    @Transactional
+    public Object completeItemWithChildren(Long itemId, ItemCompleteRequest request, String completedBy) {
+        log.info("Completing item with children: itemId={}, forceComplete={}", itemId, request != null && request.isForceComplete());
+
+        // 아이템 존재 확인
+        Item item = itemMapper.findById(itemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(itemId));
+
+        // 이미 완료/삭제된 경우
+        if (item.isCompleted()) {
+            throw BusinessException.badRequest("이미 완료된 아이템입니다.");
+        }
+        if (item.isDeleted()) {
+            throw BusinessException.badRequest("삭제된 아이템은 완료할 수 없습니다.");
+        }
+
+        // 미완료 하위 업무 확인
+        List<Item> incompleteChildren = itemMapper.findAllIncompleteDescendants(itemId);
+
+        if (!incompleteChildren.isEmpty()) {
+            // 강제 완료가 아닌 경우 미완료 하위 업무 정보 반환
+            if (request == null || !request.isForceComplete()) {
+                log.info("Item has incomplete children: itemId={}, count={}", itemId, incompleteChildren.size());
+                return IncompleteChildrenResponse.from(incompleteChildren);
+            }
+
+            // 강제 완료: 모든 하위 업무도 함께 완료 처리
+            log.info("Force completing item and children: itemId={}, childCount={}", itemId, incompleteChildren.size());
+            itemMapper.completeChildren(itemId, completedBy);
+        }
+
+        // 현재 아이템 완료 처리
+        itemMapper.complete(itemId, completedBy);
+        log.info("Item completed: id={}", itemId);
+
+        ItemResponse response = getItem(itemId);
+
+        // SSE 이벤트 발행
+        sseEventPublisher.publishItemCompleted(item.getBoardId(), response, completedBy);
+
+        return response;
+    }
+
+    @Override
+    public IncompleteChildrenResponse getIncompleteChildren(Long itemId) {
+        log.debug("Get incomplete children: itemId={}", itemId);
+
+        // 업무 존재 확인
+        itemMapper.findById(itemId)
+                .orElseThrow(() -> BusinessException.itemNotFound(itemId));
+
+        List<Item> incompleteChildren = itemMapper.findAllIncompleteDescendants(itemId);
+        return IncompleteChildrenResponse.from(incompleteChildren);
     }
 }

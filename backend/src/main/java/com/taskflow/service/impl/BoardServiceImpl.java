@@ -19,6 +19,7 @@ import com.taskflow.mapper.BoardPropertyMapper;
 import com.taskflow.mapper.BoardMapper;
 import com.taskflow.mapper.BoardShareMapper;
 import com.taskflow.mapper.GroupMapper;
+import com.taskflow.mapper.ItemMapper;
 import com.taskflow.mapper.PropertyDefMapper;
 import com.taskflow.mapper.PropertyOptionMapper;
 import com.taskflow.mapper.UserMapper;
@@ -50,6 +51,7 @@ public class BoardServiceImpl implements BoardService {
     private final BoardCategoryMapper boardCategoryMapper;
     private final BoardPropertyMapper boardPropertyMapper;
     private final GroupMapper groupMapper;
+    private final ItemMapper itemMapper;
     private final UserMapper userMapper;
     private final PropertyDefMapper propertyDefMapper;
     private final PropertyOptionMapper propertyOptionMapper;
@@ -797,6 +799,10 @@ public class BoardServiceImpl implements BoardService {
         if (updated == 0) {
             throw BusinessException.badRequest("보드 이관에 실패했습니다.");
         }
+
+        // [v2.2.1] 보드 내 모든 업무 소유자 일괄 변경
+        int itemCount = itemMapper.updateOwnerByBoardId(boardId, request.getTargetUsername(), currentUsername);
+        log.info("Board transfer - updated {} items owner to {}", itemCount, request.getTargetUsername());
 
         // 기존 소유자를 공유 사용자에서 제거 (이미 공유되어 있었다면)
         if (boardShareMapper.existsByBoardIdAndUsername(boardId, request.getTargetUsername())) {

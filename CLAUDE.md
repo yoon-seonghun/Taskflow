@@ -454,6 +454,46 @@ com.taskflow
 - SQL문은 XML에 작성 (어노테이션 SQL 지양)
 - **JPA 절대 사용 금지**
 
+### Lombok 호환성 규칙 (⚠️ 필수 준수)
+```
+📌 문제 상황
+Lombok이 특수 명명 패턴(UserName, Username, ID, Id 등)의 필드에 대해
+예상과 다른 getter/setter를 생성하여 다음 문제 발생:
+- MyBatis ResultMap 매핑 실패
+- Jackson JSON 직렬화 시 필드 누락
+- 유사한 필드명 간의 충돌
+
+⚠️ 위험한 패턴 (같은 클래스 내)
+private String assignedByUsername;   // username (소문자 n)
+private String assignedByUserName;   // UserName (대문자 N)
+→ Lombok getter 충돌 위험!
+
+✅ 필수 준수 사항
+1. UserName, Username, ID, Id 등 유사 패턴 필드가 같은 클래스에 있을 때
+   → 반드시 명시적 getter/setter 추가
+
+2. Domain 클래스 (Entity)
+   → MyBatis 매핑용 명시적 getter/setter 필수
+
+3. DTO/Response 클래스
+   → Jackson 직렬화용 명시적 getter 필수
+
+📋 명시적 getter 추가 예시
+// Lombok @Getter가 있어도 명시적으로 추가
+public String getAssignedByUserName() {
+    return assignedByUserName;
+}
+
+public String getSharedByUserName() {
+    return sharedByUserName;
+}
+
+🔍 영향받는 클래스 목록
+- domain/Item.java
+- dto/item/ItemResponse.java
+- 기타 *UserName, *Username 패턴 필드가 있는 클래스
+```
+
 ### API 설계 원칙
 ```
 # 인증

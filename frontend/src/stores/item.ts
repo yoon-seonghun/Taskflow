@@ -7,7 +7,13 @@ import type {
   ItemCreateRequest,
   ItemUpdateRequest,
   ItemSearchRequest,
-  ItemTransferRequest
+  ItemTransferRequest,
+  // v2.2: 하위 업무 관련 타입
+  SubTaskCreateRequest,
+  SubTaskReorderRequest,
+  AncestorResponse,
+  ItemCompleteRequest,
+  IncompleteChildrenResponse
 } from '@/types/item'
 import type { Share, ShareRequest, ShareUpdateRequest } from '@/types/share'
 
@@ -105,6 +111,16 @@ export const useItemStore = defineStore('item', () => {
   // 아이템 수
   const itemCount = computed(() => items.value.length)
   const activeItemCount = computed(() => activeItems.value.length)
+
+  // v2.2: 루트 아이템만 (하위 업무 제외)
+  const rootItems = computed(() =>
+    items.value.filter(item => !item.parentItemId || item.itemDepth === 0)
+  )
+
+  // v2.2: 활성 루트 아이템
+  const activeRootItems = computed(() =>
+    rootItems.value.filter(item => item.status !== 'COMPLETED' && item.status !== 'DELETED')
+  )
 
   // ==================== Internal Mutations ====================
   function _setItems(newItems: Item[]) {
@@ -681,6 +697,249 @@ export const useItemStore = defineStore('item', () => {
     }
   }
 
+  // ==================== v2.2: 하위 업무 (Sub-Task) ====================
+
+  /**
+   * 하위 업무 목록 조회
+   */
+  async function fetchChildren(
+    boardId: number,
+    parentItemId: number,
+    params?: { includeCompleted?: boolean; includeDeleted?: boolean }
+  ): Promise<Item[]> {
+    try {
+      const response = await itemApi.getChildren(boardId, parentItemId, params)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * 업무 트리 조회 (부모 + 모든 하위)
+   */
+  async function fetchItemTree(
+    boardId: number,
+    itemId: number,
+    params?: { maxDepth?: number; includeCompleted?: boolean }
+  ): Promise<Item | null> {
+    try {
+      const response = await itemApi.getItemTree(boardId, itemId, params)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 상위 계층 조회 (Breadcrumb용)
+   */
+  async function fetchAncestors(boardId: number, itemId: number): Promise<AncestorResponse[]> {
+    try {
+      const response = await itemApi.getAncestors(boardId, itemId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * 부모 업무 조회
+   */
+  async function fetchParent(boardId: number, itemId: number): Promise<Item | null> {
+    try {
+      const response = await itemApi.getParent(boardId, itemId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 루트 업무 목록 조회 (보드별)
+   */
+  async function fetchRootItems(
+    boardId: number,
+    params?: { includeCompleted?: boolean; includeDeleted?: boolean }
+  ): Promise<Item[]> {
+    try {
+      const response = await itemApi.getRootItems(boardId, params)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * 하위 업무 생성
+   */
+  async function createSubTask(
+    boardId: number,
+    parentItemId: number,
+    data: SubTaskCreateRequest
+  ): Promise<Item | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await itemApi.createSubTask(boardId, parentItemId, data)
+      if (response.success && response.data) {
+        // 생성된 하위 업무를 목록에 추가
+        _addItem(response.data)
+        // 부모 아이템의 childCount, hasChildren 업데이트
+        const parentItem = items.value.find(i => i.itemId === parentItemId)
+        if (parentItem) {
+          _updateItem(parentItemId, {
+            childCount: (parentItem.childCount || 0) + 1,
+            hasChildren: true,
+            canCreateChild: (parentItem.itemDepth ?? 0) < 2
+          })
+        }
+        return response.data
+      }
+      error.value = response.message || '하위 업무 생성에 실패했습니다.'
+      return null
+    } catch (e) {
+      error.value = '하위 업무 생성에 실패했습니다.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 하위 업무 순서 변경
+   */
+  async function reorderChildren(
+    boardId: number,
+    parentItemId: number,
+    data: SubTaskReorderRequest
+  ): Promise<boolean> {
+    try {
+      const response = await itemApi.reorderChildren(boardId, parentItemId, data)
+      return response.success
+    } catch {
+      error.value = '하위 업무 순서 변경에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 업무 완료 처리 (하위 업무 체크 포함)
+   * @returns { success: true, item: Item } 또는 { success: false, incompleteChildren: IncompleteChildrenResponse }
+   */
+  async function completeItemWithChildren(
+    boardId: number,
+    itemId: number,
+    forceComplete: boolean = false
+  ): Promise<{ success: boolean; item?: Item; incompleteChildren?: IncompleteChildrenResponse }> {
+    const originalItem = items.value.find(item => item.itemId === itemId)
+    if (!originalItem) {
+      return { success: false }
+    }
+
+    const originalData = { ...originalItem }
+
+    // forceComplete가 true이면 Optimistic Update
+    if (forceComplete) {
+      _updateItem(itemId, {
+        status: 'COMPLETED',
+        completedAt: new Date().toISOString()
+      })
+    }
+
+    try {
+      const response = await itemApi.completeItemWithChildren(boardId, itemId, { forceComplete })
+
+      if (response.success && response.data) {
+        // 응답 데이터 확인: incompleteChildCount가 있으면 미완료 하위 업무 정보
+        const data = response.data as any
+        if (data.incompleteChildCount !== undefined) {
+          // 미완료 하위 업무가 있음 - 롤백
+          if (forceComplete) {
+            _updateItem(itemId, originalData)
+          }
+          return {
+            success: false,
+            incompleteChildren: data as IncompleteChildrenResponse
+          }
+        }
+
+        // 완료 성공
+        _updateItem(itemId, data as Item)
+        return { success: true, item: data as Item }
+      }
+
+      // 실패 시 롤백
+      if (forceComplete) {
+        _updateItem(itemId, originalData)
+      }
+      error.value = response.message || '완료 처리에 실패했습니다.'
+      return { success: false }
+    } catch (e) {
+      // 실패 시 롤백
+      if (forceComplete) {
+        _updateItem(itemId, originalData)
+      }
+      error.value = '완료 처리에 실패했습니다.'
+      return { success: false }
+    }
+  }
+
+  /**
+   * 미완료 하위 업무 조회
+   */
+  async function fetchIncompleteChildren(
+    boardId: number,
+    itemId: number
+  ): Promise<IncompleteChildrenResponse | null> {
+    try {
+      const response = await itemApi.getIncompleteChildren(boardId, itemId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 특정 아이템의 하위 업무 가져오기 (로컬 캐시에서)
+   */
+  function getChildrenFromCache(parentItemId: number): Item[] {
+    return items.value.filter(item => item.parentItemId === parentItemId)
+  }
+
+  /**
+   * 특정 아이템이 하위 업무인지 확인
+   */
+  function isChildItem(item: Item): boolean {
+    return (item.itemDepth ?? 0) > 0 || !!item.parentItemId
+  }
+
+  /**
+   * 특정 아이템에 하위 업무 생성 가능 여부 확인
+   */
+  function canCreateChildItem(item: Item): boolean {
+    return (item.itemDepth ?? 0) < 2
+  }
+
   return {
     // State
     items,
@@ -704,6 +963,9 @@ export const useItemStore = defineStore('item', () => {
     itemsByStatus,
     itemCount,
     activeItemCount,
+    // v2.2: 하위 업무 관련 Getters
+    rootItems,
+    activeRootItems,
     // Actions
     fetchItems,
     fetchItem,
@@ -741,6 +1003,19 @@ export const useItemStore = defineStore('item', () => {
     fetchItemShares,
     addItemShare,
     updateItemShare,
-    removeItemShare
+    removeItemShare,
+    // v2.2: 하위 업무 (Sub-Task)
+    fetchChildren,
+    fetchItemTree,
+    fetchAncestors,
+    fetchParent,
+    fetchRootItems,
+    createSubTask,
+    reorderChildren,
+    completeItemWithChildren,
+    fetchIncompleteChildren,
+    getChildrenFromCache,
+    isChildItem,
+    canCreateChildItem
   }
 })

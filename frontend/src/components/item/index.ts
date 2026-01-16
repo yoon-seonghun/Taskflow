@@ -21,3 +21,12 @@ export { default as ItemForm } from './ItemForm.vue'
 export { default as ItemDetailPanel } from './ItemDetailPanel.vue'
 export { default as NewItemInput } from './NewItemInput.vue'
 export { default as CompletedItemsCollapse } from './CompletedItemsCollapse.vue'
+
+// v2.2: 하위 업무 관련
+export { default as SubTaskList } from './SubTaskList.vue'
+export { default as SubTaskRow } from './SubTaskRow.vue'
+export { default as SubTaskCard } from './SubTaskCard.vue'
+export { default as ItemBreadcrumb } from './ItemBreadcrumb.vue'
+export { default as IncompleteChildrenModal } from './IncompleteChildrenModal.vue'
+export { default as ChildProgressBar } from './ChildProgressBar.vue'
+export { default as ParentInfoTooltip } from './ParentInfoTooltip.vue'

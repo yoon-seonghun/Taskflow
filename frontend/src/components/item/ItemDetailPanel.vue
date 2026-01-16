@@ -23,10 +23,14 @@ import ItemForm from './ItemForm.vue'
 import ItemTransferModal from './ItemTransferModal.vue'
 import ItemShareModal from './ItemShareModal.vue'
 import AssignConfirmModal from './AssignConfirmModal.vue'
+// v2.2: 하위 업무 관련 컴포넌트
+import SubTaskList from './SubTaskList.vue'
+import ItemBreadcrumb from './ItemBreadcrumb.vue'
+import IncompleteChildrenModal from './IncompleteChildrenModal.vue'
 import { useItemPermission } from '@/composables/useItemPermission'
 import { userApi } from '@/api/user'
 import { CommentList } from '@/components/comment'
-import type { Item, ItemUpdateRequest } from '@/types/item'
+import type { Item, ItemUpdateRequest, IncompleteChildrenResponse, AncestorResponse } from '@/types/item'
 import type { Category } from '@/types/category'
 
 interface Props {
@@ -40,6 +44,7 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'updated', item: Item): void
   (e: 'deleted', itemId: number): void
+  (e: 'navigate', itemId: number): void  // v2.2: Breadcrumb 네비게이션
 }>()
 
 const itemStore = useItemStore()
@@ -52,7 +57,28 @@ const confirm = useConfirm()
 // v2.1: 업무 권한 관리
 const boardIdRef = computed(() => props.boardId)
 const itemIdRef = computed(() => props.itemId)
-const { canAssign, isOwner, permissionLevel, fetchAccessInfo } = useItemPermission(boardIdRef, itemIdRef)
+const { canAssign, isOwner, permissionLevel, isAssigned, isShared, getPermissionLabel, fetchAccessInfo } = useItemPermission(boardIdRef, itemIdRef)
+
+// 공유/배당 권한 배지 표시 여부
+const showPermissionBadge = computed(() => {
+  // 소유자가 아니고, 공유 또는 배당 받은 업무인 경우에만 표시
+  return !isOwner.value && (isAssigned.value || isShared.value || item.value?.isSharedToMe || item.value?.isAssignedToMe)
+})
+
+// 권한 배지 텍스트
+const permissionBadgeText = computed(() => {
+  const shareTypeText = isAssigned.value || item.value?.isAssignedToMe ? '배당' : '공유'
+  const permText = getPermissionLabel() || '조회'
+  return `${shareTypeText} · ${permText}`
+})
+
+// 권한 배지 색상 클래스
+const permissionBadgeClass = computed(() => {
+  const level = permissionLevel.value
+  if (level === 'FULL') return 'bg-green-100 text-green-700'
+  if (level === 'EDIT') return 'bg-blue-100 text-blue-700'
+  return 'bg-gray-100 text-gray-600'  // VIEW 또는 기본
+})
 
 // 상태
 const item = ref<Item | null>(null)
@@ -78,8 +104,13 @@ const showTransferModal = ref(false)
 const showShareModal = ref(false)
 const showPropertyModal = ref(false)  // v2.0: 속성 선택 모달
 const showAssignModal = ref(false)    // v2.1: 담당자 배정 모달
+const showIncompleteChildrenModal = ref(false)  // v2.2: 미완료 하위 업무 모달
 const canTransfer = ref(false)
 const canShare = ref(false)
+
+// v2.2: 하위 업무 관련 상태
+const incompleteChildren = ref<IncompleteChildrenResponse | null>(null)
+const subTaskListExpanded = ref(false)
 
 // v2.1: 담당자 배정 관련 상태
 const pendingAssignee = ref<{ username: string; name: string } | null>(null)
@@ -313,9 +344,10 @@ function handleTransferred(transferredItem: Item) {
   emit('close')
 }
 
-// 공유 업데이트 핸들러
-function handleShareUpdated() {
-  // 필요시 아이템 새로고침
+// 공유 업데이트 핸들러 (v2.2.1: 공유 수 배지 업데이트)
+async function handleShareUpdated() {
+  // 아이템 새로고침하여 shareCount 업데이트
+  await loadItem()
 }
 
 // v2.1: 담당자 배정 완료 핸들러
@@ -680,26 +712,97 @@ async function handleManualSave() {
   await saveRichTextContent()
 }
 
-// 완료 처리
+// 완료 처리 (v2.2: 하위 업무 포함)
 async function handleComplete() {
   if (!item.value || !props.boardId) return
 
-  const confirmed = await confirm.show({
-    title: '완료 처리',
-    message: '이 업무를 완료 처리하시겠습니까?',
-    confirmText: '완료',
-    confirmType: 'primary'
-  })
+  // v2.2: 하위 업무가 있는 경우 completeItemWithChildren 사용
+  const hasChildren = item.value.hasChildren || (item.value.childCount ?? 0) > 0
 
-  if (confirmed) {
-    const result = await itemStore.completeItem(props.boardId, item.value.itemId)
-    if (result) {
+  if (hasChildren) {
+    // 하위 업무가 있는 경우 - 먼저 미완료 하위 업무 확인
+    const result = await itemStore.completeItemWithChildren(props.boardId, item.value.itemId, false)
+
+    if (result.success) {
+      // 성공적으로 완료됨 (미완료 하위 업무 없음)
       toast.success('완료 처리되었습니다.')
       item.value = { ...item.value, status: 'COMPLETED' }
       emit('updated', item.value)
+    } else if (result.incompleteChildren) {
+      // 미완료 하위 업무가 있음 - 모달 표시
+      incompleteChildren.value = result.incompleteChildren
+      showIncompleteChildrenModal.value = true
     } else {
       toast.error('완료 처리에 실패했습니다.')
     }
+  } else {
+    // 하위 업무 없는 경우 - 기존 로직
+    const confirmed = await confirm.show({
+      title: '완료 처리',
+      message: '이 업무를 완료 처리하시겠습니까?',
+      confirmText: '완료',
+      confirmType: 'primary'
+    })
+
+    if (confirmed) {
+      const result = await itemStore.completeItem(props.boardId, item.value.itemId)
+      if (result) {
+        toast.success('완료 처리되었습니다.')
+        item.value = { ...item.value, status: 'COMPLETED' }
+        emit('updated', item.value)
+      } else {
+        toast.error('완료 처리에 실패했습니다.')
+      }
+    }
+  }
+}
+
+// v2.2: 강제 완료 처리 (미완료 하위 업무 포함)
+async function handleForceComplete() {
+  if (!item.value || !props.boardId) return
+
+  const result = await itemStore.completeItemWithChildren(props.boardId, item.value.itemId, true)
+
+  showIncompleteChildrenModal.value = false
+  incompleteChildren.value = null
+
+  if (result.success) {
+    toast.success('모든 하위 업무와 함께 완료 처리되었습니다.')
+    item.value = { ...item.value, status: 'COMPLETED' }
+    emit('updated', item.value)
+  } else {
+    toast.error('완료 처리에 실패했습니다.')
+  }
+}
+
+// v2.2: 미완료 하위 업무 모달 닫기
+function handleIncompleteChildrenModalClose() {
+  showIncompleteChildrenModal.value = false
+  incompleteChildren.value = null
+}
+
+// v2.2: Breadcrumb 네비게이션 핸들러
+function handleBreadcrumbNavigate(ancestor: AncestorResponse) {
+  if (ancestor.itemId === 0) {
+    // 루트 목록으로 이동 (패널 닫기)
+    emit('close')
+  } else {
+    // 해당 업무로 이동
+    emit('navigate', ancestor.itemId)
+  }
+}
+
+// v2.2: 하위 업무 선택 핸들러
+function handleSubTaskSelect(childItem: Item) {
+  emit('navigate', childItem.itemId)
+}
+
+// v2.2: 하위 업무 업데이트 핸들러 (추가/완료/삭제 시)
+async function handleSubTaskUpdate() {
+  // 아이템 새로고침하여 childCount 등 업데이트
+  await loadItem()
+  if (item.value) {
+    emit('updated', item.value)
   }
 }
 
@@ -805,9 +908,9 @@ onUnmounted(() => {
         <div class="flex items-center gap-1">
           <span v-if="isSaving" class="text-[12px] text-gray-400 mr-2">저장 중...</span>
 
-          <!-- 이관 버튼 -->
+          <!-- 이관 버튼 (v2.2: 하위 업무는 이관 불가) -->
           <Button
-            v-if="item && canTransfer && item.status !== 'DELETED'"
+            v-if="item && canTransfer && item.status !== 'DELETED' && (item.itemDepth ?? 0) === 0"
             variant="ghost"
             size="sm"
             title="업무 이관"
@@ -819,18 +922,26 @@ onUnmounted(() => {
             이관
           </Button>
 
-          <!-- 공유 버튼 -->
+          <!-- 공유 버튼 (v2.2.1: 공유 수 배지 추가) -->
           <Button
             v-if="item && canShare && item.status !== 'DELETED'"
             variant="ghost"
             size="sm"
             title="업무 공유"
+            class="relative"
             @click="showShareModal = true"
           >
             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
             공유
+            <!-- 공유 수 배지 -->
+            <span
+              v-if="item.shareCount && item.shareCount > 0"
+              class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-medium text-white bg-blue-500 rounded-full"
+            >
+              {{ item.shareCount > 99 ? '99+' : item.shareCount }}
+            </span>
           </Button>
 
           <!-- v2.0: 속성수정 버튼 -->
@@ -885,9 +996,27 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-if="modifiedInfo" class="mt-2 text-[11px] text-gray-400">
-        {{ modifiedInfo.name }}님이 {{ modifiedInfo.time }}에 수정
+      <div v-if="modifiedInfo || showPermissionBadge" class="mt-2 flex items-center gap-2 text-[11px] text-gray-400">
+        <!-- 공유/배당 권한 배지 -->
+        <span
+          v-if="showPermissionBadge"
+          class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+          :class="permissionBadgeClass"
+        >
+          {{ permissionBadgeText }}
+        </span>
+        <!-- 수정 정보 -->
+        <span v-if="modifiedInfo">{{ modifiedInfo.name }}님이 {{ modifiedInfo.time }}에 수정</span>
       </div>
+
+      <!-- v2.2: Breadcrumb (하위 업무인 경우 표시) -->
+      <ItemBreadcrumb
+        v-if="item && item.parentItemId"
+        :item="item"
+        :board-id="boardId"
+        class="mt-2"
+        @navigate="handleBreadcrumbNavigate"
+      />
     </div>
 
     <!-- 탭 (모바일) -->
@@ -939,6 +1068,19 @@ onUnmounted(() => {
               :disabled="item.status === 'DELETED'"
               @update="handleUpdate"
             />
+
+            <!-- v2.2: 하위 업무 목록 -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+              <SubTaskList
+                :parent-item="item"
+                :board-id="boardId"
+                :expanded="subTaskListExpanded"
+                :max-depth="2"
+                :include-completed="false"
+                @select="handleSubTaskSelect"
+                @update="handleSubTaskUpdate"
+              />
+            </div>
           </div>
 
           <!-- 리사이즈 핸들 (속성-에디터) -->
@@ -992,13 +1134,14 @@ onUnmounted(() => {
                   </button>
                 </div>
               </div>
-              <div class="flex-1 min-h-0">
+              <!-- v2.2.1: overflow-hidden + max-height 100%로 스크롤 활성화 -->
+            <div class="flex-1 min-h-0 overflow-hidden">
                 <RichTextEditor
                   v-model="richTextContent"
                   :readonly="item.status === 'DELETED'"
                   placeholder="상세 내용을 입력하세요..."
                   min-height="100%"
-                  max-height="none"
+                  max-height="100%"
                   related-type="ITEM"
                   :related-id="item.itemId"
                   @change="handleRichTextChange"
@@ -1041,6 +1184,19 @@ onUnmounted(() => {
       <template v-else>
         <div v-show="activeTab === 'detail'" class="h-full overflow-y-auto p-4">
           <ItemForm :item="item" :disabled="item.status === 'DELETED'" @update="handleUpdate" />
+
+          <!-- v2.2: 하위 업무 목록 (모바일) -->
+          <div class="mt-4 pt-4 border-t border-gray-200">
+            <SubTaskList
+              :parent-item="item"
+              :board-id="boardId"
+              :expanded="subTaskListExpanded"
+              :max-depth="2"
+              :include-completed="false"
+              @select="handleSubTaskSelect"
+              @update="handleSubTaskUpdate"
+            />
+          </div>
         </div>
         <div v-show="activeTab === 'content'" class="h-full overflow-y-auto flex flex-col">
           <!-- v2.1: 설명 필드 (단일 라인) -->
@@ -1158,6 +1314,16 @@ onUnmounted(() => {
       :assignee-name="pendingAssignee.name"
       @close="handleAssignModalClose"
       @assigned="handleAssigned"
+    />
+
+    <!-- v2.2: 미완료 하위 업무 확인 모달 -->
+    <IncompleteChildrenModal
+      :show="showIncompleteChildrenModal"
+      :incomplete-children="incompleteChildren"
+      :parent-title="item?.title"
+      @close="handleIncompleteChildrenModalClose"
+      @cancel="handleIncompleteChildrenModalClose"
+      @force-complete="handleForceComplete"
     />
   </div>
 </template>

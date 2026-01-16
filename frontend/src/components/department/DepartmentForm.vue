@@ -32,7 +32,7 @@ const departmentStore = useDepartmentStore()
 // Form fields
 const departmentCode = ref('')
 const departmentName = ref('')
-const parentId = ref<number | null>(null)
+const parentCode = ref<string | null>(null)  // v2.2.1: parentId → parentCode (백엔드 DTO 일치)
 const sortOrder = ref(0)
 const useYn = ref('Y')
 
@@ -54,6 +54,7 @@ const formTitle = computed(() => {
 })
 
 // 상위 부서 옵션 (현재 부서 및 하위 부서 제외)
+// v2.2.1: value를 departmentCode (string)로 변경 - 백엔드 parentCode와 일치
 const parentOptions = computed<SelectOption[]>(() => {
   const options: SelectOption[] = [{ value: null as any, label: '(최상위)' }]
 
@@ -61,12 +62,12 @@ const parentOptions = computed<SelectOption[]>(() => {
     for (const dept of depts) {
       // 편집 모드에서 자기 자신과 하위 부서는 제외
       if (isEditMode.value && props.department) {
-        if (dept.departmentId === props.department.departmentId) continue
-        if (isDescendantOf(dept, props.department.departmentId)) continue
+        if (dept.departmentCode === props.department.departmentCode) continue
+        if (isDescendantOf(dept, props.department.departmentCode)) continue
       }
 
       options.push({
-        value: dept.departmentId,
+        value: dept.departmentCode,  // v2.2.1: departmentId → departmentCode
         label: prefix + dept.departmentName
       })
 
@@ -118,18 +119,18 @@ watch(departmentCode, (newVal) => {
   }
 })
 
-// 자손 여부 확인
-function isDescendantOf(dept: Department, parentId: number): boolean {
-  if (dept.parentId === parentId) return true
+// 자손 여부 확인 (v2.2.1: parentCode 기준)
+function isDescendantOf(dept: Department, parentCode: string): boolean {
+  if (dept.parentCode === parentCode) return true
   if (!dept.children) return false
-  return dept.children.some(child => isDescendantOf(child, parentId))
+  return dept.children.some(child => isDescendantOf(child, parentCode))
 }
 
 // 폼 초기화
 function resetForm() {
   departmentCode.value = ''
   departmentName.value = ''
-  parentId.value = props.parentDepartment?.departmentId ?? null
+  parentCode.value = props.parentDepartment?.departmentCode ?? null  // v2.2.1: parentCode 사용
   sortOrder.value = 0
   useYn.value = 'Y'
 }
@@ -138,7 +139,7 @@ function resetForm() {
 function fillForm(department: Department) {
   departmentCode.value = department.departmentCode
   departmentName.value = department.departmentName
-  parentId.value = department.parentId ?? null
+  parentCode.value = department.parentCode ?? null  // v2.2.1: parentCode 사용
   sortOrder.value = department.sortOrder
   useYn.value = department.useYn
 }
@@ -148,19 +149,20 @@ function handleSubmit() {
   if (!isValid.value || !codeValidation.value.isValid || props.loading) return
 
   if (isEditMode.value) {
+    // v2.2.1: parentCode 사용 (백엔드 DTO 일치)
     const data: DepartmentUpdateRequest = {
-      departmentCode: departmentCode.value.trim(),
       departmentName: departmentName.value.trim(),
-      parentId: parentId.value ?? undefined,
+      parentCode: parentCode.value ?? undefined,
       sortOrder: sortOrder.value,
       useYn: useYn.value
     }
     emit('submit', data)
   } else {
+    // v2.2.1: parentCode 사용 (백엔드 DTO 일치)
     const data: DepartmentCreateRequest = {
       departmentCode: departmentCode.value.trim(),
       departmentName: departmentName.value.trim(),
-      parentId: parentId.value ?? undefined,
+      parentCode: parentCode.value ?? undefined,
       sortOrder: sortOrder.value
     }
     emit('submit', data)
@@ -183,9 +185,10 @@ watch(() => props.department, (newDepartment) => {
 }, { immediate: true })
 
 // 상위 부서 변경 감지 (하위 부서 추가 시)
+// v2.2.1: parentCode 사용
 watch(() => props.parentDepartment, (newParent) => {
   if (!props.department && newParent) {
-    parentId.value = newParent.departmentId
+    parentCode.value = newParent.departmentCode
   }
 }, { immediate: true })
 
@@ -220,9 +223,9 @@ defineExpose({ resetForm })
         :disabled="loading"
       />
 
-      <!-- 상위 부서 -->
+      <!-- 상위 부서 (v2.2.1: parentCode 사용) -->
       <Select
-        v-model="parentId"
+        v-model="parentCode"
         :options="parentOptions"
         label="상위 부서"
         placeholder="상위 부서 선택"

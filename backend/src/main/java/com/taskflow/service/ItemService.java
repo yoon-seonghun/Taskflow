@@ -1,6 +1,9 @@
 package com.taskflow.service;
 
+import com.taskflow.dto.item.AncestorResponse;
 import com.taskflow.dto.item.CrossBoardSearchRequest;
+import com.taskflow.dto.item.IncompleteChildrenResponse;
+import com.taskflow.dto.item.ItemCompleteRequest;
 import com.taskflow.dto.item.ItemCreateRequest;
 import com.taskflow.dto.item.ItemPageResponse;
 import com.taskflow.dto.item.ItemPropertySortRequest;
@@ -8,6 +11,8 @@ import com.taskflow.dto.item.ItemReorderRequest;
 import com.taskflow.dto.item.ItemResponse;
 import com.taskflow.dto.item.ItemSearchRequest;
 import com.taskflow.dto.item.ItemUpdateRequest;
+import com.taskflow.dto.item.SubTaskCreateRequest;
+import com.taskflow.dto.item.SubTaskReorderRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -202,4 +207,100 @@ public interface ItemService {
      * @return 페이징된 공유받은 업무 목록
      */
     ItemPageResponse getSharedItems(String username, CrossBoardSearchRequest request);
+
+    // =============================================
+    // 하위 업무 조회 (v2.2)
+    // =============================================
+
+    /**
+     * 하위 업무 목록 조회
+     *
+     * @param parentItemId    부모 업무 ID
+     * @param includeCompleted 완료 포함 여부
+     * @param includeDeleted   삭제 포함 여부
+     * @return 하위 업무 목록
+     */
+    List<ItemResponse> getChildren(Long parentItemId, Boolean includeCompleted, Boolean includeDeleted);
+
+    /**
+     * 업무 트리 조회 (부모 + 모든 하위)
+     *
+     * @param itemId           업무 ID
+     * @param maxDepth         조회 깊이 (null이면 전체)
+     * @param includeCompleted 완료 포함 여부
+     * @return 트리 구조의 업무 응답
+     */
+    ItemResponse getItemTree(Long itemId, Integer maxDepth, Boolean includeCompleted);
+
+    /**
+     * 상위 계층 조회 (Breadcrumb용)
+     *
+     * @param itemId 업무 ID
+     * @return 상위 업무 목록 (최상위부터)
+     */
+    List<AncestorResponse> getAncestors(Long itemId);
+
+    /**
+     * 부모 업무 조회
+     *
+     * @param itemId 업무 ID
+     * @return 부모 업무 (없으면 null)
+     */
+    ItemResponse getParent(Long itemId);
+
+    /**
+     * 루트 업무 목록 조회 (보드별)
+     *
+     * @param boardId          보드 ID
+     * @param includeCompleted 완료 포함 여부
+     * @param includeDeleted   삭제 포함 여부
+     * @return 루트 업무 목록
+     */
+    List<ItemResponse> getRootItemsByBoardId(Long boardId, Boolean includeCompleted, Boolean includeDeleted);
+
+    // =============================================
+    // 하위 업무 등록/수정 (v2.2)
+    // =============================================
+
+    /**
+     * 하위 업무 등록
+     *
+     * @param boardId      보드 ID
+     * @param parentItemId 부모 업무 ID
+     * @param request      등록 요청
+     * @param createdBy    생성자 사용자명
+     * @return 생성된 하위 업무 응답
+     */
+    ItemResponse createSubTask(Long boardId, Long parentItemId, SubTaskCreateRequest request, String createdBy);
+
+    /**
+     * 하위 업무 순서 변경
+     *
+     * @param parentItemId 부모 업무 ID
+     * @param request      순서 변경 요청
+     * @param updatedBy    수정자 사용자명
+     */
+    void reorderChildren(Long parentItemId, SubTaskReorderRequest request, String updatedBy);
+
+    // =============================================
+    // 하위 업무 완료 처리 (v2.2)
+    // =============================================
+
+    /**
+     * 업무 완료 처리 (하위 업무 체크 포함)
+     *
+     * @param itemId      업무 ID
+     * @param request     완료 요청 (강제 완료 옵션)
+     * @param completedBy 완료자 사용자명
+     * @return 완료된 업무 응답 또는 미완료 하위 업무 정보
+     */
+    Object completeItemWithChildren(Long itemId, ItemCompleteRequest request, String completedBy);
+
+    /**
+     * 미완료 하위 업무 조회
+     *
+     * @param itemId 업무 ID
+     * @return 미완료 하위 업무 정보 (없으면 null)
+     */
+    IncompleteChildrenResponse getIncompleteChildren(Long itemId);
 }

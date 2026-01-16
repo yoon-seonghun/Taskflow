@@ -9,7 +9,13 @@ import type {
   ItemTransferRequest,
   ItemShare,
   ItemPropertySortRequest,
-  ItemReorderRequest
+  ItemReorderRequest,
+  // v2.2: 하위 업무 관련 타입
+  SubTaskCreateRequest,
+  SubTaskReorderRequest,
+  AncestorResponse,
+  ItemCompleteRequest,
+  IncompleteChildrenResponse
 } from '@/types/item'
 import type { Share, ShareRequest, ShareUpdateRequest } from '@/types/share'
 
@@ -165,5 +171,74 @@ export const itemApi = {
    */
   reorderItem(boardId: number, data: ItemReorderRequest) {
     return put<void>(`/boards/${boardId}/items/reorder`, data)
+  },
+
+  // =============================================
+  // v2.2: 하위 업무 (Sub-Task) API
+  // =============================================
+
+  /**
+   * 하위 업무 목록 조회
+   */
+  getChildren(boardId: number, parentItemId: number, params?: { includeCompleted?: boolean; includeDeleted?: boolean }) {
+    return get<Item[]>(`/boards/${boardId}/items/${parentItemId}/children`, params)
+  },
+
+  /**
+   * 업무 트리 조회 (부모 + 모든 하위)
+   */
+  getItemTree(boardId: number, itemId: number, params?: { maxDepth?: number; includeCompleted?: boolean }) {
+    return get<Item>(`/boards/${boardId}/items/${itemId}/tree`, params)
+  },
+
+  /**
+   * 상위 계층 조회 (Breadcrumb용)
+   */
+  getAncestors(boardId: number, itemId: number) {
+    return get<AncestorResponse[]>(`/boards/${boardId}/items/${itemId}/ancestors`)
+  },
+
+  /**
+   * 부모 업무 조회
+   */
+  getParent(boardId: number, itemId: number) {
+    return get<Item | null>(`/boards/${boardId}/items/${itemId}/parent`)
+  },
+
+  /**
+   * 루트 업무 목록 조회 (보드별)
+   */
+  getRootItems(boardId: number, params?: { includeCompleted?: boolean; includeDeleted?: boolean }) {
+    return get<Item[]>(`/boards/${boardId}/items/root`, params)
+  },
+
+  /**
+   * 하위 업무 등록
+   */
+  createSubTask(boardId: number, parentItemId: number, data: SubTaskCreateRequest) {
+    return post<Item>(`/boards/${boardId}/items/${parentItemId}/subtask`, data)
+  },
+
+  /**
+   * 하위 업무 순서 변경
+   */
+  reorderChildren(boardId: number, parentItemId: number, data: SubTaskReorderRequest) {
+    return put<void>(`/boards/${boardId}/items/${parentItemId}/subtask/reorder`, data)
+  },
+
+  /**
+   * 업무 완료 처리 (하위 업무 체크 포함)
+   * 미완료 하위 업무가 있으면 IncompleteChildrenResponse 반환
+   * 완료 성공 시 Item 반환
+   */
+  completeItemWithChildren(boardId: number, itemId: number, data?: ItemCompleteRequest) {
+    return put<Item | IncompleteChildrenResponse>(`/boards/${boardId}/items/${itemId}/complete-with-children`, data || {})
+  },
+
+  /**
+   * 미완료 하위 업무 조회
+   */
+  getIncompleteChildren(boardId: number, itemId: number) {
+    return get<IncompleteChildrenResponse>(`/boards/${boardId}/items/${itemId}/incomplete-children`)
   }
 }

@@ -119,6 +119,18 @@ function handleItemUpdated(item: unknown) {
   uiStore.handleSlideOverItemUpdated(item)
 }
 
+// v2.2: 아이템 네비게이션 핸들러 (하위 업무 간 이동)
+function handleNavigate(itemId: number) {
+  // 현재 props에서 boardId 유지하면서 itemId만 변경
+  const currentProps = componentProps.value as { boardId?: number; itemId?: number }
+  if (currentProps.boardId) {
+    uiStore.openSlideOver('ItemDetailPanel', {
+      boardId: currentProps.boardId,
+      itemId: itemId
+    })
+  }
+}
+
 // ESC 키 핸들러
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && isVisible.value) {
@@ -273,6 +285,7 @@ watch(isVisible, (visible) => {
               v-bind="componentProps"
               @close="closePanel"
               @updated="handleItemUpdated"
+              @navigate="handleNavigate"
             />
             <!-- 디버그: resolvedComponent가 없는 경우 -->
             <div v-else class="flex flex-col items-center justify-center h-full text-gray-500">

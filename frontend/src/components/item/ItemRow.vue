@@ -14,6 +14,7 @@ import type { Item, ItemStatus, Priority } from '@/types/item'
 import type { PropertyDef, PropertyOption } from '@/types/property'
 import type { BoardCategory } from '@/types/board'
 import ItemBadges from './ItemBadges.vue'
+import ParentInfoTooltip from './ParentInfoTooltip.vue'
 
 interface ColumnWidths {
   title: number
@@ -41,6 +42,9 @@ interface Props {
   draggable?: boolean
   dragClass?: Record<string, boolean>
   isDragOver?: boolean
+  // v2.2: 하위 업무 확장/축소
+  expanded?: boolean
+  hasChildren?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -60,7 +64,9 @@ const props = withDefaults(defineProps<Props>(), {
   }),
   draggable: false,
   dragClass: () => ({}),
-  isDragOver: false
+  isDragOver: false,
+  expanded: false,
+  hasChildren: false
 })
 
 const emit = defineEmits<{
@@ -71,6 +77,8 @@ const emit = defineEmits<{
   (e: 'delete', itemId: number): void
   (e: 'restore', itemId: number): void
   (e: 'categoryChange', item: Item, newCategoryId: number | null): void  // v2.0: 카테고리 변경 시 모달 오픈
+  // v2.2: 하위 업무 확장/축소
+  (e: 'toggleExpand', itemId: number): void
   // 드래그 앤 드롭 이벤트
   (e: 'dragstart', event: DragEvent): void
   (e: 'dragover', event: DragEvent): void
@@ -139,13 +147,26 @@ const isInactive = computed(() =>
   props.item.status === 'COMPLETED' || props.item.status === 'DELETED'
 )
 
+// v2.2: 아이템 깊이
+const itemDepth = computed(() => props.item.itemDepth ?? 0)
+
+// v2.2: 깊이별 왼쪽 테두리 스타일
+const depthBorderClass = computed(() => {
+  switch (itemDepth.value) {
+    case 1: return 'border-l-[3px] border-l-blue-400'
+    case 2: return 'border-l-[3px] border-l-purple-400'
+    default: return ''
+  }
+})
+
 // 행 클래스 (Compact UI: 32px)
 const rowClasses = computed(() => [
   'flex items-center h-8 border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer',
   props.selected ? 'bg-primary-50' : '',
   isInactive.value ? 'opacity-60' : '',
   props.dragClass?.['sortable-dragging'] ? 'opacity-50 bg-gray-100' : '',
-  props.isDragOver ? 'border-t-2 border-t-primary-500' : ''
+  props.isDragOver ? 'border-t-2 border-t-primary-500' : '',
+  depthBorderClass.value
 ])
 
 // 셀 클릭 핸들러 (토글 지원)
@@ -497,9 +518,73 @@ onUnmounted(() => {
         />
       </template>
       <template v-else>
+        <!-- v2.2: 깊이별 인덴트 -->
+        <div
+          v-if="itemDepth > 0"
+          class="flex-shrink-0"
+          :style="{ width: `${itemDepth * 24}px` }"
+        >
+          <!-- 계층 연결선 -->
+          <div class="flex items-center h-full">
+            <div class="relative w-4 h-full flex items-center">
+              <div
+                class="absolute left-1/2 w-2.5 h-px"
+                :class="itemDepth === 1 ? 'bg-blue-300' : 'bg-purple-300'"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- v2.2: 확장/축소 토글 버튼 -->
+        <button
+          v-if="hasChildren"
+          class="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 transition-colors"
+          :title="expanded ? '접기' : '펼치기'"
+          @click.stop="emit('toggleExpand', item.itemId)"
+        >
+          <svg
+            class="w-3.5 h-3.5 text-gray-500 transition-transform duration-200"
+            :class="{ 'rotate-90': expanded }"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <!-- 하위 업무가 없을 때 공간 맞춤용 -->
+        <div v-else-if="itemDepth === 0" class="w-5 flex-shrink-0" />
+
         <!-- 공유/이관 배지 -->
         <ItemBadges :item="item" size="sm" :show-owner-name="false" class="mr-1" />
-        <span class="truncate text-[13px] text-gray-900 flex-1" :title="item.description">{{ item.title }}</span>
+
+        <!-- v2.2: 하위 업무일 때 부모 정보 툴팁 표시 -->
+        <ParentInfoTooltip
+          v-if="itemDepth > 0"
+          :parent="item.parentInfo"
+          :root="item.rootInfo"
+          :description="item.description"
+          placement="right"
+          class="mr-1"
+        />
+
+        <span class="truncate text-[13px] text-gray-900 flex-1">{{ item.title }}</span>
+
+        <!-- v2.2: 하위 업무 진행률 배지 -->
+        <span
+          v-if="(item.childCount ?? 0) > 0"
+          class="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded mr-1"
+          :class="(item.completedChildCount ?? 0) === item.childCount
+            ? 'text-green-700 bg-green-100'
+            : 'text-gray-500 bg-gray-100'"
+          :title="`하위 업무 ${item.completedChildCount ?? 0}/${item.childCount} 완료`"
+        >
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          {{ item.completedChildCount ?? 0 }}/{{ item.childCount }}
+        </span>
+
         <!-- 지연 표시 -->
         <span
           v-if="isOverdue"
@@ -511,6 +596,7 @@ onUnmounted(() => {
           </svg>
           {{ overdueDays }}일 지연
         </span>
+
         <!-- Notion 스타일 '열기' 버튼 (hover 시 표시) -->
         <button
           class="flex-shrink-0 opacity-0 group-hover/title:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded"

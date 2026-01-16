@@ -102,6 +102,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '설정' }
       },
       {
+        path: 'notifications',
+        name: 'Notifications',
+        component: () => import('@/views/NotificationsView.vue'),
+        meta: { title: '알림' }
+      },
+      {
         path: 'boards/:boardId/items/:itemId',
         name: 'ItemDetail',
         component: () => import('@/views/ItemDetailView.vue'),

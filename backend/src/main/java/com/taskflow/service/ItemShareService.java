@@ -57,14 +57,15 @@ public class ItemShareService {
             throw new BusinessException("이미 공유된 사용자입니다.");
         }
 
-        // 자기 자신에게 공유 불가
-        if (request.getUsername().equals(item.getCreatedBy())) {
-            throw new BusinessException("업무 생성자에게는 공유할 수 없습니다.");
+        // v2.2.1: 소유자에게 공유 불가 (기존: 생성자)
+        if (request.getUsername().equals(item.getOwnerUsername())) {
+            throw new BusinessException("업무 소유자에게는 공유할 수 없습니다.");
         }
 
         ItemShare itemShare = ItemShare.builder()
                 .itemId(itemId)
                 .username(request.getUsername())
+                .shareType("SHARE")  // 공유 유형 명시 (SHARE/ASSIGN)
                 .permission(request.getPermission())
                 .createdBy(currentUsername)
                 .build();
@@ -216,6 +217,11 @@ public class ItemShareService {
         Item item = itemMapper.findById(itemId)
                 .orElseThrow(() -> new BusinessException("업무를 찾을 수 없습니다."));
 
+        // v2.2: 하위 업무는 단독 이관 불가
+        if (item.getItemDepth() != null && item.getItemDepth() > 0) {
+            throw new BusinessException("하위 업무는 단독으로 이관할 수 없습니다. 기본 업무를 이관해주세요.");
+        }
+
         // 이관 권한 확인
         if (!canTransfer(itemId, currentUsername)) {
             throw new BusinessException("업무를 이관할 권한이 없습니다.");
@@ -223,17 +229,20 @@ public class ItemShareService {
 
         Long targetBoardId = request.getTargetBoardId();
         String targetBoardName = null;
+        String newOwnerUsername = null;  // v2.2.1: 이관 후 새 소유자
 
         // targetUsername이 지정된 경우, 해당 사용자의 "업무이관" 보드 찾기 또는 생성
         if (request.getTargetUsername() != null) {
             Board transferBoard = getOrCreateTransferBoard(request.getTargetUsername(), currentUsername);
             targetBoardId = transferBoard.getBoardId();
             targetBoardName = transferBoard.getBoardName();
+            newOwnerUsername = request.getTargetUsername();  // v2.2.1: 이관 대상자가 새 소유자
         } else if (targetBoardId != null) {
             // 대상 보드 조회
             Board targetBoard = boardMapper.findById(targetBoardId)
                     .orElseThrow(() -> new BusinessException("이관 대상 보드를 찾을 수 없습니다."));
             targetBoardName = targetBoard.getBoardName();
+            newOwnerUsername = targetBoard.getOwnerUsername();  // v2.2.1: 대상 보드 소유자가 새 소유자
 
             // 대상 보드 접근 권한 확인
             if (!boardMapper.hasAccess(targetBoardId, currentUsername)) {
@@ -251,8 +260,8 @@ public class ItemShareService {
         Long originalBoardId = item.getBoardId();
         String originalBoardName = item.getBoardName();
 
-        // 업무 이관 실행
-        int updated = itemMapper.transferToBoard(itemId, targetBoardId, originalBoardId, currentUsername);
+        // 업무 이관 실행 - v2.2.1: 소유자 변경 및 하위 업무 함께 이관
+        int updated = itemMapper.transferToBoard(itemId, targetBoardId, newOwnerUsername, originalBoardId, currentUsername);
         if (updated == 0) {
             throw new BusinessException("업무 이관에 실패했습니다.");
         }
@@ -323,8 +332,8 @@ public class ItemShareService {
             return false;
         }
 
-        // 업무 생성자인 경우
-        if (username.equals(item.getCreatedBy())) {
+        // v2.2.1: 업무 소유자인 경우 (기존: 생성자)
+        if (username.equals(item.getOwnerUsername())) {
             return true;
         }
 
@@ -370,8 +379,8 @@ public class ItemShareService {
             return false;
         }
 
-        // 업무 생성자인 경우
-        if (username.equals(item.getCreatedBy())) {
+        // v2.2.1: 업무 소유자인 경우 (기존: 생성자)
+        if (username.equals(item.getOwnerUsername())) {
             return true;
         }
 
@@ -395,8 +404,8 @@ public class ItemShareService {
             return null;
         }
 
-        // 업무 생성자인 경우 OWNER 권한
-        if (username.equals(item.getCreatedBy())) {
+        // v2.2.1: 업무 소유자인 경우 OWNER 권한 (기존: 생성자)
+        if (username.equals(item.getOwnerUsername())) {
             return "OWNER";
         }
 

@@ -133,6 +133,7 @@ function handleSelect(user: User) {
 }
 
 // 상태 토글
+// v2.2.1: 백엔드 UserUpdateRequest의 name 필드가 @NotBlank이므로 함께 전송
 async function handleToggleStatus(user: User) {
   const newStatus = user.useYn === 'Y' ? 'N' : 'Y'
   const action = newStatus === 'Y' ? '활성화' : '비활성화'
@@ -147,7 +148,11 @@ async function handleToggleStatus(user: User) {
   if (!confirmed) return
 
   try {
-    await userApi.updateUser(user.userId, { useYn: newStatus })
+    // v2.2.1: name 필드 필수 포함 (백엔드 @NotBlank 검증)
+    await userApi.updateUser(user.userId, {
+      name: user.userName,
+      useYn: newStatus
+    })
     uiStore.showSuccess(`사용자가 ${action}되었습니다.`)
     await loadUsers()
   } catch (error: any) {

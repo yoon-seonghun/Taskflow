@@ -13,6 +13,7 @@ import { useSlideOver } from '@/composables/useSlideOver'
 import { useToast } from '@/composables/useToast'
 import { Select, Spinner, EmptyState, Badge, Pagination } from '@/components/common'
 import ItemBadges from '@/components/item/ItemBadges.vue'
+import ParentInfoTooltip from '@/components/item/ParentInfoTooltip.vue'
 import type { Item, Priority, ItemStatus, CrossBoardSearchRequest } from '@/types/item'
 
 const boardStore = useBoardStore()
@@ -126,7 +127,18 @@ function handleItemUpdated(updatedItem: unknown) {
   // 로컬 목록에서 해당 아이템 업데이트
   const idx = sharedItems.value.findIndex(i => i.itemId === updated.itemId)
   if (idx !== -1) {
-    sharedItems.value[idx] = { ...sharedItems.value[idx], ...updated }
+    // 공유/배정 관련 필드는 기존 값 유지 (소유자 관점과 공유받은 관점이 다르므로)
+    const preservedFields = {
+      isSharedToMe: sharedItems.value[idx].isSharedToMe,
+      isAssignedToMe: sharedItems.value[idx].isAssignedToMe,
+      sharedByUsername: sharedItems.value[idx].sharedByUsername,
+      sharedByUserName: sharedItems.value[idx].sharedByUserName,
+      assignedByUsername: sharedItems.value[idx].assignedByUsername,
+      assignedByUserName: sharedItems.value[idx].assignedByUserName,
+      assignedAt: sharedItems.value[idx].assignedAt,
+      ownerName: sharedItems.value[idx].ownerName
+    }
+    sharedItems.value[idx] = { ...sharedItems.value[idx], ...updated, ...preservedFields }
   }
 }
 
@@ -373,23 +385,38 @@ onMounted(() => {
 
                 <!-- 작업 내용 -->
                 <td class="px-4 h-12">
-                  <div class="flex items-center gap-2">
-                    <!-- 공유/이관 배지 -->
-                    <ItemBadges :item="item" size="sm" :show-owner-name="false" class="flex-shrink-0" />
-                    <span class="text-[13px] text-gray-900 truncate max-w-[250px]" :title="item.title">
-                      {{ item.title }}
-                    </span>
-                    <!-- Notion 스타일 '열기' 버튼 -->
-                    <button
-                      class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded"
-                      title="상세 패널 열기"
-                      @click.stop="handleItemClick(item)"
-                    >
-                      열기
-                    </button>
-                    <span v-if="item.boardName" class="px-1.5 py-0.5 text-[11px] bg-gray-100 text-gray-500 rounded flex-shrink-0">
-                      {{ item.boardName }}
-                    </span>
+                  <div class="flex items-center justify-between gap-2">
+                    <!-- 좌측: 배지 + 툴팁 + 제목 -->
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                      <!-- 공유/이관 배지 -->
+                      <ItemBadges :item="item" size="sm" :show-owner-name="false" class="flex-shrink-0" />
+                      <!-- v2.2: 하위 업무 툴팁 -->
+                      <ParentInfoTooltip
+                        v-if="(item.itemDepth ?? 0) > 0"
+                        :parent="item.parentInfo"
+                        :root="item.rootInfo"
+                        :description="item.description"
+                        placement="right"
+                        class="flex-shrink-0"
+                      />
+                      <span class="text-[13px] text-gray-900 truncate" :title="item.title">
+                        {{ item.title }}
+                      </span>
+                    </div>
+                    <!-- 우측: 열기 버튼 + 보드명 -->
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                      <!-- Notion 스타일 '열기' 버튼 -->
+                      <button
+                        class="opacity-0 group-hover:opacity-100 transition-opacity px-1.5 py-0.5 text-[11px] text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded"
+                        title="상세 패널 열기"
+                        @click.stop="handleItemClick(item)"
+                      >
+                        열기
+                      </button>
+                      <span v-if="item.boardName" class="px-1.5 py-0.5 text-[11px] bg-gray-100 text-gray-500 rounded">
+                        {{ item.boardName }}
+                      </span>
+                    </div>
                   </div>
                 </td>
 

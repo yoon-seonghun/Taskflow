@@ -643,14 +643,189 @@ export function useItemDrag<T, K = number>(
 }
 
 // =============================================
+// 하위 업무 D&D 제약 유틸리티 (v2.2)
+// =============================================
+
+/**
+ * 하위 업무가 있는 아이템 인터페이스
+ */
+export interface HierarchicalItem {
+  itemId: number
+  parentItemId?: number | null
+  itemDepth?: number
+}
+
+/**
+ * 하위 업무 D&D 제약 규칙
+ *
+ * 규칙:
+ * 1. 기본 업무 (depth 0)는 다른 기본 업무 사이로만 이동 가능
+ * 2. 하위 업무 (depth > 0)는 같은 부모 내에서만 순서 변경 가능
+ * 3. 하위 업무를 다른 부모로 이동 불가
+ * 4. 하위 업무를 기본 업무로 승격 불가 (D&D로는)
+ */
+export function canDropSubTask<T extends HierarchicalItem>(
+  draggedItem: T,
+  targetItem: T
+): boolean {
+  // 1. 같은 아이템은 무시
+  if (draggedItem.itemId === targetItem.itemId) return false
+
+  const draggedDepth = draggedItem.itemDepth ?? 0
+  const targetDepth = targetItem.itemDepth ?? 0
+
+  // 2. 기본 업무 (depth 0)
+  if (draggedDepth === 0) {
+    // 기본 업무는 다른 기본 업무 사이로만 이동 가능
+    return targetDepth === 0
+  }
+
+  // 3. 하위 업무 (depth 1 또는 2)
+  // 같은 부모 내에서만 순서 변경 가능
+  return draggedItem.parentItemId === targetItem.parentItemId
+}
+
+/**
+ * D&D 제약 위반 시 토스트 메시지 반환
+ */
+export function getSubTaskDropErrorMessage<T extends HierarchicalItem>(
+  draggedItem: T,
+  targetItem: T
+): string | null {
+  if (draggedItem.itemId === targetItem.itemId) return null
+
+  const draggedDepth = draggedItem.itemDepth ?? 0
+  const targetDepth = targetItem.itemDepth ?? 0
+
+  // 기본 업무를 하위 업무 사이로 이동 시도
+  if (draggedDepth === 0 && targetDepth !== 0) {
+    return '기본 업무는 다른 기본 업무 사이로만 이동할 수 있습니다'
+  }
+
+  // 하위 업무를 다른 부모로 이동 시도
+  if (draggedDepth > 0 && draggedItem.parentItemId !== targetItem.parentItemId) {
+    return '하위 업무는 같은 부모 내에서만 순서를 변경할 수 있습니다'
+  }
+
+  return null
+}
+
+/**
+ * 하위 업무 D&D용 canDrop 함수 생성 헬퍼
+ *
+ * @param showToast - 토스트 메시지 표시 함수 (선택)
+ * @returns canDrop 함수
+ *
+ * @example
+ * const canDrop = createSubTaskCanDrop((msg) => toast.warning(msg))
+ *
+ * const { handleDrop } = useSortableDrag({
+ *   items: itemsRef,
+ *   canDrop,
+ *   // ...
+ * })
+ */
+export function createSubTaskCanDrop<T extends HierarchicalItem>(
+  showToast?: (message: string) => void
+): (draggedItem: T, targetItem: T, draggedIndex: number, targetIndex: number) => boolean {
+  return (draggedItem, targetItem, _draggedIndex, _targetIndex) => {
+    const canDrop = canDropSubTask(draggedItem, targetItem)
+
+    if (!canDrop && showToast) {
+      const errorMessage = getSubTaskDropErrorMessage(draggedItem, targetItem)
+      if (errorMessage) {
+        showToast(errorMessage)
+      }
+    }
+
+    return canDrop
+  }
+}
+
+/**
+ * 하위 업무 D&D용 시각적 피드백 CSS 클래스 반환
+ *
+ * @param isDragging - 드래그 중인지 여부
+ * @param isOver - 드래그 오버 중인지 여부
+ * @param canDrop - 드롭 가능 여부
+ * @returns CSS 클래스 객체
+ */
+export function getSubTaskDragClass(
+  isDragging: boolean,
+  isOver: boolean,
+  canDrop: boolean
+): Record<string, boolean> {
+  return {
+    'sortable-dragging': isDragging,
+    'sortable-drag-over': isOver,
+    'can-drop': isOver && canDrop,
+    'cannot-drop': isOver && !canDrop,
+    'parent-highlight': isDragging
+  }
+}
+
+/**
+ * 하위 업무가 포함된 목록에서 같은 부모의 아이템만 필터링
+ *
+ * @param items - 전체 아이템 목록
+ * @param parentItemId - 부모 아이템 ID (null이면 루트 아이템)
+ * @returns 필터링된 아이템 목록
+ */
+export function filterSiblingItems<T extends HierarchicalItem>(
+  items: T[],
+  parentItemId: number | null | undefined
+): T[] {
+  return items.filter(item => {
+    if (parentItemId === null || parentItemId === undefined) {
+      // 루트 아이템만 필터
+      return item.parentItemId === null || item.parentItemId === undefined
+    }
+    // 같은 부모의 하위 아이템만 필터
+    return item.parentItemId === parentItemId
+  })
+}
+
+/**
+ * 이동 후 새로운 순서를 계산하는 유틸리티
+ *
+ * @param items - 아이템 목록
+ * @param fromIndex - 원래 인덱스
+ * @param toIndex - 목표 인덱스
+ * @returns 재정렬된 아이템 목록
+ */
+export function reorderItems<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  const result = [...items]
+  const [movedItem] = result.splice(fromIndex, 1)
+  result.splice(toIndex, 0, movedItem)
+  return result
+}
+
+// =============================================
 // 공통 CSS 스타일 (style.css에 추가 필요)
 // =============================================
 /*
 .sortable-dragging {
   opacity: 0.5;
+  background-color: #e0f2fe;
 }
 
 .sortable-drag-over {
   border-top: 2px solid #3B82F6;
+}
+
+.sortable-drag-over.can-drop {
+  border-top: 2px solid #3B82F6;
+  background-color: #eff6ff;
+}
+
+.sortable-drag-over.cannot-drop {
+  border-top: 2px solid #ef4444;
+  background-color: #fef2f2;
+  cursor: not-allowed;
+}
+
+.parent-highlight {
+  background-color: #f0f9ff;
+  box-shadow: inset 0 0 0 2px #60a5fa;
 }
 */

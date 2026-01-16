@@ -39,8 +39,8 @@ public class ItemAssignmentServiceImpl implements ItemAssignmentService {
             throw new IllegalArgumentException("업무를 찾을 수 없습니다: " + itemId);
         }
 
-        // 2. 소유자만 배정 가능
-        if (!item.getCreatedBy().equals(currentUsername)) {
+        // 2. 소유자만 배정 가능 (v2.2.1: ownerUsername 사용)
+        if (!item.getOwnerUsername().equals(currentUsername)) {
             throw new IllegalStateException("업무 소유자만 담당자를 배정할 수 있습니다.");
         }
 
@@ -49,8 +49,8 @@ public class ItemAssignmentServiceImpl implements ItemAssignmentService {
             throw new IllegalArgumentException("자기 자신에게는 배정할 수 없습니다.");
         }
 
-        // 4. 업무 소유자에게 배정 불가
-        if (request.getAssigneeUsername().equals(item.getCreatedBy())) {
+        // 4. 업무 소유자에게 배정 불가 (v2.2.1: ownerUsername 사용)
+        if (request.getAssigneeUsername().equals(item.getOwnerUsername())) {
             throw new IllegalArgumentException("업무 소유자에게는 배정할 수 없습니다.");
         }
 
@@ -138,8 +138,8 @@ public class ItemAssignmentServiceImpl implements ItemAssignmentService {
             throw new IllegalArgumentException("업무를 찾을 수 없습니다: " + itemId);
         }
 
-        // 2. 소유자만 취소 가능
-        if (!item.getCreatedBy().equals(currentUsername)) {
+        // 2. 소유자만 취소 가능 (v2.2.1: ownerUsername 사용)
+        if (!item.getOwnerUsername().equals(currentUsername)) {
             throw new IllegalStateException("업무 소유자만 배정을 취소할 수 있습니다.");
         }
 
@@ -164,8 +164,8 @@ public class ItemAssignmentServiceImpl implements ItemAssignmentService {
             throw new IllegalArgumentException("업무를 찾을 수 없습니다: " + itemId);
         }
 
-        // 2. 소유자만 권한 수정 가능
-        if (!item.getCreatedBy().equals(currentUsername)) {
+        // 2. 소유자만 권한 수정 가능 (v2.2.1: ownerUsername 사용)
+        if (!item.getOwnerUsername().equals(currentUsername)) {
             throw new IllegalStateException("업무 소유자만 권한을 수정할 수 있습니다.");
         }
 
@@ -189,8 +189,8 @@ public class ItemAssignmentServiceImpl implements ItemAssignmentService {
             return ItemAccessInfo.noAccess();
         }
 
-        // 2. 소유자인 경우
-        if (currentUsername != null && currentUsername.equals(item.getCreatedBy())) {
+        // 2. 소유자인 경우 (v2.2.1: ownerUsername 사용)
+        if (currentUsername != null && currentUsername.equals(item.getOwnerUsername())) {
             return ItemAccessInfo.forOwner();
         }
 

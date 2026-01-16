@@ -35,6 +35,16 @@ public class ItemResponse {
     private String boardName;
 
     /**
+     * 소유자 USERNAME (v2.2.1)
+     */
+    private String ownerUsername;
+
+    /**
+     * 소유자 이름 (v2.2.1)
+     */
+    private String ownerName;
+
+    /**
      * 그룹 ID
      */
     private Long groupId;
@@ -63,6 +73,60 @@ public class ItemResponse {
      * 카테고리 색상
      */
     private String categoryColor;
+
+    // =============================================
+    // 하위 업무 관련 필드 (v2.2)
+    // =============================================
+
+    /**
+     * 부모 업무 ID (NULL=기본 업무)
+     */
+    private Long parentItemId;
+
+    /**
+     * 업무 깊이 (0=기본, 1~2=하위)
+     */
+    private Integer itemDepth;
+
+    /**
+     * 하위 업무 내 정렬 순서
+     */
+    private Integer childSortOrder;
+
+    /**
+     * 하위 업무 수
+     */
+    private Integer childCount;
+
+    /**
+     * 완료된 하위 업무 수
+     */
+    private Integer completedChildCount;
+
+    /**
+     * 하위 업무 존재 여부
+     */
+    private Boolean hasChildren;
+
+    /**
+     * 하위 업무 생성 가능 여부 (depth < 2)
+     */
+    private Boolean canCreateChild;
+
+    /**
+     * 부모 업무 정보 (하위 업무인 경우)
+     */
+    private ParentInfo parentInfo;
+
+    /**
+     * 최상위 업무 정보 (하위 업무인 경우)
+     */
+    private ParentInfo rootInfo;
+
+    /**
+     * 하위 업무 목록 (트리 조회용)
+     */
+    private List<ItemResponse> children;
 
     /**
      * 제목
@@ -128,6 +192,11 @@ public class ItemResponse {
      * 댓글 수
      */
     private Integer commentCount;
+
+    /**
+     * 공유 사용자 수 (v2.2.1)
+     */
+    private Integer shareCount;
 
     /**
      * 생성자명
@@ -270,6 +339,8 @@ public class ItemResponse {
                 .itemId(item.getItemId())
                 .boardId(item.getBoardId())
                 .boardName(item.getBoardName())
+                .ownerUsername(item.getOwnerUsername())
+                .ownerName(item.getOwnerName())
                 .groupId(item.getGroupId())
                 .groupName(item.getGroupName())
                 .groupColor(item.getGroupColor())
@@ -287,6 +358,7 @@ public class ItemResponse {
                 .dueDate(item.getDueDate())
                 .deletedAt(item.getDeletedAt())
                 .commentCount(item.getCommentCount())
+                .shareCount(item.getShareCount())
                 .createdByName(item.getCreatedByName())
                 .updatedByName(item.getUpdatedByName())
                 .createdAt(item.getCreatedAt())
@@ -310,7 +382,58 @@ public class ItemResponse {
                 .assignedToUsername(item.getAssignedToUsername())
                 .assignedToUserName(item.getAssignedToUserName())
                 .createdBy(item.getCreatedBy())
+                // 하위 업무 정보 (v2.2)
+                .parentItemId(item.getParentItemId())
+                .itemDepth(item.getItemDepth() != null ? item.getItemDepth() : 0)
+                .childSortOrder(item.getChildSortOrder())
+                .childCount(item.getChildCount())
+                .completedChildCount(item.getCompletedChildCount())
+                .hasChildren(item.getHasChildren())
+                .canCreateChild(item.getCanCreateChild())
+                .parentInfo(buildParentInfo(item))
+                .rootInfo(buildRootInfo(item))
+                .children(buildChildren(item))
                 .build();
+    }
+
+    /**
+     * 부모 업무 정보 빌드
+     */
+    private static ParentInfo buildParentInfo(Item item) {
+        if (item.getParentItemId() == null) {
+            return null;
+        }
+        return ParentInfo.builder()
+                .itemId(item.getParentItemId())
+                .title(item.getParentTitle())
+                .status(item.getParentStatus())
+                .build();
+    }
+
+    /**
+     * 최상위 업무 정보 빌드
+     */
+    private static ParentInfo buildRootInfo(Item item) {
+        if (item.getRootItemId() == null || item.getParentItemId() == null) {
+            return null;
+        }
+        return ParentInfo.builder()
+                .itemId(item.getRootItemId())
+                .title(item.getRootTitle())
+                .status(item.getRootStatus())
+                .build();
+    }
+
+    /**
+     * 하위 업무 목록 빌드 (재귀)
+     */
+    private static List<ItemResponse> buildChildren(Item item) {
+        if (item.getChildren() == null || item.getChildren().isEmpty()) {
+            return null;
+        }
+        return item.getChildren().stream()
+                .map(ItemResponse::from)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -389,5 +512,31 @@ public class ItemResponse {
 
     public String getTransferredByUserName() {
         return transferredByUserName;
+    }
+
+    // =============================================
+    // 내부 클래스: 부모/루트 업무 정보 (v2.2)
+    // =============================================
+
+    /**
+     * 부모/루트 업무 정보 DTO
+     */
+    @Getter
+    @Builder
+    public static class ParentInfo {
+        /**
+         * 업무 ID
+         */
+        private Long itemId;
+
+        /**
+         * 업무 제목
+         */
+        private String title;
+
+        /**
+         * 업무 상태
+         */
+        private String status;
     }
 }
