@@ -173,6 +173,10 @@ cp "${PROJECT_ROOT}/backend/settings.gradle.kts" "${DIST_DIR}/backend/"
 [ -f "${PROJECT_ROOT}/backend/gradlew" ] && cp "${PROJECT_ROOT}/backend/gradlew" "${DIST_DIR}/backend/"
 [ -f "${PROJECT_ROOT}/backend/gradlew.bat" ] && cp "${PROJECT_ROOT}/backend/gradlew.bat" "${DIST_DIR}/backend/"
 cp "${PROJECT_ROOT}/backend/Dockerfile" "${DIST_DIR}/backend/"
+# Lombok 설정 파일 (Docker 빌드 시 필요)
+[ -f "${PROJECT_ROOT}/backend/lombok.config" ] && cp "${PROJECT_ROOT}/backend/lombok.config" "${DIST_DIR}/backend/"
+# 외부 라이브러리 (Tibero JDBC 등)
+[ -d "${PROJECT_ROOT}/backend/libs" ] && cp -r "${PROJECT_ROOT}/backend/libs" "${DIST_DIR}/backend/"
 
 # Frontend 소스 및 빌드 결과 복사
 echo -e "  - Frontend 소스 복사..."

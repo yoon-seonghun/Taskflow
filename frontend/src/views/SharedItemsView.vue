@@ -251,6 +251,25 @@ onMounted(() => {
         </h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">다른 사용자가 공유해준 업무를 관리합니다.</p>
       </div>
+
+      <!-- 새로고침 버튼 -->
+      <button
+        type="button"
+        class="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+        title="새로고침"
+        :disabled="loading"
+        @click="loadData"
+      >
+        <svg
+          class="w-5 h-5"
+          :class="{ 'animate-spin': loading }"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
     </div>
 
     <!-- 통계 카드 -->

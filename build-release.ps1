@@ -184,6 +184,14 @@ if (Test-Path "$ProjectRoot\backend\gradlew.bat") {
     Copy-Item "$ProjectRoot\backend\gradlew.bat" "$DistDir\backend\"
 }
 Copy-Item "$ProjectRoot\backend\Dockerfile" "$DistDir\backend\"
+# Lombok 설정 파일 (Docker 빌드 시 필요)
+if (Test-Path "$ProjectRoot\backend\lombok.config") {
+    Copy-Item "$ProjectRoot\backend\lombok.config" "$DistDir\backend\"
+}
+# 외부 라이브러리 (Tibero JDBC 등)
+if (Test-Path "$ProjectRoot\backend\libs") {
+    Copy-Item -Recurse "$ProjectRoot\backend\libs" "$DistDir\backend\"
+}
 
 # Frontend 소스 및 빌드 결과 복사
 Write-Host "  - Frontend 소스 복사..."
