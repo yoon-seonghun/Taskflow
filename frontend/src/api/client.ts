@@ -141,6 +141,11 @@ client.interceptors.request.use(
       config.data = convertKeysToSnakeCase(config.data)
     }
 
+    // GET 요청 params도 snake_case로 변환
+    if (config.params && typeof config.params === 'object') {
+      config.params = convertKeysToSnakeCase(config.params)
+    }
+
     return config
   },
   (error) => Promise.reject(error)

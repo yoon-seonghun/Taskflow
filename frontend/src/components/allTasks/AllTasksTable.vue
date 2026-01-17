@@ -113,6 +113,23 @@ function hasChildren(item: AllItemResponse): boolean {
   return (item.children && item.children.length > 0) || (item.childCount ?? 0) > 0
 }
 
+// 트리를 완전히 평탄화 (flat 모드용 - 모든 아이템을 depth 0으로)
+function flattenAllItems(items: AllItemResponse[]): Array<{ item: AllItemResponse; depth: number }> {
+  const result: Array<{ item: AllItemResponse; depth: number }> = []
+
+  function collectAll(itemList: AllItemResponse[]) {
+    for (const item of itemList) {
+      result.push({ item, depth: 0 })
+      if (item.children && item.children.length > 0) {
+        collectAll(item.children)
+      }
+    }
+  }
+
+  collectAll(items)
+  return result
+}
+
 // 트리 모드에서 표시할 아이템 목록 (재귀)
 function flattenItems(items: AllItemResponse[], depth: number = 0): Array<{ item: AllItemResponse; depth: number }> {
   const result: Array<{ item: AllItemResponse; depth: number }> = []
@@ -120,12 +137,11 @@ function flattenItems(items: AllItemResponse[], depth: number = 0): Array<{ item
   for (const item of items) {
     result.push({ item, depth })
 
-    // tree 모드에서 확장된 아이템의 하위 업무 표시
-    if (props.childDisplayMode === 'tree' && item.children && item.children.length > 0 && isExpanded(item.itemId)) {
-      result.push(...flattenItems(item.children, depth + 1))
-    }
-    // collapse 모드에서는 확장된 것만 하위 표시
-    else if (props.childDisplayMode === 'collapse' && item.children && item.children.length > 0 && isExpanded(item.itemId)) {
+    // tree 모드: 항상 확장된 아이템의 하위 업무 표시
+    // collapse 모드: 확장된 것만 하위 표시
+    if ((props.childDisplayMode === 'tree' || props.childDisplayMode === 'collapse')
+        && item.children && item.children.length > 0
+        && isExpanded(item.itemId)) {
       result.push(...flattenItems(item.children, depth + 1))
     }
   }
@@ -136,8 +152,10 @@ function flattenItems(items: AllItemResponse[], depth: number = 0): Array<{ item
 // 표시할 아이템 목록
 const displayItems = computed(() => {
   if (props.childDisplayMode === 'flat') {
-    return props.items.map(item => ({ item, depth: 0 }))
+    // 평면 모드: 모든 아이템을 depth 0으로 평탄화
+    return flattenAllItems(props.items)
   }
+  // tree/collapse 모드: 확장 상태에 따라 표시
   return flattenItems(props.items, 0)
 })
 

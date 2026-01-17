@@ -158,10 +158,10 @@ const activeFilterCount = computed(() => {
 
 <template>
   <div class="space-y-3">
-    <!-- 기본 필터 (항상 표시) -->
-    <div class="flex flex-wrap items-center gap-2">
+    <!-- 기본 필터 (항상 표시) - 한 줄로 고정 -->
+    <div class="flex items-center gap-2">
       <!-- 키워드 검색 -->
-      <div class="flex-1 min-w-[200px]">
+      <div class="w-64 flex-shrink-0">
         <Input
           v-model="keyword"
           type="text"
@@ -177,24 +177,26 @@ const activeFilterCount = computed(() => {
         </Input>
       </div>
 
-      <!-- 하위 업무 표시 모드 -->
-      <Select
-        :model-value="filters.childDisplayMode"
-        :options="childDisplayModeOptions"
-        :disabled="loading"
-        class="w-24"
-        @update:model-value="onChildDisplayModeChange"
-      />
+      <!-- 하위 업무 표시 모드 (검색창 바로 다음) -->
+      <div class="w-20 flex-shrink-0">
+        <Select
+          :model-value="filters.childDisplayMode"
+          :options="childDisplayModeOptions"
+          :disabled="loading"
+          @update:model-value="onChildDisplayModeChange"
+        />
+      </div>
 
       <!-- 정렬 -->
-      <div class="flex items-center gap-1">
-        <Select
-          :model-value="filters.sortField"
-          :options="sortFieldOptions"
-          :disabled="loading"
-          class="w-24"
-          @update:model-value="onSortFieldChange"
-        />
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <div class="w-24">
+          <Select
+            :model-value="filters.sortField"
+            :options="sortFieldOptions"
+            :disabled="loading"
+            @update:model-value="onSortFieldChange"
+          />
+        </div>
         <button
           type="button"
           class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -217,13 +219,13 @@ const activeFilterCount = computed(() => {
       <!-- 고급 필터 토글 -->
       <button
         type="button"
-        class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg transition-colors"
+        class="flex items-center gap-1 px-3 py-2 text-sm rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
         :class="showAdvanced || activeFilterCount > 0
           ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
           : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'"
         @click="showAdvanced = !showAdvanced"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
         </svg>
         <span>필터</span>

@@ -48,7 +48,12 @@ async function loadData(): Promise<void> {
 
 // 필터 변경 핸들러
 async function handleFilterChange(newFilter: Partial<AllItemsFilter>): Promise<void> {
-  await allTasksStore.updateFilter(newFilter)
+  // childDisplayMode 변경 시 setChildDisplayMode 호출 (expand/collapse 자동 처리)
+  if (newFilter.childDisplayMode !== undefined) {
+    await allTasksStore.setChildDisplayMode(newFilter.childDisplayMode)
+  } else {
+    await allTasksStore.updateFilter(newFilter)
+  }
 }
 
 // 필터 초기화
@@ -61,9 +66,14 @@ async function handleSearch(keyword: string): Promise<void> {
   await allTasksStore.search(keyword)
 }
 
-// 출처 타입 선택 (통계 카드 클릭)
+// 출처 타입 선택 (통계 배지 클릭)
 async function handleSourceSelect(sourceType: SourceType): Promise<void> {
   await allTasksStore.setSourceType(sourceType)
+}
+
+// 상태 선택 (통계 카드 클릭)
+async function handleStatusSelect(status: string | null): Promise<void> {
+  await allTasksStore.updateFilter({ status: status as any })
 }
 
 // 페이지 변경
@@ -173,9 +183,12 @@ async function handleRefresh(): Promise<void> {
       <!-- 통계 카드 -->
       <AllTasksStats
         :stats="allTasksStore.stats"
+        :items="allTasksStore.displayItems"
         :selected-source-type="allTasksStore.filters.sourceType"
+        :selected-status="allTasksStore.filters.status"
         :loading="allTasksStore.loading"
         @select-source="handleSourceSelect"
+        @select-status="handleStatusSelect"
       />
     </div>
 

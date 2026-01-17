@@ -291,9 +291,19 @@ export const useAllTasksStore = defineStore('allTasks', () => {
 
   /**
    * 하위 업무 표시 모드 변경
+   * - tree: 기본적으로 모두 펼침
+   * - collapse: 기본적으로 모두 접힘
+   * - flat: 확장 상태 무관
    */
   async function setChildDisplayMode(mode: ChildDisplayMode): Promise<void> {
     await updateFilter({ childDisplayMode: mode })
+
+    // 모드에 따라 확장 상태 조정
+    if (mode === 'tree') {
+      expandAll()
+    } else if (mode === 'collapse') {
+      collapseAll()
+    }
   }
 
   /**
