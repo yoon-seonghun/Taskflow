@@ -60,6 +60,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '삭제된 작업' }
       },
       {
+        path: 'todos',
+        name: 'Todos',
+        component: () => import('@/views/TodoView.vue'),
+        meta: { title: 'Todo List' }
+      },
+      {
         path: 'templates',
         name: 'Templates',
         component: () => import('@/views/TemplatesView.vue'),

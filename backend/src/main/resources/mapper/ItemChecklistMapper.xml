@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.taskflow.mapper.ItemChecklistMapper">
+
+    <!-- 결과 매핑 -->
+    <resultMap id="ChecklistResultMap" type="com.taskflow.domain.ItemChecklist">
+        <id property="checklistId" column="CHECKLIST_ID"/>
+        <result property="itemId" column="ITEM_ID"/>
+        <result property="title" column="TITLE"/>
+        <result property="isCompleted" column="IS_COMPLETED"/>
+        <result property="completedAt" column="COMPLETED_AT"/>
+        <result property="completedBy" column="COMPLETED_BY"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="dueDate" column="DUE_DATE"/>
+        <result property="assigneeUsername" column="ASSIGNEE_USERNAME"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- JOIN 필드 -->
+        <result property="assigneeName" column="ASSIGNEE_NAME"/>
+        <result property="completedByName" column="COMPLETED_BY_NAME"/>
+        <result property="itemTitle" column="ITEM_TITLE"/>
+    </resultMap>
+
+    <!-- 체크리스트 조회 -->
+    <select id="selectById" resultMap="ChecklistResultMap">
+        SELECT
+            c.CHECKLIST_ID,
+            c.ITEM_ID,
+            c.TITLE,
+            c.IS_COMPLETED,
+            c.COMPLETED_AT,
+            c.COMPLETED_BY,
+            c.SORT_ORDER,
+            c.DUE_DATE,
+            c.ASSIGNEE_USERNAME,
+            c.CREATED_AT,
+            c.CREATED_BY,
+            c.UPDATED_AT,
+            c.UPDATED_BY,
+            a.NAME AS ASSIGNEE_NAME,
+            cb.NAME AS COMPLETED_BY_NAME,
+            i.CONTENT AS ITEM_TITLE
+        FROM TB_ITEM_CHECKLIST c
+        INNER JOIN TB_ITEM i ON c.ITEM_ID = i.ITEM_ID
+        LEFT JOIN TB_USER a ON c.ASSIGNEE_USERNAME = a.USERNAME
+        LEFT JOIN TB_USER cb ON c.COMPLETED_BY = cb.USERNAME
+        WHERE c.CHECKLIST_ID = #{checklistId}
+    </select>
+
+    <!-- 업무별 체크리스트 목록 조회 -->
+    <select id="selectByItemId" resultMap="ChecklistResultMap">
+        SELECT
+            c.CHECKLIST_ID,
+            c.ITEM_ID,
+            c.TITLE,
+            c.IS_COMPLETED,
+            c.COMPLETED_AT,
+            c.COMPLETED_BY,
+            c.SORT_ORDER,
+            c.DUE_DATE,
+            c.ASSIGNEE_USERNAME,
+            c.CREATED_AT,
+            c.CREATED_BY,
+            c.UPDATED_AT,
+            c.UPDATED_BY,
+            a.NAME AS ASSIGNEE_NAME,
+            cb.NAME AS COMPLETED_BY_NAME
+        FROM TB_ITEM_CHECKLIST c
+        LEFT JOIN TB_USER a ON c.ASSIGNEE_USERNAME = a.USERNAME
+        LEFT JOIN TB_USER cb ON c.COMPLETED_BY = cb.USERNAME
+        WHERE c.ITEM_ID = #{itemId}
+        ORDER BY c.SORT_ORDER ASC, c.CREATED_AT ASC
+    </select>
+
+    <!-- 업무별 체크리스트 수 조회 -->
+    <select id="countByItemId" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_ITEM_CHECKLIST
+        WHERE ITEM_ID = #{itemId}
+    </select>
+
+    <!-- 업무별 완료된 체크리스트 수 조회 -->
+    <select id="countCompletedByItemId" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_ITEM_CHECKLIST
+        WHERE ITEM_ID = #{itemId}
+          AND IS_COMPLETED = TRUE
+    </select>
+
+    <!-- 담당자별 체크리스트 목록 조회 -->
+    <select id="selectByAssigneeUsername" resultMap="ChecklistResultMap">
+        SELECT
+            c.CHECKLIST_ID,
+            c.ITEM_ID,
+            c.TITLE,
+            c.IS_COMPLETED,
+            c.COMPLETED_AT,
+            c.SORT_ORDER,
+            c.DUE_DATE,
+            c.ASSIGNEE_USERNAME,
+            c.CREATED_AT,
+            i.CONTENT AS ITEM_TITLE
+        FROM TB_ITEM_CHECKLIST c
+        INNER JOIN TB_ITEM i ON c.ITEM_ID = i.ITEM_ID
+        WHERE c.ASSIGNEE_USERNAME = #{assigneeUsername}
+          AND c.IS_COMPLETED = FALSE
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY c.DUE_DATE ASC, c.SORT_ORDER ASC
+    </select>
+
+    <!-- 체크리스트 생성 -->
+    <insert id="insert" parameterType="com.taskflow.domain.ItemChecklist" useGeneratedKeys="true" keyProperty="checklistId">
+        INSERT INTO TB_ITEM_CHECKLIST (
+            ITEM_ID,
+            TITLE,
+            IS_COMPLETED,
+            SORT_ORDER,
+            DUE_DATE,
+            ASSIGNEE_USERNAME,
+            CREATED_AT,
+            CREATED_BY
+        ) VALUES (
+            #{itemId},
+            #{title},
+            #{isCompleted},
+            #{sortOrder},
+            #{dueDate, jdbcType=DATE},
+            #{assigneeUsername, jdbcType=VARCHAR},
+            NOW(),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 체크리스트 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.ItemChecklist">
+        UPDATE TB_ITEM_CHECKLIST
+        SET
+            TITLE = #{title},
+            IS_COMPLETED = #{isCompleted},
+            <if test="isCompleted != null and isCompleted">
+            COMPLETED_AT = NOW(),
+            COMPLETED_BY = #{updatedBy},
+            </if>
+            <if test="isCompleted != null and !isCompleted">
+            COMPLETED_AT = NULL,
+            COMPLETED_BY = NULL,
+            </if>
+            SORT_ORDER = #{sortOrder},
+            DUE_DATE = #{dueDate, jdbcType=DATE},
+            ASSIGNEE_USERNAME = #{assigneeUsername, jdbcType=VARCHAR},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{updatedBy}
+        WHERE CHECKLIST_ID = #{checklistId}
+    </update>
+
+    <!-- 체크리스트 완료 상태 변경 -->
+    <update id="updateCompleted">
+        UPDATE TB_ITEM_CHECKLIST
+        SET IS_COMPLETED = #{isCompleted},
+            <if test="isCompleted">
+            COMPLETED_AT = NOW(),
+            COMPLETED_BY = #{completedBy},
+            </if>
+            <if test="!isCompleted">
+            COMPLETED_AT = NULL,
+            COMPLETED_BY = NULL,
+            </if>
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{completedBy}
+        WHERE CHECKLIST_ID = #{checklistId}
+    </update>
+
+    <!-- 체크리스트 정렬 순서 업데이트 -->
+    <update id="updateSortOrder">
+        UPDATE TB_ITEM_CHECKLIST
+        SET SORT_ORDER = #{sortOrder},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{updatedBy}
+        WHERE CHECKLIST_ID = #{checklistId}
+    </update>
+
+    <!-- 체크리스트 삭제 -->
+    <delete id="deleteById">
+        DELETE FROM TB_ITEM_CHECKLIST
+        WHERE CHECKLIST_ID = #{checklistId}
+    </delete>
+
+    <!-- 업무의 모든 체크리스트 삭제 -->
+    <delete id="deleteByItemId">
+        DELETE FROM TB_ITEM_CHECKLIST
+        WHERE ITEM_ID = #{itemId}
+    </delete>
+
+    <!-- 체크리스트 순서 일괄 업데이트 -->
+    <update id="batchUpdateSortOrder">
+        <foreach collection="checklistIds" item="checklistId" index="index" separator=";">
+            UPDATE TB_ITEM_CHECKLIST
+            SET SORT_ORDER = #{index},
+                UPDATED_AT = NOW(),
+                UPDATED_BY = #{updatedBy}
+            WHERE CHECKLIST_ID = #{checklistId}
+        </foreach>
+    </update>
+
+    <!-- 다음 정렬 순서 조회 -->
+    <select id="getNextSortOrder" resultType="Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0) + 1
+        FROM TB_ITEM_CHECKLIST
+        WHERE ITEM_ID = #{itemId}
+    </select>
+
+</mapper>
