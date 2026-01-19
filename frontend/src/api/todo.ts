@@ -21,7 +21,7 @@ export const todoApi = {
     dueDateFrom?: string
     dueDateTo?: string
   }) {
-    return get<Todo[]>('/todos', { params })
+    return get<Todo[]>('/todos', params)
   },
 
   /**
@@ -94,7 +94,7 @@ export const todoApi = {
     completedDateFrom?: string
     completedDateTo?: string
   }) {
-    return get<Todo[]>('/todos/completed', { params })
+    return get<Todo[]>('/todos/completed', params)
   },
 
   /**
@@ -115,7 +115,7 @@ export const todoApi = {
    * Todo 수 조회
    */
   getTodoCount(userId?: number) {
-    return get<TodoCountResponse>('/todos/count', { params: { userId } })
+    return get<TodoCountResponse>('/todos/count', userId !== undefined ? { userId } : undefined)
   },
 
   /**

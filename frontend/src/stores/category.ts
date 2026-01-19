@@ -361,7 +361,12 @@ export const useCategoryStore = defineStore('category', () => {
     loading.value = true
     error.value = null
     try {
-      await categoryApi.addProperty(categoryId, request)
+      const response = await categoryApi.addProperty(categoryId, request)
+
+      // API 응답이 success: false인 경우 에러 처리 (HTTP 200이어도)
+      if (response && response.success === false) {
+        throw new Error(response.message || '속성 추가에 실패했습니다.')
+      }
 
       // 상세 다시 로드
       if (currentCategory.value?.categoryId === categoryId) {

@@ -141,10 +141,8 @@ client.interceptors.request.use(
       config.data = convertKeysToSnakeCase(config.data)
     }
 
-    // GET 요청 params도 snake_case로 변환
-    if (config.params && typeof config.params === 'object') {
-      config.params = convertKeysToSnakeCase(config.params)
-    }
+    // GET 요청 params는 변환하지 않음 (Spring @RequestParam은 camelCase 사용)
+    // JSON body만 snake_case 변환 (Jackson SNAKE_CASE 설정과 일치)
 
     return config
   },
@@ -217,6 +215,14 @@ client.interceptors.response.use(
       console.error('접근 권한이 없습니다.')
       const uiStore = useUiStore(pinia)
       uiStore.showError('접근 권한이 없습니다.')
+    }
+
+    // 4xx 클라이언트 에러 (400, 404, 409 등) - 에러 메시지 정규화
+    if (error.response?.status >= 400 && error.response?.status < 500) {
+      // 응답 데이터의 메시지를 error.message에 설정하여 catch에서 쉽게 접근 가능하게
+      if (error.response.data?.message) {
+        error.message = error.response.data.message
+      }
     }
 
     // 서버 에러

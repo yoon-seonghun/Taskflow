@@ -22,6 +22,7 @@ import PropertiesContent from '@/components/settings/PropertiesContent.vue'
 import ExternalDatasourceContent from '@/components/settings/ExternalDatasourceContent.vue'
 import ExternalQueryContent from '@/components/settings/ExternalQueryContent.vue'
 import SmtpSettingsContent from '@/components/settings/SmtpSettingsContent.vue'
+import CalendarContent from '@/components/settings/CalendarContent.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,7 +32,7 @@ const configStore = useConfigStore()
 const positionStore = usePositionStore()
 
 // 탭 타입
-type SettingsTab = 'settings' | 'users' | 'departments' | 'positions' | 'categories' | 'properties' | 'external-datasources' | 'external-queries' | 'smtp'
+type SettingsTab = 'settings' | 'users' | 'departments' | 'positions' | 'categories' | 'properties' | 'calendars' | 'external-datasources' | 'external-queries' | 'smtp'
 
 // 현재 활성 탭
 const activeTab = ref<SettingsTab>('settings')
@@ -54,6 +55,7 @@ const tabs = computed(() => {
     { id: 'positions', label: '직급 관리', icon: 'badge', adminOnly: true },
     { id: 'categories', label: '카테고리 관리', icon: 'tag' },
     { id: 'properties', label: '속성 관리', icon: 'grid' },
+    { id: 'calendars', label: '캘린더 관리', icon: 'calendar' },
     { id: 'external-datasources', label: '외부 DB', icon: 'database', adminOnly: true },
     { id: 'external-queries', label: '외부 쿼리', icon: 'code' },
     { id: 'smtp', label: 'SMTP 설정', icon: 'mail', adminOnly: true }
@@ -365,6 +367,9 @@ onMounted(async () => {
             <svg v-else-if="tab.icon === 'code'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
             </svg>
+            <svg v-else-if="tab.icon === 'calendar'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
             <svg v-else-if="tab.icon === 'mail'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
@@ -485,6 +490,11 @@ onMounted(async () => {
     <!-- 외부 DB 관리 탭 -->
     <div v-else-if="activeTab === 'external-datasources'">
       <ExternalDatasourceContent />
+    </div>
+
+    <!-- 캘린더 관리 탭 -->
+    <div v-else-if="activeTab === 'calendars'">
+      <CalendarContent />
     </div>
 
     <!-- 외부 쿼리 관리 탭 -->

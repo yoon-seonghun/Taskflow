@@ -83,6 +83,8 @@ const menuItems = [
   { name: 'Deleted', label: '삭제된 작업', icon: 'trash' },
   { divider: true },
   { name: 'Todos', label: 'Todo List', icon: 'todo' },
+  { name: 'Calendar', label: '캘린더', icon: 'calendar' },
+  { name: 'Gantt', label: 'Gantt 차트', icon: 'gantt' },
   { divider: true },
   { name: 'Templates', label: '작업 등록', icon: 'document' },
   { name: 'History', label: '이력관리', icon: 'history' },
@@ -191,6 +193,14 @@ const menuItems = [
             <!-- Todo (체크리스트) -->
             <svg v-else-if="item.icon === 'todo'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <!-- Calendar (캘린더) -->
+            <svg v-else-if="item.icon === 'calendar'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <!-- Gantt (차트) -->
+            <svg v-else-if="item.icon === 'gantt'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14" />
             </svg>
             <!-- Board -->
             <svg v-else-if="item.icon === 'board'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

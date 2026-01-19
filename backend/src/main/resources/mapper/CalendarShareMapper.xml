@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.CalendarShareMapper">
+
+    <!-- ============================================= -->
+    <!-- ResultMap -->
+    <!-- ============================================= -->
+    <resultMap id="CalendarShareResultMap" type="com.taskflow.domain.CalendarShare">
+        <id property="calendarShareId" column="CALENDAR_SHARE_ID"/>
+        <result property="calendarId" column="CALENDAR_ID"/>
+        <result property="shareType" column="SHARE_TYPE"/>
+        <result property="username" column="USERNAME"/>
+        <result property="sharedBy" column="SHARED_BY"/>
+        <result property="sharedAt" column="SHARED_AT"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="userName" column="USER_NAME"/>
+        <result property="departmentName" column="DEPARTMENT_NAME"/>
+        <result property="sharedByName" column="SHARED_BY_NAME"/>
+        <result property="calendarName" column="CALENDAR_NAME"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- INSERT -->
+    <!-- ============================================= -->
+    <insert id="insert" parameterType="com.taskflow.domain.CalendarShare" useGeneratedKeys="true" keyProperty="calendarShareId">
+        INSERT INTO TB_CALENDAR_SHARE (
+            CALENDAR_ID, SHARE_TYPE, USERNAME, SHARED_BY, CREATED_BY
+        ) VALUES (
+            #{calendarId}, #{shareType}, #{username}, #{sharedBy}, #{createdBy}
+        )
+    </insert>
+
+    <!-- ============================================= -->
+    <!-- UPDATE -->
+    <!-- ============================================= -->
+    <update id="delete">
+        UPDATE TB_CALENDAR_SHARE
+        SET DELETED_AT = NOW(), UPDATED_BY = #{deletedBy}
+        WHERE CALENDAR_ID = #{calendarId}
+          AND USERNAME = #{username}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <update id="updateShareType">
+        UPDATE TB_CALENDAR_SHARE
+        SET SHARE_TYPE = #{shareType}, UPDATED_BY = #{updatedBy}
+        WHERE CALENDAR_ID = #{calendarId}
+          AND USERNAME = #{username}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <update id="deleteAllByCalendarId">
+        UPDATE TB_CALENDAR_SHARE
+        SET DELETED_AT = NOW(), UPDATED_BY = #{deletedBy}
+        WHERE CALENDAR_ID = #{calendarId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- ============================================= -->
+    <!-- SELECT -->
+    <!-- ============================================= -->
+    <select id="selectByCalendarId" resultMap="CalendarShareResultMap">
+        SELECT
+            cs.*,
+            u.NAME as USER_NAME,
+            d.DEPARTMENT_NAME as DEPARTMENT_NAME,
+            su.NAME as SHARED_BY_NAME,
+            c.CALENDAR_NAME as CALENDAR_NAME
+        FROM TB_CALENDAR_SHARE cs
+        INNER JOIN TB_CALENDAR c ON cs.CALENDAR_ID = c.CALENDAR_ID
+        LEFT JOIN TB_USER u ON cs.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
+        LEFT JOIN TB_USER su ON cs.SHARED_BY = su.USERNAME
+        WHERE cs.CALENDAR_ID = #{calendarId}
+          AND cs.DELETED_AT IS NULL
+        ORDER BY cs.SHARED_AT DESC
+    </select>
+
+    <select id="findByCalendarIdAndUsername" resultMap="CalendarShareResultMap">
+        SELECT
+            cs.*,
+            u.NAME as USER_NAME,
+            d.DEPARTMENT_NAME as DEPARTMENT_NAME,
+            su.NAME as SHARED_BY_NAME,
+            c.CALENDAR_NAME as CALENDAR_NAME
+        FROM TB_CALENDAR_SHARE cs
+        INNER JOIN TB_CALENDAR c ON cs.CALENDAR_ID = c.CALENDAR_ID
+        LEFT JOIN TB_USER u ON cs.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
+        LEFT JOIN TB_USER su ON cs.SHARED_BY = su.USERNAME
+        WHERE cs.CALENDAR_ID = #{calendarId}
+          AND cs.USERNAME = #{username}
+          AND cs.DELETED_AT IS NULL
+    </select>
+
+    <select id="exists" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM TB_CALENDAR_SHARE
+        WHERE CALENDAR_ID = #{calendarId}
+          AND USERNAME = #{username}
+          AND DELETED_AT IS NULL
+    </select>
+
+    <select id="getPermission" resultType="string">
+        SELECT SHARE_TYPE
+        FROM TB_CALENDAR_SHARE
+        WHERE CALENDAR_ID = #{calendarId}
+          AND USERNAME = #{username}
+          AND DELETED_AT IS NULL
+    </select>
+
+</mapper>

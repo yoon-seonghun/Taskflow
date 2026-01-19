@@ -110,10 +110,10 @@ function flattenDepartments(depts: Department[], result: Department[] = []): Dep
   return result
 }
 
-// 속성 목록 로드 (v2.0: 카테고리는 사용자 속성만 연결 가능)
+// 속성 목록 로드 (카테고리 귀속 속성 = 현재 사용자가 생성한 USER 타입 속성만)
+// - ADMIN/MANAGER/USER 역할과 관계없이 "사용자"로서 본인이 생성한 속성만 조회
 async function loadAvailableProperties() {
   try {
-    // 카테고리에는 사용자(USER) 속성만 연결 가능 (설계 정책)
     const response = await propertyApi.getUserProperties()
     availableProperties.value = response.data.map(p => ({
       propertyId: p.propertyId,
@@ -295,7 +295,16 @@ async function handleAddProperty() {
     emit('updated')
   } catch (error: any) {
     console.error('Failed to add property:', error)
-    const message = error.response?.data?.message || '속성 추가에 실패했습니다.'
+    // axios 에러의 경우 response.data.message 또는 response.data.error 사용
+    // 일반 에러의 경우 error.message 사용
+    let message = '속성 추가에 실패했습니다.'
+    if (error.response?.data?.message) {
+      message = error.response.data.message
+    } else if (error.response?.data?.error) {
+      message = error.response.data.error
+    } else if (error.message) {
+      message = error.message
+    }
     uiStore.showError(message)
   } finally {
     saving.value = false

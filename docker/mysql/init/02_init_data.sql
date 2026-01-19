@@ -114,13 +114,14 @@ INSERT INTO TB_TASK_TEMPLATE (TEMPLATE_ID, CONTENT, SORT_ORDER, USE_YN, CREATED_
 -- 8. 샘플 아이템 (업무)
 -- ASSIGNEE_USERNAME: 담당자 USERNAME 참조
 -- CATEGORY_ID: TB_CATEGORY 참조
+-- REQUEST_DATE/DUE_DATE: 간트 차트용 날짜
 -- ============================================
-INSERT INTO TB_ITEM (ITEM_ID, BOARD_ID, CONTENT, DESCRIPTION, STATUS, PRIORITY, CATEGORY_ID, GROUP_ID, ASSIGNEE_USERNAME, CREATED_BY) VALUES
-(1, 1, '프로젝트 초기 설정', '## 목표\n프로젝트 환경 구성 및 초기 설정 완료\n\n## 체크리스트\n- [x] Git 저장소 생성\n- [x] Docker 환경 구성\n- [x] 개발 환경 세팅', 'COMPLETED', 'HIGH', 1, 3, 'admin', 'admin'),
-(2, 1, 'ERD 설계 및 검토', '## 설계 범위\n- 사용자/부서/그룹 관리\n- 보드 및 아이템 관리\n- 동적 속성 시스템\n\n## 검토 사항\n- 정규화 수준\n- 인덱스 전략', 'COMPLETED', 'HIGH', 1, 3, 'admin', 'admin'),
-(3, 1, 'API 명세서 작성', '## REST API 설계\n\n### 인증 API\n- POST /api/auth/login\n- POST /api/auth/logout\n\n### 업무 API\n- GET /api/boards/{id}/items\n- POST /api/boards/{id}/items', 'IN_PROGRESS', 'NORMAL', 1, 3, 'admin', 'admin'),
-(4, 1, '프론트엔드 레이아웃 구현', NULL, 'NOT_STARTED', 'NORMAL', 1, 3, 'admin', 'admin'),
-(5, 1, '로그인 기능 개발', NULL, 'NOT_STARTED', 'HIGH', 1, 3, 'admin', 'admin');
+INSERT INTO TB_ITEM (ITEM_ID, BOARD_ID, CONTENT, DESCRIPTION, STATUS, PRIORITY, CATEGORY_ID, GROUP_ID, ASSIGNEE_USERNAME, REQUEST_DATE, DUE_DATE, CREATED_BY) VALUES
+(1, 1, '프로젝트 초기 설정', '## 목표\n프로젝트 환경 구성 및 초기 설정 완료\n\n## 체크리스트\n- [x] Git 저장소 생성\n- [x] Docker 환경 구성\n- [x] 개발 환경 세팅', 'COMPLETED', 'HIGH', 1, 3, 'admin', '2025-01-01', '2025-01-07', 'admin'),
+(2, 1, 'ERD 설계 및 검토', '## 설계 범위\n- 사용자/부서/그룹 관리\n- 보드 및 아이템 관리\n- 동적 속성 시스템\n\n## 검토 사항\n- 정규화 수준\n- 인덱스 전략', 'COMPLETED', 'HIGH', 1, 3, 'admin', '2025-01-08', '2025-01-15', 'admin'),
+(3, 1, 'API 명세서 작성', '## REST API 설계\n\n### 인증 API\n- POST /api/auth/login\n- POST /api/auth/logout\n\n### 업무 API\n- GET /api/boards/{id}/items\n- POST /api/boards/{id}/items', 'IN_PROGRESS', 'NORMAL', 1, 3, 'admin', '2025-01-10', '2025-01-20', 'admin'),
+(4, 1, '프론트엔드 레이아웃 구현', NULL, 'NOT_STARTED', 'NORMAL', 1, 3, 'admin', '2025-01-15', '2025-01-25', 'admin'),
+(5, 1, '로그인 기능 개발', NULL, 'NOT_STARTED', 'HIGH', 1, 3, 'admin', '2025-01-18', '2025-01-28', 'admin');
 
 -- ============================================
 -- 9. 글로벌 속성 정의 (시스템 제공)
@@ -252,6 +253,63 @@ INSERT INTO TB_SYSTEM_CONFIG (CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE_ENCRYPTED, 
 ON DUPLICATE KEY UPDATE UPDATED_AT = CURRENT_TIMESTAMP;
 
 -- ============================================
+-- 12. 기본 캘린더 생성
+-- 관리자용 기본 캘린더
+-- ============================================
+INSERT INTO TB_CALENDAR (CALENDAR_ID, OWNER_USERNAME, NAME, DESCRIPTION, COLOR, IS_DEFAULT, SORT_ORDER, USE_YN, CREATED_BY) VALUES
+(1, 'admin', '내 캘린더', '기본 캘린더', '#3B82F6', 'Y', 0, 'Y', 'admin'),
+(2, 'admin', '업무', '업무 관련 일정', '#10B981', 'N', 1, 'Y', 'admin'),
+(3, 'admin', '개인', '개인 일정', '#8B5CF6', 'N', 2, 'Y', 'admin');
+
+-- ============================================
+-- 13. 캘린더 날짜 정보 (공휴일)
+-- 2025년 ~ 2026년 한국 공휴일
+-- LUNAR_MONTH/LUNAR_DAY: 음력 날짜
+-- ============================================
+
+-- 2025년 공휴일
+INSERT INTO TB_CALENDAR_DATE (DATE_VALUE, LUNAR_YEAR, LUNAR_MONTH, LUNAR_DAY, IS_HOLIDAY, HOLIDAY_NAME, CREATED_BY) VALUES
+-- 1월
+('2025-01-01', 2024, 12, 2, 'Y', '새해 첫날', 'system'),
+('2025-01-28', 2024, 12, 29, 'Y', '설날 연휴', 'system'),
+('2025-01-29', 2025, 1, 1, 'Y', '설날', 'system'),
+('2025-01-30', 2025, 1, 2, 'Y', '설날 연휴', 'system'),
+-- 3월
+('2025-03-01', 2025, 2, 2, 'Y', '삼일절', 'system'),
+-- 5월
+('2025-05-05', 2025, 4, 8, 'Y', '어린이날', 'system'),
+('2025-05-06', 2025, 4, 9, 'Y', '부처님오신날', 'system'),
+-- 6월
+('2025-06-06', 2025, 5, 11, 'Y', '현충일', 'system'),
+-- 8월
+('2025-08-15', 2025, 6, 22, 'Y', '광복절', 'system'),
+-- 10월 (추석)
+('2025-10-05', 2025, 8, 14, 'Y', '추석 연휴', 'system'),
+('2025-10-06', 2025, 8, 15, 'Y', '추석', 'system'),
+('2025-10-07', 2025, 8, 16, 'Y', '추석 연휴', 'system'),
+('2025-10-03', 2025, 8, 12, 'Y', '개천절', 'system'),
+('2025-10-09', 2025, 8, 18, 'Y', '한글날', 'system'),
+-- 12월
+('2025-12-25', 2025, 11, 5, 'Y', '성탄절', 'system'),
+
+-- 2026년 공휴일
+('2026-01-01', 2025, 11, 12, 'Y', '새해 첫날', 'system'),
+('2026-02-16', 2025, 12, 29, 'Y', '설날 연휴', 'system'),
+('2026-02-17', 2026, 1, 1, 'Y', '설날', 'system'),
+('2026-02-18', 2026, 1, 2, 'Y', '설날 연휴', 'system'),
+('2026-03-01', 2026, 1, 12, 'Y', '삼일절', 'system'),
+('2026-05-05', 2026, 3, 19, 'Y', '어린이날', 'system'),
+('2026-05-24', 2026, 4, 8, 'Y', '부처님오신날', 'system'),
+('2026-06-06', 2026, 4, 21, 'Y', '현충일', 'system'),
+('2026-08-15', 2026, 7, 3, 'Y', '광복절', 'system'),
+('2026-09-24', 2026, 8, 14, 'Y', '추석 연휴', 'system'),
+('2026-09-25', 2026, 8, 15, 'Y', '추석', 'system'),
+('2026-09-26', 2026, 8, 16, 'Y', '추석 연휴', 'system'),
+('2026-10-03', 2026, 8, 22, 'Y', '개천절', 'system'),
+('2026-10-09', 2026, 8, 28, 'Y', '한글날', 'system'),
+('2026-12-25', 2026, 11, 15, 'Y', '성탄절', 'system');
+
+-- ============================================
 -- AUTO_INCREMENT 재설정
 -- 100부터 시작하여 Shadow User/Dept 공간 확보
 -- ============================================
@@ -264,3 +322,5 @@ ALTER TABLE TB_PROPERTY_DEF AUTO_INCREMENT = 100;
 ALTER TABLE TB_PROPERTY_OPTION AUTO_INCREMENT = 100;
 ALTER TABLE TB_TASK_TEMPLATE AUTO_INCREMENT = 100;
 ALTER TABLE TB_ITEM AUTO_INCREMENT = 100;
+ALTER TABLE TB_CALENDAR AUTO_INCREMENT = 100;
+ALTER TABLE TB_EVENT AUTO_INCREMENT = 100;

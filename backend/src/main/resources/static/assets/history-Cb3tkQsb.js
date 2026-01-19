@@ -1,1 +1,0 @@
-import{Q as e}from"./index-CBx4Qp5H.js";const s={getItemHistory(t){return e("/history/items",t)},getTemplateHistory(t){return e("/history/templates",t)},getManagementHistory(t){return e("/audit-logs",t)},getRecentManagementHistory(t=20){return e("/audit-logs/recent",{limit:t})}};export{s as h};

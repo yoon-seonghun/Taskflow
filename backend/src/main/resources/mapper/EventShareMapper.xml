@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.EventShareMapper">
+
+    <!-- ============================================= -->
+    <!-- ResultMap -->
+    <!-- ============================================= -->
+    <resultMap id="EventShareResultMap" type="com.taskflow.domain.EventShare">
+        <id property="eventShareId" column="EVENT_SHARE_ID"/>
+        <result property="eventId" column="EVENT_ID"/>
+        <result property="shareType" column="SHARE_TYPE"/>
+        <result property="username" column="USERNAME"/>
+        <result property="sharedBy" column="SHARED_BY"/>
+        <result property="sharedAt" column="SHARED_AT"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="userName" column="USER_NAME"/>
+        <result property="departmentName" column="DEPARTMENT_NAME"/>
+        <result property="sharedByName" column="SHARED_BY_NAME"/>
+        <result property="eventTitle" column="EVENT_TITLE"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- INSERT -->
+    <!-- ============================================= -->
+    <insert id="insert" parameterType="com.taskflow.domain.EventShare" useGeneratedKeys="true" keyProperty="eventShareId">
+        INSERT INTO TB_EVENT_SHARE (
+            EVENT_ID, SHARE_TYPE, USERNAME, SHARED_BY, CREATED_BY
+        ) VALUES (
+            #{eventId}, #{shareType}, #{username}, #{sharedBy}, #{createdBy}
+        )
+    </insert>
+
+    <insert id="insertTransferHistory" parameterType="com.taskflow.domain.EventShare">
+        INSERT INTO TB_EVENT_SHARE (
+            EVENT_ID, SHARE_TYPE, USERNAME, SHARED_BY, CREATED_BY
+        ) VALUES (
+            #{eventId}, 'TRANSFER', #{username}, #{sharedBy}, #{createdBy}
+        )
+    </insert>
+
+    <!-- ============================================= -->
+    <!-- UPDATE -->
+    <!-- ============================================= -->
+    <update id="delete">
+        UPDATE TB_EVENT_SHARE
+        SET DELETED_AT = NOW(), UPDATED_BY = #{deletedBy}
+        WHERE EVENT_ID = #{eventId}
+          AND USERNAME = #{username}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <update id="updateShareType">
+        UPDATE TB_EVENT_SHARE
+        SET SHARE_TYPE = #{shareType}, UPDATED_BY = #{updatedBy}
+        WHERE EVENT_ID = #{eventId}
+          AND USERNAME = #{username}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <update id="deleteAllByEventId">
+        UPDATE TB_EVENT_SHARE
+        SET DELETED_AT = NOW(), UPDATED_BY = #{deletedBy}
+        WHERE EVENT_ID = #{eventId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- ============================================= -->
+    <!-- SELECT -->
+    <!-- ============================================= -->
+    <select id="selectByEventId" resultMap="EventShareResultMap">
+        SELECT
+            es.*,
+            u.NAME as USER_NAME,
+            d.DEPARTMENT_NAME as DEPARTMENT_NAME,
+            su.NAME as SHARED_BY_NAME,
+            e.TITLE as EVENT_TITLE
+        FROM TB_EVENT_SHARE es
+        INNER JOIN TB_EVENT e ON es.EVENT_ID = e.EVENT_ID
+        LEFT JOIN TB_USER u ON es.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
+        LEFT JOIN TB_USER su ON es.SHARED_BY = su.USERNAME
+        WHERE es.EVENT_ID = #{eventId}
+          AND es.DELETED_AT IS NULL
+          AND es.SHARE_TYPE != 'TRANSFER'
+        ORDER BY es.SHARED_AT DESC
+    </select>
+
+    <select id="findByEventIdAndUsername" resultMap="EventShareResultMap">
+        SELECT
+            es.*,
+            u.NAME as USER_NAME,
+            d.DEPARTMENT_NAME as DEPARTMENT_NAME,
+            su.NAME as SHARED_BY_NAME,
+            e.TITLE as EVENT_TITLE
+        FROM TB_EVENT_SHARE es
+        INNER JOIN TB_EVENT e ON es.EVENT_ID = e.EVENT_ID
+        LEFT JOIN TB_USER u ON es.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
+        LEFT JOIN TB_USER su ON es.SHARED_BY = su.USERNAME
+        WHERE es.EVENT_ID = #{eventId}
+          AND es.USERNAME = #{username}
+          AND es.DELETED_AT IS NULL
+          AND es.SHARE_TYPE != 'TRANSFER'
+    </select>
+
+    <select id="exists" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM TB_EVENT_SHARE
+        WHERE EVENT_ID = #{eventId}
+          AND USERNAME = #{username}
+          AND DELETED_AT IS NULL
+          AND SHARE_TYPE != 'TRANSFER'
+    </select>
+
+    <select id="getPermission" resultType="string">
+        SELECT SHARE_TYPE
+        FROM TB_EVENT_SHARE
+        WHERE EVENT_ID = #{eventId}
+          AND USERNAME = #{username}
+          AND DELETED_AT IS NULL
+          AND SHARE_TYPE != 'TRANSFER'
+    </select>
+
+    <select id="selectSharedToMe" resultMap="EventShareResultMap">
+        SELECT
+            es.*,
+            u.NAME as USER_NAME,
+            d.DEPARTMENT_NAME as DEPARTMENT_NAME,
+            su.NAME as SHARED_BY_NAME,
+            e.TITLE as EVENT_TITLE
+        FROM TB_EVENT_SHARE es
+        INNER JOIN TB_EVENT e ON es.EVENT_ID = e.EVENT_ID AND e.STATUS = 'ACTIVE'
+        LEFT JOIN TB_USER u ON es.USERNAME = u.USERNAME
+        LEFT JOIN TB_DEPARTMENT d ON u.DEPARTMENT_CODE = d.DEPARTMENT_CODE
+        LEFT JOIN TB_USER su ON es.SHARED_BY = su.USERNAME
+        WHERE es.USERNAME = #{username}
+          AND es.DELETED_AT IS NULL
+          AND es.SHARE_TYPE != 'TRANSFER'
+        ORDER BY es.SHARED_AT DESC
+    </select>
+
+</mapper>

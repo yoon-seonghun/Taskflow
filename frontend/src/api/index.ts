@@ -18,6 +18,7 @@ export { categoryApi } from './category'
 export { scoreApi } from './score'
 export { todoApi } from './todo'
 export { checklistApi } from './checklist'
+export { calendarApi } from './calendar'
 
 // HTTP 클라이언트도 내보내기
 export { get, post, put, del, client } from './client'

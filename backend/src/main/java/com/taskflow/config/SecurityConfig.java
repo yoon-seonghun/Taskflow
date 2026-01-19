@@ -47,6 +47,9 @@ public class SecurityConfig {
             "/api/auth/refresh",
             "/api/health",
             "/api/files/*",        // 파일 다운로드 (이미지 표시용)
+            "/api/calendar-dates/**",  // 캘린더 날짜 조회 (관리 API 제외 - @PreAuthorize 적용)
+            "/api/calendar/lunar",     // 음력 변환
+            "/api/calendar/solar",     // 양력 변환
             "/actuator/**",
             "/swagger-ui/**",
             "/swagger-ui.html",

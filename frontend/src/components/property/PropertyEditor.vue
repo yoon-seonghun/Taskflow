@@ -10,6 +10,7 @@ import { computed, ref, watch, onMounted } from 'vue'
 import { usePropertyStore } from '@/stores/property'
 import { Input, Select, DatePicker, UserSelectModal } from '@/components/common'
 import { externalQueryApi } from '@/api/externalQuery'
+import { propertyApi } from '@/api/property'
 import type { PropertyDef, PropertyType, PropertyOption } from '@/types/property'
 import type { SelectOption } from '@/components/common/Select.vue'
 import type { QueryOption } from '@/types/externalQuery'
@@ -55,6 +56,11 @@ const externalOptions = ref<QueryOption[]>([])
 const externalOptionsLoading = ref(false)
 const externalOptionsError = ref<string | null>(null)
 
+// 내부 옵션 (SELECT, MULTI_SELECT용) - v2.0.6: propertyStore 대신 API 직접 호출
+const internalOptions = ref<PropertyOption[]>([])
+const internalOptionsLoading = ref(false)
+const internalOptionsError = ref<string | null>(null)
+
 // modelValue 변경 시 내부 값 동기화
 watch(() => props.modelValue, (newValue) => {
   internalValue.value = parseMultiSelectValue(newValue)
@@ -87,20 +93,79 @@ async function loadExternalOptions() {
   }
 }
 
-// 속성 변경 또는 컴포넌트 마운트 시 외부 옵션 로드
-watch(() => props.property.externalQueryId, () => {
+// 내부 옵션 로드 (SELECT, MULTI_SELECT용) - v2.0.6: API 직접 호출
+// 글로벌/매니저 속성은 propertyStore에 로드되지 않으므로 API 직접 호출 필요
+async function loadInternalOptions() {
+  // 외부 쿼리인 경우 스킵
+  if (isExternalQuery.value) return
+  // SELECT, MULTI_SELECT 타입만 옵션 로드
+  if (props.property.propertyType !== 'SELECT' && props.property.propertyType !== 'MULTI_SELECT') return
+
+  internalOptionsLoading.value = true
+  internalOptionsError.value = null
+
+  try {
+    // 먼저 propertyStore에서 확인 (이미 로드된 경우)
+    const storeOptions = propertyStore.getOptionsByPropertyId(props.property.propertyId)
+    if (storeOptions && storeOptions.length > 0) {
+      internalOptions.value = storeOptions
+      return
+    }
+
+    // store에 없으면 API 직접 호출
+    const response = await propertyApi.getOptions(props.property.propertyId, { useYn: 'Y' })
+    if (response.success && response.data) {
+      internalOptions.value = response.data
+    } else {
+      internalOptionsError.value = response.message || '옵션을 불러올 수 없습니다'
+    }
+  } catch (error: any) {
+    console.error('Failed to load internal options:', error)
+    internalOptionsError.value = '옵션 로드 실패'
+  } finally {
+    internalOptionsLoading.value = false
+  }
+}
+
+// 속성 변경 시 옵션 로드 (propertyId 변경)
+watch(() => props.property.propertyId, () => {
   if (isExternalQuery.value) {
     loadExternalOptions()
+  } else {
+    loadInternalOptions()
   }
 }, { immediate: true })
 
-onMounted(() => {
+// 외부 쿼리 ID 변경 시 외부 옵션 로드 (기존 로직 유지)
+watch(() => props.property.externalQueryId, () => {
   if (isExternalQuery.value) {
     loadExternalOptions()
   }
 })
 
+// 데이터소스 타입 변경 시 옵션 로드 (INTERNAL ↔ EXTERNAL 전환 대응)
+watch(() => props.property.dataSourceType, () => {
+  if (isExternalQuery.value) {
+    loadExternalOptions()
+  } else {
+    loadInternalOptions()
+  }
+})
+
+onMounted(() => {
+  if (isExternalQuery.value) {
+    loadExternalOptions()
+  } else {
+    loadInternalOptions()
+  }
+})
+
+// 옵션 로딩 상태 (외부/내부 통합)
+const optionsLoading = computed(() => externalOptionsLoading.value || internalOptionsLoading.value)
+const optionsError = computed(() => externalOptionsError.value || internalOptionsError.value)
+
 // 옵션 목록 (SELECT, MULTI_SELECT용) - 내부/외부 통합
+// v2.0.6: 내부 옵션도 API 직접 호출로 변경 (글로벌/매니저 속성 지원)
 const options = computed((): SelectOption[] => {
   // 외부 쿼리인 경우
   if (isExternalQuery.value) {
@@ -111,9 +176,8 @@ const options = computed((): SelectOption[] => {
     }))
   }
 
-  // 내부 옵션인 경우
-  const propertyOptions = propertyStore.getOptionsByPropertyId(props.property.propertyId)
-  return propertyOptions.map(opt => ({
+  // 내부 옵션인 경우 - internalOptions 사용
+  return internalOptions.value.map(opt => ({
     value: opt.optionId,
     label: opt.optionName,
     color: opt.color
@@ -312,8 +376,8 @@ async function handleCreateOption(optionName: string) {
 
     <!-- SELECT 타입 -->
     <template v-else-if="property.propertyType === 'SELECT'">
-      <!-- 외부 쿼리 로딩 중 -->
-      <template v-if="isExternalQuery && externalOptionsLoading">
+      <!-- 로딩 중 (외부/내부 통합) -->
+      <template v-if="optionsLoading">
         <span class="text-[12px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
           <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -322,9 +386,9 @@ async function handleCreateOption(optionName: string) {
           로딩 중...
         </span>
       </template>
-      <!-- 외부 쿼리 에러 -->
-      <template v-else-if="isExternalQuery && externalOptionsError">
-        <span class="text-[12px] text-red-400">{{ externalOptionsError }}</span>
+      <!-- 에러 (외부/내부 통합) -->
+      <template v-else-if="optionsError">
+        <span class="text-[12px] text-red-400">{{ optionsError }}</span>
       </template>
       <!-- 옵션 있음 -->
       <template v-else-if="options.length > 0">
@@ -349,8 +413,8 @@ async function handleCreateOption(optionName: string) {
 
     <!-- MULTI_SELECT 타입 -->
     <template v-else-if="property.propertyType === 'MULTI_SELECT'">
-      <!-- 외부 쿼리 로딩 중 -->
-      <template v-if="isExternalQuery && externalOptionsLoading">
+      <!-- 로딩 중 (외부/내부 통합) -->
+      <template v-if="optionsLoading">
         <span class="text-[12px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
           <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -359,9 +423,9 @@ async function handleCreateOption(optionName: string) {
           로딩 중...
         </span>
       </template>
-      <!-- 외부 쿼리 에러 -->
-      <template v-else-if="isExternalQuery && externalOptionsError">
-        <span class="text-[12px] text-red-400">{{ externalOptionsError }}</span>
+      <!-- 에러 (외부/내부 통합) -->
+      <template v-else-if="optionsError">
+        <span class="text-[12px] text-red-400">{{ optionsError }}</span>
       </template>
       <!-- 옵션 목록 -->
       <template v-else>
@@ -394,10 +458,10 @@ async function handleCreateOption(optionName: string) {
               {{ option.label }}
             </button>
           </template>
-          <!-- 내부 옵션 -->
+          <!-- 내부 옵션 - v2.0.6: internalOptions 사용 -->
           <template v-else>
             <button
-              v-for="option in propertyStore.getOptionsByPropertyId(property.propertyId)"
+              v-for="option in internalOptions"
               :key="option.optionId"
               type="button"
               class="inline-flex items-center gap-1 px-2 py-0.5 text-[12px] rounded-full border transition-colors"

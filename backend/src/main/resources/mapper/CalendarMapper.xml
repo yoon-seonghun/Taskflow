@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.CalendarMapper">
+
+    <!-- ============================================= -->
+    <!-- Calendar 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 캘린더용 Todo 목록 조회 (마감일 기준) -->
+    <select id="selectTodosForCalendar" resultType="com.taskflow.domain.Todo">
+        SELECT
+            t.TODO_ID as todoId,
+            t.OWNER_USER_ID as ownerUserId,
+            t.TITLE as title,
+            t.DESCRIPTION as description,
+            t.PRIORITY as priority,
+            t.DUE_DATE as dueDate,
+            t.DUE_TIME as dueTime,
+            t.IS_COMPLETED as isCompleted,
+            t.COMPLETED_AT as completedAt,
+            t.SORT_ORDER as sortOrder,
+            t.CREATED_AT as createdAt,
+            t.CREATED_BY as createdBy,
+            t.UPDATED_AT as updatedAt,
+            t.UPDATED_BY as updatedBy
+        FROM TB_TODO t
+        WHERE t.OWNER_USER_ID = #{ownerUserId}
+          AND t.USE_YN = 'Y'
+          AND t.DUE_DATE IS NOT NULL
+          AND t.DUE_DATE >= #{startDate}
+          AND t.DUE_DATE &lt;= #{endDate}
+        ORDER BY t.DUE_DATE, t.DUE_TIME, t.PRIORITY DESC
+    </select>
+
+    <!-- 캘린더용 Item 목록 조회 (마감일 또는 요청일 기준) -->
+    <select id="selectItemsForCalendar" resultType="com.taskflow.domain.Item">
+        SELECT
+            i.ITEM_ID as itemId,
+            i.BOARD_ID as boardId,
+            i.CONTENT as title,
+            i.CONTENT as content,
+            i.STATUS as status,
+            i.PRIORITY as priority,
+            i.REQUEST_DATE as requestDate,
+            i.DUE_DATE as dueDate,
+            i.PARENT_ITEM_ID as parentItemId,
+            i.ITEM_DEPTH as itemDepth,
+            b.BOARD_NAME as boardName,
+            COALESCE(i.DUE_DATE, i.REQUEST_DATE) as displayDate
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        WHERE (i.DUE_DATE IS NOT NULL OR i.REQUEST_DATE IS NOT NULL)
+          AND COALESCE(i.DUE_DATE, i.REQUEST_DATE) >= #{startDate}
+          AND COALESCE(i.DUE_DATE, i.REQUEST_DATE) &lt;= #{endDate}
+          AND i.STATUS NOT IN ('DELETED')
+          AND b.USE_YN = 'Y'
+          AND (
+              b.OWNER_USERNAME = #{username}
+              OR EXISTS (
+                  SELECT 1 FROM TB_BOARD_SHARE bs
+                  WHERE bs.BOARD_ID = b.BOARD_ID
+                    AND bs.USERNAME = #{username}
+                    AND bs.DELETED_AT IS NULL
+              )
+          )
+        <if test="boardId != null">
+          AND i.BOARD_ID = #{boardId}
+        </if>
+        ORDER BY COALESCE(i.DUE_DATE, i.REQUEST_DATE), i.PRIORITY DESC, i.SORT_ORDER
+    </select>
+
+    <!-- ============================================= -->
+    <!-- Gantt 조회 -->
+    <!-- ============================================= -->
+
+    <!-- Gantt용 Item 목록 조회 (공유/배당 정보 포함) -->
+    <select id="selectItemsForGantt" resultType="java.util.HashMap">
+        SELECT
+            i.ITEM_ID as itemId,
+            i.BOARD_ID as boardId,
+            i.CONTENT as title,
+            i.DESCRIPTION as description,
+            i.STATUS as status,
+            i.PRIORITY as priority,
+            i.ASSIGNEE_USERNAME as assigneeUsername,
+            isa.ASSIGNED_BY as assignedByUsername,
+            i.REQUEST_DATE as requestDate,
+            i.DUE_DATE as dueDate,
+            i.PARENT_ITEM_ID as parentItemId,
+            i.ITEM_DEPTH as itemDepth,
+            i.CHILD_SORT_ORDER as childSortOrder,
+            i.SORT_ORDER as sortOrder,
+            i.CREATED_AT as createdAt,
+            b.BOARD_NAME as boardName,
+            b.OWNER_USERNAME as boardOwnerUsername,
+            uo.NAME as boardOwnerName,
+            ua.NAME as assigneeName,
+            uab.NAME as assignedByUserName,
+            pi.CONTENT as parentTitle,
+            -- 보드 공유 여부 (보드 소유자가 아닌 경우)
+            CASE WHEN b.OWNER_USERNAME != #{username} THEN 1 ELSE 0 END as isBoardShared,
+            -- 보드 공유해준 사용자명 (보드 소유자)
+            CASE WHEN b.OWNER_USERNAME != #{username} THEN uo.NAME ELSE NULL END as sharedByUserName,
+            -- 배당받은 업무 여부 (TB_ITEM_SHARE에서 ASSIGN 타입으로 공유받은 경우)
+            CASE WHEN isa.ITEM_SHARE_ID IS NOT NULL THEN 1 ELSE 0 END as isAssignedToMe
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        LEFT JOIN TB_USER uo ON b.OWNER_USERNAME = uo.USERNAME
+        LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+        LEFT JOIN TB_ITEM_SHARE isa ON i.ITEM_ID = isa.ITEM_ID
+            AND isa.USERNAME = #{username}
+            AND isa.SHARE_TYPE = 'ASSIGN'
+            AND isa.DELETED_AT IS NULL
+        LEFT JOIN TB_USER uab ON isa.ASSIGNED_BY = uab.USERNAME
+        LEFT JOIN TB_ITEM pi ON i.PARENT_ITEM_ID = pi.ITEM_ID
+        WHERE b.USE_YN = 'Y'
+          AND (
+              b.OWNER_USERNAME = #{username}
+              OR EXISTS (
+                  SELECT 1 FROM TB_BOARD_SHARE bs
+                  WHERE bs.BOARD_ID = b.BOARD_ID
+                    AND bs.USERNAME = #{username}
+                    AND bs.DELETED_AT IS NULL
+              )
+          )
+        <if test="boardId != null">
+          AND i.BOARD_ID = #{boardId}
+        </if>
+        <if test="startDate != null and endDate != null">
+          AND (
+              (i.REQUEST_DATE IS NOT NULL AND i.REQUEST_DATE &lt;= #{endDate})
+              OR (i.DUE_DATE IS NOT NULL AND i.DUE_DATE >= #{startDate})
+              OR (i.REQUEST_DATE IS NULL AND i.DUE_DATE IS NULL)
+          )
+        </if>
+        <if test="includeCompleted == null or includeCompleted == false">
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        </if>
+        <if test="includeCompleted != null and includeCompleted == true">
+          AND i.STATUS != 'DELETED'
+        </if>
+        ORDER BY
+            COALESCE(i.PARENT_ITEM_ID, i.ITEM_ID),
+            i.ITEM_DEPTH,
+            i.CHILD_SORT_ORDER,
+            i.SORT_ORDER,
+            i.CREATED_AT
+    </select>
+
+    <!-- 전체 업무의 날짜 범위 조회 (전체 현황 - 삭제된 항목만 제외) -->
+    <select id="selectDateRangeForGantt" resultType="java.util.HashMap">
+        SELECT
+            MIN(LEAST(
+                COALESCE(i.REQUEST_DATE, i.DUE_DATE, DATE(i.CREATED_AT)),
+                COALESCE(i.DUE_DATE, i.REQUEST_DATE, DATE(i.CREATED_AT))
+            )) as minDate,
+            MAX(GREATEST(
+                COALESCE(i.DUE_DATE, i.REQUEST_DATE, DATE(i.CREATED_AT)),
+                COALESCE(i.REQUEST_DATE, i.DUE_DATE, DATE(i.CREATED_AT))
+            )) as maxDate
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        WHERE i.STATUS != 'DELETED'
+          AND b.USE_YN = 'Y'
+          AND (
+              b.OWNER_USERNAME = #{username}
+              OR EXISTS (
+                  SELECT 1 FROM TB_BOARD_SHARE bs
+                  WHERE bs.BOARD_ID = b.BOARD_ID
+                    AND bs.USERNAME = #{username}
+                    AND bs.DELETED_AT IS NULL
+              )
+          )
+        <if test="boardId != null">
+          AND i.BOARD_ID = #{boardId}
+        </if>
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 동적 속성 조회 (시작일/완료일) -->
+    <!-- ============================================= -->
+
+    <!-- "시작일" 속성 정의 조회 -->
+    <select id="selectStartDateProperty" resultType="com.taskflow.domain.PropertyDef">
+        SELECT
+            p.PROPERTY_ID as propertyId,
+            p.PROPERTY_NAME as propertyName,
+            p.PROPERTY_TYPE as propertyType,
+            p.OWNER_TYPE as ownerType,
+            p.USE_YN as useYn
+        FROM TB_PROPERTY_DEF p
+        WHERE p.PROPERTY_NAME = '시작일'
+          AND p.PROPERTY_TYPE = 'DATE'
+          AND p.USE_YN = 'Y'
+        LIMIT 1
+    </select>
+
+    <!-- "완료일" 속성 정의 조회 -->
+    <select id="selectCompletionDateProperty" resultType="com.taskflow.domain.PropertyDef">
+        SELECT
+            p.PROPERTY_ID as propertyId,
+            p.PROPERTY_NAME as propertyName,
+            p.PROPERTY_TYPE as propertyType,
+            p.OWNER_TYPE as ownerType,
+            p.USE_YN as useYn
+        FROM TB_PROPERTY_DEF p
+        WHERE p.PROPERTY_NAME = '완료일'
+          AND p.PROPERTY_TYPE = 'DATE'
+          AND p.USE_YN = 'Y'
+        LIMIT 1
+    </select>
+
+    <!-- 업무별 시작일/완료일 속성값 조회 -->
+    <select id="selectItemPropertyDates" resultType="java.util.HashMap">
+        SELECT
+            ip.ITEM_ID as itemId,
+            ip.PROPERTY_ID as propertyId,
+            ip.VALUE_DATE as valueDate
+        FROM TB_ITEM_PROPERTY ip
+        WHERE ip.ITEM_ID IN
+        <foreach collection="itemIds" item="itemId" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+          AND ip.PROPERTY_ID IN (#{startDatePropertyId}, #{completionDatePropertyId})
+          AND ip.VALUE_DATE IS NOT NULL
+    </select>
+
+</mapper>

@@ -316,14 +316,20 @@ const priorityToOptionId: Record<string, number> = {
 
 // 속성값 가져오기 (TB_ITEM_PROPERTY → TB_ITEM 고정 필드 fallback)
 function getPropertyValue(propertyId: number): unknown {
+  // 속성 정의 조회 (MULTI_SELECT 파싱용)
+  const property = props.properties.find(p => p.propertyId === propertyId)
+
   // 1. 먼저 TB_ITEM_PROPERTY에서 값 확인
   const propValue = props.item.propertyValues?.[propertyId]
   if (propValue !== undefined && propValue !== null) {
+    // MULTI_SELECT 값을 배열로 파싱
+    if (property?.propertyType === 'MULTI_SELECT') {
+      return parseMultiSelectValue(propValue)
+    }
     return propValue
   }
 
   // 2. TB_ITEM 고정 필드에서 fallback (속성 정의 참조)
-  const property = props.properties.find(p => p.propertyId === propertyId)
   if (!property) return null
 
   // 상태 속성 (propertyName === '상태' 또는 시스템 상태 속성)
@@ -344,6 +350,35 @@ function getPropertyValue(propertyId: number): unknown {
   // 요청일/마감일은 TB_ITEM 고정 컬럼으로 처리됨 (TB_PROPERTY_DEF에 없음)
 
   return null
+}
+
+// MULTI_SELECT 값을 배열로 파싱
+function parseMultiSelectValue(value: unknown): number[] {
+  // 이미 배열인 경우
+  if (Array.isArray(value)) {
+    return value.map(v => typeof v === 'number' ? v : Number(v)).filter(n => !isNaN(n))
+  }
+  // 문자열인 경우 (쉼표로 구분된 ID 목록)
+  if (typeof value === 'string' && value.trim()) {
+    // JSON 배열 형태인지 확인
+    if (value.startsWith('[') && value.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(value)
+        if (Array.isArray(parsed)) {
+          return parsed.map(v => typeof v === 'number' ? v : Number(v)).filter(n => !isNaN(n))
+        }
+      } catch {
+        // JSON 파싱 실패 시 쉼표 구분으로 처리
+      }
+    }
+    // 쉼표로 구분된 문자열 파싱
+    return value.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n))
+  }
+  // 숫자인 경우 (단일 값)
+  if (typeof value === 'number') {
+    return [value]
+  }
+  return []
 }
 
 // 속성 옵션 가져오기

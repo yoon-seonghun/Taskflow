@@ -66,6 +66,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Todo List' }
       },
       {
+        path: 'calendar',
+        name: 'Calendar',
+        component: () => import('@/views/CalendarView.vue'),
+        meta: { title: '캘린더' }
+      },
+      {
+        path: 'gantt',
+        name: 'Gantt',
+        component: () => import('@/views/GanttView.vue'),
+        meta: { title: 'Gantt 차트' }
+      },
+      {
         path: 'templates',
         name: 'Templates',
         component: () => import('@/views/TemplatesView.vue'),

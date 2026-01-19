@@ -416,6 +416,13 @@ UPDATED_BY VARCHAR(50) NULL COMMENT '수정자 USERNAME'
 | TB_ITEM_PROPERTY_HISTORY | 업무 속성 변경 이력 |
 | TB_ITEM_SCORE | 업무 성과 점수 |
 
+### v2.3 신규 테이블 (Todo List)
+| 테이블 | 설명 |
+|--------|------|
+| TB_TODO | 개인 Todo 목록 (반복, 우선순위, 이관 지원) |
+| TB_TODO_SHARE | Todo 공유 (VIEW/EDIT 권한) |
+| TB_ITEM_CHECKLIST | 업무 내 체크리스트 항목 |
+
 ### TB_AUDIT_LOG (감사 로그)
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
@@ -615,6 +622,41 @@ GET    /api/audit-logs/recent           # 최근 관리 이력
 
 # SSE (실시간 동기화)
 GET    /api/sse/subscribe               # SSE 연결
+
+# Todo List (v2.3)
+GET    /api/todos                       # 내 Todo 목록
+GET    /api/todos/today                 # 오늘 마감 Todo
+GET    /api/todos/overdue               # 지연 Todo
+GET    /api/todos/completed             # 완료 Todo
+GET    /api/todos/shared                # 공유받은 Todo
+GET    /api/todos/transferred           # 이관받은 Todo
+POST   /api/todos                       # Todo 생성
+GET    /api/todos/{id}                  # Todo 상세
+PUT    /api/todos/{id}                  # Todo 수정
+DELETE /api/todos/{id}                  # Todo 삭제
+PUT    /api/todos/{id}/complete         # 완료 토글
+PUT    /api/todos/reorder               # 순서 변경
+
+# Todo 공유 (v2.3)
+GET    /api/todos/{todoId}/shares       # 공유 목록
+POST   /api/todos/{todoId}/shares       # 공유 추가
+PUT    /api/todo-shares/{shareId}       # 공유 권한 수정
+DELETE /api/todo-shares/{shareId}       # 공유 해제
+
+# Todo 이관 (v2.3)
+POST   /api/todos/{id}/transfer         # Todo 이관
+POST   /api/todos/transfer-all          # 일괄 이관 (사용자 삭제용)
+DELETE /api/todos/user/{userId}         # 사용자 Todo 전체 삭제
+
+# 업무 체크리스트 (v2.3)
+GET    /api/items/{itemId}/checklists           # 체크리스트 목록
+GET    /api/items/{itemId}/checklists/progress  # 진행률 조회
+POST   /api/items/{itemId}/checklists           # 체크리스트 추가
+PUT    /api/checklists/{id}                     # 체크리스트 수정
+PUT    /api/checklists/{id}/complete            # 완료 토글
+DELETE /api/checklists/{id}                     # 체크리스트 삭제
+PUT    /api/items/{itemId}/checklists/reorder   # 순서 변경
+GET    /api/checklists/my                       # 내 담당 체크리스트
 ```
 
 ### 쿼리 파라미터 (목록 조회)
@@ -969,14 +1011,17 @@ PC (>= 768px):
 ├─────────────────────────────────────────┤
 │  📋 업무 페이지          ← 메인 화면     │
 │  ✅ 완료 작업 메뉴                       │
+│  🗑️ 삭제된 작업                         │
+│  ─────────────────────                  │
+│  ☑️ Todo List            ← v2.3 신규    │
+│  ─────────────────────                  │
 │  📝 작업 등록 메뉴                       │
 │  📊 이력관리 메뉴                        │
 │  ─────────────────────                  │
-│  👤 사용자 등록 메뉴                     │
-│  👥 공유 사용자 등록 메뉴                │
+│  👥 그룹 관리 메뉴                       │
+│  📁 보드 관리 메뉴                       │
 │  ─────────────────────                  │
-│  🏢 부서 관리 메뉴                       │
-│  📁 그룹 관리 메뉴                       │
+│  ⚙️ 설정                                │
 └─────────────────────────────────────────┘
 ```
 
@@ -1254,6 +1299,245 @@ PC (>= 768px):
 - TB_ITEM.GROUP_ID로 연결
 - 업무 속성의 '그룹' 필드와 연동
 ```
+
+### 10. Todo List 메뉴 (v2.3)
+
+#### 10-1. 개요
+업무(Item)와 독립적인 개인 할 일 목록 관리 기능
+
+| 구분 | 설명 |
+|------|------|
+| 목적 | 개인 단위 할 일 관리 (업무와 별도) |
+| 특징 | 반복 설정, 우선순위, 마감일/시간, 공유, 이관 지원 |
+
+#### 10-2. Todo 필드
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| 제목 | TEXT | ✅ | Todo 제목 (최대 500자) |
+| 내용 | TEXT | - | 상세 설명 |
+| 마감일 | DATE | - | 마감 날짜 |
+| 마감시간 | TIME | - | 마감 시간 |
+| 우선순위 | SELECT | ✅ | URGENT/HIGH/NORMAL/LOW |
+| 반복 | SELECT | ✅ | NONE/DAILY/WEEKLY/MONTHLY/YEARLY |
+| 완료 여부 | CHECKBOX | ✅ | 완료 체크 |
+
+#### 10-3. 우선순위
+| 값 | 표시 | 색상 |
+|----|------|------|
+| URGENT | 긴급 | 빨강 |
+| HIGH | 높음 | 주황 |
+| NORMAL | 보통 | 파랑 |
+| LOW | 낮음 | 회색 |
+
+#### 10-4. 반복 설정
+| 값 | 설명 |
+|----|------|
+| NONE | 반복 없음 |
+| DAILY | 매일 |
+| WEEKLY | 매주 |
+| MONTHLY | 매월 |
+| YEARLY | 매년 |
+
+```
+[반복 동작]
+1. 반복이 설정된 Todo 완료 시
+2. 다음 마감일로 새 Todo 자동 생성
+3. 완료된 Todo는 완료 목록으로 이동
+```
+
+#### 10-5. 공유 기능
+| 권한 | 설명 |
+|------|------|
+| VIEW | 조회만 가능 |
+| EDIT | 조회 + 수정 가능 |
+
+#### 10-6. 이관 기능
+```
+[이관 시나리오]
+1. Todo 단건 이관: 다른 사용자에게 소유권 이전
+2. 사용자 삭제 시: 일괄 이관 또는 삭제 선택 모달 표시
+
+[이관 시 기록]
+- TRANSFERRED_FROM_USER_ID: 이전 소유자
+- TRANSFERRED_AT: 이관 일시
+```
+
+#### 10-7. UI 탭 구조
+```
+┌───────────────────────────────────────────────────┐
+│  [오늘] | 전체 | 공유받은 Todo | 완료              │  ← 탭 전환
+├───────────────────────────────────────────────────┤
+│  (선택된 탭의 Todo 목록 표시)                       │
+└───────────────────────────────────────────────────┘
+```
+
+### 11. 업무 체크리스트 (v2.3)
+
+업무(Item) 상세 패널 내 체크리스트 기능
+
+| 구성요소 | 설명 |
+|----------|------|
+| 체크박스 | 완료 여부 토글 |
+| 내용 | 체크리스트 항목 텍스트 |
+| 담당자 | 체크리스트별 담당자 지정 (선택) |
+| 진행률 | 완료/전체 수 표시 (예: 3/5) |
+
+```
+[체크리스트 예시]
+┌─────────────────────────────────────┐
+│ 체크리스트 (3/5)                     │
+├─────────────────────────────────────┤
+│ ☑ 요구사항 분석 완료        @홍길동  │
+│ ☑ 설계 문서 작성           @김철수  │
+│ ☑ 개발 완료               @이영희  │
+│ ☐ 테스트 진행 중           @박민수  │
+│ ☐ 배포 준비               @최지은  │
+├─────────────────────────────────────┤
+│ + 항목 추가                         │
+└─────────────────────────────────────┘
+```
+
+### 12. 캘린더 (Phase 5)
+
+#### 12-1. 개요
+개인/팀 일정 및 이벤트 관리 기능. 음력 날짜 지원 및 반복 일정 설정 포함.
+
+| 구분 | 설명 |
+|------|------|
+| 목적 | 개인/팀 일정 관리, 업무와 연계된 스케줄 관리 |
+| 특징 | 양력/음력 전환, 반복 일정, 종일 이벤트, 공유 |
+
+#### 12-2. 이벤트 필드
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| 제목 | TEXT | ✅ | 이벤트 제목 |
+| 내용 | TEXT | - | 상세 설명 |
+| 시작일 | DATE | ✅ | 시작 날짜 |
+| 종료일 | DATE | - | 종료 날짜 |
+| 시작시간 | TIME | - | 시작 시간 |
+| 종료시간 | TIME | - | 종료 시간 |
+| 종일 여부 | CHECKBOX | ✅ | 종일 이벤트 여부 |
+| 음력 여부 | CHECKBOX | ✅ | 음력 날짜 사용 여부 |
+| 반복 설정 | SELECT | - | 반복 유형 |
+| 장소 | TEXT | - | 이벤트 장소 |
+| 캘린더 | SELECT | ✅ | 소속 캘린더 |
+
+#### 12-3. 음력 변환 기능
+
+**라이브러리**: `korean-lunar-calendar` (npm)
+
+```
+[지원 범위]
+- 양력: 1000-01-01 ~ 2050-12-31
+- 음력: 1000-01-01 ~ 2050-11-18
+
+[API 사용법]
+const calendar = new KoreanLunarCalendar()
+
+// 양력 → 음력 변환
+calendar.setSolarDate(year, month, day)  // 반환: boolean (유효성)
+const lunar = calendar.getLunarCalendar()
+// lunar: { year, month, day, intercalation }
+
+// 음력 → 양력 변환
+calendar.setLunarDate(year, month, day, isLeapMonth)  // 반환: boolean (유효성)
+const solar = calendar.getSolarCalendar()
+// solar: { year, month, day }
+```
+
+**프론트엔드 유틸리티**: `frontend/src/utils/lunar.ts`
+| 함수 | 설명 |
+|------|------|
+| `solarToLunar(solarDate)` | 양력 → 음력 변환 |
+| `lunarToSolar(year, month, day, isLeapMonth)` | 음력 → 양력 변환 |
+| `isValidLunarDate(year, month, day, isLeapMonth)` | 음력 날짜 유효성 검증 |
+| `getLunarMonthDays(year, month, isLeapMonth)` | 음력 월 일수 조회 (29 또는 30) |
+| `hasLeapMonth(year, month)` | 해당 연도/월에 윤달 존재 여부 |
+| `precomputeMonthLunarDates(year, month)` | 월간 뷰용 음력 데이터 사전 계산 |
+
+#### 12-4. 음력 기념일 버튼
+
+음력 날짜 선택 시 자주 사용하는 음력 기념일을 빠르게 선택할 수 있는 버튼 제공.
+
+```
+[음력 기념일 목록]
+┌─────────────────────────────────────┐
+│ 🎉 설날 (1월 1일)                    │
+│ 🌕 정월대보름 (1월 15일)              │
+│ 🎋 단오 (5월 5일)                    │
+│ 🌌 칠석 (7월 7일)                    │
+│ 🌙 백중 (7월 15일)                   │
+│ 🎑 추석 (8월 15일)                   │
+│ 🍂 중양절 (9월 9일)                  │
+└─────────────────────────────────────┘
+
+[동작]
+1. 버튼 클릭 시 해당 음력 월/일 자동 선택
+2. 현재 선택된 연도의 음력 날짜로 설정
+3. 양력 변환 결과 즉시 표시
+```
+
+#### 12-5. 윤달 체크박스
+
+음력 달력에서 윤달(閏月, 윤달)을 선택하기 위한 체크박스.
+
+```
+[윤달이란?]
+- 음력은 1년이 약 354일로 양력보다 11일 짧음
+- 이 차이를 보정하기 위해 약 19년에 7번 윤달 삽입
+- 윤달은 해당 월을 한 번 더 반복 (예: 윤4월)
+
+[동작]
+1. 특정 연도에 윤달이 있는 월만 체크박스 활성화
+2. 체크 시 "윤N월"로 표시 (예: 윤4월)
+3. 윤달이 없는 연도/월은 체크박스 비활성화
+
+[예시]
+- 2025년: 윤6월 있음
+- 2023년: 윤2월 있음
+- 일반적으로 모든 월에 매년 윤달이 있는 것은 아님
+```
+
+**윤달 검증 함수**:
+```typescript
+// 해당 연도/월에 윤달이 있는지 확인
+function hasLeapMonth(year: number, month: number): boolean {
+  const calendar = new KoreanLunarCalendar()
+  return calendar.setLunarDate(year, month, 1, true)
+}
+```
+
+#### 12-6. 반복 일정 설정
+| 반복 유형 | 설명 | 옵션 |
+|----------|------|------|
+| NONE | 반복 없음 | - |
+| DAILY | 매일 | 간격(N일마다) |
+| WEEKLY | 매주 | 요일 선택, 간격(N주마다) |
+| MONTHLY | 매월 | 일자 또는 주차+요일 |
+| YEARLY | 매년 | 양력/음력 선택 |
+
+```
+[반복 종료 조건]
+- 종료일 지정: 특정 날짜까지
+- 횟수 지정: N회 반복 후 종료
+- 무한 반복: 종료 조건 없음
+```
+
+#### 12-7. 캘린더 뷰
+| 뷰 타입 | 설명 |
+|---------|------|
+| 월간 뷰 | 달력 형태로 이벤트 표시 |
+| 주간 뷰 | 주 단위 시간표 형태 |
+| 일간 뷰 | 하루 시간대별 표시 |
+| 목록 뷰 | 이벤트 리스트 형태 |
+
+#### 12-8. 관련 테이블
+| 테이블 | 설명 |
+|--------|------|
+| TB_CALENDAR | 캘린더 정의 |
+| TB_EVENT | 이벤트 |
+| TB_EVENT_SHARE | 이벤트 공유 |
+| TB_CALENDAR_SHARE | 캘린더 공유 |
 
 ---
 
@@ -1606,5 +1890,7 @@ public class GlobalExceptionHandler {
 | 1.1 | 2024-12-15 | - | 메뉴별 상세 기능 명세 추가, 모바일/PC 동작 차이 상세화, 이력관리 컬럼 명시, 속성 관리 UI 명세 추가, 코드 항목 관리 명세, 보안/실시간동기화/에러처리 섹션 추가, API 명세 상세화 |
 | 1.2 | 2024-12-15 | - | 부서 관리 메뉴 추가, 그룹 관리 메뉴 추가, 부서/그룹 API 추가, 사용자-부서-그룹 관계 정의 |
 | 1.3 | 2024-12-22 | - | TB_AUDIT_LOG 테이블 추가, 감사 로그 API 추가, 이력관리 메뉴에 관리 이력 탭 추가 |
+| 2.3 | 2025-01-18 | - | Todo List 기능 추가 (TB_TODO, TB_TODO_SHARE, TB_ITEM_CHECKLIST), Todo/체크리스트 API 추가, 메뉴 구조 업데이트 |
+| 2.4 | 2025-01-19 | - | 캘린더 기능 추가 (Phase 5), 음력 변환 기능 (korean-lunar-calendar), 음력 기념일/윤달 UI 명세, 반복 일정 설정 |
 ```
 ---
