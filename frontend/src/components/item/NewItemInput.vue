@@ -21,7 +21,7 @@ import { Button, EntityEditModal } from '@/components/common'
 import Autocomplete from '@/components/common/Autocomplete.vue'
 import type { AutocompleteOption } from '@/components/common/Autocomplete.vue'
 import type { ItemCreateRequest } from '@/types/item'
-import type { TaskTemplateSearchResult } from '@/types/template'
+import type { TaskTemplate, TaskTemplateSearchResult } from '@/types/template'
 import type { Category } from '@/types/category'
 
 interface Props {
@@ -44,8 +44,10 @@ const toast = useToast()
 const inputValue = ref('')
 const isLoading = ref(false)
 const isSearching = ref(false)
+const isLoadingTemplate = ref(false)  // v2.3.1: 템플릿 상세 로드 중 상태
 const searchResults = ref<AutocompleteOption[]>([])
 const selectedTemplate = ref<TaskTemplateSearchResult | null>(null)
+const selectedTemplateDetails = ref<TaskTemplate | null>(null)  // v2.3.1: 템플릿 상세 정보 (categoryId, properties 포함)
 const autocompleteRef = ref<InstanceType<typeof Autocomplete> | null>(null)
 
 // v2.0: 속성 선택 모달 상태
@@ -60,6 +62,20 @@ const boardCategories = ref<Category[]>([])
 // 등록 버튼 활성화 여부
 const canSubmit = computed(() => {
   return inputValue.value.trim().length > 0 && !isLoading.value && !props.disabled && props.boardId
+})
+
+// v2.3.1: 상속 우선순위 - 템플릿 선택 여부에 따라 보드 상속 결정
+// 템플릿 선택됨 → 템플릿의 category/properties 사용, boardId 전달 안함
+// 템플릿 미선택 → 보드 설정에서 상속, boardId 전달
+const inheritBoardId = computed(() => {
+  // 템플릿이 선택되어 있으면 보드 상속하지 않음
+  if (selectedTemplateDetails.value) {
+    console.log('[NewItemInput] 템플릿 선택됨 - 보드 상속 비활성화')
+    return null
+  }
+  // 템플릿 미선택 시 보드 상속
+  console.log('[NewItemInput] 템플릿 미선택 - 보드 상속 활성화:', props.boardId)
+  return props.boardId
 })
 
 // 검색 핸들러 (자동완성)
@@ -94,15 +110,56 @@ async function handleSearch(query: string) {
 }
 
 // 템플릿 선택 핸들러
-function handleSelect(option: AutocompleteOption) {
+// v2.3.1: 템플릿 선택 시 상세 정보(categoryId, properties) 로드
+async function handleSelect(option: AutocompleteOption) {
   inputValue.value = option.label
   selectedTemplate.value = option.data as TaskTemplateSearchResult
+
+  // 템플릿 상세 정보 로드 (categoryId, properties 포함)
+  const templateId = option.value as number
+  isLoadingTemplate.value = true
+  try {
+    const response = await templateApi.getTemplate(templateId)
+    if (response.success && response.data) {
+      selectedTemplateDetails.value = response.data
+      console.log('[NewItemInput] 템플릿 상세 로드 완료:', response.data)
+      console.log('[NewItemInput] 템플릿 categoryId:', response.data.categoryId)
+      console.log('[NewItemInput] 템플릿 properties:', response.data.properties)
+
+      // 템플릿의 카테고리와 속성을 초기값으로 설정
+      if (response.data.categoryId) {
+        selectedCategoryId.value = response.data.categoryId
+      }
+      if (response.data.properties && response.data.properties.length > 0) {
+        selectedPropertyIds.value = response.data.properties.map(p => p.propertyId)
+        // 속성 기본값 설정
+        const defaults: Record<number, string> = {}
+        for (const prop of response.data.properties) {
+          if (prop.defaultValue) {
+            defaults[prop.propertyId] = prop.defaultValue
+          }
+        }
+        selectedPropertyDefaults.value = defaults
+      }
+    }
+  } catch (error) {
+    console.error('[NewItemInput] 템플릿 상세 로드 실패:', error)
+    // 실패해도 기본 정보는 유지
+  } finally {
+    isLoadingTemplate.value = false
+  }
 }
 
 // 신규 생성 핸들러 (자동완성에서 새로 등록)
+// v2.3.1: 템플릿 미선택 시 보드 상속으로 전환
 async function handleCreate(value: string) {
   inputValue.value = value
   selectedTemplate.value = null
+  selectedTemplateDetails.value = null  // v2.3.1: 템플릿 상세 초기화 (보드 상속으로 전환)
+  // 템플릿 미선택 시 카테고리/속성 초기화 (보드 설정으로 상속받음)
+  selectedCategoryId.value = null
+  selectedPropertyIds.value = []
+  selectedPropertyDefaults.value = {}
   // 바로 등록하지 않고 입력값만 설정
 }
 
@@ -217,6 +274,7 @@ async function handlePropertySave(data: {
       // 입력값 초기화
       inputValue.value = ''
       selectedTemplate.value = null
+      selectedTemplateDetails.value = null  // v2.3.1: 템플릿 상세도 초기화
       searchResults.value = []
       selectedCategoryId.value = data.categoryId  // 카테고리 유지 (연속 등록 편의)
       selectedPropertyIds.value = data.propertyIds  // 속성 선택 유지 (연속 등록 편의)
@@ -249,10 +307,21 @@ function focus() {
   autocompleteRef.value?.focus()
 }
 
+// v2.3.1: 템플릿 선택 해제 (보드 상속으로 전환)
+function clearTemplateSelection() {
+  selectedTemplate.value = null
+  selectedTemplateDetails.value = null
+  // 템플릿 해제 시 카테고리/속성 초기화 (보드 설정으로 상속받음)
+  selectedCategoryId.value = null
+  selectedPropertyIds.value = []
+  selectedPropertyDefaults.value = {}
+}
+
 // 클리어
 function clear() {
   inputValue.value = ''
   selectedTemplate.value = null
+  selectedTemplateDetails.value = null  // v2.3.1: 템플릿 상세도 초기화
   searchResults.value = []
   autocompleteRef.value?.clear()
   // v2.0: 속성 초기화
@@ -326,10 +395,22 @@ defineExpose({ focus, clear })
           <span v-if="selectedTemplate.useCount > 0" class="text-[11px] text-primary-500 dark:text-primary-400">
             (사용 {{ selectedTemplate.useCount }}회)
           </span>
+          <!-- v2.3.1: 템플릿 상세 로드 상태 표시 -->
+          <span v-if="isLoadingTemplate" class="text-[11px] text-primary-500 dark:text-primary-400">
+            로드 중...
+          </span>
+          <template v-else-if="selectedTemplateDetails">
+            <span v-if="selectedTemplateDetails.categoryName" class="text-[11px] px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-800 text-primary-600 dark:text-primary-300">
+              {{ selectedTemplateDetails.categoryName }}
+            </span>
+            <span v-if="selectedTemplateDetails.properties && selectedTemplateDetails.properties.length > 0" class="text-[11px] text-primary-500 dark:text-primary-400">
+              속성 {{ selectedTemplateDetails.properties.length }}개
+            </span>
+          </template>
         </div>
         <button
           class="p-1 text-primary-400 dark:text-primary-500 hover:text-primary-600 dark:hover:text-primary-300 rounded transition-colors"
-          @click="selectedTemplate = null"
+          @click="clearTemplateSelection"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -339,10 +420,13 @@ defineExpose({ focus, clear })
     </Transition>
 
     <!-- v2.0: 속성 선택 모달 (EntityEditModal 사용) -->
+    <!-- v2.3.1: 2단계 상속 - 템플릿 선택 시 템플릿에서 상속, 미선택 시 보드에서 상속 -->
     <EntityEditModal
+      :key="`item-modal-${selectedTemplateDetails?.templateId || 'no-template'}-${inheritBoardId || 'no-board'}`"
       v-model="showPropertyModal"
       mode="item"
-      title="새 업무 등록"
+      :title="selectedTemplateDetails ? `새 업무 등록 (템플릿: ${selectedTemplateDetails.content.substring(0, 20)}...)` : '새 업무 등록'"
+      :board-id="inheritBoardId"
       :categories="boardCategories"
       :show-color="false"
       name-label="업무명"

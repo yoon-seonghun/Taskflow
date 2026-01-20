@@ -28,6 +28,9 @@ export interface Todo {
   repeatEndDate?: string
   nextDueDate?: string
   parentTodoId?: number
+  groupId?: number
+  groupName?: string
+  groupColor?: string
   transferredFromUserId?: number
   transferredFromUserName?: string
   transferredAt?: string
@@ -38,6 +41,7 @@ export interface Todo {
   shareCount?: number
   isOverdue?: boolean
   isDueToday?: boolean
+  isGroupShared?: boolean  // 그룹 공유 여부 (본인 소유가 아닌 그룹 할일)
   shares?: TodoShare[]
 }
 
@@ -79,6 +83,7 @@ export interface TodoCreateRequest {
   repeatInterval?: number
   repeatDays?: string
   repeatEndDate?: string
+  groupId?: number
 }
 
 /**
@@ -96,6 +101,7 @@ export interface TodoUpdateRequest {
   repeatInterval?: number
   repeatDays?: string
   repeatEndDate?: string
+  groupId?: number
 }
 
 /**

@@ -13,7 +13,8 @@ public enum DbType {
     MYSQL("MySQL", "com.mysql.cj.jdbc.Driver", 3306, "SELECT 1"),
     ORACLE("Oracle", "oracle.jdbc.OracleDriver", 1521, "SELECT 1 FROM DUAL"),
     MSSQL("SQL Server", "com.microsoft.sqlserver.jdbc.SQLServerDriver", 1433, "SELECT 1"),
-    TIBERO("Tibero", "com.tmax.tibero.jdbc.TbDriver", 8629, "SELECT 1 FROM DUAL");
+    TIBERO6("Tibero 6", "com.tmax.tibero.jdbc.TbDriver", 8629, "SELECT 1 FROM DUAL"),
+    TIBERO7("Tibero 7", "com.tmax.tibero.jdbc.TbDriver", 8629, "SELECT 1 FROM DUAL");
 
     private final String displayName;
     private final String driverClassName;

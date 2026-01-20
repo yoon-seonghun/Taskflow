@@ -306,6 +306,70 @@ public class UserCalendarService {
     }
 
     // =============================================
+    // 캘린더 이관
+    // =============================================
+
+    /**
+     * 캘린더 이관 (소유권 이전)
+     */
+    @Transactional
+    public UserCalendarResponse transferCalendar(Long calendarId, String targetUsername, String currentUsername) {
+        Calendar calendar = calendarMapper.findById(calendarId)
+                .orElseThrow(() -> new BusinessException("캘린더를 찾을 수 없습니다."));
+
+        // 소유자 확인
+        if (!calendar.getOwnerUsername().equals(currentUsername)) {
+            throw new BusinessException("캘린더를 이관할 권한이 없습니다.");
+        }
+
+        // 기본 캘린더는 이관 불가
+        if (Boolean.TRUE.equals(calendar.getIsDefault())) {
+            throw new BusinessException("기본 캘린더는 이관할 수 없습니다.");
+        }
+
+        // 자기 자신에게 이관 불가
+        if (targetUsername.equals(currentUsername)) {
+            throw new BusinessException("자기 자신에게는 이관할 수 없습니다.");
+        }
+
+        // 대상 사용자 존재 확인
+        if (!userMapper.existsByUsername(targetUsername)) {
+            throw new BusinessException("이관 대상 사용자를 찾을 수 없습니다.");
+        }
+
+        String oldOwner = calendar.getOwnerUsername();
+
+        // 기존 공유 정보 중 대상 사용자 공유는 제거
+        shareMapper.delete(calendarId, targetUsername, currentUsername);
+
+        // 소유자 변경
+        calendar.setOwnerUsername(targetUsername);
+        calendar.setIsDefault(false);  // 이관 시 기본 캘린더 해제
+        calendar.setUpdatedBy(currentUsername);
+
+        calendarMapper.update(calendar);
+
+        // 이전 소유자에게 VIEW 권한으로 공유 추가 (선택사항)
+        CalendarShare formerOwnerShare = CalendarShare.builder()
+                .calendarId(calendarId)
+                .shareType("VIEW")
+                .username(currentUsername)
+                .sharedBy(targetUsername)
+                .createdBy(currentUsername)
+                .build();
+        shareMapper.insert(formerOwnerShare);
+
+        log.info("Calendar {} transferred from {} to {}", calendarId, oldOwner, targetUsername);
+
+        // 감사 로그
+        auditLogService.log("CALENDAR", calendarId, "TRANSFER", currentUsername,
+                String.format("캘린더 이관: %s (%s → %s)", calendar.getCalendarName(), oldOwner, targetUsername),
+                null, null, targetUsername);
+
+        return getCalendar(calendarId, targetUsername);
+    }
+
+    // =============================================
     // 권한 확인
     // =============================================
 

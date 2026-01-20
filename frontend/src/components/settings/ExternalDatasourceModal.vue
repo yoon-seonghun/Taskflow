@@ -60,7 +60,8 @@ const defaultPorts: Record<string, number> = {
   MYSQL: 3306,
   ORACLE: 1521,
   MSSQL: 1433,
-  TIBERO: 8629
+  TIBERO6: 8629,
+  TIBERO7: 8629
 }
 
 // Oracle인지 확인

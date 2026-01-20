@@ -40,11 +40,16 @@ public class TodoService {
             throw new BusinessException("Todo를 찾을 수 없습니다.");
         }
 
-        // 접근 권한 확인 (소유자 또는 공유받은 사용자)
+        // 접근 권한 확인 (소유자, 공유받은 사용자, 또는 그룹 멤버)
         if (!todo.getOwnerUserId().equals(currentUserId)) {
             String permission = todoShareMapper.getPermission(todoId, currentUserId);
             if (permission == null) {
-                throw new BusinessException("접근 권한이 없습니다.");
+                // 그룹 멤버인지 확인
+                if (todo.getGroupId() == null || !isGroupMember(currentUserId, todo.getGroupId())) {
+                    throw new BusinessException("접근 권한이 없습니다.");
+                }
+                // 그룹 멤버인 경우 isGroupShared 설정
+                todo.setIsGroupShared(true);
             }
         }
 
@@ -57,12 +62,22 @@ public class TodoService {
     }
 
     /**
-     * 사용자의 Todo 목록 조회
+     * 사용자가 특정 그룹의 멤버인지 확인
+     */
+    private boolean isGroupMember(Long userId, Long groupId) {
+        User user = userMapper.findById(userId).orElse(null);
+        if (user == null) return false;
+
+        return userMapper.isGroupMember(user.getUsername(), groupId);
+    }
+
+    /**
+     * 사용자의 Todo 목록 조회 (본인 소유 + 그룹 공유)
      */
     @Transactional(readOnly = true)
-    public List<TodoResponse> getTodos(Long ownerUserId, Boolean includeCompleted,
-                                       LocalDate dueDateFrom, LocalDate dueDateTo) {
-        return todoMapper.selectByOwnerUserId(ownerUserId, includeCompleted, dueDateFrom, dueDateTo)
+    public List<TodoResponse> getTodos(Long userId, Boolean includeCompleted,
+                                       LocalDate dueDateFrom, LocalDate dueDateTo, Long groupId) {
+        return todoMapper.selectByUserWithGroup(userId, includeCompleted, dueDateFrom, dueDateTo, groupId)
                 .stream()
                 .map(TodoResponse::from)
                 .collect(Collectors.toList());
@@ -158,6 +173,7 @@ public class TodoService {
                 .repeatInterval(request.getRepeatInterval())
                 .repeatDays(request.getRepeatDays())
                 .repeatEndDate(request.getRepeatEndDate())
+                .groupId(request.getGroupId())
                 .createdBy(currentUsername)
                 .build();
 
@@ -183,11 +199,14 @@ public class TodoService {
             throw new BusinessException("Todo를 찾을 수 없습니다.");
         }
 
-        // 수정 권한 확인 (소유자 또는 EDIT 권한)
+        // 수정 권한 확인 (소유자, EDIT 권한, 또는 그룹 멤버)
         if (!todo.getOwnerUserId().equals(currentUserId)) {
             String permission = todoShareMapper.getPermission(todoId, currentUserId);
             if (!"EDIT".equals(permission)) {
-                throw new BusinessException("수정 권한이 없습니다.");
+                // 그룹 멤버인지 확인 (그룹 멤버는 수정 가능)
+                if (todo.getGroupId() == null || !isGroupMember(currentUserId, todo.getGroupId())) {
+                    throw new BusinessException("수정 권한이 없습니다.");
+                }
             }
         }
 
@@ -230,6 +249,9 @@ public class TodoService {
         if (request.getRepeatEndDate() != null) {
             todo.setRepeatEndDate(request.getRepeatEndDate());
         }
+        if (request.getGroupId() != null) {
+            todo.setGroupId(request.getGroupId());
+        }
 
         todo.setUpdatedBy(currentUsername);
 
@@ -250,11 +272,14 @@ public class TodoService {
             throw new BusinessException("Todo를 찾을 수 없습니다.");
         }
 
-        // 수정 권한 확인
+        // 수정 권한 확인 (소유자, EDIT 권한, 또는 그룹 멤버)
         if (!todo.getOwnerUserId().equals(currentUserId)) {
             String permission = todoShareMapper.getPermission(todoId, currentUserId);
             if (!"EDIT".equals(permission)) {
-                throw new BusinessException("수정 권한이 없습니다.");
+                // 그룹 멤버인지 확인 (그룹 멤버는 완료 처리 가능)
+                if (todo.getGroupId() == null || !isGroupMember(currentUserId, todo.getGroupId())) {
+                    throw new BusinessException("수정 권한이 없습니다.");
+                }
             }
         }
 

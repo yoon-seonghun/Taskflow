@@ -20,6 +20,7 @@ export const todoApi = {
     includeCompleted?: boolean
     dueDateFrom?: string
     dueDateTo?: string
+    groupId?: number
   }) {
     return get<Todo[]>('/todos', params)
   },

@@ -757,7 +757,7 @@ defineExpose({ resetForm })
 
       <!-- 소속 그룹 -->
       <div class="form-field">
-        <label class="block text-[13px] font-medium text-gray-700 mb-1">소속 그룹</label>
+        <label class="block text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1">소속 그룹</label>
 
         <!-- 선택된 그룹 태그 -->
         <div v-if="selectedGroups.length > 0" class="tags-container">
@@ -766,8 +766,8 @@ defineExpose({ resetForm })
             :key="group.groupId"
             class="tag"
             :style="{
-              backgroundColor: group.groupColor ? `${group.groupColor}20` : '#E5E7EB',
-              borderColor: group.groupColor || '#9CA3AF'
+              backgroundColor: group.groupColor ? `${group.groupColor}20` : undefined,
+              borderColor: group.groupColor || undefined
             }"
           >
             <span
@@ -965,7 +965,9 @@ defineExpose({ resetForm })
 
 .tag {
   @apply inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium
-         rounded-md border;
+         rounded-md border
+         bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-500
+         text-gray-700 dark:text-gray-200;
 }
 
 .tag-dot {

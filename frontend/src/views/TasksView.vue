@@ -12,6 +12,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useBoardStore } from '@/stores/board'
 import { useItemStore } from '@/stores/item'
 import { useCategoryStore } from '@/stores/category'
+import { useGroupStore } from '@/stores/group'
 import { useToast } from '@/composables/useToast'
 import { boardApi } from '@/api/board'
 import { Button, Select, Spinner, EntityEditModal } from '@/components/common'
@@ -28,6 +29,7 @@ import type { Category } from '@/types/category'
 const boardStore = useBoardStore()
 const itemStore = useItemStore()
 const categoryStore = useCategoryStore()
+const groupStore = useGroupStore()
 const toast = useToast()
 
 // 상태
@@ -71,6 +73,18 @@ const currentCategoryColor = computed(() => currentCategory.value?.categoryColor
 type StatusFilter = 'all' | 'not_started' | 'in_progress' | 'overdue' | 'pending'
 const statusFilter = ref<StatusFilter>('all')
 
+// 그룹 필터
+const selectedGroupId = ref<number | null>(null)
+
+// 그룹 옵션
+const groupOptions = computed(() => [
+  { value: null, label: '전체 그룹' },
+  ...groupStore.activeGroups.map(g => ({
+    value: g.groupId,
+    label: g.groupName
+  }))
+])
+
 // 현재 선택된 보드
 const currentBoardId = computed(() => boardStore.currentBoardId)
 
@@ -91,9 +105,15 @@ const viewType = computed({
 // 활성 아이템 (완료/삭제 제외)
 const activeItems = computed(() => itemStore.activeItems)
 
-// 필터별 카운트
+// 필터별 카운트 (그룹 필터 적용된 상태에서)
 const filterCounts = computed(() => {
-  const items = activeItems.value
+  let items = activeItems.value
+
+  // 그룹 필터 적용
+  if (selectedGroupId.value !== null) {
+    items = items.filter(i => i.groupId === selectedGroupId.value)
+  }
+
   return {
     all: items.length,
     not_started: items.filter(i => i.status === 'NOT_STARTED').length,
@@ -114,8 +134,14 @@ const filterTabs = computed(() => [
 
 // 필터링된 아이템 (ItemTable 등에 전달)
 const filteredItems = computed(() => {
-  const items = activeItems.value
+  let items = activeItems.value
 
+  // 그룹 필터 적용
+  if (selectedGroupId.value !== null) {
+    items = items.filter(i => i.groupId === selectedGroupId.value)
+  }
+
+  // 상태 필터 적용
   switch (statusFilter.value) {
     case 'not_started':
       return items.filter(i => i.status === 'NOT_STARTED')
@@ -196,6 +222,11 @@ function handleViewTypeChange(type: string | number | null) {
 // 필터 변경 핸들러
 function handleFilterChange(filter: StatusFilter) {
   statusFilter.value = filter
+}
+
+// 그룹 필터 변경 핸들러
+function handleGroupFilterChange(groupId: number | string | null) {
+  selectedGroupId.value = groupId === '' || groupId === null ? null : Number(groupId)
 }
 
 // 카테고리 목록 로드
@@ -355,6 +386,8 @@ onMounted(() => {
   boardStore.loadViewType()
   loadBoards()
   loadCategories()
+  // 그룹 목록 로드
+  groupStore.fetchGroups({ useYn: 'Y' })
 })
 </script>
 
@@ -456,9 +489,23 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 필터 탭 -->
+    <!-- 필터 영역 -->
     <div v-if="currentBoardId && !isLoading" class="flex-shrink-0 mb-4">
-      <div class="flex items-center gap-1 p-1 bg-gray-100 rounded-lg dark:bg-gray-800">
+      <div class="flex items-center gap-3">
+        <!-- 그룹 필터 -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">그룹</span>
+          <Select
+            :model-value="selectedGroupId"
+            :options="groupOptions"
+            placeholder="전체 그룹"
+            class="w-36"
+            @update:model-value="handleGroupFilterChange"
+          />
+        </div>
+
+        <!-- 상태 필터 탭 -->
+        <div class="flex items-center gap-1 p-1 bg-gray-100 rounded-lg dark:bg-gray-800">
         <button
           v-for="tab in filterTabs"
           :key="tab.value"
@@ -492,6 +539,7 @@ onMounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </button>
+        </div>
       </div>
     </div>
 
@@ -525,6 +573,7 @@ onMounted(() => {
         v-else-if="viewType === 'table'"
         :board-id="currentBoardId"
         :filter="statusFilter"
+        :group-id="selectedGroupId"
         @item-click="handleItemClick"
       />
 
@@ -533,6 +582,7 @@ onMounted(() => {
         v-else-if="viewType === 'kanban'"
         :board-id="currentBoardId"
         :filter="statusFilter"
+        :group-id="selectedGroupId"
         @item-click="handleItemClick"
       />
 
@@ -541,6 +591,7 @@ onMounted(() => {
         v-else-if="viewType === 'list'"
         :board-id="currentBoardId"
         :filter="statusFilter"
+        :group-id="selectedGroupId"
         @item-click="handleItemClick"
       />
     </div>

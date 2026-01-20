@@ -95,6 +95,33 @@
             윤달
           </span>
         </label>
+        <!-- 윤달 도움말 툴팁 -->
+        <span class="tooltip-container ml-1">
+          <svg class="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="tooltip-popup tooltip-popup-right">
+            <div class="tooltip-title">윤달(閏月) 체크박스</div>
+            <div class="tooltip-section">
+              <div class="tooltip-subtitle">윤달이란?</div>
+              <ul class="tooltip-list">
+                <li>음력 1년은 약 354일 (양력보다 11일 짧음)</li>
+                <li>이 차이를 보정하기 위해 19년에 약 7번 윤달 삽입</li>
+                <li>윤달은 특정 월을 한 번 더 반복</li>
+              </ul>
+            </div>
+            <div class="tooltip-section">
+              <div class="tooltip-subtitle">예시</div>
+              <ul class="tooltip-list">
+                <li>2023년: 윤2월 → 2월, <strong>윤2월</strong>, 3월 순서</li>
+                <li>2025년: 윤6월 → 6월, <strong>윤6월</strong>, 7월 순서</li>
+              </ul>
+            </div>
+            <div class="tooltip-hint">
+              해당 연도/월에 윤달이 없으면 비활성화됨
+            </div>
+          </div>
+        </span>
         <span v-if="leapMonthOfYear" class="ml-2 text-xs text-gray-500 dark:text-gray-400">
           ({{ lunarYear }}년 {{ leapMonthOfYear }}월에 윤달 있음)
         </span>
@@ -113,7 +140,36 @@
 
     <!-- 음력 기념일 바로가기 -->
     <div v-if="isLunar && showHolidays" class="mt-3">
-      <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">음력 기념일:</div>
+      <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
+        <span>음력 기념일:</span>
+        <span class="tooltip-container">
+          <svg class="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="tooltip-popup">
+            <div class="tooltip-title">자주 사용하는 음력 날짜를 빠르게 선택</div>
+            <table class="tooltip-table">
+              <thead>
+                <tr>
+                  <th>버튼</th>
+                  <th>음력 날짜</th>
+                  <th>용도</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>설날</td><td>1월 1일</td><td>새해 첫날</td></tr>
+                <tr><td>정월대보름</td><td>1월 15일</td><td>첫 보름달</td></tr>
+                <tr><td>단오</td><td>5월 5일</td><td>단오절</td></tr>
+                <tr><td>칠석</td><td>7월 7일</td><td>견우직녀</td></tr>
+                <tr><td>백중</td><td>7월 15일</td><td>백중날</td></tr>
+                <tr><td>추석</td><td>8월 15일</td><td>한가위</td></tr>
+                <tr><td>중양절</td><td>9월 9일</td><td>중양절</td></tr>
+              </tbody>
+            </table>
+            <div class="tooltip-hint">버튼 클릭 → 음력 월/일 자동 입력 → 양력 변환</div>
+          </div>
+        </span>
+      </div>
       <div class="flex flex-wrap gap-1">
         <button
           v-for="holiday in lunarHolidays"
@@ -472,5 +528,76 @@ onMounted(() => {
 
 .form-checkbox {
   @apply h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500;
+}
+
+/* 툴팁 스타일 */
+.tooltip-container {
+  @apply relative inline-flex;
+}
+
+.tooltip-popup {
+  @apply invisible absolute z-50 p-3 text-xs bg-gray-900 text-white rounded-lg shadow-lg
+         opacity-0 transition-opacity whitespace-nowrap
+         left-0 top-full mt-1
+         dark:bg-gray-700;
+  min-width: 280px;
+}
+
+.tooltip-container:hover .tooltip-popup {
+  @apply visible opacity-100;
+}
+
+.tooltip-title {
+  @apply font-medium mb-2 text-gray-200;
+}
+
+.tooltip-table {
+  @apply w-full border-collapse text-left;
+}
+
+.tooltip-table th {
+  @apply px-2 py-1 border-b border-gray-700 text-gray-400 font-medium;
+}
+
+.tooltip-table td {
+  @apply px-2 py-1 border-b border-gray-700/50 text-gray-300;
+}
+
+.tooltip-table tr:last-child td {
+  @apply border-b-0;
+}
+
+.tooltip-hint {
+  @apply mt-2 pt-2 border-t border-gray-700 text-gray-400 text-center;
+}
+
+/* 오른쪽 위치 툴팁 (윤달용) */
+.tooltip-popup-right {
+  @apply left-auto right-0;
+}
+
+.tooltip-section {
+  @apply mb-2;
+}
+
+.tooltip-subtitle {
+  @apply font-medium text-gray-300 mb-1;
+}
+
+.tooltip-list {
+  @apply pl-3 space-y-0.5 text-gray-400;
+}
+
+.tooltip-list li {
+  @apply relative;
+}
+
+.tooltip-list li::before {
+  content: '•';
+  @apply absolute -left-2 text-gray-500;
+}
+
+.tooltip-list strong {
+  @apply text-blue-400;
 }
 </style>

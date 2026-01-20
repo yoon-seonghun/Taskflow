@@ -30,6 +30,7 @@
         <result property="recurrenceDays" column="RECURRENCE_DAYS"/>
         <result property="exceptionDates" column="EXCEPTION_DATES"/>
         <result property="parentEventId" column="PARENT_EVENT_ID"/>
+        <result property="groupId" column="GROUP_ID"/>
         <result property="status" column="STATUS"/>
         <result property="createdAt" column="CREATED_AT"/>
         <result property="createdBy" column="CREATED_BY"/>
@@ -44,6 +45,9 @@
         <result property="sharedByName" column="SHARED_BY_NAME"/>
         <result property="shareType" column="SHARE_TYPE"/>
         <result property="accessType" column="ACCESS_TYPE"/>
+        <result property="groupName" column="GROUP_NAME"/>
+        <result property="groupColor" column="GROUP_COLOR"/>
+        <result property="isGroupShared" column="IS_GROUP_SHARED"/>
     </resultMap>
 
     <!-- ============================================= -->
@@ -55,13 +59,13 @@
             START_DATE, END_DATE, START_TIME, END_TIME, IS_ALL_DAY,
             IS_LUNAR, LUNAR_MONTH, LUNAR_DAY, LUNAR_LEAP_MONTH,
             IS_RECURRING, RECURRENCE_TYPE, RECURRENCE_INTERVAL, RECURRENCE_END_DATE,
-            RECURRENCE_COUNT, RECURRENCE_DAYS, PARENT_EVENT_ID, STATUS, CREATED_BY
+            RECURRENCE_COUNT, RECURRENCE_DAYS, PARENT_EVENT_ID, GROUP_ID, STATUS, CREATED_BY
         ) VALUES (
             #{calendarId}, #{ownerUsername}, #{title}, #{description}, #{location},
             #{startDate}, #{endDate}, #{startTime}, #{endTime}, #{isAllDay},
             #{isLunar}, #{lunarMonth}, #{lunarDay}, #{lunarLeapMonth},
             #{isRecurring}, #{recurrenceType}, #{recurrenceInterval}, #{recurrenceEndDate},
-            #{recurrenceCount}, #{recurrenceDays}, #{parentEventId}, #{status}, #{createdBy}
+            #{recurrenceCount}, #{recurrenceDays}, #{parentEventId}, #{groupId, jdbcType=BIGINT}, #{status}, #{createdBy}
         )
     </insert>
 
@@ -90,6 +94,7 @@
             RECURRENCE_END_DATE = #{recurrenceEndDate},
             RECURRENCE_COUNT = #{recurrenceCount},
             RECURRENCE_DAYS = #{recurrenceDays},
+            GROUP_ID = #{groupId, jdbcType=BIGINT},
             UPDATED_BY = #{updatedBy}
         WHERE EVENT_ID = #{eventId}
           AND STATUS != 'DELETED'
@@ -136,10 +141,13 @@
             e.*,
             u.NAME as OWNER_NAME,
             c.CALENDAR_NAME as CALENDAR_NAME,
-            c.COLOR as CALENDAR_COLOR
+            c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR
         FROM TB_EVENT e
         INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
         LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
         WHERE e.EVENT_ID = #{eventId}
           AND e.STATUS != 'DELETED'
     </select>
@@ -150,6 +158,8 @@
             u.NAME as OWNER_NAME,
             c.CALENDAR_NAME as CALENDAR_NAME,
             c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR,
             CASE WHEN e.OWNER_USERNAME = #{username} THEN FALSE ELSE TRUE END as IS_SHARED,
             COALESCE(es.SHARED_BY, cs.SHARED_BY) as SHARED_BY_USERNAME,
             COALESCE(esu.NAME, csu.NAME) as SHARED_BY_NAME,
@@ -158,11 +168,17 @@
                 WHEN e.OWNER_USERNAME = #{username} THEN 'OWNER'
                 WHEN es.SHARE_TYPE IS NOT NULL THEN es.SHARE_TYPE
                 WHEN cs.SHARE_TYPE IS NOT NULL THEN cs.SHARE_TYPE
+                WHEN ug.USER_GROUP_ID IS NOT NULL THEN 'EDIT'
                 ELSE NULL
-            END as ACCESS_TYPE
+            END as ACCESS_TYPE,
+            CASE
+                WHEN e.OWNER_USERNAME != #{username} AND e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL THEN TRUE
+                ELSE FALSE
+            END as IS_GROUP_SHARED
         FROM TB_EVENT e
         INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
         LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
         LEFT JOIN TB_EVENT_SHARE es ON e.EVENT_ID = es.EVENT_ID
             AND es.USERNAME = #{username}
             AND es.DELETED_AT IS NULL
@@ -171,12 +187,16 @@
             AND cs.USERNAME = #{username}
             AND cs.DELETED_AT IS NULL
         LEFT JOIN TB_USER csu ON cs.SHARED_BY = csu.USERNAME
+        LEFT JOIN TB_USER_GROUP ug ON e.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = #{username}
+            AND ug.DELETED_AT IS NULL
         WHERE e.EVENT_ID = #{eventId}
           AND e.STATUS != 'DELETED'
           AND (
               e.OWNER_USERNAME = #{username}
               OR es.EVENT_SHARE_ID IS NOT NULL
               OR cs.CALENDAR_SHARE_ID IS NOT NULL
+              OR (e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL)
           )
     </select>
 
@@ -186,6 +206,8 @@
             u.NAME as OWNER_NAME,
             c.CALENDAR_NAME as CALENDAR_NAME,
             c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR,
             CASE WHEN e.OWNER_USERNAME = #{username} THEN FALSE ELSE TRUE END as IS_SHARED,
             COALESCE(es.SHARED_BY, cs.SHARED_BY) as SHARED_BY_USERNAME,
             COALESCE(esu.NAME, csu.NAME) as SHARED_BY_NAME,
@@ -194,11 +216,17 @@
                 WHEN e.OWNER_USERNAME = #{username} THEN 'OWNER'
                 WHEN es.SHARE_TYPE IS NOT NULL THEN es.SHARE_TYPE
                 WHEN cs.SHARE_TYPE IS NOT NULL THEN cs.SHARE_TYPE
+                WHEN ug.USER_GROUP_ID IS NOT NULL THEN 'EDIT'
                 ELSE NULL
-            END as ACCESS_TYPE
+            END as ACCESS_TYPE,
+            CASE
+                WHEN e.OWNER_USERNAME != #{username} AND e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL THEN TRUE
+                ELSE FALSE
+            END as IS_GROUP_SHARED
         FROM TB_EVENT e
         INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID AND c.USE_YN = 'Y'
         LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
         LEFT JOIN TB_EVENT_SHARE es ON e.EVENT_ID = es.EVENT_ID
             AND es.USERNAME = #{username}
             AND es.DELETED_AT IS NULL
@@ -207,6 +235,9 @@
             AND cs.USERNAME = #{username}
             AND cs.DELETED_AT IS NULL
         LEFT JOIN TB_USER csu ON cs.SHARED_BY = csu.USERNAME
+        LEFT JOIN TB_USER_GROUP ug ON e.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = #{username}
+            AND ug.DELETED_AT IS NULL
         WHERE e.STATUS = 'ACTIVE'
           AND (
               /* 일반 이벤트: 날짜 범위 내 */
@@ -224,10 +255,15 @@
               <if test="includeShared == true">
               OR es.EVENT_SHARE_ID IS NOT NULL
               OR cs.CALENDAR_SHARE_ID IS NOT NULL
+              /* 그룹 공유: 그룹 멤버인 경우 */
+              OR (e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL)
               </if>
           )
           <if test="calendarId != null">
           AND e.CALENDAR_ID = #{calendarId}
+          </if>
+          <if test="groupId != null">
+          AND e.GROUP_ID = #{groupId}
           </if>
         ORDER BY e.START_DATE, e.START_TIME, e.TITLE
     </select>
@@ -237,10 +273,13 @@
             e.*,
             u.NAME as OWNER_NAME,
             c.CALENDAR_NAME as CALENDAR_NAME,
-            c.COLOR as CALENDAR_COLOR
+            c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR
         FROM TB_EVENT e
         INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
         LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
         WHERE e.CALENDAR_ID = #{calendarId}
           AND e.STATUS != 'DELETED'
         ORDER BY e.START_DATE, e.START_TIME
@@ -251,10 +290,13 @@
             e.*,
             u.NAME as OWNER_NAME,
             c.CALENDAR_NAME as CALENDAR_NAME,
-            c.COLOR as CALENDAR_COLOR
+            c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR
         FROM TB_EVENT e
         INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
         LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
         WHERE e.PARENT_EVENT_ID = #{parentEventId}
           AND e.STATUS != 'DELETED'
         ORDER BY e.START_DATE
@@ -270,12 +312,16 @@
         LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
             AND cs.USERNAME = #{username}
             AND cs.DELETED_AT IS NULL
+        LEFT JOIN TB_USER_GROUP ug ON e.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = #{username}
+            AND ug.DELETED_AT IS NULL
         WHERE e.EVENT_ID = #{eventId}
           AND e.STATUS != 'DELETED'
           AND (
               e.OWNER_USERNAME = #{username}
               OR es.EVENT_SHARE_ID IS NOT NULL
               OR cs.CALENDAR_SHARE_ID IS NOT NULL
+              OR (e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL)
           )
     </select>
 
@@ -285,6 +331,7 @@
                 WHEN e.OWNER_USERNAME = #{username} THEN 'OWNER'
                 WHEN es.SHARE_TYPE IS NOT NULL THEN es.SHARE_TYPE
                 WHEN cs.SHARE_TYPE IS NOT NULL THEN cs.SHARE_TYPE
+                WHEN ug.USER_GROUP_ID IS NOT NULL THEN 'EDIT'
                 ELSE NULL
             END
         FROM TB_EVENT e
@@ -295,6 +342,9 @@
         LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
             AND cs.USERNAME = #{username}
             AND cs.DELETED_AT IS NULL
+        LEFT JOIN TB_USER_GROUP ug ON e.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = #{username}
+            AND ug.DELETED_AT IS NULL
         WHERE e.EVENT_ID = #{eventId}
           AND e.STATUS != 'DELETED'
     </select>

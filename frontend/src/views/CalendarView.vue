@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { calendarApi, type EventDetailResponse } from '@/api/calendar'
+import { calendarApi, type EventDetailResponse, type UserCalendarResponse } from '@/api/calendar'
 import { useUiStore } from '@/stores/ui'
+import { useGroupStore } from '@/stores/group'
 import type { CalendarResponse, CalendarEvent, CalendarViewType, CalendarDateInfo } from '@/types/calendar'
 import Spinner from '@/components/common/Spinner.vue'
 import CalendarCellItem from '@/components/calendar/CalendarCellItem.vue'
@@ -14,6 +15,7 @@ import DayView from '@/components/calendar/DayView.vue'
 import CalendarFilterPanel from '@/components/calendar/CalendarFilterPanel.vue'
 
 const uiStore = useUiStore()
+const groupStore = useGroupStore()
 
 // 상태
 const loading = ref(false)
@@ -37,6 +39,14 @@ const includeEvent = ref(true)
 const showAllEvents = ref(false)
 const selectedCalendars = ref<number[]>([])
 const selectedPriorities = ref<string[]>(['URGENT', 'HIGH', 'NORMAL', 'LOW'])
+
+// 캘린더 목록 (헤더 드롭다운용)
+const calendarList = ref<UserCalendarResponse[]>([])
+const showCalendarDropdown = ref(false)
+
+// 그룹 필터 (Todo/Item/Event 공통)
+const selectedGroupFilter = ref<number | null>(null)
+const showGroupDropdown = ref(false)
 
 // 필터 패널 표시
 const showFilterPanel = ref(false)
@@ -175,6 +185,46 @@ async function fetchUserEvents() {
   }
 }
 
+// 캘린더 목록 로드 (헤더 드롭다운용)
+async function fetchCalendarList() {
+  try {
+    const response = await calendarApi.getCalendars()
+    calendarList.value = response.data || []
+
+    // 처음 로드 시 모든 캘린더 선택
+    if (selectedCalendars.value.length === 0 && calendarList.value.length > 0) {
+      selectedCalendars.value = calendarList.value.map(c => c.calendarId)
+    }
+  } catch (err) {
+    console.error('Failed to fetch calendar list:', err)
+  }
+}
+
+// 캘린더 선택 토글 (이벤트 필터용)
+function toggleCalendarSelection(calendarId: number) {
+  const index = selectedCalendars.value.indexOf(calendarId)
+  if (index === -1) {
+    selectedCalendars.value.push(calendarId)
+  } else {
+    selectedCalendars.value.splice(index, 1)
+  }
+}
+
+// 모든 캘린더 선택
+function selectAllCalendars() {
+  selectedCalendars.value = calendarList.value.map(c => c.calendarId)
+}
+
+// 모든 캘린더 해제
+function deselectAllCalendars() {
+  selectedCalendars.value = []
+}
+
+// 캘린더 드롭다운 외부 클릭 닫기
+function closeCalendarDropdown() {
+  showCalendarDropdown.value = false
+}
+
 // 이전 기간
 function prevPeriod() {
   const date = new Date(currentDate.value)
@@ -288,21 +338,38 @@ const nextLabel = computed(() => {
 
 // 날짜별 이벤트 가져오기 (Todo/Item + 사용자 이벤트)
 function getEventsForDate(dateStr: string): CalendarEvent[] {
-  const events: CalendarEvent[] = []
+  let events: CalendarEvent[] = []
 
-  // 기존 Todo/Item 이벤트
+  // 기존 Todo/Item 이벤트 (그룹 필터 적용)
   if (calendarData.value?.events) {
     const existing = calendarData.value.events[dateStr] || []
-    events.push(...existing)
+    events.push(...filterByGroup(existing))
   }
 
-  // 사용자 이벤트 추가
+  // 사용자 이벤트 추가 (캘린더 필터 + 그룹 필터 적용)
   if (includeEvent.value && userEvents.value.length > 0) {
     const userEventsForDate = userEvents.value.filter(e => {
       // 시작일~종료일 범위에 있는지 확인
       const start = e.startDate
       const end = e.endDate || e.startDate
-      return dateStr >= start && dateStr <= end
+      if (!(dateStr >= start && dateStr <= end)) {
+        return false
+      }
+      // 캘린더 필터 적용 (선택된 캘린더에 속한 이벤트만)
+      if (selectedCalendars.value.length > 0) {
+        if (!selectedCalendars.value.includes(e.calendarId)) {
+          return false
+        }
+      }
+      // 그룹 필터 적용
+      if (selectedGroupFilter.value !== null) {
+        if (selectedGroupFilter.value === 0) {
+          if (e.groupId) return false
+        } else {
+          if (e.groupId !== selectedGroupFilter.value) return false
+        }
+      }
+      return true
     })
 
     for (const ue of userEventsForDate) {
@@ -317,10 +384,17 @@ function getEventsForDate(dateStr: string): CalendarEvent[] {
         isUserEvent: true,
         calendarColor: ue.calendarColor,
         calendarName: ue.calendarName,
+        calendarId: ue.calendarId,
         // 반복 이벤트 정보
         isRecurring: ue.isRecurring,
-        recurrenceType: ue.recurrenceType || undefined
-      } as CalendarEvent & { isUserEvent?: boolean; calendarColor?: string; calendarName?: string })
+        recurrenceType: ue.recurrenceType || undefined,
+        // 그룹 관련 정보
+        groupId: ue.groupId || undefined,
+        groupName: ue.groupName || undefined,
+        groupColor: ue.groupColor || undefined,
+        ownerUserName: ue.ownerName || undefined,
+        isGroupShared: ue.isGroupShared || undefined
+      } as CalendarEvent & { isUserEvent?: boolean; calendarColor?: string; calendarName?: string; calendarId?: number })
     }
   }
 
@@ -452,6 +526,31 @@ const dateInfoMap = computed(() => {
   return calendarData.value?.dateInfo || {}
 })
 
+// 필터링된 사용자 이벤트 (주간/일간 뷰용)
+const filteredUserEvents = computed(() => {
+  let filtered = userEvents.value
+
+  // 캘린더 필터 적용
+  if (selectedCalendars.value.length === 0 && calendarList.value.length > 0) {
+    // 캘린더가 있는데 아무것도 선택 안됐으면 빈 배열
+    return []
+  }
+  if (selectedCalendars.value.length > 0) {
+    filtered = filtered.filter(e => selectedCalendars.value.includes(e.calendarId))
+  }
+
+  // 그룹 필터 적용
+  if (selectedGroupFilter.value !== null) {
+    if (selectedGroupFilter.value === 0) {
+      filtered = filtered.filter(e => !e.groupId)
+    } else {
+      filtered = filtered.filter(e => e.groupId === selectedGroupFilter.value)
+    }
+  }
+
+  return filtered
+})
+
 // 더보기 클릭 핸들러 (전체 이벤트 툴팁 표시)
 function handleShowMore(dateStr: string, event: MouseEvent) {
   const target = event.currentTarget as HTMLElement
@@ -473,8 +572,35 @@ function handleTooltipSelect(event: CalendarEvent) {
   handleEventDoubleClick(event)
 }
 
+// 그룹 필터 옵션
+const groupFilterOptions = computed(() => [
+  { value: null, label: '전체', color: null },
+  { value: 0, label: '그룹 없음', color: null },
+  ...groupStore.groups.map(g => ({
+    value: g.groupId,
+    label: g.groupName,
+    color: g.groupColor
+  }))
+])
+
+// 그룹 드롭다운 닫기
+function closeGroupDropdown() {
+  showGroupDropdown.value = false
+}
+
+// 그룹 필터 적용 함수
+function filterByGroup<T extends { groupId?: number | null }>(items: T[]): T[] {
+  if (selectedGroupFilter.value === null) return items
+  if (selectedGroupFilter.value === 0) {
+    return items.filter(item => !item.groupId)
+  }
+  return items.filter(item => item.groupId === selectedGroupFilter.value)
+}
+
 // 초기 로드
 onMounted(() => {
+  fetchCalendarList()
+  groupStore.fetchGroups()
   fetchData()
 })
 
@@ -557,6 +683,201 @@ watch([includeTodo, includeItem, includeEvent], () => {
               <span class="text-gray-700 dark:text-gray-300">이벤트</span>
             </span>
           </label>
+
+          <!-- 구분선 -->
+          <div class="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
+
+          <!-- 캘린더 선택 드롭다운 -->
+          <div class="relative">
+            <button
+              class="flex items-center gap-1.5 px-2 py-1 text-sm rounded-lg transition-colors"
+              :class="showCalendarDropdown
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'"
+              @click="showCalendarDropdown = !showCalendarDropdown"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>캘린더</span>
+              <span
+                v-if="selectedCalendars.length < calendarList.length && calendarList.length > 0"
+                class="px-1.5 py-0.5 text-[10px] bg-purple-500 text-white rounded-full"
+              >
+                {{ selectedCalendars.length }}
+              </span>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <!-- 드롭다운 메뉴 -->
+            <div
+              v-if="showCalendarDropdown"
+              class="absolute top-full right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 z-50"
+            >
+              <!-- 헤더 -->
+              <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">이벤트 캘린더 필터</span>
+                <button
+                  class="text-[10px] text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  @click="selectedCalendars.length < calendarList.length ? selectAllCalendars() : deselectAllCalendars()"
+                >
+                  {{ selectedCalendars.length < calendarList.length ? '전체 선택' : '전체 해제' }}
+                </button>
+              </div>
+
+              <!-- 캘린더 목록 -->
+              <div class="max-h-60 overflow-y-auto py-1">
+                <label
+                  v-for="cal in calendarList"
+                  :key="cal.calendarId"
+                  class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="selectedCalendars.includes(cal.calendarId)"
+                    class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                    :style="{ accentColor: cal.color || '#a855f7' }"
+                    @change="toggleCalendarSelection(cal.calendarId)"
+                  />
+                  <span
+                    class="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                    :style="{ backgroundColor: cal.color || '#a855f7' }"
+                  />
+                  <span class="text-xs text-gray-700 dark:text-gray-300 truncate flex-1">
+                    {{ cal.calendarName }}
+                  </span>
+                  <span
+                    v-if="cal.isShared"
+                    class="text-[10px] text-gray-400 dark:text-gray-500"
+                  >
+                    공유
+                  </span>
+                </label>
+
+                <!-- 캘린더 없음 -->
+                <div
+                  v-if="calendarList.length === 0"
+                  class="px-3 py-4 text-center text-xs text-gray-400 dark:text-gray-500"
+                >
+                  등록된 캘린더가 없습니다
+                </div>
+              </div>
+
+              <!-- 푸터 안내 -->
+              <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">
+                  * 이벤트에만 적용 (Todo/업무 제외)
+                </p>
+              </div>
+            </div>
+
+            <!-- 배경 클릭 닫기 -->
+            <div
+              v-if="showCalendarDropdown"
+              class="fixed inset-0 z-40"
+              @click="closeCalendarDropdown"
+            />
+          </div>
+
+          <!-- 그룹 필터 드롭다운 -->
+          <div class="relative">
+            <button
+              class="flex items-center gap-1.5 px-2 py-1 text-sm rounded-lg transition-colors"
+              :class="showGroupDropdown
+                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'"
+              @click="showGroupDropdown = !showGroupDropdown"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>그룹</span>
+              <span
+                v-if="selectedGroupFilter !== null"
+                class="px-1.5 py-0.5 text-[10px] bg-indigo-500 text-white rounded-full"
+              >
+                {{ selectedGroupFilter === 0 ? '없음' : groupStore.groups.find(g => g.groupId === selectedGroupFilter)?.groupName?.slice(0, 4) || '선택' }}
+              </span>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <!-- 그룹 드롭다운 메뉴 -->
+            <div
+              v-if="showGroupDropdown"
+              class="absolute top-full right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 z-50"
+            >
+              <!-- 헤더 -->
+              <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">그룹 필터</span>
+                <button
+                  v-if="selectedGroupFilter !== null"
+                  class="text-[10px] text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  @click="selectedGroupFilter = null; showGroupDropdown = false"
+                >
+                  필터 해제
+                </button>
+              </div>
+
+              <!-- 그룹 목록 -->
+              <div class="max-h-60 overflow-y-auto py-1">
+                <button
+                  v-for="option in groupFilterOptions"
+                  :key="option.value ?? 'all'"
+                  class="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  :class="{ 'bg-indigo-50 dark:bg-indigo-900/30': selectedGroupFilter === option.value }"
+                  @click="selectedGroupFilter = option.value; showGroupDropdown = false"
+                >
+                  <span
+                    v-if="option.color"
+                    class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    :style="{ backgroundColor: option.color }"
+                  />
+                  <span
+                    v-else
+                    class="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-gray-300 dark:bg-gray-600"
+                  />
+                  <span class="text-xs text-gray-700 dark:text-gray-300 truncate flex-1">
+                    {{ option.label }}
+                  </span>
+                  <svg
+                    v-if="selectedGroupFilter === option.value"
+                    class="w-4 h-4 text-indigo-600 dark:text-indigo-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+
+                <!-- 그룹 없음 -->
+                <div
+                  v-if="groupStore.groups.length === 0"
+                  class="px-3 py-4 text-center text-xs text-gray-400 dark:text-gray-500"
+                >
+                  등록된 그룹이 없습니다
+                </div>
+              </div>
+
+              <!-- 푸터 안내 -->
+              <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">
+                  * Todo/업무/이벤트에 적용
+                </p>
+              </div>
+            </div>
+
+            <!-- 배경 클릭 닫기 -->
+            <div
+              v-if="showGroupDropdown"
+              class="fixed inset-0 z-40"
+              @click="closeGroupDropdown"
+            />
+          </div>
 
           <!-- 구분선 -->
           <div class="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
@@ -855,7 +1176,7 @@ watch([includeTodo, includeItem, includeEvent], () => {
           v-else-if="viewType === 'week'"
           :current-date="currentDate"
           :events="eventsMap"
-          :user-events="userEvents"
+          :user-events="filteredUserEvents"
           :date-info="dateInfoMap"
           :include-event="includeEvent"
           @event-click="handleViewEventClick"
@@ -867,7 +1188,7 @@ watch([includeTodo, includeItem, includeEvent], () => {
           v-else
           :current-date="currentDate"
           :events="eventsMap"
-          :user-events="userEvents"
+          :user-events="filteredUserEvents"
           :date-info="dateInfoMap"
           :include-event="includeEvent"
           @event-click="handleViewEventClick"
@@ -898,6 +1219,12 @@ watch([includeTodo, includeItem, includeEvent], () => {
         <span>(음력)</span>
         <span>음력 날짜</span>
       </div>
+      <div class="flex items-center gap-2 text-xs text-amber-500 dark:text-amber-400">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span>그룹 공유</span>
+      </div>
       <div class="text-xs text-gray-400 dark:text-gray-500 ml-auto">
         * 빈 셀 더블클릭: 이벤트 추가 | 항목 더블클릭: 상세보기
       </div>
@@ -921,6 +1248,8 @@ watch([includeTodo, includeItem, includeEvent], () => {
       :default-date="selectedDateForNewEvent"
       @saved="handleEventSaved"
       @deleted="handleEventDeleted"
+      @share="openEventShare"
+      @transfer="openEventTransfer"
     />
 
     <!-- 이벤트 공유 모달 -->

@@ -161,4 +161,24 @@ public class UserCalendarController {
         calendarService.updateShareType(calendarId, targetUsername, shareType, username);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    // =============================================
+    // 캘린더 이관
+    // =============================================
+
+    /**
+     * 캘린더 이관 (소유권 이전)
+     */
+    @PostMapping("/{id}/transfer")
+    public ResponseEntity<ApiResponse<UserCalendarResponse>> transferCalendar(
+            @PathVariable("id") Long calendarId,
+            @RequestBody java.util.Map<String, String> request
+    ) {
+        String username = SecurityUtils.getCurrentUsername();
+        String targetUsername = request.get("targetUsername");
+        log.debug("Transfer calendar: calendarId={}, from={}, to={}", calendarId, username, targetUsername);
+
+        UserCalendarResponse transferred = calendarService.transferCalendar(calendarId, targetUsername, username);
+        return ResponseEntity.ok(ApiResponse.success(transferred));
+    }
 }

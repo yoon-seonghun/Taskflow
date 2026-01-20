@@ -103,6 +103,11 @@ public class Todo {
     private Long parentTodoId;
 
     /**
+     * 그룹 ID (FK → TB_GROUP)
+     */
+    private Long groupId;
+
+    /**
      * 이관 출처 사용자 (FK → TB_USER)
      */
     private Long transferredFromUserId;
@@ -157,9 +162,24 @@ public class Todo {
     private String transferredFromUserName;
 
     /**
+     * 그룹명 (JOIN)
+     */
+    private String groupName;
+
+    /**
+     * 그룹 색상 (JOIN)
+     */
+    private String groupColor;
+
+    /**
      * 공유 수
      */
     private Integer shareCount;
+
+    /**
+     * 그룹 공유 여부 (본인 소유가 아닌 그룹 할일)
+     */
+    private Boolean isGroupShared;
 
     // =============================================
     // 상수
@@ -305,6 +325,10 @@ public class Todo {
         return parentTodoId;
     }
 
+    public Long getGroupId() {
+        return groupId;
+    }
+
     public Long getTransferredFromUserId() {
         return transferredFromUserId;
     }
@@ -345,7 +369,23 @@ public class Todo {
         return transferredFromUserName;
     }
 
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public String getGroupColor() {
+        return groupColor;
+    }
+
     public Integer getShareCount() {
         return shareCount;
+    }
+
+    public Boolean getIsGroupShared() {
+        return isGroupShared;
+    }
+
+    public void setIsGroupShared(Boolean isGroupShared) {
+        this.isGroupShared = isGroupShared;
     }
 }

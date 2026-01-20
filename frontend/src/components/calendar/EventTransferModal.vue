@@ -25,13 +25,21 @@ const emit = defineEmits<{
 
 // 상태
 const transferring = ref(false)
+const targetUserId = ref<number | null>(null)
 const targetUsername = ref('')
 const targetUserName = ref('')
 
 // 사용자 선택 핸들러
-function handleUserSelect(user: { username: string; name: string }) {
-  targetUsername.value = user.username
-  targetUserName.value = user.name
+function handleUserSelect(user: { userId: number; username: string; name?: string; userName?: string } | null) {
+  if (user) {
+    targetUserId.value = user.userId
+    targetUsername.value = user.username
+    targetUserName.value = user.name || user.userName || ''
+  } else {
+    targetUserId.value = null
+    targetUsername.value = ''
+    targetUserName.value = ''
+  }
 }
 
 // 이관 처리
@@ -63,6 +71,7 @@ function handleClose() {
 // visible 변경 감시 - 초기화
 watch(() => props.visible, (newVal) => {
   if (newVal) {
+    targetUserId.value = null
     targetUsername.value = ''
     targetUserName.value = ''
   }
@@ -115,7 +124,7 @@ watch(() => props.visible, (newVal) => {
           이관 대상 사용자 <span class="text-red-500">*</span>
         </label>
         <UserSearchSelector
-          v-model="targetUsername"
+          v-model="targetUserId"
           placeholder="사용자를 검색하세요..."
           @select="handleUserSelect"
         />

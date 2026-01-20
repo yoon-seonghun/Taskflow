@@ -37,6 +37,7 @@ const emit = defineEmits<{
 const loading = ref(false)
 const shares = ref<ShareUser[]>([])
 const addingShare = ref(false)
+const selectedUserId = ref<number | null>(null)
 const selectedUsername = ref('')
 
 // 공유 타입 옵션
@@ -71,6 +72,7 @@ async function handleAddShare() {
       username: selectedUsername.value,
       shareType: selectedShareType.value
     })
+    selectedUserId.value = null
     selectedUsername.value = ''
     await loadShares()
     emit('changed')
@@ -97,9 +99,29 @@ async function handleRemoveShare(username: string) {
   }
 }
 
+// 공유 권한 변경
+async function handleUpdateShareType(username: string, newShareType: string) {
+  if (!props.event) return
+
+  try {
+    await calendarApi.updateEventShareType(props.event.eventId, username, newShareType)
+    await loadShares()
+    emit('changed')
+  } catch (err: any) {
+    console.error('Failed to update share type:', err)
+    alert(err.message || '권한 변경에 실패했습니다.')
+  }
+}
+
 // 사용자 선택 핸들러
-function handleUserSelect(user: { username: string; name: string }) {
-  selectedUsername.value = user.username
+function handleUserSelect(user: { userId: number; username: string } | null) {
+  if (user) {
+    selectedUserId.value = user.userId
+    selectedUsername.value = user.username
+  } else {
+    selectedUserId.value = null
+    selectedUsername.value = ''
+  }
 }
 
 // 닫기
@@ -158,7 +180,7 @@ function formatDate(dateStr: string): string {
         <div class="flex gap-2">
           <div class="flex-1">
             <UserSearchSelector
-              v-model="selectedUsername"
+              v-model="selectedUserId"
               placeholder="사용자 검색..."
               @select="handleUserSelect"
             />
@@ -225,16 +247,17 @@ function formatDate(dateStr: string): string {
               </div>
             </div>
 
-            <div class="flex items-center gap-3">
-              <!-- 공유 타입 -->
-              <span
-                class="px-2 py-0.5 text-xs rounded"
-                :class="share.shareType === 'EDIT'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
+            <div class="flex items-center gap-2">
+              <!-- 권한 변경 드롭다운 -->
+              <select
+                :value="share.shareType"
+                class="px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                @change="handleUpdateShareType(share.username, ($event.target as HTMLSelectElement).value)"
               >
-                {{ getShareTypeLabel(share.shareType) }}
-              </span>
+                <option v-for="opt in shareTypeOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
               <!-- 삭제 버튼 -->
               <button
                 class="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"

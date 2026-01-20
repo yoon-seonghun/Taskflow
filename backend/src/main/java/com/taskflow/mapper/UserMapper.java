@@ -44,6 +44,11 @@ public interface UserMapper {
     List<User> findByDepartmentCode(@Param("departmentCode") String departmentCode);
 
     /**
+     * 사용자가 특정 그룹의 멤버인지 확인
+     */
+    boolean isGroupMember(@Param("username") String username, @Param("groupId") Long groupId);
+
+    /**
      * 아이디 중복 확인
      */
     boolean existsByUsername(@Param("username") String username);

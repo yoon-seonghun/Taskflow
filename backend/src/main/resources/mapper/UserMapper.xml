@@ -152,6 +152,16 @@
         )
     </select>
 
+    <!-- 사용자가 특정 그룹의 멤버인지 확인 -->
+    <select id="isGroupMember" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_USER_GROUP
+            WHERE USERNAME = #{username}
+              AND GROUP_ID = #{groupId}
+              AND DELETED_AT IS NULL
+        )
+    </select>
+
     <!-- ============================================= -->
     <!-- 등록/수정/삭제 -->
     <!-- ============================================= -->

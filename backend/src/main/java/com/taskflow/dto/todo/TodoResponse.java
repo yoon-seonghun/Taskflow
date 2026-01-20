@@ -34,6 +34,9 @@ public class TodoResponse {
     private LocalDate repeatEndDate;
     private LocalDate nextDueDate;
     private Long parentTodoId;
+    private Long groupId;
+    private String groupName;
+    private String groupColor;
     private Long transferredFromUserId;
     private String transferredFromUserName;
     private LocalDateTime transferredAt;
@@ -46,6 +49,7 @@ public class TodoResponse {
     private Integer shareCount;
     private Boolean isOverdue;
     private Boolean isDueToday;
+    private Boolean isGroupShared;  // 그룹 공유 여부 (본인 소유가 아닌 그룹 할일)
     private List<TodoShareResponse> shares;
 
     /**
@@ -73,6 +77,9 @@ public class TodoResponse {
                 .repeatEndDate(todo.getRepeatEndDate())
                 .nextDueDate(todo.getNextDueDate())
                 .parentTodoId(todo.getParentTodoId())
+                .groupId(todo.getGroupId())
+                .groupName(todo.getGroupName())
+                .groupColor(todo.getGroupColor())
                 .transferredFromUserId(todo.getTransferredFromUserId())
                 .transferredFromUserName(todo.getTransferredFromUserName())
                 .transferredAt(todo.getTransferredAt())
@@ -83,6 +90,7 @@ public class TodoResponse {
                 .shareCount(todo.getShareCount())
                 .isOverdue(todo.isOverdue())
                 .isDueToday(todo.isDueToday())
+                .isGroupShared(todo.getIsGroupShared())
                 .build();
     }
 
@@ -111,6 +119,9 @@ public class TodoResponse {
                 .repeatEndDate(todo.getRepeatEndDate())
                 .nextDueDate(todo.getNextDueDate())
                 .parentTodoId(todo.getParentTodoId())
+                .groupId(todo.getGroupId())
+                .groupName(todo.getGroupName())
+                .groupColor(todo.getGroupColor())
                 .transferredFromUserId(todo.getTransferredFromUserId())
                 .transferredFromUserName(todo.getTransferredFromUserName())
                 .transferredAt(todo.getTransferredAt())
@@ -121,6 +132,7 @@ public class TodoResponse {
                 .shareCount(shares != null ? shares.size() : todo.getShareCount())
                 .isOverdue(todo.isOverdue())
                 .isDueToday(todo.isDueToday())
+                .isGroupShared(todo.getIsGroupShared())
                 .shares(shares)
                 .build();
     }

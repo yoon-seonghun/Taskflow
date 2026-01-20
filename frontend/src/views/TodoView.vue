@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTodoStore } from '@/stores/todo'
 import { useUiStore } from '@/stores/ui'
+import { useGroupStore } from '@/stores/group'
 import { useSortableDrag } from '@/composables/useSortableDrag'
 import type { Todo, TodoCreateRequest, TodoPriority, RepeatType, TodoShare } from '@/types/todo'
 import Button from '@/components/common/Button.vue'
@@ -17,6 +18,7 @@ import { PRIORITY_OPTIONS, REPEAT_TYPE_OPTIONS, getPriorityColor } from '@/types
 
 const todoStore = useTodoStore()
 const uiStore = useUiStore()
+const groupStore = useGroupStore()
 
 // State
 const activeTab = ref<'today' | 'all' | 'shared' | 'completed'>('today')
@@ -32,13 +34,17 @@ type SortOption = 'date' | 'custom'
 const sortOption = ref<SortOption>('date')
 const sharedSortOption = ref<SortOption>('date')
 
+// 그룹 필터
+const selectedGroupFilter = ref<number | null>(null)
+
 // 새 Todo 폼
 const newTodo = ref<TodoCreateRequest>({
   title: '',
   priority: 'NORMAL',
   dueDate: undefined,
   dueTime: undefined,
-  repeatType: undefined
+  repeatType: undefined,
+  groupId: undefined
 })
 
 // 드래그용 로컬 아이템 (사용자 지정 정렬 시)
@@ -65,24 +71,37 @@ function sortByDate<T extends { dueDate?: string; title?: string; todoDueDate?: 
   })
 }
 
+// 그룹 필터 적용 함수
+function filterByGroup(items: Todo[]): Todo[] {
+  if (selectedGroupFilter.value === null) return items  // 전체
+  if (selectedGroupFilter.value === 0) {
+    // 그룹 없음 (개인 할일)
+    return items.filter(t => !t.groupId)
+  }
+  // 특정 그룹
+  return items.filter(t => t.groupId === selectedGroupFilter.value)
+}
+
 // Computed
 const displayTodos = computed({
   get() {
     // 드래그 중 로컬 순서 사용
     if (localTodos.value && activeTab.value === 'all') {
-      return localTodos.value
+      return filterByGroup(localTodos.value)
     }
 
     let items: Todo[]
     switch (activeTab.value) {
       case 'today':
-        return sortByDate(todoStore.todayTodos)
+        return filterByGroup(sortByDate(todoStore.todayTodos))
       case 'shared':
         return [] // sharedTodos는 다른 구조
       case 'completed':
-        return todoStore.completedTodos
+        return filterByGroup(todoStore.completedTodos)
       default:
         items = todoStore.activeTodos
+        // 그룹 필터 적용
+        items = filterByGroup(items)
         // 정렬 적용
         if (sortOption.value === 'date') {
           return sortByDate(items)
@@ -133,6 +152,25 @@ const sortOptions = [
   { value: 'date', label: '날짜순' },
   { value: 'custom', label: '사용자 지정' }
 ]
+
+// 그룹 옵션 (생성/수정 모달용)
+const groupOptions = computed(() => [
+  { value: null, label: '그룹 없음' },
+  ...groupStore.groups.map(g => ({
+    value: g.groupId,
+    label: g.groupName
+  }))
+])
+
+// 그룹 필터 옵션 (전체 포함)
+const groupFilterOptions = computed(() => [
+  { value: null, label: '전체' },
+  { value: 0, label: '그룹 없음' },  // 그룹이 없는 개인 할일
+  ...groupStore.groups.map(g => ({
+    value: g.groupId,
+    label: g.groupName
+  }))
+])
 
 // 드래그 앤 드롭 - 전체 탭
 const {
@@ -203,7 +241,8 @@ async function loadData() {
     todoStore.fetchTodayTodos(),
     todoStore.fetchOverdueTodos(),
     todoStore.fetchSharedTodos(),
-    todoStore.fetchCompletedTodos()
+    todoStore.fetchCompletedTodos(),
+    groupStore.fetchGroups()
   ])
 }
 
@@ -213,7 +252,8 @@ function openCreateModal() {
     priority: 'NORMAL',
     dueDate: undefined,
     dueTime: undefined,
-    repeatType: undefined
+    repeatType: undefined,
+    groupId: undefined
   }
   showCreateModal.value = true
 }
@@ -249,7 +289,8 @@ async function handleSaveEdit() {
     priority: editingTodo.value.priority,
     dueDate: editingTodo.value.dueDate,
     dueTime: editingTodo.value.dueTime,
-    repeatType: editingTodo.value.repeatType
+    repeatType: editingTodo.value.repeatType,
+    groupId: editingTodo.value.groupId
   })
 
   if (result) {
@@ -390,19 +431,50 @@ watch(activeTab, () => {
       </button>
     </div>
 
-    <!-- 정렬 옵션 (전체/공유받은 탭) -->
-    <div v-if="activeTab === 'all' || activeTab === 'shared'" class="flex items-center justify-end gap-2 mb-4">
+    <!-- 필터 및 정렬 옵션 -->
+    <div v-if="activeTab !== 'shared'" class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <!-- 그룹 필터 -->
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-500 dark:text-gray-400">그룹:</span>
+        <select
+          v-model="selectedGroupFilter"
+          class="text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option v-for="opt in groupFilterOptions" :key="String(opt.value)" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- 정렬 옵션 (전체 탭) -->
+      <div v-if="activeTab === 'all'" class="flex items-center gap-2">
+        <span class="text-xs text-gray-500 dark:text-gray-400">정렬:</span>
+        <select
+          v-model="sortOption"
+          class="text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+        <span v-if="sortOption === 'custom'" class="text-xs text-gray-400 dark:text-gray-500">
+          (드래그하여 순서 변경)
+        </span>
+      </div>
+    </div>
+
+    <!-- 공유받은 탭 정렬 옵션 -->
+    <div v-if="activeTab === 'shared'" class="flex items-center justify-end gap-2 mb-4">
       <span class="text-xs text-gray-500 dark:text-gray-400">정렬:</span>
       <select
-        :value="activeTab === 'all' ? sortOption : sharedSortOption"
-        @change="activeTab === 'all' ? sortOption = ($event.target as HTMLSelectElement).value as SortOption : sharedSortOption = ($event.target as HTMLSelectElement).value as SortOption"
+        v-model="sharedSortOption"
         class="text-xs border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
           {{ opt.label }}
         </option>
       </select>
-      <span v-if="(activeTab === 'all' && sortOption === 'custom') || (activeTab === 'shared' && sharedSortOption === 'custom')" class="text-xs text-gray-400 dark:text-gray-500">
+      <span v-if="sharedSortOption === 'custom'" class="text-xs text-gray-400 dark:text-gray-500">
         (드래그하여 순서 변경)
       </span>
     </div>
@@ -455,6 +527,13 @@ watch(activeTab, () => {
             />
             <DatePicker v-model="editingTodo.dueDate" size="sm" />
             <Input v-model="editingTodo.dueTime" type="time" size="sm" class="w-28" />
+            <Select
+              v-model="editingTodo.groupId"
+              :options="groupOptions"
+              size="sm"
+              class="w-32"
+              placeholder="그룹"
+            />
           </div>
           <div class="flex justify-end gap-2">
             <Button variant="ghost" size="sm" @click="handleCancelEdit">취소</Button>
@@ -510,6 +589,21 @@ watch(activeTab, () => {
               </Badge>
               <Badge v-if="todo.repeatType && todo.repeatType !== 'NONE'" variant="info" size="xs">
                 🔄 {{ REPEAT_TYPE_OPTIONS.find(r => r.value === todo.repeatType)?.label }}
+              </Badge>
+              <Badge
+                v-if="todo.groupName"
+                variant="secondary"
+                size="xs"
+                :style="todo.groupColor ? { backgroundColor: todo.groupColor, color: '#fff' } : {}"
+              >
+                {{ todo.groupName }}
+              </Badge>
+              <!-- 그룹 공유 표시 (본인 소유가 아닌 경우) -->
+              <Badge v-if="todo.isGroupShared" variant="info" size="xs" class="flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {{ todo.ownerUserName }}
               </Badge>
               <Badge v-if="todo.isOverdue" variant="danger" size="xs">지연</Badge>
               <Badge v-if="todo.isDueToday && !todo.isOverdue" variant="warning" size="xs">오늘</Badge>
@@ -697,6 +791,12 @@ watch(activeTab, () => {
             </label>
             <Input v-model="newTodo.dueTime" type="time" />
           </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            그룹
+          </label>
+          <Select v-model="newTodo.groupId" :options="groupOptions" />
         </div>
       </div>
       <template #footer>

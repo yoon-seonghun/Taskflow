@@ -21,7 +21,7 @@ public class ExternalDatasourceCreateRequest {
     private String datasourceName;
 
     @NotBlank(message = "DB 타입은 필수입니다")
-    @Pattern(regexp = "^(MYSQL|ORACLE|MSSQL|TIBERO)$", message = "지원하지 않는 DB 타입입니다")
+    @Pattern(regexp = "^(MYSQL|ORACLE|MSSQL|TIBERO6|TIBERO7)$", message = "지원하지 않는 DB 타입입니다")
     private String dbType;
 
     @Pattern(regexp = "^(SID|SERVICE_NAME)?$", message = "지원하지 않는 연결 타입입니다")

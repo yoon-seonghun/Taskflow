@@ -5,12 +5,15 @@
  * - 하위 업무 표시 모드 선택
  * - 정렬 옵션
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import Input from '@/components/common/Input.vue'
 import Select from '@/components/common/Select.vue'
 import DatePicker from '@/components/common/DatePicker.vue'
+import { useGroupStore } from '@/stores/group'
 import type { AllItemsFilter, ChildDisplayMode } from '@/types/allTasks'
 import type { ItemStatus, Priority } from '@/types/item'
+
+const groupStore = useGroupStore()
 
 interface Props {
   /** 현재 필터 */
@@ -92,6 +95,15 @@ const sortDirectionOptions = [
   { label: '오름차순', value: 'asc' }
 ]
 
+// 그룹 옵션
+const groupOptions = computed(() => [
+  { label: '전체 그룹', value: '' },
+  ...groupStore.activeGroups.map(g => ({
+    label: g.groupName,
+    value: g.groupId
+  }))
+])
+
 // 필터 변경 핸들러
 function updateFilter(key: keyof AllItemsFilter, value: unknown): void {
   emit('update:filters', { [key]: value || null })
@@ -105,6 +117,11 @@ function onStatusChange(value: string): void {
 // 우선순위 변경
 function onPriorityChange(value: string): void {
   updateFilter('priority', value ? (value as Priority) : null)
+}
+
+// 그룹 변경
+function onGroupChange(value: number | string): void {
+  updateFilter('groupId', value ? Number(value) : null)
 }
 
 // 하위 업무 표시 모드 변경
@@ -148,11 +165,19 @@ const activeFilterCount = computed(() => {
   if (props.filters.keyword) count++
   if (props.filters.status) count++
   if (props.filters.priority) count++
+  if (props.filters.groupId) count++
   if (props.filters.startDate || props.filters.endDate) count++
   if (props.filters.includeCompleted) count++
   if (props.filters.assigneeUsername) count++
   if (props.filters.assignedByUsername) count++
   return count
+})
+
+// 그룹 목록 로드
+onMounted(() => {
+  if (groupStore.groups.length === 0) {
+    groupStore.fetchGroups({ useYn: 'Y' })
+  }
 })
 </script>
 
@@ -274,6 +299,18 @@ const activeFilterCount = computed(() => {
           :disabled="loading"
           class="w-24"
           @update:model-value="onPriorityChange"
+        />
+      </div>
+
+      <!-- 그룹 -->
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-500 dark:text-gray-400">그룹</span>
+        <Select
+          :model-value="filters.groupId || ''"
+          :options="groupOptions"
+          :disabled="loading"
+          class="w-32"
+          @update:model-value="onGroupChange"
         />
       </div>
 

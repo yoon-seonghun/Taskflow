@@ -27,6 +27,9 @@ const testing = ref(false)
 const testResult = ref<QueryTestResponse | null>(null)
 const errorMessage = ref<string | null>(null)
 
+// 도움말 표시 상태
+const showHelp = ref(false)
+
 // 수정 가능한 SQL
 const editableSql = ref('')
 
@@ -42,6 +45,55 @@ const maxRows = ref(100)
 const datasource = computed(() =>
   datasourceStore.getDatasourceById(props.query.datasourceId)
 )
+
+// 컬럼 매핑 불일치 감지
+const columnMismatch = computed(() => {
+  if (!testResult.value?.success || !testResult.value?.columns) {
+    return { hasError: false, missingColumns: [] as string[] }
+  }
+
+  const columns = testResult.value.columns.map(c => c.toUpperCase())
+  const missingColumns: string[] = []
+
+  if (valueColumn.value && !columns.includes(valueColumn.value.toUpperCase())) {
+    missingColumns.push(`Value 컬럼 "${valueColumn.value}"`)
+  }
+  if (labelColumn.value && !columns.includes(labelColumn.value.toUpperCase())) {
+    missingColumns.push(`Label 컬럼 "${labelColumn.value}"`)
+  }
+  if (colorColumn.value && !columns.includes(colorColumn.value.toUpperCase())) {
+    missingColumns.push(`Color 컬럼 "${colorColumn.value}"`)
+  }
+
+  return {
+    hasError: missingColumns.length > 0,
+    missingColumns
+  }
+})
+
+// 개별 컬럼 일치 여부
+const isValueColumnValid = computed(() => {
+  if (!testResult.value?.columns || !valueColumn.value) return true
+  return testResult.value.columns.map(c => c.toUpperCase()).includes(valueColumn.value.toUpperCase())
+})
+
+const isLabelColumnValid = computed(() => {
+  if (!testResult.value?.columns || !labelColumn.value) return true
+  return testResult.value.columns.map(c => c.toUpperCase()).includes(labelColumn.value.toUpperCase())
+})
+
+const isColorColumnValid = computed(() => {
+  if (!testResult.value?.columns || !colorColumn.value) return true
+  return testResult.value.columns.map(c => c.toUpperCase()).includes(colorColumn.value.toUpperCase())
+})
+
+// 테스트 결과에서 사용 가능한 컬럼 목록
+const availableColumns = computed(() => {
+  if (!testResult.value?.success || !testResult.value?.columns) {
+    return []
+  }
+  return testResult.value.columns
+})
 
 // 초기화
 function initForm() {
@@ -111,6 +163,38 @@ onMounted(() => {
 
       <!-- 본문 -->
       <div class="modal-body">
+        <!-- 사용법 도움말 -->
+        <div class="help-section">
+          <button type="button" class="help-toggle" @click="showHelp = !showHelp">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>사용법 안내</span>
+            <svg :class="['w-4 h-4 transition-transform', showHelp && 'rotate-180']" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div v-if="showHelp" class="help-content">
+            <div class="help-item">
+              <h5>Value 컬럼</h5>
+              <p>실제 DB에 저장되는 값입니다. 예: 사원번호 'EMP001', 부서코드 'DEV'</p>
+            </div>
+            <div class="help-item">
+              <h5>Label 컬럼</h5>
+              <p>사용자에게 보여지는 표시명입니다. 예: 사원명 '홍길동', 부서명 '개발팀'</p>
+            </div>
+            <div class="help-item">
+              <h5>Color 컬럼 (선택)</h5>
+              <p>옵션별 색상 코드입니다. 예: '#FF5733', 'blue' (미지정 시 기본 색상 사용)</p>
+            </div>
+            <div class="help-example">
+              <span class="example-label">예시 쿼리:</span>
+              <code>SELECT USER_ID AS value, USER_NAME AS label FROM TB_USER</code>
+            </div>
+          </div>
+        </div>
+
         <!-- 데이터소스 정보 -->
         <div class="datasource-info">
           <span class="info-label">데이터소스:</span>
@@ -149,31 +233,125 @@ onMounted(() => {
         <!-- 컬럼 매핑 -->
         <div class="column-mapping">
           <div class="mapping-item">
-            <label class="mapping-label">Value 컬럼</label>
-            <input
-              v-model="valueColumn"
-              type="text"
-              class="mapping-input"
-              placeholder="value"
-            />
+            <label class="mapping-label">
+              Value 컬럼
+              <span class="tooltip-container">
+                <svg class="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="tooltip-text">DB에 저장되는 실제 값 (예: 사원번호, 코드)</span>
+              </span>
+            </label>
+            <div class="input-wrapper">
+              <!-- 테스트 성공 시 드롭다운, 아니면 입력 -->
+              <select
+                v-if="availableColumns.length > 0"
+                v-model="valueColumn"
+                :class="['mapping-select', !isValueColumnValid && 'input-error']"
+              >
+                <option value="">-- 컬럼 선택 --</option>
+                <option v-for="col in availableColumns" :key="col" :value="col">
+                  {{ col }}
+                </option>
+              </select>
+              <input
+                v-else
+                v-model="valueColumn"
+                type="text"
+                class="mapping-input"
+                placeholder="value"
+              />
+              <span v-if="testResult?.success && !isValueColumnValid" class="input-status error">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+              <span v-else-if="testResult?.success && valueColumn && isValueColumnValid" class="input-status success">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+            </div>
           </div>
           <div class="mapping-item">
-            <label class="mapping-label">Label 컬럼</label>
-            <input
-              v-model="labelColumn"
-              type="text"
-              class="mapping-input"
-              placeholder="label"
-            />
+            <label class="mapping-label">
+              Label 컬럼
+              <span class="tooltip-container">
+                <svg class="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="tooltip-text">화면에 표시되는 이름 (예: 사원명, 부서명)</span>
+              </span>
+            </label>
+            <div class="input-wrapper">
+              <select
+                v-if="availableColumns.length > 0"
+                v-model="labelColumn"
+                :class="['mapping-select', !isLabelColumnValid && 'input-error']"
+              >
+                <option value="">-- 컬럼 선택 --</option>
+                <option v-for="col in availableColumns" :key="col" :value="col">
+                  {{ col }}
+                </option>
+              </select>
+              <input
+                v-else
+                v-model="labelColumn"
+                type="text"
+                class="mapping-input"
+                placeholder="label"
+              />
+              <span v-if="testResult?.success && !isLabelColumnValid" class="input-status error">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+              <span v-else-if="testResult?.success && labelColumn && isLabelColumnValid" class="input-status success">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+            </div>
           </div>
           <div class="mapping-item">
-            <label class="mapping-label">Color 컬럼</label>
-            <input
-              v-model="colorColumn"
-              type="text"
-              class="mapping-input"
-              placeholder="color (선택)"
-            />
+            <label class="mapping-label">
+              Color 컬럼
+              <span class="tooltip-container">
+                <svg class="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="tooltip-text">옵션별 색상 코드 (예: #FF5733) - 선택사항</span>
+              </span>
+            </label>
+            <div class="input-wrapper">
+              <select
+                v-if="availableColumns.length > 0"
+                v-model="colorColumn"
+                :class="['mapping-select', colorColumn && !isColorColumnValid && 'input-error']"
+              >
+                <option value="">(사용 안 함)</option>
+                <option v-for="col in availableColumns" :key="col" :value="col">
+                  {{ col }}
+                </option>
+              </select>
+              <input
+                v-else
+                v-model="colorColumn"
+                type="text"
+                class="mapping-input"
+                placeholder="color (선택)"
+              />
+              <span v-if="testResult?.success && colorColumn && !isColorColumnValid" class="input-status error">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+              <span v-else-if="testResult?.success && colorColumn && isColorColumnValid" class="input-status success">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+            </div>
           </div>
           <div class="mapping-item">
             <button
@@ -194,6 +372,31 @@ onMounted(() => {
               </svg>
               테스트 실행
             </button>
+          </div>
+        </div>
+
+        <!-- 컬럼 선택 안내 (테스트 전) -->
+        <div v-if="availableColumns.length === 0 && !testResult" class="column-hint">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>테스트 실행 후 쿼리 결과의 컬럼을 드롭다운에서 선택할 수 있습니다.</span>
+        </div>
+
+        <!-- 컬럼 매핑 불일치 경고 -->
+        <div v-if="columnMismatch.hasError" class="column-warning">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div class="warning-content">
+            <span class="warning-title">컬럼 매핑 불일치</span>
+            <span class="warning-text">
+              쿼리 결과에 다음 컬럼이 없습니다: {{ columnMismatch.missingColumns.join(', ') }}
+            </span>
+            <span class="warning-hint">
+              쿼리 결과 컬럼: {{ testResult?.columns?.join(', ') }}
+            </span>
           </div>
         </div>
 
@@ -239,7 +442,10 @@ onMounted(() => {
 
           <!-- 옵션 미리보기 -->
           <div v-if="testResult.options && testResult.options.length > 0" class="options-preview">
-            <h4 class="preview-title">옵션 미리보기 (상위 {{ testResult.options.length }}개)</h4>
+            <h4 class="preview-title">
+              옵션 미리보기 (상위 {{ testResult.options.length }}개)
+              <span v-if="columnMismatch.hasError" class="preview-warning">(매핑 오류로 일부 값이 표시되지 않음)</span>
+            </h4>
             <div class="options-list">
               <div
                 v-for="(option, index) in testResult.options"
@@ -250,9 +456,15 @@ onMounted(() => {
                   v-if="option.color"
                   class="option-color"
                   :style="{ backgroundColor: option.color }"
+                  :title="'색상: ' + option.color"
                 ></span>
-                <span class="option-label">{{ option.label }}</span>
-                <span class="option-value">{{ option.value }}</span>
+                <span v-else-if="colorColumn" class="option-color-empty" title="색상 없음"></span>
+                <span :class="['option-label', !option.label && 'option-empty']">
+                  {{ option.label || '(라벨 없음)' }}
+                </span>
+                <span :class="['option-value', !option.value && 'option-empty']">
+                  {{ option.value || '(값 없음)' }}
+                </span>
               </div>
             </div>
           </div>
@@ -391,6 +603,18 @@ onMounted(() => {
          dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-500;
 }
 
+.mapping-select {
+  @apply w-full px-2 py-1.5 text-sm border border-gray-300 rounded
+         focus:ring-primary-500 focus:border-primary-500
+         bg-white cursor-pointer
+         dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200;
+}
+
+.column-hint {
+  @apply flex items-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm
+         dark:bg-blue-900/30 dark:text-blue-300;
+}
+
 .test-btn {
   @apply inline-flex items-center gap-2 px-4 py-1.5 text-sm font-medium
          text-white bg-primary-600 rounded-lg
@@ -492,5 +716,118 @@ onMounted(() => {
          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          transition-colors
          dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600;
+}
+
+/* 도움말 섹션 */
+.help-section {
+  @apply mb-4;
+}
+
+.help-toggle {
+  @apply flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-600
+         bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors
+         dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50;
+}
+
+.help-content {
+  @apply mt-2 p-4 bg-blue-50 rounded-lg space-y-3 text-sm
+         dark:bg-blue-900/20;
+}
+
+.help-item h5 {
+  @apply font-medium text-gray-800 dark:text-gray-200;
+}
+
+.help-item p {
+  @apply text-gray-600 mt-0.5 dark:text-gray-400;
+}
+
+.help-example {
+  @apply mt-3 pt-3 border-t border-blue-200 dark:border-blue-800;
+}
+
+.help-example .example-label {
+  @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+.help-example code {
+  @apply block mt-1 px-2 py-1 bg-white rounded text-xs font-mono text-gray-700
+         dark:bg-gray-800 dark:text-gray-300;
+}
+
+/* 툴팁 */
+.tooltip-container {
+  @apply relative inline-flex ml-1;
+}
+
+.tooltip-text {
+  @apply invisible absolute z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded
+         whitespace-nowrap opacity-0 transition-opacity
+         bottom-full left-1/2 -translate-x-1/2 mb-1
+         dark:bg-gray-600;
+}
+
+.tooltip-container:hover .tooltip-text {
+  @apply visible opacity-100;
+}
+
+/* 인풋 래퍼 */
+.input-wrapper {
+  @apply relative;
+}
+
+.input-status {
+  @apply absolute right-2 top-1/2 -translate-y-1/2;
+}
+
+.input-status.error {
+  @apply text-red-500;
+}
+
+.input-status.success {
+  @apply text-green-500;
+}
+
+.mapping-input.input-error,
+.mapping-select.input-error {
+  @apply border-red-500 focus:border-red-500 focus:ring-red-500
+         dark:border-red-500;
+}
+
+/* 컬럼 매핑 경고 */
+.column-warning {
+  @apply flex items-start gap-3 p-3 bg-amber-50 text-amber-800 rounded-lg
+         dark:bg-amber-900/30 dark:text-amber-300;
+}
+
+.warning-content {
+  @apply flex flex-col gap-0.5;
+}
+
+.warning-title {
+  @apply font-medium text-sm;
+}
+
+.warning-text {
+  @apply text-sm;
+}
+
+.warning-hint {
+  @apply text-xs text-amber-600 dark:text-amber-400;
+}
+
+/* 옵션 미리보기 개선 */
+.preview-warning {
+  @apply text-xs font-normal text-amber-600 ml-2
+         dark:text-amber-400;
+}
+
+.option-color-empty {
+  @apply w-3 h-3 rounded-full flex-shrink-0 border-2 border-dashed border-gray-300
+         dark:border-gray-600;
+}
+
+.option-empty {
+  @apply text-gray-400 italic dark:text-gray-500;
 }
 </style>

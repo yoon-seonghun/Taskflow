@@ -16,8 +16,10 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { propertyApi } from '@/api/property'
 import { categoryApi } from '@/api/category'
+import { boardApi } from '@/api/board'
 import type { PropertyDef } from '@/types/property'
 import type { CategoryProperty, CategoryDetail } from '@/types/category'
+import type { BoardProperty } from '@/types/board'
 
 // 드래그 가능한 속성 인터페이스
 interface DraggableProperty {
@@ -37,6 +39,7 @@ interface Props {
   initialSortOrders?: Record<number, number>  // propertyId -> sortOrder
   enableDragDrop?: boolean  // 드래그 앤 드롭 활성화 여부
   showCategoryProperties?: boolean  // v2.0.4: 카테고리 속성 표시 여부 (보드 모드에서는 false)
+  boardId?: number | null  // v2.3.1: 보드 ID (업무 생성 시 보드 속성 자동 상속용)
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,7 +48,8 @@ const props = withDefaults(defineProps<Props>(), {
   propertyDefaults: () => ({}),
   initialSortOrders: () => ({}),
   enableDragDrop: false,
-  showCategoryProperties: true  // 기본값: 카테고리 속성 표시
+  showCategoryProperties: true,  // 기본값: 카테고리 속성 표시
+  boardId: null  // v2.3.1: 보드 ID (업무 생성 시 보드 속성 자동 상속용)
 })
 
 const emit = defineEmits<{
@@ -488,6 +492,55 @@ async function loadProperties() {
   }
 }
 
+// v2.3.1: 보드 속성 로드 및 자동 선택 (업무 생성 시 보드에서 설정한 속성 자동 상속)
+async function loadBoardPropertiesAndSelect(boardId: number) {
+  try {
+    console.log('[BoardPropertySelector] 보드 속성 로드 시작, boardId:', boardId)
+    const response = await boardApi.getBoardProperties(boardId)
+
+    if (response.success && response.data && response.data.length > 0) {
+      console.log('[BoardPropertySelector] 보드 속성 로드 완료:', response.data.length, '개')
+
+      // 보드 속성을 자동으로 선택 상태로 설정
+      response.data.forEach((prop, index) => {
+        // 선택 상태 추가
+        localSelectedIds.value.add(prop.propertyId)
+
+        // 기본값이 있으면 적용
+        if (prop.defaultValue) {
+          localDefaults.value[prop.propertyId] = prop.defaultValue
+        }
+
+        // 정렬 순서 적용 (보드에서 설정된 순서 또는 순차적 할당)
+        const sortOrder = prop.sortOrder ?? (index + 1)
+        if (!propertySortOrders.value.has(prop.propertyId)) {
+          propertySortOrders.value.set(prop.propertyId, sortOrder)
+        }
+      })
+
+      // 반응성 트리거
+      localSelectedIdsVersion.value++
+
+      console.log('[BoardPropertySelector] 보드 속성 자동 선택 완료:', Array.from(localSelectedIds.value))
+
+      // 부모에게 변경 사항 emit
+      emit('update:selectedPropertyIds', Array.from(localSelectedIds.value))
+      emit('update:propertyDefaults', { ...localDefaults.value })
+
+      // sortOrder emit
+      const sortOrdersObj: Record<number, number> = {}
+      propertySortOrders.value.forEach((order, propId) => {
+        sortOrdersObj[propId] = order
+      })
+      emit('update:propertySortOrders', sortOrdersObj)
+    } else {
+      console.log('[BoardPropertySelector] 보드에 설정된 속성 없음')
+    }
+  } catch (error) {
+    console.error('[BoardPropertySelector] 보드 속성 로드 실패:', error)
+  }
+}
+
 // 카테고리 속성 로드
 async function loadCategoryProperties(categoryIds: number[], isInitialLoad: boolean = false) {
   // 새로운 Map을 생성하여 반응성 보장
@@ -700,7 +753,17 @@ watch(() => props.selectedPropertyIds, (newIds) => {
   localSelectedIdsVersion.value++ // 반응성 트리거
 }, { deep: true })
 
+// v2.3.1: boardId 변경 감지 (모달 열릴 때 boardId가 전달되면 보드 속성 자동 로드)
+watch(() => props.boardId, async (newBoardId, oldBoardId) => {
+  // boardId가 새로 설정되었을 때만 로드 (null/undefined → 숫자)
+  if (newBoardId && !oldBoardId && isInitialized.value) {
+    console.log('[BoardPropertySelector] boardId 변경 감지, 보드 속성 로드:', newBoardId)
+    await loadBoardPropertiesAndSelect(newBoardId)
+  }
+}, { immediate: false })
+
 onMounted(async () => {
+  console.log('[BoardPropertySelector] onMounted 시작, boardId:', props.boardId)
   previousCategoryIds = [...props.selectedCategoryIds]
   previousCategoryPropertyIds = new Set()
 
@@ -710,6 +773,16 @@ onMounted(async () => {
   localSelectedIdsVersion.value = 0 // 초기화
 
   await loadProperties()
+  console.log('[BoardPropertySelector] loadProperties 완료, 글로벌:', globalProperties.value.length, '개, 매니저:', managerProperties.value.length, '개')
+
+  // v2.3.1: boardId가 있으면 보드 속성 자동 로드 및 선택 (업무 생성 시)
+  if (props.boardId) {
+    console.log('[BoardPropertySelector] boardId 존재, 보드 속성 로드 시작:', props.boardId)
+    await loadBoardPropertiesAndSelect(props.boardId)
+  } else {
+    console.log('[BoardPropertySelector] boardId 없음, 보드 속성 로드 스킵')
+  }
+
   if (props.selectedCategoryIds.length > 0) {
     await loadCategoryProperties(props.selectedCategoryIds, true)  // 초기 로드 플래그
     // 초기 카테고리 속성 ID 저장 (다음 변경 감지용)

@@ -47,7 +47,8 @@ public interface EventMapper {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             @Param("calendarId") Long calendarId,
-            @Param("includeShared") Boolean includeShared
+            @Param("includeShared") Boolean includeShared,
+            @Param("groupId") Long groupId
     );
 
     /**

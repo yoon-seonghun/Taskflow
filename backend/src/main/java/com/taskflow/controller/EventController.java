@@ -50,14 +50,15 @@ public class EventController {
             @RequestParam(value = "startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(value = "calendarId", required = false) Long calendarId,
-            @RequestParam(value = "includeShared", required = false, defaultValue = "true") Boolean includeShared
+            @RequestParam(value = "includeShared", required = false, defaultValue = "true") Boolean includeShared,
+            @RequestParam(value = "groupId", required = false) Long groupId
     ) {
         String username = SecurityUtils.getCurrentUsername();
-        log.debug("Get events: username={}, startDate={}, endDate={}, calendarId={}, includeShared={}",
-                username, startDate, endDate, calendarId, includeShared);
+        log.debug("Get events: username={}, startDate={}, endDate={}, calendarId={}, includeShared={}, groupId={}",
+                username, startDate, endDate, calendarId, includeShared, groupId);
 
         List<EventDetailResponse> events = eventService.getEventsByDateRange(
-                username, startDate, endDate, calendarId, includeShared
+                username, startDate, endDate, calendarId, includeShared, groupId
         );
         return ResponseEntity.ok(ApiResponse.success(events));
     }
@@ -159,6 +160,23 @@ public class EventController {
         log.debug("Remove event share: eventId={}, targetUser={}", eventId, targetUsername);
 
         eventService.removeShare(eventId, targetUsername, username);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    /**
+     * 이벤트 공유 권한 변경
+     */
+    @PutMapping("/{id}/shares/{targetUsername}")
+    public ResponseEntity<ApiResponse<Void>> updateShareType(
+            @PathVariable("id") Long eventId,
+            @PathVariable("targetUsername") String targetUsername,
+            @RequestParam("shareType") String shareType
+    ) {
+        String username = SecurityUtils.getCurrentUsername();
+        log.debug("Update event share type: eventId={}, targetUser={}, shareType={}",
+                eventId, targetUsername, shareType);
+
+        eventService.updateShareType(eventId, targetUsername, shareType, username);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 

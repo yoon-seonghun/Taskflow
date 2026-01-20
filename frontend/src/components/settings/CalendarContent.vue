@@ -10,6 +10,8 @@ import { useUiStore } from '@/stores/ui'
 import Modal from '@/components/common/Modal.vue'
 import Button from '@/components/common/Button.vue'
 import Input from '@/components/common/Input.vue'
+import CalendarShareModal from '@/components/calendar/CalendarShareModal.vue'
+import CalendarTransferModal from '@/components/calendar/CalendarTransferModal.vue'
 
 const uiStore = useUiStore()
 
@@ -20,6 +22,11 @@ const calendars = ref<CalendarListItem[]>([])
 // 모달 상태
 const showFormModal = ref(false)
 const editingCalendar = ref<CalendarListItem | null>(null)
+
+// 공유/이관 모달 상태
+const showShareModal = ref(false)
+const showTransferModal = ref(false)
+const selectedCalendar = ref<CalendarListItem | null>(null)
 
 // 폼 데이터
 const form = ref<CalendarCreateRequest>({
@@ -149,6 +156,28 @@ async function handleSetDefault(calendar: CalendarListItem) {
   }
 }
 
+// 공유 모달 열기
+function openShareModal(calendar: CalendarListItem) {
+  selectedCalendar.value = calendar
+  showShareModal.value = true
+}
+
+// 이관 모달 열기
+function openTransferModal(calendar: CalendarListItem) {
+  selectedCalendar.value = calendar
+  showTransferModal.value = true
+}
+
+// 공유/이관 완료 후 새로고침
+function handleShareChanged() {
+  fetchCalendars()
+}
+
+function handleTransferred() {
+  fetchCalendars()
+  uiStore.showSuccess('캘린더가 이관되었습니다.')
+}
+
 // 초기 로드
 onMounted(() => {
   fetchCalendars()
@@ -224,6 +253,28 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
           </button>
+          <!-- 공유 버튼 -->
+          <button
+            v-if="!calendar.isShared"
+            class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            title="공유"
+            @click="openShareModal(calendar)"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
+          <!-- 이관 버튼 -->
+          <button
+            v-if="!calendar.isShared && !calendar.isDefault"
+            class="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            title="이관"
+            @click="openTransferModal(calendar)"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </button>
           <button
             class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             title="수정"
@@ -234,7 +285,7 @@ onMounted(() => {
             </svg>
           </button>
           <button
-            v-if="!calendar.isDefault"
+            v-if="!calendar.isDefault && !calendar.isShared"
             class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             title="삭제"
             @click="handleDelete(calendar)"
@@ -263,10 +314,11 @@ onMounted(() => {
 
     <!-- 캘린더 폼 모달 -->
     <Modal
-      :show="showFormModal"
+      :model-value="showFormModal"
       :title="editingCalendar ? '캘린더 수정' : '새 캘린더'"
       size="sm"
       @close="closeModal"
+      @update:model-value="showFormModal = $event"
     >
       <div class="space-y-4">
         <!-- 캘린더 이름 -->
@@ -328,6 +380,20 @@ onMounted(() => {
         </div>
       </template>
     </Modal>
+
+    <!-- 공유 모달 -->
+    <CalendarShareModal
+      v-model:visible="showShareModal"
+      :calendar="selectedCalendar"
+      @changed="handleShareChanged"
+    />
+
+    <!-- 이관 모달 -->
+    <CalendarTransferModal
+      v-model:visible="showTransferModal"
+      :calendar="selectedCalendar"
+      @transferred="handleTransferred"
+    />
   </div>
 </template>
 

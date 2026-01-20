@@ -21,16 +21,18 @@ public interface CalendarMapper {
     // ============================================
 
     /**
-     * 캘린더용 Todo 목록 조회 (마감일 기준)
+     * 캘린더용 Todo 목록 조회 (마감일 기준, 그룹 공유 포함)
      * @param ownerUserId 소유자 ID
      * @param startDate 시작일
      * @param endDate 종료일
+     * @param groupId 그룹 ID (optional - 특정 그룹 필터)
      * @return Todo 목록
      */
     List<Todo> selectTodosForCalendar(
             @Param("ownerUserId") Long ownerUserId,
             @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
+            @Param("endDate") LocalDate endDate,
+            @Param("groupId") Long groupId
     );
 
     /**

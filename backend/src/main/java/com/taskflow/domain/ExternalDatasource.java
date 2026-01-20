@@ -23,7 +23,8 @@ public class ExternalDatasource {
     public static final String DB_TYPE_MYSQL = "MYSQL";
     public static final String DB_TYPE_ORACLE = "ORACLE";
     public static final String DB_TYPE_MSSQL = "MSSQL";
-    public static final String DB_TYPE_TIBERO = "TIBERO";
+    public static final String DB_TYPE_TIBERO6 = "TIBERO6";
+    public static final String DB_TYPE_TIBERO7 = "TIBERO7";
 
     // =============================================
     // 연결 타입 상수 (Oracle용)
@@ -52,7 +53,7 @@ public class ExternalDatasource {
     private String datasourceName;
 
     /**
-     * DB 타입 (MYSQL/ORACLE/MSSQL/TIBERO)
+     * DB 타입 (MYSQL/ORACLE/MSSQL/TIBERO6/TIBERO7)
      */
     private String dbType;
 
@@ -200,10 +201,24 @@ public class ExternalDatasource {
     }
 
     /**
-     * Tibero 여부
+     * Tibero 6 여부
+     */
+    public boolean isTibero6() {
+        return DB_TYPE_TIBERO6.equals(this.dbType);
+    }
+
+    /**
+     * Tibero 7 여부
+     */
+    public boolean isTibero7() {
+        return DB_TYPE_TIBERO7.equals(this.dbType);
+    }
+
+    /**
+     * Tibero 여부 (6 또는 7)
      */
     public boolean isTibero() {
-        return DB_TYPE_TIBERO.equals(this.dbType);
+        return isTibero6() || isTibero7();
     }
 
     /**

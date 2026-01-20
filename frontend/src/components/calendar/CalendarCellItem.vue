@@ -255,6 +255,27 @@ function handleDoubleClick() {
         <span class="truncate">{{ event.boardName }}</span>
       </div>
 
+      <!-- 그룹 정보 -->
+      <div v-if="event.groupName" class="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        <span
+          class="px-1.5 py-0.5 rounded text-[10px]"
+          :style="{ backgroundColor: event.groupColor ? event.groupColor + '20' : '#6366f120', color: event.groupColor || '#6366f1' }"
+        >
+          {{ event.groupName }}
+        </span>
+      </div>
+
+      <!-- 그룹 공유 표시 (본인 소유가 아닌 경우) -->
+      <div v-if="event.isGroupShared && event.ownerUserName" class="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        <span>소유자: {{ event.ownerUserName }}</span>
+      </div>
+
       <!-- 하위 업무 표시 (depth > 0인 경우) -->
       <div v-if="event.itemDepth && event.itemDepth > 0" class="flex items-center gap-1 mt-1.5 text-[10px] text-amber-600 dark:text-amber-400">
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

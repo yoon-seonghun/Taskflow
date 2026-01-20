@@ -71,4 +71,9 @@ public class TodoCreateRequest {
      * 반복 종료일
      */
     private LocalDate repeatEndDate;
+
+    /**
+     * 그룹 ID (FK → TB_GROUP)
+     */
+    private Long groupId;
 }

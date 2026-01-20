@@ -21,10 +21,12 @@ type StatusFilter = 'all' | 'not_started' | 'in_progress' | 'overdue' | 'pending
 interface Props {
   boardId: number
   filter?: StatusFilter
+  groupId?: number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  filter: 'all'
+  filter: 'all',
+  groupId: null
 })
 
 const emit = defineEmits<{
@@ -68,8 +70,14 @@ const priorityConfig: Array<{ id: Priority; title: string; color: string }> = [
 
 // 아이템 목록 (필터 적용)
 const items = computed(() => {
-  const activeItems = itemStore.items.filter(i => i.status !== 'DELETED' && i.status !== 'COMPLETED')
+  let activeItems = itemStore.items.filter(i => i.status !== 'DELETED' && i.status !== 'COMPLETED')
 
+  // 그룹 필터 적용
+  if (props.groupId !== null && props.groupId !== undefined) {
+    activeItems = activeItems.filter(i => i.groupId === props.groupId)
+  }
+
+  // 상태 필터 적용
   switch (props.filter) {
     case 'not_started':
       return activeItems.filter(i => i.status === 'NOT_STARTED')

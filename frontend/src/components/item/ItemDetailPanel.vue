@@ -1285,11 +1285,13 @@ onUnmounted(() => {
     />
 
     <!-- v2.0: 속성 선택 모달 (EntityEditModal 사용) -->
+    <!-- v2.3.1: boardId 전달하여 보드 속성 참조 가능 -->
     <EntityEditModal
       v-if="item"
       v-model="showPropertyModal"
       mode="item"
       title="업무 속성 수정"
+      :board-id="boardId"
       :categories="boardCategories"
       :show-color="false"
       name-label="업무명"

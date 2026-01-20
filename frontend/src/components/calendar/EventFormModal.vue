@@ -7,11 +7,14 @@
  */
 import { ref, computed, watch, onMounted } from 'vue'
 import { calendarApi, type UserCalendarResponse, type EventDetailResponse, type EventRequest } from '@/api/calendar'
+import { useGroupStore } from '@/stores/group'
 import Modal from '@/components/common/Modal.vue'
 import Input from '@/components/common/Input.vue'
 import Select from '@/components/common/Select.vue'
 import LunarDatePicker from '@/components/calendar/LunarDatePicker.vue'
 import { solarToLunar } from '@/utils/lunar'
+
+const groupStore = useGroupStore()
 
 interface Props {
   visible: boolean
@@ -31,6 +34,8 @@ const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'saved', event: EventDetailResponse): void
   (e: 'deleted', eventId: number): void
+  (e: 'share', event: EventDetailResponse): void
+  (e: 'transfer', event: EventDetailResponse): void
 }>()
 
 // 캘린더 목록
@@ -57,6 +62,7 @@ const form = ref<{
   recurrenceInterval: number
   recurrenceEndDate: string
   recurrenceCount: number | null
+  groupId: number | null
 }>({
   calendarId: null,
   title: '',
@@ -75,12 +81,16 @@ const form = ref<{
   recurrenceType: 'DAILY',
   recurrenceInterval: 1,
   recurrenceEndDate: '',
-  recurrenceCount: null
+  recurrenceCount: null,
+  groupId: null
 })
 
 // 저장 중
 const saving = ref(false)
 const deleting = ref(false)
+
+// 공유 카운트
+const shareCount = ref(0)
 
 // 편집 모드 여부
 const isEditMode = computed(() => !!props.event)
@@ -191,6 +201,15 @@ const calendarOptions = computed(() =>
     }))
 )
 
+// 그룹 옵션
+const groupOptions = computed(() => [
+  { value: null, label: '그룹 없음' },
+  ...groupStore.groups.map(g => ({
+    value: g.groupId,
+    label: g.groupName
+  }))
+])
+
 // 캘린더 로드
 async function loadCalendars() {
   loadingCalendars.value = true
@@ -206,6 +225,11 @@ async function loadCalendars() {
 
 // 폼 초기화
 function initForm() {
+  // 그룹 목록 로드
+  if (groupStore.groups.length === 0) {
+    groupStore.fetchGroups()
+  }
+
   if (props.event) {
     // 편집 모드
     // recurrenceType에서 _LUNAR 접미사 제거 (UI에서는 기본 타입만 표시)
@@ -229,7 +253,8 @@ function initForm() {
       recurrenceType: baseRecurrenceType,
       recurrenceInterval: props.event.recurrenceInterval || 1,
       recurrenceEndDate: props.event.recurrenceEndDate || '',
-      recurrenceCount: props.event.recurrenceCount
+      recurrenceCount: props.event.recurrenceCount,
+      groupId: props.event.groupId
     }
   } else {
     // 생성 모드
@@ -256,7 +281,8 @@ function initForm() {
       recurrenceType: 'DAILY',
       recurrenceInterval: 1,
       recurrenceEndDate: '',
-      recurrenceCount: null
+      recurrenceCount: null,
+      groupId: null
     }
   }
 }
@@ -335,7 +361,8 @@ async function handleSave() {
       recurrenceType: effectiveRecurrenceType,
       recurrenceInterval: form.value.isRecurring ? form.value.recurrenceInterval : undefined,
       recurrenceEndDate: form.value.isRecurring && form.value.recurrenceEndDate ? form.value.recurrenceEndDate : undefined,
-      recurrenceCount: form.value.isRecurring && form.value.recurrenceCount ? form.value.recurrenceCount : undefined
+      recurrenceCount: form.value.isRecurring && form.value.recurrenceCount ? form.value.recurrenceCount : undefined,
+      groupId: form.value.groupId || undefined
     }
 
     let savedEvent: EventDetailResponse
@@ -380,14 +407,65 @@ function handleClose() {
   emit('update:visible', false)
 }
 
+// 공유 카운트 로드
+async function loadShareCount() {
+  if (!props.event) {
+    shareCount.value = 0
+    return
+  }
+
+  try {
+    const response = await calendarApi.getEventShares(props.event.eventId)
+    shareCount.value = response.data?.length || 0
+  } catch (err) {
+    console.error('Failed to load share count:', err)
+    shareCount.value = 0
+  }
+}
+
+// 공유 모달 열기
+function handleShare() {
+  if (props.event) {
+    // 현재 모달을 먼저 닫고 공유 모달 열기
+    emit('update:visible', false)
+    // 다음 틱에서 공유 모달 열기 (모달 전환 애니메이션 위해)
+    setTimeout(() => {
+      emit('share', props.event!)
+    }, 100)
+  }
+}
+
+// 이관 모달 열기
+function handleTransfer() {
+  if (props.event) {
+    // 현재 모달을 먼저 닫고 이관 모달 열기
+    emit('update:visible', false)
+    // 다음 틱에서 이관 모달 열기
+    setTimeout(() => {
+      emit('transfer', props.event!)
+    }, 100)
+  }
+}
+
 // visible 변경 감시
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     if (calendars.value.length === 0) {
-      loadCalendars().then(() => initForm())
+      loadCalendars().then(() => {
+        initForm()
+        if (props.event) {
+          loadShareCount()
+        }
+      })
     } else {
       initForm()
+      if (props.event) {
+        loadShareCount()
+      }
     }
+  } else {
+    // 모달 닫힐 때 초기화
+    shareCount.value = 0
   }
 })
 
@@ -510,6 +588,18 @@ onMounted(() => {
         <Input v-model="form.location" placeholder="장소 (선택)" />
       </div>
 
+      <!-- 그룹 -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          그룹
+        </label>
+        <Select
+          v-model="form.groupId"
+          :options="groupOptions"
+          placeholder="그룹 선택 (선택)"
+        />
+      </div>
+
       <!-- 설명 -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -582,7 +672,7 @@ onMounted(() => {
     <!-- 푸터 -->
     <template #footer>
       <div class="flex items-center justify-between">
-        <div>
+        <div class="flex gap-2">
           <button
             v-if="isEditMode"
             type="button"
@@ -593,7 +683,39 @@ onMounted(() => {
             {{ deleting ? '삭제 중...' : '삭제' }}
           </button>
         </div>
-        <div class="flex gap-3">
+        <div class="flex gap-2">
+          <!-- 공유/이관 버튼 (편집 모드만) -->
+          <template v-if="isEditMode">
+            <button
+              type="button"
+              class="relative px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors dark:text-green-400 dark:hover:bg-green-900/30"
+              title="이벤트 공유"
+              @click="handleShare"
+            >
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              공유
+              <!-- 공유 카운트 뱃지 -->
+              <span
+                v-if="shareCount > 0"
+                class="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[18px] text-[10px] font-medium bg-green-500 text-white rounded-full leading-none"
+              >
+                {{ shareCount }}
+              </span>
+            </button>
+            <button
+              type="button"
+              class="px-3 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors dark:text-purple-400 dark:hover:bg-purple-900/30"
+              title="이벤트 이관"
+              @click="handleTransfer"
+            >
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              이관
+            </button>
+          </template>
           <button
             type="button"
             class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-300 dark:hover:bg-gray-700"

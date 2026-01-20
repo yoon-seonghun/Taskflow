@@ -19,13 +19,25 @@ public interface TodoMapper {
     Todo selectById(@Param("todoId") Long todoId);
 
     /**
-     * 사용자의 Todo 목록 조회
+     * 사용자의 Todo 목록 조회 (본인 소유만)
      */
     List<Todo> selectByOwnerUserId(
             @Param("ownerUserId") Long ownerUserId,
             @Param("includeCompleted") Boolean includeCompleted,
             @Param("dueDateFrom") LocalDate dueDateFrom,
-            @Param("dueDateTo") LocalDate dueDateTo
+            @Param("dueDateTo") LocalDate dueDateTo,
+            @Param("groupId") Long groupId
+    );
+
+    /**
+     * 사용자의 Todo 목록 조회 (본인 소유 + 그룹 공유)
+     */
+    List<Todo> selectByUserWithGroup(
+            @Param("userId") Long userId,
+            @Param("includeCompleted") Boolean includeCompleted,
+            @Param("dueDateFrom") LocalDate dueDateFrom,
+            @Param("dueDateTo") LocalDate dueDateTo,
+            @Param("groupId") Long groupId
     );
 
     /**

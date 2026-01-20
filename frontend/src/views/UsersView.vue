@@ -130,9 +130,17 @@ function handleCancel() {
   selectedUser.value = null
 }
 
-// 사용자 선택 (편집)
-function handleSelect(user: User) {
-  selectedUser.value = user
+// 사용자 선택 (편집) - 상세 조회 API 호출하여 그룹 정보 포함
+async function handleSelect(user: User) {
+  try {
+    // 그룹 정보 포함된 사용자 상세 데이터 조회
+    const response = await userApi.getUser(user.userId)
+    selectedUser.value = response.data
+  } catch (error) {
+    console.error('Failed to load user detail:', error)
+    // 실패 시 목록 데이터 사용 (fallback)
+    selectedUser.value = user
+  }
 }
 
 // 상태 토글

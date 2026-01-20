@@ -52,11 +52,13 @@ public class EventService {
             LocalDate startDate,
             LocalDate endDate,
             Long calendarId,
-            Boolean includeShared
+            Boolean includeShared,
+            Long groupId
     ) {
         List<Event> events = eventMapper.selectByDateRange(
                 username, startDate, endDate, calendarId,
-                includeShared != null ? includeShared : true
+                includeShared != null ? includeShared : true,
+                groupId
         );
 
         // JOIN으로 인한 중복 제거 (eventId 기준)
@@ -428,6 +430,7 @@ public class EventService {
                 .recurrenceEndDate(request.getRecurrenceEndDate())
                 .recurrenceCount(request.getRecurrenceCount())
                 .recurrenceDays(request.getRecurrenceDays())
+                .groupId(request.getGroupId())
                 .status(Event.STATUS_ACTIVE)
                 .createdBy(username)
                 .build();
@@ -492,6 +495,7 @@ public class EventService {
         existing.setRecurrenceEndDate(request.getRecurrenceEndDate());
         existing.setRecurrenceCount(request.getRecurrenceCount());
         existing.setRecurrenceDays(request.getRecurrenceDays());
+        existing.setGroupId(request.getGroupId());
         existing.setUpdatedBy(username);
 
         eventMapper.update(existing);
@@ -623,6 +627,29 @@ public class EventService {
         auditLogService.log("EVENT_SHARE", eventId, "UNSHARE", username,
                 String.format("이벤트 공유 해제: %s → %s", event.getTitle(), targetUsername),
                 null, null, targetUsername);
+    }
+
+    /**
+     * 이벤트 공유 권한 변경
+     */
+    @Transactional
+    public void updateShareType(Long eventId, String targetUsername, String shareType, String username) {
+        Event event = eventMapper.findById(eventId)
+                .orElseThrow(() -> new BusinessException("이벤트를 찾을 수 없습니다."));
+
+        // 소유자만 권한 변경 가능
+        if (!event.getOwnerUsername().equals(username)) {
+            throw new BusinessException("공유 권한을 변경할 권한이 없습니다.");
+        }
+
+        // 공유 존재 확인
+        if (!shareMapper.exists(eventId, targetUsername)) {
+            throw new BusinessException("공유 정보를 찾을 수 없습니다.");
+        }
+
+        shareMapper.updateShareType(eventId, targetUsername, shareType, username);
+
+        log.info("Event {} share type updated for user {}: {}", eventId, targetUsername, shareType);
     }
 
     // =============================================

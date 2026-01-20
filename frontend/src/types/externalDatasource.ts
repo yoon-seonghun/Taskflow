@@ -2,7 +2,7 @@
  * 외부 데이터소스 타입 정의
  */
 
-export type DbType = 'MYSQL' | 'ORACLE' | 'MSSQL' | 'TIBERO'
+export type DbType = 'MYSQL' | 'ORACLE' | 'MSSQL' | 'TIBERO6' | 'TIBERO7'
 
 export type ConnectionType = 'SID' | 'SERVICE_NAME'
 
@@ -89,7 +89,8 @@ export const DB_TYPE_OPTIONS: { value: DbType; label: string; defaultPort: numbe
   { value: 'MYSQL', label: 'MySQL', defaultPort: 3306 },
   { value: 'ORACLE', label: 'Oracle', defaultPort: 1521 },
   { value: 'MSSQL', label: 'SQL Server', defaultPort: 1433 },
-  { value: 'TIBERO', label: 'Tibero', defaultPort: 8629 }
+  { value: 'TIBERO6', label: 'Tibero 6', defaultPort: 8629 },
+  { value: 'TIBERO7', label: 'Tibero 7', defaultPort: 8629 }
 ]
 
 /**

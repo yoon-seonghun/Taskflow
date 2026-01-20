@@ -7,9 +7,9 @@
     <!-- Calendar 조회 -->
     <!-- ============================================= -->
 
-    <!-- 캘린더용 Todo 목록 조회 (마감일 기준) -->
+    <!-- 캘린더용 Todo 목록 조회 (마감일 기준, 그룹 공유 포함) -->
     <select id="selectTodosForCalendar" resultType="com.taskflow.domain.Todo">
-        SELECT
+        SELECT DISTINCT
             t.TODO_ID as todoId,
             t.OWNER_USER_ID as ownerUserId,
             t.TITLE as title,
@@ -20,16 +20,33 @@
             t.IS_COMPLETED as isCompleted,
             t.COMPLETED_AT as completedAt,
             t.SORT_ORDER as sortOrder,
+            t.GROUP_ID as groupId,
             t.CREATED_AT as createdAt,
             t.CREATED_BY as createdBy,
             t.UPDATED_AT as updatedAt,
-            t.UPDATED_BY as updatedBy
+            t.UPDATED_BY as updatedBy,
+            ou.NAME as ownerUserName,
+            g.GROUP_NAME as groupName,
+            g.GROUP_COLOR as groupColor,
+            CASE WHEN t.OWNER_USER_ID = #{ownerUserId} THEN FALSE ELSE TRUE END AS isGroupShared
         FROM TB_TODO t
-        WHERE t.OWNER_USER_ID = #{ownerUserId}
-          AND t.USE_YN = 'Y'
+        LEFT JOIN TB_USER ou ON t.OWNER_USER_ID = ou.USER_ID
+        LEFT JOIN TB_GROUP g ON t.GROUP_ID = g.GROUP_ID
+        LEFT JOIN TB_USER cu ON cu.USER_ID = #{ownerUserId}
+        LEFT JOIN TB_USER_GROUP ug ON t.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = cu.USERNAME
+            AND ug.DELETED_AT IS NULL
+        WHERE t.USE_YN = 'Y'
           AND t.DUE_DATE IS NOT NULL
           AND t.DUE_DATE >= #{startDate}
           AND t.DUE_DATE &lt;= #{endDate}
+          AND (
+              t.OWNER_USER_ID = #{ownerUserId}
+              OR (t.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL)
+          )
+        <if test="groupId != null">
+          AND t.GROUP_ID = #{groupId}
+        </if>
         ORDER BY t.DUE_DATE, t.DUE_TIME, t.PRIORITY DESC
     </select>
 

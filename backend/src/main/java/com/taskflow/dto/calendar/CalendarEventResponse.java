@@ -67,4 +67,29 @@ public class CalendarEventResponse {
      * 업무 깊이 (0: 기본, 1: 하위, 2: 손자)
      */
     private Integer itemDepth;
+
+    /**
+     * 그룹 ID
+     */
+    private Long groupId;
+
+    /**
+     * 그룹명
+     */
+    private String groupName;
+
+    /**
+     * 그룹 색상
+     */
+    private String groupColor;
+
+    /**
+     * 소유자명
+     */
+    private String ownerUserName;
+
+    /**
+     * 그룹 공유 여부 (본인 소유가 아닌 그룹 항목)
+     */
+    private Boolean isGroupShared;
 }

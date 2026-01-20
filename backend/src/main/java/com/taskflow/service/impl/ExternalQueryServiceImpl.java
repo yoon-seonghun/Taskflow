@@ -133,7 +133,7 @@ public class ExternalQueryServiceImpl implements ExternalQueryService {
         int sortOrder = request.getSortOrder() != null ? request.getSortOrder() :
                 queryMapper.getMaxSortOrder(ownerType, username) + 1;
 
-        // 도메인 객체 생성
+        // 도메인 객체 생성 (컬럼명은 대문자로 정규화)
         ExternalQuery query = ExternalQuery.builder()
                 .datasourceId(request.getDatasourceId())
                 .queryCode(request.getQueryCode())
@@ -143,9 +143,9 @@ public class ExternalQueryServiceImpl implements ExternalQueryService {
                 .ownerType(ownerType)
                 .ownerUsername(ExternalQuery.OWNER_TYPE_GLOBAL.equals(ownerType) ? null : username)
                 .ownerDeptCode(deptCode)
-                .valueColumn(request.getValueColumn())
-                .labelColumn(request.getLabelColumn())
-                .colorColumn(request.getColorColumn())
+                .valueColumn(toUpperCase(request.getValueColumn()))
+                .labelColumn(toUpperCase(request.getLabelColumn()))
+                .colorColumn(toUpperCase(request.getColorColumn()))
                 .cacheEnabledYn(request.getCacheEnabledYn())
                 .cacheTtlSeconds(request.getCacheTtlSeconds())
                 .sortOrder(sortOrder)
@@ -174,7 +174,7 @@ public class ExternalQueryServiceImpl implements ExternalQueryService {
             existing.setQuerySql(validationResult.normalizedSql());
         }
 
-        // 필드 업데이트
+        // 필드 업데이트 (컬럼명은 대문자로 정규화)
         if (request.getDatasourceId() != null) {
             datasourceMapper.findById(request.getDatasourceId())
                     .orElseThrow(() -> new IllegalArgumentException("데이터소스를 찾을 수 없습니다: " + request.getDatasourceId()));
@@ -182,9 +182,9 @@ public class ExternalQueryServiceImpl implements ExternalQueryService {
         }
         if (request.getQueryName() != null) existing.setQueryName(request.getQueryName());
         if (request.getDescription() != null) existing.setDescription(request.getDescription());
-        if (request.getValueColumn() != null) existing.setValueColumn(request.getValueColumn());
-        if (request.getLabelColumn() != null) existing.setLabelColumn(request.getLabelColumn());
-        existing.setColorColumn(request.getColorColumn()); // null 허용
+        if (request.getValueColumn() != null) existing.setValueColumn(toUpperCase(request.getValueColumn()));
+        if (request.getLabelColumn() != null) existing.setLabelColumn(toUpperCase(request.getLabelColumn()));
+        existing.setColorColumn(toUpperCase(request.getColorColumn())); // null 허용
         if (request.getCacheEnabledYn() != null) existing.setCacheEnabledYn(request.getCacheEnabledYn());
         if (request.getCacheTtlSeconds() != null) existing.setCacheTtlSeconds(request.getCacheTtlSeconds());
         if (request.getSortOrder() != null) existing.setSortOrder(request.getSortOrder());
@@ -241,13 +241,17 @@ public class ExternalQueryServiceImpl implements ExternalQueryService {
             List<String> columns = data.isEmpty() ? Collections.emptyList() :
                     new ArrayList<>(data.get(0).keySet());
 
-            // 옵션 매핑
+            // 옵션 매핑 (테스트 시에도 컬럼명 대문자 변환 - 아직 저장 전이므로)
+            String valueCol = toUpperCase(request.getValueColumn());
+            String labelCol = toUpperCase(request.getLabelColumn());
+            String colorCol = toUpperCase(request.getColorColumn());
+
             List<QueryTestResponse.QueryOptionPreview> options = data.stream()
                     .map(row -> {
-                        String value = String.valueOf(row.getOrDefault(request.getValueColumn(), ""));
-                        String label = String.valueOf(row.getOrDefault(request.getLabelColumn(), ""));
-                        String color = request.getColorColumn() != null ?
-                                String.valueOf(row.getOrDefault(request.getColorColumn(), "")) : null;
+                        String value = String.valueOf(row.getOrDefault(valueCol, ""));
+                        String label = String.valueOf(row.getOrDefault(labelCol, ""));
+                        String color = colorCol != null ?
+                                String.valueOf(row.getOrDefault(colorCol, "")) : null;
                         return QueryTestResponse.QueryOptionPreview.of(value, label, color);
                     })
                     .collect(Collectors.toList());
@@ -378,6 +382,13 @@ public class ExternalQueryServiceImpl implements ExternalQueryService {
     // =============================================
     // Helper Methods
     // =============================================
+
+    /**
+     * 문자열을 대문자로 변환 (null-safe)
+     */
+    private String toUpperCase(String value) {
+        return value != null ? value.toUpperCase() : null;
+    }
 
     /**
      * 사용자의 부서 코드 조회

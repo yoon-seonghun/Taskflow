@@ -33,10 +33,12 @@ type StatusFilter = 'all' | 'not_started' | 'in_progress' | 'overdue' | 'pending
 interface Props {
   boardId: number
   filter?: StatusFilter
+  groupId?: number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  filter: 'all'
+  filter: 'all',
+  groupId: null
 })
 
 const emit = defineEmits<{
@@ -218,24 +220,30 @@ function isExpanded(itemId: number): boolean {
 
 // v2.2: 루트 아이템 목록 (필터 적용 + sortOrder 정렬)
 const rootItems = computed(() => {
-  const activeRootItems = itemStore.activeRootItems
+  let items = itemStore.activeRootItems
 
+  // 그룹 필터 적용
+  if (props.groupId !== null && props.groupId !== undefined) {
+    items = items.filter(i => i.groupId === props.groupId)
+  }
+
+  // 상태 필터 적용
   let filtered: Item[]
   switch (props.filter) {
     case 'not_started':
-      filtered = activeRootItems.filter(i => i.status === 'NOT_STARTED')
+      filtered = items.filter(i => i.status === 'NOT_STARTED')
       break
     case 'in_progress':
-      filtered = activeRootItems.filter(i => i.status === 'IN_PROGRESS')
+      filtered = items.filter(i => i.status === 'IN_PROGRESS')
       break
     case 'overdue':
-      filtered = activeRootItems.filter(i => isItemOverdue(i))
+      filtered = items.filter(i => isItemOverdue(i))
       break
     case 'pending':
-      filtered = activeRootItems.filter(i => i.status === 'PENDING')
+      filtered = items.filter(i => i.status === 'PENDING')
       break
     default:
-      filtered = [...activeRootItems]
+      filtered = [...items]
   }
 
   // sortOrder 기준 정렬 (낮은 순서가 먼저)

@@ -47,9 +47,9 @@ public class CalendarServiceImpl implements CalendarService {
         // 날짜별 이벤트 맵
         Map<String, List<CalendarEventResponse>> events = new HashMap<>();
 
-        // Todo 조회
+        // Todo 조회 (그룹 공유 포함)
         if (includeTodo && userId != null) {
-            List<Todo> todos = calendarMapper.selectTodosForCalendar(userId, startDate, endDate);
+            List<Todo> todos = calendarMapper.selectTodosForCalendar(userId, startDate, endDate, null);
             log.debug("Calendar todos fetched: count={}, userId={}", todos.size(), userId);
             for (Todo todo : todos) {
                 String dateKey = todo.getDueDate().toString();
@@ -61,6 +61,11 @@ public class CalendarServiceImpl implements CalendarService {
                                 .priority(todo.getPriority())
                                 .isCompleted(todo.getIsCompleted())
                                 .date(todo.getDueDate())
+                                .groupId(todo.getGroupId())
+                                .groupName(todo.getGroupName())
+                                .groupColor(todo.getGroupColor())
+                                .ownerUserName(todo.getOwnerUserName())
+                                .isGroupShared(todo.getIsGroupShared())
                                 .build());
             }
         }

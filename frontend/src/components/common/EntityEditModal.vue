@@ -9,16 +9,21 @@
  *
  * mode에 따라 동작 변경:
  * - 'board': 카테고리 다중 선택 (체크박스)
- * - 'item': 카테고리 단일 선택 (라디오)
+ * - 'item': 카테고리 단일 선택 (라디오) + 보드 속성 자동 상속
+ *
+ * v2.3.1: mode='item'일 때 boardId를 받아 보드 속성 자동 상속
  */
 import { ref, computed, watch, onMounted } from 'vue'
 import BoardPropertySelector from '@/components/board/BoardPropertySelector.vue'
+import { boardApi } from '@/api/board'
 import type { Category } from '@/types/category'
+import type { BoardProperty } from '@/types/board'
 
 interface Props {
   modelValue: boolean  // 모달 열림/닫힘
   mode: 'board' | 'item'  // 보드용/업무용
   title?: string  // 모달 제목 (기본: mode에 따라 자동 설정)
+  boardId?: number | null  // v2.3.1: 보드 ID (mode='item'일 때 보드 속성 상속용)
 
   // 초기값
   initialName?: string
@@ -44,6 +49,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
+  boardId: null,
   initialName: '',
   initialDescription: '',
   initialColor: '#3B82F6',
@@ -62,6 +68,57 @@ const props = withDefaults(defineProps<Props>(), {
   showDescription: true,
   enablePropertyDragDrop: false
 })
+
+// v2.3.1: 보드 속성 로드 상태
+const boardPropertiesLoading = ref(false)
+const boardProperties = ref<BoardProperty[]>([])
+
+// v2.3.1: 보드 속성 로드 (mode='item'일 때)
+async function loadBoardProperties(boardId: number) {
+  boardPropertiesLoading.value = true
+  try {
+    const response = await boardApi.getBoardProperties(boardId)
+    if (response.success && response.data) {
+      boardProperties.value = response.data
+      console.log('[EntityEditModal] 보드 속성 로드 완료:', response.data.length, '개')
+
+      // 보드 속성을 자동으로 선택 상태로 설정
+      const inheritedPropertyIds: number[] = []
+      const inheritedDefaults: Record<number, string> = {}
+      const inheritedSortOrders: Record<number, number> = {}
+
+      response.data.forEach((prop, index) => {
+        inheritedPropertyIds.push(prop.propertyId)
+        // 기본값이 있으면 적용
+        if (prop.defaultValue) {
+          inheritedDefaults[prop.propertyId] = prop.defaultValue
+        }
+        // 정렬 순서 (보드에서 설정된 순서 또는 순차적 할당)
+        inheritedSortOrders[prop.propertyId] = prop.sortOrder ?? (index + 1)
+      })
+
+      // formData에 보드 속성 병합 (기존 초기값과 병합)
+      formData.value.propertyIds = [
+        ...new Set([...inheritedPropertyIds, ...props.initialPropertyIds])
+      ]
+      formData.value.propertyDefaults = {
+        ...inheritedDefaults,
+        ...props.initialPropertyDefaults
+      }
+      formData.value.propertySortOrders = {
+        ...inheritedSortOrders,
+        ...props.initialPropertySortOrders
+      }
+
+      console.log('[EntityEditModal] 상속된 속성 IDs:', formData.value.propertyIds)
+      console.log('[EntityEditModal] 상속된 기본값:', formData.value.propertyDefaults)
+    }
+  } catch (error) {
+    console.error('[EntityEditModal] 보드 속성 로드 실패:', error)
+  } finally {
+    boardPropertiesLoading.value = false
+  }
+}
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
@@ -163,9 +220,10 @@ function handleClose() {
   emit('update:modelValue', false)
 }
 
-// 모달 열릴 때 초기값 복원
-watch(() => props.modelValue, (isOpen) => {
+// 모달 열릴 때 초기값 복원 및 보드 속성 로드
+watch(() => props.modelValue, async (isOpen) => {
   if (isOpen) {
+    // 기본 초기값 복원
     formData.value = {
       name: props.initialName,
       description: props.initialDescription,
@@ -175,6 +233,11 @@ watch(() => props.modelValue, (isOpen) => {
       propertyIds: [...props.initialPropertyIds],
       propertyDefaults: { ...props.initialPropertyDefaults },
       propertySortOrders: { ...props.initialPropertySortOrders }
+    }
+
+    // v2.3.1: mode='item'이고 boardId가 있으면 보드 속성 자동 로드
+    if (props.mode === 'item' && props.boardId) {
+      await loadBoardProperties(props.boardId)
     }
   }
 })
@@ -303,13 +366,17 @@ watch(() => props.modelValue, (isOpen) => {
             </div>
 
             <!-- 속성 선택 패널 (v2.0.4: 보드 모드에서는 카테고리 속성 숨김 및 드래그앤드롭 비활성) -->
+            <!-- v2.3.1: mode='item'일 때 boardId 전달하여 보드 속성 자동 상속 -->
+            <!-- key 추가: boardId 변경 시 컴포넌트 재마운트 보장 -->
             <BoardPropertySelector
+              :key="`prop-selector-${mode}-${boardId || 'none'}`"
               :selected-category-ids="selectedCategoryIdsForSelector"
               :selected-property-ids="formData.propertyIds"
               :property-defaults="formData.propertyDefaults"
               :initial-sort-orders="formData.propertySortOrders"
               :enable-drag-drop="mode !== 'board' && enablePropertyDragDrop"
               :show-category-properties="mode !== 'board'"
+              :board-id="mode === 'item' ? boardId : null"
               @update:selected-property-ids="handlePropertyIdsUpdate"
               @update:property-defaults="handlePropertyDefaultsUpdate"
               @update:property-sort-orders="handlePropertySortOrdersUpdate"

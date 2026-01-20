@@ -59,6 +59,9 @@ public class Event {
     private String exceptionDates;
     private Long parentEventId;
 
+    // 그룹
+    private Long groupId;
+
     // 상태
     private String status;
 
@@ -77,6 +80,9 @@ public class Event {
     private String sharedByName;        // 공유해준 사용자 이름
     private String shareType;           // 공유 타입 (VIEW/EDIT)
     private String accessType;          // 접근 타입 (OWNER/VIEW/EDIT)
+    private String groupName;           // 그룹명
+    private String groupColor;          // 그룹 색상
+    private Boolean isGroupShared;      // 그룹 공유 여부 (본인 소유가 아닌 그룹 이벤트)
 
     // Lombok getter 명시 (특수 명명 패턴)
     public Boolean getIsDefault() {
@@ -101,5 +107,21 @@ public class Event {
 
     public Boolean getLunarLeapMonth() {
         return lunarLeapMonth;
+    }
+
+    public Long getGroupId() {
+        return groupId;
+    }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public String getGroupColor() {
+        return groupColor;
+    }
+
+    public Boolean getIsGroupShared() {
+        return isGroupShared;
     }
 }

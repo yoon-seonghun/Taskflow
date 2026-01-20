@@ -53,6 +53,9 @@ public class EventRequest {
     private Integer recurrenceCount;
     private String recurrenceDays;      // 주간 반복 요일: "0,1,2,3,4,5,6"
 
+    // 그룹
+    private Long groupId;
+
     // 기본값 처리
     public Boolean getIsAllDay() {
         return isAllDay != null ? isAllDay : true;

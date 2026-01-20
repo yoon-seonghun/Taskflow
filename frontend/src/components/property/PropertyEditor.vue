@@ -73,13 +73,16 @@ const isExternalQuery = computed(() => {
 
 // 외부 쿼리 옵션 로드
 async function loadExternalOptions() {
-  if (!isExternalQuery.value || !props.property.externalQueryId) return
+  if (!isExternalQuery.value || !props.property.externalQueryId) {
+    return
+  }
 
   externalOptionsLoading.value = true
   externalOptionsError.value = null
 
   try {
     const response = await externalQueryApi.executeQuery(props.property.externalQueryId)
+
     if (response.success && response.data?.options) {
       externalOptions.value = response.data.options
     } else {

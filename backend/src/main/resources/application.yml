@@ -50,6 +50,11 @@ external-query:
   default-query-timeout: 30000
   max-result-rows: 1000
   default-cache-ttl: 300
+  # Tibero JDBC 드라이버 JAR 경로 (동적 로딩용)
+  tibero:
+    tibero6-jar-path: ${TIBERO6_JAR_PATH:libs/tibero6-jdbc.jar}
+    tibero7-jar-path: ${TIBERO7_JAR_PATH:libs/tibero7-jdbc.jar}
+    driver-class-name: com.tmax.tibero.jdbc.TbDriver
 
 server:
   port: 8080

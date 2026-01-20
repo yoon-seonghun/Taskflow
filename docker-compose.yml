@@ -4,6 +4,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: taskflow-mysql
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -16,11 +17,21 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+      - --innodb_buffer_pool_size=${MYSQL_INNODB_BUFFER_POOL_SIZE:-256M}
+      - --max_connections=${MYSQL_MAX_CONNECTIONS:-200}
+      - --innodb_log_file_size=64M
+      - --slow_query_log=1
+      - --long_query_time=2
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - taskflow-network
 
@@ -29,6 +40,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: taskflow-backend
+    restart: unless-stopped
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:
@@ -44,6 +56,10 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # JVM 메모리 설정
+      JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200}
+      # 로그 레벨
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       # 사용자 관리 모드 (internal: 기본, external: 외부 DB 연동)
       USER_MANAGEMENT_MODE: ${USER_MANAGEMENT_MODE:-internal}
       # 외부 DB 연결 정보 (external 모드 시 필수)
@@ -56,6 +72,23 @@ services:
       TZ: Asia/Seoul
     volumes:
       - file_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+        reservations:
+          memory: 512M
     networks:
       - taskflow-network
 
@@ -64,12 +97,23 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: taskflow-frontend
+    restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
     environment:
       TZ: Asia/Seoul
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - taskflow-network
 

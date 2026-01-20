@@ -27,6 +27,7 @@ export interface UserCalendarResponse {
   color: string
   isDefault: boolean
   sortOrder: number
+  useYn?: string
   ownerUsername: string
   ownerName: string
   // 공유 정보
@@ -36,6 +37,28 @@ export interface UserCalendarResponse {
   shareType?: string  // VIEW, EDIT
   eventCount?: number
   createdAt: string
+  updatedAt?: string
+}
+
+// CalendarContent.vue 호환을 위한 타입 별칭
+export type CalendarListItem = UserCalendarResponse
+
+// 캘린더 생성/수정 요청 타입
+export interface CalendarCreateRequest {
+  calendarName: string
+  description?: string
+  color?: string
+  isDefault?: boolean
+  sortOrder?: number
+}
+
+// 캘린더 공유 응답 타입
+export interface CalendarShareResponse {
+  username: string
+  userName: string
+  departmentName: string | null
+  shareType: string  // VIEW, EDIT
+  sharedAt: string
 }
 
 // CalendarFilterPanel용 타입 (캘린더 목록)
@@ -80,8 +103,13 @@ export interface EventDetailResponse {
   accessType: string
   isShared: boolean
   sharedByUserName: string | null
+  isGroupShared: boolean | null
   createdAt: string
   updatedAt: string | null
+  // 그룹 정보
+  groupId: number | null
+  groupName: string | null
+  groupColor: string | null
 }
 
 export interface EventRequest {
@@ -104,6 +132,7 @@ export interface EventRequest {
   recurrenceEndDate?: string
   recurrenceCount?: number
   recurrenceDays?: string
+  groupId?: number
 }
 
 export const calendarApi = {
@@ -195,17 +224,18 @@ export const calendarApi = {
   // =============================================
 
   /**
-   * 내 캘린더 목록 조회
+   * 내 캘린더 목록 조회 (내 캘린더 + 공유받은 캘린더)
    */
-  getMyCalendars() {
+  getCalendars() {
     return get<UserCalendarResponse[]>('/calendars')
   },
 
   /**
-   * 캘린더 목록 조회 (필터 패널용 - 내 캘린더 + 공유 캘린더)
+   * 내 캘린더 목록 조회 (getCalendars 별칭)
+   * @deprecated getCalendars() 사용 권장
    */
-  getCalendars() {
-    return get<CalendarListResponse[]>('/calendars')
+  getMyCalendars() {
+    return get<UserCalendarResponse[]>('/calendars')
   },
 
   /**
@@ -248,6 +278,45 @@ export const calendarApi = {
   },
 
   // =============================================
+  // 캘린더 공유/이관 API
+  // =============================================
+
+  /**
+   * 캘린더 공유 목록 조회
+   */
+  getCalendarShares(calendarId: number) {
+    return get<CalendarShareResponse[]>(`/calendars/${calendarId}/shares`)
+  },
+
+  /**
+   * 캘린더 공유 추가
+   */
+  addCalendarShare(calendarId: number, data: { username: string; shareType: string }) {
+    return post<void>(`/calendars/${calendarId}/shares`, data)
+  },
+
+  /**
+   * 캘린더 공유 해제
+   */
+  removeCalendarShare(calendarId: number, targetUsername: string) {
+    return del<void>(`/calendars/${calendarId}/shares/${targetUsername}`)
+  },
+
+  /**
+   * 캘린더 공유 권한 변경
+   */
+  updateCalendarShareType(calendarId: number, targetUsername: string, shareType: string) {
+    return put<void>(`/calendars/${calendarId}/shares/${targetUsername}?shareType=${shareType}`, {})
+  },
+
+  /**
+   * 캘린더 이관
+   */
+  transferCalendar(calendarId: number, targetUsername: string) {
+    return post<UserCalendarResponse>(`/calendars/${calendarId}/transfer`, { targetUsername })
+  },
+
+  // =============================================
   // 이벤트 API
   // =============================================
 
@@ -259,6 +328,7 @@ export const calendarApi = {
     endDate: string
     calendarId?: number
     includeShared?: boolean
+    groupId?: number
   }) {
     return get<EventDetailResponse[]>('/events', params)
   },
@@ -316,6 +386,13 @@ export const calendarApi = {
    */
   removeEventShare(eventId: number, username: string) {
     return del<void>(`/events/${eventId}/shares/${username}`)
+  },
+
+  /**
+   * 이벤트 공유 권한 변경
+   */
+  updateEventShareType(eventId: number, targetUsername: string, shareType: string) {
+    return put<void>(`/events/${eventId}/shares/${targetUsername}?shareType=${shareType}`, {})
   },
 
   /**

@@ -25,6 +25,13 @@ export interface CalendarEvent {
   // 반복 이벤트 관련
   isRecurring?: boolean
   recurrenceType?: string
+  // 그룹 관련
+  groupId?: number
+  groupName?: string
+  groupColor?: string
+  // 소유자/공유 관련
+  ownerUserName?: string
+  isGroupShared?: boolean  // 그룹 멤버로서 조회되는 항목 (본인 소유가 아님)
 }
 
 /**
@@ -71,6 +78,7 @@ export interface CalendarParams {
   includeTodo?: boolean
   includeItem?: boolean
   boardId?: number
+  groupId?: number
 }
 
 /**

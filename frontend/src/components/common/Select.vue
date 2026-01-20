@@ -9,7 +9,7 @@ import { computed, ref, nextTick } from 'vue'
 import { useDropdownManager } from '@/composables/useDropdownManager'
 
 export interface SelectOption {
-  value: string | number
+  value: string | number | null
   label: string
   color?: string
   disabled?: boolean

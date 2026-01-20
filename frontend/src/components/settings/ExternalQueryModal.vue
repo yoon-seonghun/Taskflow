@@ -325,37 +325,77 @@ onMounted(() => {
 
         <!-- 컬럼 매핑 -->
         <div class="form-section">
-          <h3 class="section-title">컬럼 매핑</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="section-title mb-0">컬럼 매핑</h3>
+          </div>
+          <!-- 안내 문구 -->
+          <div class="column-mapping-guide">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>SQL 쿼리에서 사용한 컬럼명 또는 별칭(AS)을 입력하세요. 등록 후 "테스트" 기능에서 컬럼을 선택할 수 있습니다.</span>
+          </div>
+          <!-- 대문자 변환 안내 -->
+          <div class="column-mapping-notice">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>컬럼명은 저장 시 자동으로 <strong>대문자</strong>로 변환됩니다. (예: userid → USERID)</span>
+          </div>
           <div class="form-grid cols-3">
             <div class="form-group">
-              <label class="form-label required">Value 컬럼</label>
+              <label class="form-label required">
+                Value 컬럼
+                <span class="tooltip-container">
+                  <svg class="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="tooltip-text">DB에 저장되는 실제 값 (예: 사원번호, 코드)</span>
+                </span>
+              </label>
               <input
                 v-model="formData.valueColumn"
                 type="text"
                 class="form-input"
                 placeholder="value"
               />
-              <p class="form-hint">실제 저장될 값</p>
+              <p class="form-hint">실제 저장될 값 (예: id, code, user_id)</p>
             </div>
             <div class="form-group">
-              <label class="form-label required">Label 컬럼</label>
+              <label class="form-label required">
+                Label 컬럼
+                <span class="tooltip-container">
+                  <svg class="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="tooltip-text">화면에 표시되는 이름 (예: 사원명, 부서명)</span>
+                </span>
+              </label>
               <input
                 v-model="formData.labelColumn"
                 type="text"
                 class="form-input"
                 placeholder="label"
               />
-              <p class="form-hint">화면에 표시될 텍스트</p>
+              <p class="form-hint">화면 표시명 (예: name, title, user_name)</p>
             </div>
             <div class="form-group">
-              <label class="form-label">Color 컬럼 (선택)</label>
+              <label class="form-label">
+                Color 컬럼
+                <span class="tooltip-container">
+                  <svg class="w-3.5 h-3.5 text-gray-400 hover:text-gray-600 cursor-help dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="tooltip-text">옵션별 색상 코드 (예: #FF5733) - 드롭다운에 색상 배지 표시</span>
+                </span>
+              </label>
               <input
                 v-model="formData.colorColumn"
                 type="text"
                 class="form-input"
-                placeholder="color"
+                placeholder="(선택) color"
               />
-              <p class="form-hint">색상 코드 (#HEX)</p>
+              <p class="form-hint">선택사항 - 비워두면 색상 미적용</p>
             </div>
           </div>
         </div>
@@ -585,5 +625,33 @@ onMounted(() => {
          text-white bg-primary-600 rounded-lg
          hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
          disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+}
+
+/* 툴팁 스타일 */
+.tooltip-container {
+  @apply relative inline-flex ml-1;
+}
+
+.tooltip-text {
+  @apply invisible absolute z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded
+         whitespace-nowrap opacity-0 transition-opacity
+         bottom-full left-1/2 -translate-x-1/2 mb-1
+         dark:bg-gray-600;
+}
+
+.tooltip-container:hover .tooltip-text {
+  @apply visible opacity-100;
+}
+
+/* 컬럼 매핑 안내 */
+.column-mapping-guide {
+  @apply flex items-start gap-2 p-3 mb-2 bg-blue-50 text-blue-700 rounded-lg text-sm
+         dark:bg-blue-900/30 dark:text-blue-300;
+}
+
+/* 대문자 변환 안내 */
+.column-mapping-notice {
+  @apply flex items-start gap-2 p-3 mb-3 bg-amber-50 text-amber-700 rounded-lg text-sm
+         dark:bg-amber-900/30 dark:text-amber-300;
 }
 </style>

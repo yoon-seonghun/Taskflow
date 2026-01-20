@@ -52,6 +52,11 @@ public class EventDetailResponse {
     private String recurrenceDays;
     private Long parentEventId;
 
+    // 그룹
+    private Long groupId;
+    private String groupName;
+    private String groupColor;
+
     // 상태
     private String status;
 
@@ -61,6 +66,7 @@ public class EventDetailResponse {
     private String sharedByName;
     private String shareType;
     private String accessType;          // OWNER, VIEW, EDIT
+    private Boolean isGroupShared;      // 그룹 공유 여부
 
     // 감사 정보
     private LocalDateTime createdAt;
@@ -96,12 +102,16 @@ public class EventDetailResponse {
                 .recurrenceCount(event.getRecurrenceCount())
                 .recurrenceDays(event.getRecurrenceDays())
                 .parentEventId(event.getParentEventId())
+                .groupId(event.getGroupId())
+                .groupName(event.getGroupName())
+                .groupColor(event.getGroupColor())
                 .status(event.getStatus())
                 .isShared(event.getIsShared())
                 .sharedByUsername(event.getSharedByUsername())
                 .sharedByName(event.getSharedByName())
                 .shareType(event.getShareType())
                 .accessType(event.getAccessType())
+                .isGroupShared(event.getIsGroupShared())
                 .createdAt(event.getCreatedAt())
                 .createdBy(event.getCreatedBy())
                 .updatedAt(event.getUpdatedAt())

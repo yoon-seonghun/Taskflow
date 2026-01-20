@@ -53,12 +53,13 @@ public class TodoController {
     public ResponseEntity<ApiResponse<List<TodoResponse>>> getTodos(
             @RequestParam(value = "includeCompleted", required = false, defaultValue = "false") Boolean includeCompleted,
             @RequestParam(value = "dueDateFrom", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDateFrom,
-            @RequestParam(value = "dueDateTo", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDateTo
+            @RequestParam(value = "dueDateTo", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDateTo,
+            @RequestParam(value = "groupId", required = false) Long groupId
     ) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        log.debug("Get todos: userId={}", currentUserId);
+        log.debug("Get todos: userId={}, groupId={}", currentUserId, groupId);
 
-        List<TodoResponse> response = todoService.getTodos(currentUserId, includeCompleted, dueDateFrom, dueDateTo);
+        List<TodoResponse> response = todoService.getTodos(currentUserId, includeCompleted, dueDateFrom, dueDateTo, groupId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
