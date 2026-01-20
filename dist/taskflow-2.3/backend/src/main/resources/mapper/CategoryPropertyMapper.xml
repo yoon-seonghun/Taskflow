@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.CategoryPropertyMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="CategoryPropertyResultMap" type="com.taskflow.domain.CategoryProperty">
+        <id property="categoryPropertyId" column="ID"/>
+        <result property="categoryId" column="CATEGORY_ID"/>
+        <result property="propertyId" column="PROPERTY_ID"/>
+        <result property="propertyName" column="PROPERTY_NAME"/>
+        <result property="propertyType" column="PROPERTY_TYPE"/>
+        <result property="ownerType" column="OWNER_TYPE"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="defaultValue" column="DEFAULT_VALUE"/>
+        <result property="requiredYn" column="REQUIRED_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectCategoryProperty">
+        SELECT
+            cp.ID,
+            cp.CATEGORY_ID,
+            cp.PROPERTY_ID,
+            pd.PROPERTY_NAME,
+            pd.PROPERTY_TYPE,
+            pd.OWNER_TYPE,
+            cp.SORT_ORDER,
+            cp.DEFAULT_VALUE,
+            cp.REQUIRED_YN,
+            cp.CREATED_AT,
+            cp.CREATED_BY,
+            cp.DELETED_AT,
+            cp.DELETED_BY
+        FROM TB_CATEGORY_PROPERTY cp
+        LEFT JOIN TB_PROPERTY_DEF pd ON cp.PROPERTY_ID = pd.PROPERTY_ID
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- ID로 조회 -->
+    <select id="findById" resultMap="CategoryPropertyResultMap">
+        <include refid="selectCategoryProperty"/>
+        WHERE cp.ID = #{id}
+    </select>
+
+    <!-- 카테고리별 속성 목록 조회 -->
+    <select id="findByCategoryId" resultMap="CategoryPropertyResultMap">
+        <include refid="selectCategoryProperty"/>
+        WHERE cp.CATEGORY_ID = #{categoryId}
+          AND pd.USE_YN = 'Y'
+        ORDER BY cp.SORT_ORDER, pd.PROPERTY_NAME
+    </select>
+
+    <!-- 속성별 카테고리 목록 조회 -->
+    <select id="findByPropertyId" resultMap="CategoryPropertyResultMap">
+        <include refid="selectCategoryProperty"/>
+        WHERE cp.PROPERTY_ID = #{propertyId}
+        ORDER BY cp.CATEGORY_ID
+    </select>
+
+    <!-- 특정 카테고리-속성 매핑 조회 -->
+    <select id="findByIds" resultMap="CategoryPropertyResultMap">
+        <include refid="selectCategoryProperty"/>
+        WHERE cp.CATEGORY_ID = #{categoryId}
+          AND cp.PROPERTY_ID = #{propertyId}
+    </select>
+
+    <!-- 매핑 존재 여부 확인 -->
+    <select id="exists" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_CATEGORY_PROPERTY
+            WHERE CATEGORY_ID = #{categoryId}
+              AND PROPERTY_ID = #{propertyId}
+        )
+    </select>
+
+    <!-- 카테고리의 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0)
+        FROM TB_CATEGORY_PROPERTY
+        WHERE CATEGORY_ID = #{categoryId}
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 속성 추가 (v2.0: REQUIRED_YN 추가) -->
+    <insert id="insert" parameterType="com.taskflow.domain.CategoryProperty" useGeneratedKeys="true" keyProperty="categoryPropertyId">
+        INSERT INTO TB_CATEGORY_PROPERTY (
+            CATEGORY_ID,
+            PROPERTY_ID,
+            SORT_ORDER,
+            DEFAULT_VALUE,
+            REQUIRED_YN,
+            CREATED_BY
+        ) VALUES (
+            #{categoryId},
+            #{propertyId},
+            #{sortOrder},
+            #{defaultValue},
+            COALESCE(#{requiredYn}, 'N'),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 일괄 속성 추가 (v2.0: REQUIRED_YN 추가) -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO TB_CATEGORY_PROPERTY (
+            CATEGORY_ID,
+            PROPERTY_ID,
+            SORT_ORDER,
+            DEFAULT_VALUE,
+            REQUIRED_YN,
+            CREATED_BY
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.categoryId},
+                #{item.propertyId},
+                #{item.sortOrder},
+                #{item.defaultValue},
+                COALESCE(#{item.requiredYn}, 'N'),
+                #{item.createdBy}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 정렬 순서 수정 -->
+    <update id="updateSortOrder">
+        UPDATE TB_CATEGORY_PROPERTY
+        SET SORT_ORDER = #{sortOrder}
+        WHERE CATEGORY_ID = #{categoryId}
+          AND PROPERTY_ID = #{propertyId}
+    </update>
+
+    <!-- 기본값 수정 -->
+    <update id="updateDefaultValue">
+        UPDATE TB_CATEGORY_PROPERTY
+        SET DEFAULT_VALUE = #{defaultValue}
+        WHERE CATEGORY_ID = #{categoryId}
+          AND PROPERTY_ID = #{propertyId}
+    </update>
+
+    <!-- 필수 여부 수정 (v2.0 추가) -->
+    <update id="updateRequiredYn">
+        UPDATE TB_CATEGORY_PROPERTY
+        SET REQUIRED_YN = #{requiredYn}
+        WHERE CATEGORY_ID = #{categoryId}
+          AND PROPERTY_ID = #{propertyId}
+    </update>
+
+    <!-- 속성 설정 전체 수정 (v2.0) -->
+    <update id="update" parameterType="com.taskflow.domain.CategoryProperty">
+        UPDATE TB_CATEGORY_PROPERTY
+        SET
+            SORT_ORDER = #{sortOrder},
+            DEFAULT_VALUE = #{defaultValue},
+            REQUIRED_YN = #{requiredYn}
+        WHERE CATEGORY_ID = #{categoryId}
+          AND PROPERTY_ID = #{propertyId}
+    </update>
+
+    <!-- 속성 제거 -->
+    <delete id="delete">
+        DELETE FROM TB_CATEGORY_PROPERTY
+        WHERE CATEGORY_ID = #{categoryId}
+          AND PROPERTY_ID = #{propertyId}
+    </delete>
+
+    <!-- 카테고리의 모든 속성 제거 -->
+    <delete id="deleteByCategoryId">
+        DELETE FROM TB_CATEGORY_PROPERTY
+        WHERE CATEGORY_ID = #{categoryId}
+    </delete>
+
+</mapper>

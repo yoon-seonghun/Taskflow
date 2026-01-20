@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.TemplatePropertyMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="TemplatePropertyResultMap" type="com.taskflow.domain.TemplateProperty">
+        <id property="id" column="ID"/>
+        <result property="templateId" column="TEMPLATE_ID"/>
+        <result property="propertyId" column="PROPERTY_ID"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="defaultValue" column="DEFAULT_VALUE"/>
+        <result property="requiredYn" column="REQUIRED_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="propertyName" column="PROPERTY_NAME"/>
+        <result property="propertyType" column="PROPERTY_TYPE"/>
+        <result property="ownerType" column="OWNER_TYPE"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectTemplateProperty">
+        SELECT
+            tp.ID,
+            tp.TEMPLATE_ID,
+            tp.PROPERTY_ID,
+            tp.SORT_ORDER,
+            tp.DEFAULT_VALUE,
+            tp.REQUIRED_YN,
+            tp.CREATED_AT,
+            tp.CREATED_BY,
+            tp.DELETED_AT,
+            tp.DELETED_BY,
+            pd.PROPERTY_NAME,
+            pd.PROPERTY_TYPE,
+            pd.OWNER_TYPE
+        FROM TB_TEMPLATE_PROPERTY tp
+        LEFT JOIN TB_PROPERTY_DEF pd ON tp.PROPERTY_ID = pd.PROPERTY_ID
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 템플릿별 속성 목록 조회 -->
+    <select id="findByTemplateId" resultMap="TemplatePropertyResultMap">
+        <include refid="selectTemplateProperty"/>
+        WHERE tp.TEMPLATE_ID = #{templateId}
+          AND tp.DELETED_AT IS NULL
+        ORDER BY tp.SORT_ORDER
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 템플릿 속성 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.TemplateProperty"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO TB_TEMPLATE_PROPERTY (
+            TEMPLATE_ID,
+            PROPERTY_ID,
+            SORT_ORDER,
+            DEFAULT_VALUE,
+            REQUIRED_YN,
+            CREATED_BY
+        ) VALUES (
+            #{templateId},
+            #{propertyId},
+            COALESCE(#{sortOrder}, 0),
+            #{defaultValue},
+            COALESCE(#{requiredYn}, 'N'),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 템플릿 속성 일괄 등록 -->
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO TB_TEMPLATE_PROPERTY (
+            TEMPLATE_ID,
+            PROPERTY_ID,
+            SORT_ORDER,
+            DEFAULT_VALUE,
+            REQUIRED_YN,
+            CREATED_BY
+        ) VALUES
+        <foreach collection="properties" item="prop" separator=",">
+            (#{prop.templateId},
+             #{prop.propertyId},
+             COALESCE(#{prop.sortOrder}, 0),
+             #{prop.defaultValue},
+             COALESCE(#{prop.requiredYn}, 'N'),
+             #{prop.createdBy})
+        </foreach>
+    </insert>
+
+    <!-- 템플릿 속성 논리 삭제 -->
+    <update id="softDeleteByTemplateId">
+        UPDATE TB_TEMPLATE_PROPERTY
+        SET DELETED_AT = CURRENT_TIMESTAMP,
+            DELETED_BY = #{deletedBy}
+        WHERE TEMPLATE_ID = #{templateId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 템플릿 속성 물리 삭제 -->
+    <delete id="deleteByTemplateId">
+        DELETE FROM TB_TEMPLATE_PROPERTY
+        WHERE TEMPLATE_ID = #{templateId}
+    </delete>
+
+</mapper>

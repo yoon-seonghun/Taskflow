@@ -1,0 +1,373 @@
+<script setup lang="ts">
+/**
+ * 칸반 뷰 컴포넌트
+ * - 상태/우선순위/담당자별 그룹핑
+ * - 드래그 앤 드롭으로 상태 변경
+ * - 카드 클릭 시 상세 패널
+ */
+import { ref, computed, watch } from 'vue'
+import { useItemStore } from '@/stores/item'
+import { usePropertyStore } from '@/stores/property'
+import { useSlideOver } from '@/composables/useSlideOver'
+import { useToast } from '@/composables/useToast'
+import { Select, Spinner, EmptyState } from '@/components/common'
+import KanbanColumn from './KanbanColumn.vue'
+import { isItemOverdue } from '@/utils/item'
+import type { Item, ItemStatus, Priority } from '@/types/item'
+
+type GroupBy = 'status' | 'priority' | 'assignee' | 'group'
+type StatusFilter = 'all' | 'not_started' | 'in_progress' | 'overdue' | 'pending'
+
+interface Props {
+  boardId: number
+  filter?: StatusFilter
+  groupId?: number | null
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  filter: 'all',
+  groupId: null
+})
+
+const emit = defineEmits<{
+  (e: 'itemClick', item: Item): void
+}>()
+
+const itemStore = useItemStore()
+const propertyStore = usePropertyStore()
+const { openItemDetail, openItemCreate } = useSlideOver()
+const toast = useToast()
+
+// 상태
+const isLoading = ref(false)
+const groupBy = ref<GroupBy>('status')
+const draggingItem = ref<Item | null>(null)
+
+// 그룹 기준 옵션
+const groupByOptions = [
+  { value: 'status', label: '상태' },
+  { value: 'priority', label: '우선순위' },
+  { value: 'assignee', label: '담당자' },
+  { value: 'group', label: '그룹' }
+]
+
+// 상태 정의
+const statusConfig: Array<{ id: ItemStatus; title: string; color: string }> = [
+  { id: 'NOT_STARTED', title: '시작전', color: '#6B7280' },
+  { id: 'IN_PROGRESS', title: '진행중', color: '#3B82F6' },
+  { id: 'PENDING', title: '대기', color: '#F59E0B' },
+  { id: 'COMPLETED', title: '완료', color: '#10B981' },
+  { id: 'DELETED', title: '삭제', color: '#EF4444' }
+]
+
+// 우선순위 정의
+const priorityConfig: Array<{ id: Priority; title: string; color: string }> = [
+  { id: 'URGENT', title: '긴급', color: '#EF4444' },
+  { id: 'HIGH', title: '높음', color: '#F97316' },
+  { id: 'NORMAL', title: '보통', color: '#3B82F6' },
+  { id: 'LOW', title: '낮음', color: '#6B7280' }
+]
+
+// 아이템 목록 (필터 적용)
+const items = computed(() => {
+  let activeItems = itemStore.items.filter(i => i.status !== 'DELETED' && i.status !== 'COMPLETED')
+
+  // 그룹 필터 적용
+  if (props.groupId !== null && props.groupId !== undefined) {
+    activeItems = activeItems.filter(i => i.groupId === props.groupId)
+  }
+
+  // 상태 필터 적용
+  switch (props.filter) {
+    case 'not_started':
+      return activeItems.filter(i => i.status === 'NOT_STARTED')
+    case 'in_progress':
+      return activeItems.filter(i => i.status === 'IN_PROGRESS')
+    case 'overdue':
+      return activeItems.filter(i => isItemOverdue(i))
+    case 'pending':
+      return activeItems.filter(i => i.status === 'PENDING')
+    default:
+      return activeItems
+  }
+})
+
+// 담당자 목록 (아이템에서 추출)
+const assignees = computed(() => {
+  const assigneeMap = new Map<string, { username: string; name: string }>()
+  items.value.forEach(item => {
+    if (item.assigneeUsername && item.assigneeName) {
+      assigneeMap.set(item.assigneeUsername, { username: item.assigneeUsername, name: item.assigneeName })
+    }
+  })
+  return Array.from(assigneeMap.values())
+})
+
+// 그룹 목록 (아이템에서 추출)
+const groups = computed(() => {
+  const groupMap = new Map<number, { id: number; name: string; color?: string }>()
+  items.value.forEach(item => {
+    if (item.groupId && item.groupName) {
+      groupMap.set(item.groupId, { id: item.groupId, name: item.groupName, color: item.groupColor })
+    }
+  })
+  return Array.from(groupMap.values())
+})
+
+// 컬럼 설정 (그룹 기준에 따라)
+const columns = computed(() => {
+  switch (groupBy.value) {
+    case 'status':
+      return statusConfig.map(s => ({
+        id: s.id,
+        title: s.title,
+        color: s.color,
+        items: items.value.filter(item => item.status === s.id)
+      }))
+
+    case 'priority':
+      return priorityConfig.map(p => ({
+        id: p.id,
+        title: p.title,
+        color: p.color,
+        items: items.value.filter(item => item.priority === p.id)
+      }))
+
+    case 'assignee':
+      const assigneeColumns = [
+        {
+          id: 'unassigned',
+          title: '미지정',
+          color: '#9CA3AF',
+          items: items.value.filter(item => !item.assigneeUsername)
+        },
+        ...assignees.value.map(a => ({
+          id: a.username,
+          title: a.name,
+          color: '#6366F1',
+          items: items.value.filter(item => item.assigneeUsername === a.username)
+        }))
+      ]
+      return assigneeColumns
+
+    case 'group':
+      const groupColumns = [
+        {
+          id: 'no-group',
+          title: '미분류',
+          color: '#9CA3AF',
+          items: items.value.filter(item => !item.groupId)
+        },
+        ...groups.value.map(g => ({
+          id: g.id,
+          title: g.name,
+          color: g.color || '#6366F1',
+          items: items.value.filter(item => item.groupId === g.id)
+        }))
+      ]
+      return groupColumns
+
+    default:
+      return []
+  }
+})
+
+// 로딩 상태
+const loading = computed(() => itemStore.loading || isLoading.value)
+
+// 데이터 로드
+async function loadData() {
+  isLoading.value = true
+  try {
+    await Promise.all([
+      itemStore.fetchItems(props.boardId),
+      propertyStore.fetchProperties(props.boardId)
+    ])
+  } catch (error) {
+    toast.error('데이터를 불러오는데 실패했습니다.')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 아이템 클릭
+function handleItemClick(item: Item) {
+  openItemDetail(item.itemId, props.boardId)
+  emit('itemClick', item)
+}
+
+// 드롭 핸들러 (상태/우선순위/담당자/그룹 변경)
+async function handleDrop(columnId: string | number, item: Item, targetIndex?: number) {
+  if (!item.itemId) return
+
+  let updateData: Partial<Item> = {}
+
+  switch (groupBy.value) {
+    case 'status':
+      if (item.status === columnId) return
+      updateData = { status: columnId as ItemStatus }
+      break
+
+    case 'priority':
+      if (item.priority === columnId) return
+      updateData = { priority: columnId as Priority }
+      break
+
+    case 'assignee':
+      const newAssigneeUsername = columnId === 'unassigned' ? undefined : String(columnId)
+      if (item.assigneeUsername === newAssigneeUsername) return
+      updateData = { assigneeUsername: newAssigneeUsername }
+      break
+
+    case 'group':
+      const newGroupId = columnId === 'no-group' ? undefined : Number(columnId)
+      if (item.groupId === newGroupId) return
+      updateData = { groupId: newGroupId }
+      break
+  }
+
+  // Optimistic Update 적용
+  const success = await itemStore.updateItem(props.boardId, item.itemId, updateData)
+
+  if (success) {
+    const fieldNames: Record<GroupBy, string> = {
+      status: '상태',
+      priority: '우선순위',
+      assignee: '담당자',
+      group: '그룹'
+    }
+    toast.success(`${fieldNames[groupBy.value]}가 변경되었습니다.`)
+
+    // 타겟 위치가 지정된 경우 순서도 변경
+    if (targetIndex !== undefined) {
+      await handleReorder(columnId, item.itemId, targetIndex)
+    }
+  } else {
+    toast.error('변경에 실패했습니다.')
+  }
+}
+
+// 컬럼 내 순서 변경 핸들러
+async function handleReorder(columnId: string | number, itemId: number, newIndex: number) {
+  // 해당 컬럼의 아이템 목록에서 새 sortOrder 계산
+  const column = columns.value.find(c => c.id === columnId)
+  if (!column) return
+
+  // 컬럼 내 아이템들의 sortOrder 기준으로 새 순서 계산
+  const sortedItems = [...column.items].sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))
+
+  // 새 인덱스에 해당하는 sortOrder 계산
+  let newSortOrder: number
+  if (newIndex === 0) {
+    // 맨 앞으로 이동
+    const firstItem = sortedItems.find(i => i.itemId !== itemId)
+    newSortOrder = firstItem ? (firstItem.sortOrder ?? 0) : 0
+  } else if (newIndex >= sortedItems.length - 1) {
+    // 맨 뒤로 이동
+    const lastItem = sortedItems.filter(i => i.itemId !== itemId).pop()
+    newSortOrder = lastItem ? (lastItem.sortOrder ?? 0) + 1 : sortedItems.length
+  } else {
+    // 중간으로 이동 - 대상 위치의 아이템 인덱스 사용
+    newSortOrder = newIndex
+  }
+
+  const success = await itemStore.reorderItem(props.boardId, itemId, newSortOrder)
+  if (!success) {
+    toast.error('순서 변경에 실패했습니다.')
+  }
+}
+
+// 새 아이템 추가
+function handleAddItem(columnId: string | number) {
+  // 해당 컬럼의 기본값으로 아이템 생성 패널 열기
+  const defaultValues: Partial<Item> = {}
+
+  switch (groupBy.value) {
+    case 'status':
+      defaultValues.status = columnId as ItemStatus
+      break
+    case 'priority':
+      defaultValues.priority = columnId as Priority
+      break
+    case 'assignee':
+      if (columnId !== 'unassigned') {
+        defaultValues.assigneeUsername = String(columnId)
+      }
+      break
+    case 'group':
+      if (columnId !== 'no-group') {
+        defaultValues.groupId = Number(columnId)
+      }
+      break
+  }
+
+  openItemCreate(props.boardId, defaultValues.groupId)
+}
+
+// 그룹 기준 변경
+function handleGroupByChange(value: string | number | null) {
+  if (value && typeof value === 'string') {
+    groupBy.value = value as GroupBy
+  }
+}
+
+// boardId 변경 시 데이터 재로드
+watch(() => props.boardId, () => {
+  loadData()
+}, { immediate: true })
+</script>
+
+<template>
+  <div class="h-full flex flex-col">
+    <!-- 헤더: 그룹 기준 선택 -->
+    <div class="flex-shrink-0 pb-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-[13px] text-gray-500 dark:text-gray-400">그룹 기준:</span>
+        <Select
+          :model-value="groupBy"
+          :options="groupByOptions"
+          size="sm"
+          class="w-32"
+          @update:model-value="handleGroupByChange"
+        />
+      </div>
+
+      <div class="text-[13px] text-gray-500 dark:text-gray-400">
+        총 {{ items.length }}개 업무
+      </div>
+    </div>
+
+    <!-- 로딩 상태 -->
+    <div v-if="loading" class="flex-1 flex items-center justify-center">
+      <Spinner size="lg" />
+    </div>
+
+    <!-- 빈 상태 -->
+    <EmptyState
+      v-else-if="items.length === 0"
+      title="업무가 없습니다"
+      description="새 업무를 추가해보세요."
+      icon="clipboard"
+      class="flex-1"
+    />
+
+    <!-- 칸반 보드 -->
+    <div v-else class="flex-1 overflow-x-auto">
+      <div class="flex gap-4 h-full pb-4 min-w-max">
+        <KanbanColumn
+          v-for="column in columns"
+          :key="column.id"
+          :column-id="column.id"
+          :title="column.title"
+          :items="column.items.slice().sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999))"
+          :color="column.color"
+          collapsible
+          @item-click="handleItemClick"
+          @drop="handleDrop"
+          @reorder="handleReorder"
+          @add-item="handleAddItem"
+        />
+      </div>
+    </div>
+  </div>
+</template>

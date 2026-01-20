@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.taskflow.mapper.SystemConfigMapper">
+
+    <!-- ResultMap -->
+    <resultMap id="SystemConfigResultMap" type="com.taskflow.domain.SystemConfig">
+        <id property="configId" column="CONFIG_ID"/>
+        <result property="configGroup" column="CONFIG_GROUP"/>
+        <result property="configKey" column="CONFIG_KEY"/>
+        <result property="configValue" column="CONFIG_VALUE"/>
+        <result property="configValueEncrypted" column="CONFIG_VALUE_ENCRYPTED"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+    </resultMap>
+
+    <!-- 설정 그룹별 목록 조회 -->
+    <select id="selectByGroup" resultMap="SystemConfigResultMap">
+        SELECT CONFIG_ID, CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE,
+               CONFIG_VALUE_ENCRYPTED, DESCRIPTION, USE_YN,
+               CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        FROM TB_SYSTEM_CONFIG
+        WHERE CONFIG_GROUP = #{configGroup}
+          AND USE_YN = 'Y'
+        ORDER BY CONFIG_ID
+    </select>
+
+    <!-- 특정 설정 조회 -->
+    <select id="selectByGroupAndKey" resultMap="SystemConfigResultMap">
+        SELECT CONFIG_ID, CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE,
+               CONFIG_VALUE_ENCRYPTED, DESCRIPTION, USE_YN,
+               CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        FROM TB_SYSTEM_CONFIG
+        WHERE CONFIG_GROUP = #{configGroup}
+          AND CONFIG_KEY = #{configKey}
+          AND USE_YN = 'Y'
+    </select>
+
+    <!-- 전체 설정 조회 -->
+    <select id="selectAll" resultMap="SystemConfigResultMap">
+        SELECT CONFIG_ID, CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE,
+               CONFIG_VALUE_ENCRYPTED, DESCRIPTION, USE_YN,
+               CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        FROM TB_SYSTEM_CONFIG
+        WHERE USE_YN = 'Y'
+        ORDER BY CONFIG_GROUP, CONFIG_ID
+    </select>
+
+    <!-- 설정 값 업데이트 (일반 값) -->
+    <update id="updateValue">
+        UPDATE TB_SYSTEM_CONFIG
+        SET CONFIG_VALUE = #{configValue},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = NOW()
+        WHERE CONFIG_GROUP = #{configGroup}
+          AND CONFIG_KEY = #{configKey}
+    </update>
+
+    <!-- 설정 값 업데이트 (암호화된 값) -->
+    <update id="updateEncryptedValue">
+        UPDATE TB_SYSTEM_CONFIG
+        SET CONFIG_VALUE_ENCRYPTED = #{configValueEncrypted},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = NOW()
+        WHERE CONFIG_GROUP = #{configGroup}
+          AND CONFIG_KEY = #{configKey}
+    </update>
+
+    <!-- 설정 추가 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="configId">
+        INSERT INTO TB_SYSTEM_CONFIG (
+            CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE, CONFIG_VALUE_ENCRYPTED,
+            DESCRIPTION, USE_YN, CREATED_BY
+        ) VALUES (
+            #{configGroup}, #{configKey}, #{configValue}, #{configValueEncrypted},
+            #{description}, COALESCE(#{useYn}, 'Y'), #{createdBy}
+        )
+    </insert>
+
+    <!-- 설정 삭제 (논리 삭제) -->
+    <update id="deleteByGroupAndKey">
+        UPDATE TB_SYSTEM_CONFIG
+        SET USE_YN = 'N',
+            UPDATED_AT = NOW()
+        WHERE CONFIG_GROUP = #{configGroup}
+          AND CONFIG_KEY = #{configKey}
+    </update>
+
+</mapper>

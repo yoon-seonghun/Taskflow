@@ -1,0 +1,137 @@
+import { get, post, put, del, patch } from './client'
+import type {
+  Board,
+  BoardCreateRequest,
+  BoardUpdateRequest,
+  BoardShare,
+  BoardShareRequest,
+  BoardShareUpdateRequest,
+  BoardListResponse,
+  BoardDeleteRequest,
+  BoardOrderRequest,
+  TransferPreviewResponse,
+  TransferResultResponse,
+  BoardTransferRequest,
+  BoardProperty,
+  BoardPropertyRequest,
+  BoardCategory
+} from '@/types/board'
+
+export const boardApi = {
+  // =============================================
+  // 보드 CRUD
+  // =============================================
+
+  getBoards(params?: { useYn?: string; owned?: boolean }) {
+    return get<Board[]>('/boards', params)
+  },
+
+  getBoardList() {
+    return get<BoardListResponse>('/boards/list')
+  },
+
+  getBoard(boardId: number) {
+    return get<Board>(`/boards/${boardId}`)
+  },
+
+  createBoard(data: BoardCreateRequest) {
+    return post<Board>('/boards', data)
+  },
+
+  updateBoard(boardId: number, data: BoardUpdateRequest) {
+    return put<Board>(`/boards/${boardId}`, data)
+  },
+
+  deleteBoard(boardId: number) {
+    return del<void>(`/boards/${boardId}`)
+  },
+
+  // =============================================
+  // 보드 관리 (신규 기능)
+  // =============================================
+
+  updateBoardOrder(boardId: number, data: BoardOrderRequest) {
+    return put<void>(`/boards/${boardId}/order`, data)
+  },
+
+  updateSharedBoardOrder(boardId: number, data: BoardOrderRequest) {
+    return put<void>(`/boards/${boardId}/shares/order`, data)
+  },
+
+  deleteBoardWithTransfer(boardId: number, data: BoardDeleteRequest) {
+    return del<TransferResultResponse>(`/boards/${boardId}/with-transfer`, data)
+  },
+
+  getTransferPreview(boardId: number) {
+    return get<TransferPreviewResponse>(`/boards/${boardId}/transfer-preview`)
+  },
+
+  /**
+   * 보드 소유권 이전
+   * - 보드를 다른 사용자에게 이관
+   * - 보드명이 "보드이관"으로 자동 변경됨
+   */
+  transferBoardOwnership(boardId: number, data: BoardTransferRequest) {
+    return put<Board>(`/boards/${boardId}/transfer-ownership`, data)
+  },
+
+  // =============================================
+  // 공유 관리
+  // =============================================
+
+  getBoardShares(boardId: number) {
+    return get<BoardShare[]>(`/boards/${boardId}/shares`)
+  },
+
+  addBoardShare(boardId: number, data: BoardShareRequest) {
+    return post<BoardShare>(`/boards/${boardId}/shares`, data)
+  },
+
+  updateBoardSharePermission(boardId: number, username: string, data: BoardShareUpdateRequest) {
+    return put<void>(`/boards/${boardId}/shares/${username}`, data)
+  },
+
+  removeBoardShare(boardId: number, username: string) {
+    return del<void>(`/boards/${boardId}/shares/${username}`)
+  },
+
+  // =============================================
+  // v2.0: 보드 카테고리 관리
+  // =============================================
+
+  getBoardCategories(boardId: number) {
+    return get<BoardCategory[]>(`/boards/${boardId}/categories`)
+  },
+
+  addBoardCategory(boardId: number, categoryId: number) {
+    return post<void>(`/boards/${boardId}/categories/${categoryId}`)
+  },
+
+  removeBoardCategory(boardId: number, categoryId: number) {
+    return del<void>(`/boards/${boardId}/categories/${categoryId}`)
+  },
+
+  setDefaultCategory(boardId: number, categoryId: number) {
+    return patch<void>(`/boards/${boardId}/categories/${categoryId}/default`)
+  },
+
+  // =============================================
+  // v2.0: 보드 속성 관리
+  // =============================================
+
+  getBoardProperties(boardId: number) {
+    return get<BoardProperty[]>(`/boards/${boardId}/properties`)
+  },
+
+  addBoardProperty(boardId: number, propertyId: number, data?: BoardPropertyRequest) {
+    return post<void>(`/boards/${boardId}/properties/${propertyId}`, data)
+  },
+
+  removeBoardProperty(boardId: number, propertyId: number) {
+    return del<void>(`/boards/${boardId}/properties/${propertyId}`)
+  },
+
+  updateBoardProperty(boardId: number, propertyId: number, data: BoardPropertyRequest) {
+    return put<void>(`/boards/${boardId}/properties/${propertyId}`, data)
+  }
+}

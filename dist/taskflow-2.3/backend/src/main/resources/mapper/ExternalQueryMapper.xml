@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.ExternalQueryMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="ExternalQueryResultMap" type="com.taskflow.domain.ExternalQuery">
+        <id property="queryId" column="QUERY_ID"/>
+        <result property="datasourceId" column="DATASOURCE_ID"/>
+        <result property="queryCode" column="QUERY_CODE"/>
+        <result property="queryName" column="QUERY_NAME"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="querySql" column="QUERY_SQL"/>
+        <result property="ownerType" column="OWNER_TYPE"/>
+        <result property="ownerUsername" column="OWNER_USERNAME"/>
+        <result property="ownerDeptCode" column="OWNER_DEPT_CODE"/>
+        <result property="valueColumn" column="VALUE_COLUMN"/>
+        <result property="labelColumn" column="LABEL_COLUMN"/>
+        <result property="colorColumn" column="COLOR_COLUMN"/>
+        <result property="cacheEnabledYn" column="CACHE_ENABLED_YN"/>
+        <result property="cacheTtlSeconds" column="CACHE_TTL_SECONDS"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="lastExecutedAt" column="LAST_EXECUTED_AT"/>
+        <result property="lastResultCount" column="LAST_RESULT_COUNT"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="datasourceCode" column="DATASOURCE_CODE"/>
+        <result property="datasourceName" column="DATASOURCE_NAME"/>
+        <result property="datasourceDbType" column="DATASOURCE_DB_TYPE"/>
+        <result property="ownerName" column="OWNER_NAME"/>
+        <result property="createdByName" column="CREATED_BY_NAME"/>
+        <result property="updatedByName" column="UPDATED_BY_NAME"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectExternalQuery">
+        SELECT
+            q.QUERY_ID,
+            q.DATASOURCE_ID,
+            q.QUERY_CODE,
+            q.QUERY_NAME,
+            q.DESCRIPTION,
+            q.QUERY_SQL,
+            q.OWNER_TYPE,
+            q.OWNER_USERNAME,
+            q.OWNER_DEPT_CODE,
+            q.VALUE_COLUMN,
+            q.LABEL_COLUMN,
+            q.COLOR_COLUMN,
+            q.CACHE_ENABLED_YN,
+            q.CACHE_TTL_SECONDS,
+            q.SORT_ORDER,
+            q.LAST_EXECUTED_AT,
+            q.LAST_RESULT_COUNT,
+            q.USE_YN,
+            q.CREATED_AT,
+            q.CREATED_BY,
+            q.UPDATED_AT,
+            q.UPDATED_BY,
+            q.DELETED_AT,
+            q.DELETED_BY,
+            d.DATASOURCE_CODE,
+            d.DATASOURCE_NAME,
+            d.DB_TYPE AS DATASOURCE_DB_TYPE,
+            uo.NAME AS OWNER_NAME,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME
+        FROM TB_EXTERNAL_QUERY q
+        LEFT JOIN TB_EXTERNAL_DATASOURCE d ON q.DATASOURCE_ID = d.DATASOURCE_ID
+        LEFT JOIN TB_USER uo ON q.OWNER_USERNAME = uo.USERNAME
+        LEFT JOIN TB_USER uc ON q.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON q.UPDATED_BY = uu.USERNAME
+    </sql>
+
+    <!-- 삭제되지 않은 조건 -->
+    <sql id="notDeleted">
+        AND q.DELETED_AT IS NULL
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- ID로 조회 -->
+    <select id="findById" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.QUERY_ID = #{queryId}
+        <include refid="notDeleted"/>
+    </select>
+
+    <!-- 코드로 조회 -->
+    <select id="findByCode" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.QUERY_CODE = #{queryCode}
+        <include refid="notDeleted"/>
+    </select>
+
+    <!-- 전체 목록 조회 -->
+    <select id="findAll" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE 1=1
+        <include refid="notDeleted"/>
+        ORDER BY q.SORT_ORDER, q.QUERY_NAME
+    </select>
+
+    <!-- 활성 목록 조회 -->
+    <select id="findAllActive" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.USE_YN = 'Y'
+        <include refid="notDeleted"/>
+        ORDER BY q.SORT_ORDER, q.QUERY_NAME
+    </select>
+
+    <!-- 데이터소스별 쿼리 목록 조회 -->
+    <select id="findByDatasourceId" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.DATASOURCE_ID = #{datasourceId}
+        <include refid="notDeleted"/>
+        ORDER BY q.SORT_ORDER, q.QUERY_NAME
+    </select>
+
+    <!-- 키워드 검색 -->
+    <select id="searchByKeyword" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE (
+            q.QUERY_CODE LIKE CONCAT('%', #{keyword}, '%')
+            OR q.QUERY_NAME LIKE CONCAT('%', #{keyword}, '%')
+            OR q.DESCRIPTION LIKE CONCAT('%', #{keyword}, '%')
+        )
+        <include refid="notDeleted"/>
+        ORDER BY
+            CASE WHEN q.QUERY_NAME LIKE CONCAT(#{keyword}, '%') THEN 0 ELSE 1 END,
+            q.QUERY_NAME
+    </select>
+
+    <!-- 코드 중복 체크 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_EXTERNAL_QUERY
+            WHERE QUERY_CODE = #{queryCode}
+              AND DELETED_AT IS NULL
+            <if test="excludeId != null">
+                AND QUERY_ID != #{excludeId}
+            </if>
+        )
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 소유 유형별 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 글로벌 쿼리 목록 조회 -->
+    <select id="findGlobalQueries" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.OWNER_TYPE = 'GLOBAL'
+          AND q.USE_YN = 'Y'
+        <include refid="notDeleted"/>
+        ORDER BY q.SORT_ORDER, q.QUERY_NAME
+    </select>
+
+    <!-- 매니저 쿼리 목록 조회 (부서 계층 포함) -->
+    <select id="findManagerQueries" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.OWNER_TYPE = 'MANAGER'
+          AND q.USE_YN = 'Y'
+          AND (
+              q.OWNER_USERNAME = #{username}
+              <if test="departmentCodes != null and departmentCodes.size() > 0">
+                  OR q.OWNER_DEPT_CODE IN
+                  <foreach collection="departmentCodes" item="code" open="(" separator="," close=")">
+                      #{code}
+                  </foreach>
+              </if>
+          )
+        <include refid="notDeleted"/>
+        ORDER BY q.SORT_ORDER, q.QUERY_NAME
+    </select>
+
+    <!-- 개인 쿼리 목록 조회 -->
+    <select id="findUserQueries" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.OWNER_TYPE = 'USER'
+          AND q.USE_YN = 'Y'
+          AND q.OWNER_USERNAME = #{username}
+        <include refid="notDeleted"/>
+        ORDER BY q.SORT_ORDER, q.QUERY_NAME
+    </select>
+
+    <!-- 접근 가능한 전체 쿼리 목록 조회 -->
+    <select id="findAccessibleQueries" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.USE_YN = 'Y'
+          AND (
+              q.OWNER_TYPE = 'GLOBAL'
+              OR (q.OWNER_TYPE = 'USER' AND q.OWNER_USERNAME = #{username})
+              OR (q.OWNER_TYPE = 'MANAGER' AND (
+                  q.OWNER_USERNAME = #{username}
+                  <if test="departmentCodes != null and departmentCodes.size() > 0">
+                      OR q.OWNER_DEPT_CODE IN
+                      <foreach collection="departmentCodes" item="code" open="(" separator="," close=")">
+                          #{code}
+                      </foreach>
+                  </if>
+              ))
+          )
+        <include refid="notDeleted"/>
+        ORDER BY
+            CASE q.OWNER_TYPE
+                WHEN 'GLOBAL' THEN 1
+                WHEN 'MANAGER' THEN 2
+                WHEN 'USER' THEN 3
+            END,
+            q.SORT_ORDER, q.QUERY_NAME
+    </select>
+
+    <!-- 소유 유형 + 코드 중복 체크 -->
+    <select id="findByCodeAndOwner" resultMap="ExternalQueryResultMap">
+        <include refid="selectExternalQuery"/>
+        WHERE q.QUERY_CODE = #{queryCode}
+          AND q.OWNER_TYPE = #{ownerType}
+          <if test="ownerType != 'GLOBAL'">
+              AND q.OWNER_USERNAME = #{ownerUsername}
+          </if>
+        <include refid="notDeleted"/>
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.ExternalQuery" useGeneratedKeys="true" keyProperty="queryId">
+        INSERT INTO TB_EXTERNAL_QUERY (
+            DATASOURCE_ID,
+            QUERY_CODE,
+            QUERY_NAME,
+            DESCRIPTION,
+            QUERY_SQL,
+            OWNER_TYPE,
+            OWNER_USERNAME,
+            OWNER_DEPT_CODE,
+            VALUE_COLUMN,
+            LABEL_COLUMN,
+            COLOR_COLUMN,
+            CACHE_ENABLED_YN,
+            CACHE_TTL_SECONDS,
+            SORT_ORDER,
+            USE_YN,
+            CREATED_BY
+        ) VALUES (
+            #{datasourceId},
+            #{queryCode},
+            #{queryName},
+            #{description},
+            #{querySql},
+            COALESCE(#{ownerType}, 'USER'),
+            #{ownerUsername},
+            #{ownerDeptCode},
+            COALESCE(#{valueColumn}, 'value'),
+            COALESCE(#{labelColumn}, 'label'),
+            #{colorColumn},
+            COALESCE(#{cacheEnabledYn}, 'N'),
+            COALESCE(#{cacheTtlSeconds}, 300),
+            COALESCE(#{sortOrder}, 0),
+            COALESCE(#{useYn}, 'Y'),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.ExternalQuery">
+        UPDATE TB_EXTERNAL_QUERY
+        SET
+            DATASOURCE_ID = COALESCE(#{datasourceId}, DATASOURCE_ID),
+            QUERY_NAME = COALESCE(#{queryName}, QUERY_NAME),
+            DESCRIPTION = #{description},
+            QUERY_SQL = COALESCE(#{querySql}, QUERY_SQL),
+            VALUE_COLUMN = COALESCE(#{valueColumn}, VALUE_COLUMN),
+            LABEL_COLUMN = COALESCE(#{labelColumn}, LABEL_COLUMN),
+            COLOR_COLUMN = #{colorColumn},
+            CACHE_ENABLED_YN = COALESCE(#{cacheEnabledYn}, CACHE_ENABLED_YN),
+            CACHE_TTL_SECONDS = COALESCE(#{cacheTtlSeconds}, CACHE_TTL_SECONDS),
+            SORT_ORDER = COALESCE(#{sortOrder}, SORT_ORDER),
+            USE_YN = COALESCE(#{useYn}, USE_YN),
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE QUERY_ID = #{queryId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 사용 여부 변경 -->
+    <update id="updateUseYn">
+        UPDATE TB_EXTERNAL_QUERY
+        SET
+            USE_YN = #{useYn},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE QUERY_ID = #{queryId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 마지막 실행 정보 갱신 -->
+    <update id="updateLastExecution">
+        UPDATE TB_EXTERNAL_QUERY
+        SET
+            LAST_EXECUTED_AT = #{lastExecutedAt},
+            LAST_RESULT_COUNT = #{lastResultCount}
+        WHERE QUERY_ID = #{queryId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 논리 삭제 -->
+    <update id="softDelete">
+        UPDATE TB_EXTERNAL_QUERY
+        SET
+            DELETED_BY = #{deletedBy},
+            DELETED_AT = CURRENT_TIMESTAMP
+        WHERE QUERY_ID = #{queryId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 물리 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_EXTERNAL_QUERY
+        WHERE QUERY_ID = #{queryId}
+    </delete>
+
+    <!-- 데이터소스별 전체 삭제 -->
+    <update id="softDeleteByDatasourceId">
+        UPDATE TB_EXTERNAL_QUERY
+        SET
+            DELETED_BY = #{deletedBy},
+            DELETED_AT = CURRENT_TIMESTAMP
+        WHERE DATASOURCE_ID = #{datasourceId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- ============================================= -->
+    <!-- 정렬 순서 -->
+    <!-- ============================================= -->
+
+    <!-- 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="int">
+        SELECT COALESCE(MAX(SORT_ORDER), 0)
+        FROM TB_EXTERNAL_QUERY
+        WHERE OWNER_TYPE = #{ownerType}
+          <if test="ownerType != 'GLOBAL'">
+              AND OWNER_USERNAME = #{ownerUsername}
+          </if>
+          AND DELETED_AT IS NULL
+    </select>
+
+    <!-- 정렬 순서 변경 -->
+    <update id="updateSortOrder">
+        UPDATE TB_EXTERNAL_QUERY
+        SET
+            SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE QUERY_ID = #{queryId}
+          AND DELETED_AT IS NULL
+    </update>
+
+</mapper>

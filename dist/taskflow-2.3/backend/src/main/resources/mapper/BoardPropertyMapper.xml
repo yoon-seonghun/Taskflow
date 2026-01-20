@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.BoardPropertyMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="BoardPropertyResultMap" type="com.taskflow.domain.BoardProperty">
+        <id property="boardPropertyId" column="BOARD_PROPERTY_ID"/>
+        <result property="boardId" column="BOARD_ID"/>
+        <result property="propertyId" column="PROPERTY_ID"/>
+        <result property="propertyName" column="PROPERTY_NAME"/>
+        <result property="propertyType" column="PROPERTY_TYPE"/>
+        <result property="ownerType" column="OWNER_TYPE"/>
+        <result property="requiredYn" column="REQUIRED_YN"/>
+        <result property="visibleYn" column="VISIBLE_YN"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="defaultValue" column="DEFAULT_VALUE"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectBoardProperty">
+        SELECT
+            bp.BOARD_PROPERTY_ID,
+            bp.BOARD_ID,
+            bp.PROPERTY_ID,
+            pd.PROPERTY_NAME,
+            pd.PROPERTY_TYPE,
+            pd.OWNER_TYPE,
+            bp.REQUIRED_YN,
+            bp.VISIBLE_YN,
+            bp.SORT_ORDER,
+            bp.DEFAULT_VALUE,
+            bp.CREATED_AT,
+            bp.CREATED_BY,
+            bp.UPDATED_AT,
+            bp.UPDATED_BY,
+            bp.DELETED_AT,
+            bp.DELETED_BY
+        FROM TB_BOARD_PROPERTY bp
+        LEFT JOIN TB_PROPERTY_DEF pd ON bp.PROPERTY_ID = pd.PROPERTY_ID
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- ID로 조회 -->
+    <select id="findById" resultMap="BoardPropertyResultMap">
+        <include refid="selectBoardProperty"/>
+        WHERE bp.BOARD_PROPERTY_ID = #{boardPropertyId}
+    </select>
+
+    <!-- 보드별 속성 설정 목록 조회 -->
+    <select id="findByBoardId" resultMap="BoardPropertyResultMap">
+        <include refid="selectBoardProperty"/>
+        WHERE bp.BOARD_ID = #{boardId}
+          AND pd.USE_YN = 'Y'
+        ORDER BY bp.SORT_ORDER, pd.PROPERTY_NAME
+    </select>
+
+    <!-- 속성별 보드 설정 목록 조회 -->
+    <select id="findByPropertyId" resultMap="BoardPropertyResultMap">
+        <include refid="selectBoardProperty"/>
+        WHERE bp.PROPERTY_ID = #{propertyId}
+        ORDER BY bp.BOARD_ID
+    </select>
+
+    <!-- 특정 보드-속성 설정 조회 -->
+    <select id="findByIds" resultMap="BoardPropertyResultMap">
+        <include refid="selectBoardProperty"/>
+        WHERE bp.BOARD_ID = #{boardId}
+          AND bp.PROPERTY_ID = #{propertyId}
+    </select>
+
+    <!-- 설정 존재 여부 확인 -->
+    <select id="exists" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_BOARD_PROPERTY
+            WHERE BOARD_ID = #{boardId}
+              AND PROPERTY_ID = #{propertyId}
+        )
+    </select>
+
+    <!-- 보드의 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0)
+        FROM TB_BOARD_PROPERTY
+        WHERE BOARD_ID = #{boardId}
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 속성 설정 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.BoardProperty" useGeneratedKeys="true" keyProperty="boardPropertyId">
+        INSERT INTO TB_BOARD_PROPERTY (
+            BOARD_ID,
+            PROPERTY_ID,
+            REQUIRED_YN,
+            VISIBLE_YN,
+            SORT_ORDER,
+            DEFAULT_VALUE,
+            CREATED_BY
+        ) VALUES (
+            #{boardId},
+            #{propertyId},
+            COALESCE(#{requiredYn}, 'N'),
+            COALESCE(#{visibleYn}, 'Y'),
+            #{sortOrder},
+            #{defaultValue},
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 일괄 속성 설정 등록 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO TB_BOARD_PROPERTY (
+            BOARD_ID,
+            PROPERTY_ID,
+            REQUIRED_YN,
+            VISIBLE_YN,
+            SORT_ORDER,
+            DEFAULT_VALUE,
+            CREATED_BY
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.boardId},
+                #{item.propertyId},
+                COALESCE(#{item.requiredYn}, 'N'),
+                COALESCE(#{item.visibleYn}, 'Y'),
+                #{item.sortOrder},
+                #{item.defaultValue},
+                #{item.createdBy}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 속성 설정 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.BoardProperty">
+        UPDATE TB_BOARD_PROPERTY
+        SET
+            REQUIRED_YN = #{requiredYn},
+            VISIBLE_YN = #{visibleYn},
+            SORT_ORDER = #{sortOrder},
+            DEFAULT_VALUE = #{defaultValue},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE BOARD_ID = #{boardId}
+          AND PROPERTY_ID = #{propertyId}
+    </update>
+
+    <!-- 정렬 순서 수정 -->
+    <update id="updateSortOrder">
+        UPDATE TB_BOARD_PROPERTY
+        SET SORT_ORDER = #{sortOrder}
+        WHERE BOARD_ID = #{boardId}
+          AND PROPERTY_ID = #{propertyId}
+    </update>
+
+    <!-- 속성 설정 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_BOARD_PROPERTY
+        WHERE BOARD_ID = #{boardId}
+          AND PROPERTY_ID = #{propertyId}
+    </delete>
+
+    <!-- 보드의 모든 속성 설정 삭제 -->
+    <delete id="deleteByBoardId">
+        DELETE FROM TB_BOARD_PROPERTY
+        WHERE BOARD_ID = #{boardId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.EventMapper">
+
+    <!-- ============================================= -->
+    <!-- ResultMap -->
+    <!-- ============================================= -->
+    <resultMap id="EventResultMap" type="com.taskflow.domain.Event">
+        <id property="eventId" column="EVENT_ID"/>
+        <result property="calendarId" column="CALENDAR_ID"/>
+        <result property="ownerUsername" column="OWNER_USERNAME"/>
+        <result property="title" column="TITLE"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="location" column="LOCATION"/>
+        <result property="startDate" column="START_DATE"/>
+        <result property="endDate" column="END_DATE"/>
+        <result property="startTime" column="START_TIME"/>
+        <result property="endTime" column="END_TIME"/>
+        <result property="isAllDay" column="IS_ALL_DAY"/>
+        <result property="isLunar" column="IS_LUNAR"/>
+        <result property="lunarMonth" column="LUNAR_MONTH"/>
+        <result property="lunarDay" column="LUNAR_DAY"/>
+        <result property="lunarLeapMonth" column="LUNAR_LEAP_MONTH"/>
+        <result property="isRecurring" column="IS_RECURRING"/>
+        <result property="recurrenceType" column="RECURRENCE_TYPE"/>
+        <result property="recurrenceInterval" column="RECURRENCE_INTERVAL"/>
+        <result property="recurrenceEndDate" column="RECURRENCE_END_DATE"/>
+        <result property="recurrenceCount" column="RECURRENCE_COUNT"/>
+        <result property="recurrenceDays" column="RECURRENCE_DAYS"/>
+        <result property="exceptionDates" column="EXCEPTION_DATES"/>
+        <result property="parentEventId" column="PARENT_EVENT_ID"/>
+        <result property="groupId" column="GROUP_ID"/>
+        <result property="status" column="STATUS"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="ownerName" column="OWNER_NAME"/>
+        <result property="calendarName" column="CALENDAR_NAME"/>
+        <result property="calendarColor" column="CALENDAR_COLOR"/>
+        <result property="isShared" column="IS_SHARED"/>
+        <result property="sharedByUsername" column="SHARED_BY_USERNAME"/>
+        <result property="sharedByName" column="SHARED_BY_NAME"/>
+        <result property="shareType" column="SHARE_TYPE"/>
+        <result property="accessType" column="ACCESS_TYPE"/>
+        <result property="groupName" column="GROUP_NAME"/>
+        <result property="groupColor" column="GROUP_COLOR"/>
+        <result property="isGroupShared" column="IS_GROUP_SHARED"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- INSERT -->
+    <!-- ============================================= -->
+    <insert id="insert" parameterType="com.taskflow.domain.Event" useGeneratedKeys="true" keyProperty="eventId">
+        INSERT INTO TB_EVENT (
+            CALENDAR_ID, OWNER_USERNAME, TITLE, DESCRIPTION, LOCATION,
+            START_DATE, END_DATE, START_TIME, END_TIME, IS_ALL_DAY,
+            IS_LUNAR, LUNAR_MONTH, LUNAR_DAY, LUNAR_LEAP_MONTH,
+            IS_RECURRING, RECURRENCE_TYPE, RECURRENCE_INTERVAL, RECURRENCE_END_DATE,
+            RECURRENCE_COUNT, RECURRENCE_DAYS, PARENT_EVENT_ID, GROUP_ID, STATUS, CREATED_BY
+        ) VALUES (
+            #{calendarId}, #{ownerUsername}, #{title}, #{description}, #{location},
+            #{startDate}, #{endDate}, #{startTime}, #{endTime}, #{isAllDay},
+            #{isLunar}, #{lunarMonth}, #{lunarDay}, #{lunarLeapMonth},
+            #{isRecurring}, #{recurrenceType}, #{recurrenceInterval}, #{recurrenceEndDate},
+            #{recurrenceCount}, #{recurrenceDays}, #{parentEventId}, #{groupId, jdbcType=BIGINT}, #{status}, #{createdBy}
+        )
+    </insert>
+
+    <!-- ============================================= -->
+    <!-- UPDATE -->
+    <!-- ============================================= -->
+    <update id="update" parameterType="com.taskflow.domain.Event">
+        UPDATE TB_EVENT
+        SET
+            CALENDAR_ID = #{calendarId},
+            TITLE = #{title},
+            DESCRIPTION = #{description},
+            LOCATION = #{location},
+            START_DATE = #{startDate},
+            END_DATE = #{endDate},
+            START_TIME = #{startTime},
+            END_TIME = #{endTime},
+            IS_ALL_DAY = #{isAllDay},
+            IS_LUNAR = #{isLunar},
+            LUNAR_MONTH = #{lunarMonth},
+            LUNAR_DAY = #{lunarDay},
+            LUNAR_LEAP_MONTH = #{lunarLeapMonth},
+            IS_RECURRING = #{isRecurring},
+            RECURRENCE_TYPE = #{recurrenceType},
+            RECURRENCE_INTERVAL = #{recurrenceInterval},
+            RECURRENCE_END_DATE = #{recurrenceEndDate},
+            RECURRENCE_COUNT = #{recurrenceCount},
+            RECURRENCE_DAYS = #{recurrenceDays},
+            GROUP_ID = #{groupId, jdbcType=BIGINT},
+            UPDATED_BY = #{updatedBy}
+        WHERE EVENT_ID = #{eventId}
+          AND STATUS != 'DELETED'
+    </update>
+
+    <update id="delete">
+        UPDATE TB_EVENT
+        SET STATUS = 'DELETED', UPDATED_BY = #{username}
+        WHERE EVENT_ID = #{eventId}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE TB_EVENT
+        SET STATUS = #{status}, UPDATED_BY = #{updatedBy}
+        WHERE EVENT_ID = #{eventId}
+    </update>
+
+    <update id="transferOwner">
+        UPDATE TB_EVENT
+        SET
+            OWNER_USERNAME = #{newOwnerUsername},
+            CALENDAR_ID = #{newCalendarId},
+            UPDATED_BY = #{updatedBy}
+        WHERE EVENT_ID = #{eventId}
+          AND STATUS != 'DELETED'
+    </update>
+
+    <update id="addExceptionDate">
+        UPDATE TB_EVENT
+        SET
+            EXCEPTION_DATES = CASE
+                WHEN EXCEPTION_DATES IS NULL THEN CONCAT('["', #{exceptionDate}, '"]')
+                ELSE CONCAT(SUBSTRING(EXCEPTION_DATES, 1, LENGTH(EXCEPTION_DATES) - 1), ',"', #{exceptionDate}, '"]')
+            END,
+            UPDATED_BY = #{updatedBy}
+        WHERE EVENT_ID = #{eventId}
+    </update>
+
+    <!-- ============================================= -->
+    <!-- SELECT -->
+    <!-- ============================================= -->
+    <select id="findById" resultMap="EventResultMap">
+        SELECT
+            e.*,
+            u.NAME as OWNER_NAME,
+            c.CALENDAR_NAME as CALENDAR_NAME,
+            c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR
+        FROM TB_EVENT e
+        INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
+        LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
+        WHERE e.EVENT_ID = #{eventId}
+          AND e.STATUS != 'DELETED'
+    </select>
+
+    <select id="findByIdWithShare" resultMap="EventResultMap">
+        SELECT DISTINCT
+            e.*,
+            u.NAME as OWNER_NAME,
+            c.CALENDAR_NAME as CALENDAR_NAME,
+            c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR,
+            CASE WHEN e.OWNER_USERNAME = #{username} THEN FALSE ELSE TRUE END as IS_SHARED,
+            COALESCE(es.SHARED_BY, cs.SHARED_BY) as SHARED_BY_USERNAME,
+            COALESCE(esu.NAME, csu.NAME) as SHARED_BY_NAME,
+            COALESCE(es.SHARE_TYPE, cs.SHARE_TYPE) as SHARE_TYPE,
+            CASE
+                WHEN e.OWNER_USERNAME = #{username} THEN 'OWNER'
+                WHEN es.SHARE_TYPE IS NOT NULL THEN es.SHARE_TYPE
+                WHEN cs.SHARE_TYPE IS NOT NULL THEN cs.SHARE_TYPE
+                WHEN ug.USER_GROUP_ID IS NOT NULL THEN 'EDIT'
+                ELSE NULL
+            END as ACCESS_TYPE,
+            CASE
+                WHEN e.OWNER_USERNAME != #{username} AND e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL THEN TRUE
+                ELSE FALSE
+            END as IS_GROUP_SHARED
+        FROM TB_EVENT e
+        INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
+        LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
+        LEFT JOIN TB_EVENT_SHARE es ON e.EVENT_ID = es.EVENT_ID
+            AND es.USERNAME = #{username}
+            AND es.DELETED_AT IS NULL
+        LEFT JOIN TB_USER esu ON es.SHARED_BY = esu.USERNAME
+        LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
+            AND cs.USERNAME = #{username}
+            AND cs.DELETED_AT IS NULL
+        LEFT JOIN TB_USER csu ON cs.SHARED_BY = csu.USERNAME
+        LEFT JOIN TB_USER_GROUP ug ON e.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = #{username}
+            AND ug.DELETED_AT IS NULL
+        WHERE e.EVENT_ID = #{eventId}
+          AND e.STATUS != 'DELETED'
+          AND (
+              e.OWNER_USERNAME = #{username}
+              OR es.EVENT_SHARE_ID IS NOT NULL
+              OR cs.CALENDAR_SHARE_ID IS NOT NULL
+              OR (e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL)
+          )
+    </select>
+
+    <select id="selectByDateRange" resultMap="EventResultMap">
+        SELECT DISTINCT
+            e.*,
+            u.NAME as OWNER_NAME,
+            c.CALENDAR_NAME as CALENDAR_NAME,
+            c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR,
+            CASE WHEN e.OWNER_USERNAME = #{username} THEN FALSE ELSE TRUE END as IS_SHARED,
+            COALESCE(es.SHARED_BY, cs.SHARED_BY) as SHARED_BY_USERNAME,
+            COALESCE(esu.NAME, csu.NAME) as SHARED_BY_NAME,
+            COALESCE(es.SHARE_TYPE, cs.SHARE_TYPE) as SHARE_TYPE,
+            CASE
+                WHEN e.OWNER_USERNAME = #{username} THEN 'OWNER'
+                WHEN es.SHARE_TYPE IS NOT NULL THEN es.SHARE_TYPE
+                WHEN cs.SHARE_TYPE IS NOT NULL THEN cs.SHARE_TYPE
+                WHEN ug.USER_GROUP_ID IS NOT NULL THEN 'EDIT'
+                ELSE NULL
+            END as ACCESS_TYPE,
+            CASE
+                WHEN e.OWNER_USERNAME != #{username} AND e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL THEN TRUE
+                ELSE FALSE
+            END as IS_GROUP_SHARED
+        FROM TB_EVENT e
+        INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID AND c.USE_YN = 'Y'
+        LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
+        LEFT JOIN TB_EVENT_SHARE es ON e.EVENT_ID = es.EVENT_ID
+            AND es.USERNAME = #{username}
+            AND es.DELETED_AT IS NULL
+        LEFT JOIN TB_USER esu ON es.SHARED_BY = esu.USERNAME
+        LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
+            AND cs.USERNAME = #{username}
+            AND cs.DELETED_AT IS NULL
+        LEFT JOIN TB_USER csu ON cs.SHARED_BY = csu.USERNAME
+        LEFT JOIN TB_USER_GROUP ug ON e.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = #{username}
+            AND ug.DELETED_AT IS NULL
+        WHERE e.STATUS = 'ACTIVE'
+          AND (
+              /* 일반 이벤트: 날짜 범위 내 */
+              (e.IS_RECURRING = FALSE
+               AND e.START_DATE &lt;= #{endDate}
+               AND COALESCE(e.END_DATE, e.START_DATE) >= #{startDate})
+              OR
+              /* 반복 이벤트: 시작일이 종료일 이전이고, 반복 종료일이 없거나 시작일 이후 */
+              (e.IS_RECURRING = TRUE
+               AND e.START_DATE &lt;= #{endDate}
+               AND (e.RECURRENCE_END_DATE IS NULL OR e.RECURRENCE_END_DATE >= #{startDate}))
+          )
+          AND (
+              e.OWNER_USERNAME = #{username}
+              <if test="includeShared == true">
+              OR es.EVENT_SHARE_ID IS NOT NULL
+              OR cs.CALENDAR_SHARE_ID IS NOT NULL
+              /* 그룹 공유: 그룹 멤버인 경우 */
+              OR (e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL)
+              </if>
+          )
+          <if test="calendarId != null">
+          AND e.CALENDAR_ID = #{calendarId}
+          </if>
+          <if test="groupId != null">
+          AND e.GROUP_ID = #{groupId}
+          </if>
+        ORDER BY e.START_DATE, e.START_TIME, e.TITLE
+    </select>
+
+    <select id="selectByCalendarId" resultMap="EventResultMap">
+        SELECT
+            e.*,
+            u.NAME as OWNER_NAME,
+            c.CALENDAR_NAME as CALENDAR_NAME,
+            c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR
+        FROM TB_EVENT e
+        INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
+        LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
+        WHERE e.CALENDAR_ID = #{calendarId}
+          AND e.STATUS != 'DELETED'
+        ORDER BY e.START_DATE, e.START_TIME
+    </select>
+
+    <select id="selectByParentEventId" resultMap="EventResultMap">
+        SELECT
+            e.*,
+            u.NAME as OWNER_NAME,
+            c.CALENDAR_NAME as CALENDAR_NAME,
+            c.COLOR as CALENDAR_COLOR,
+            g.GROUP_NAME as GROUP_NAME,
+            g.GROUP_COLOR as GROUP_COLOR
+        FROM TB_EVENT e
+        INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
+        LEFT JOIN TB_USER u ON e.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_GROUP g ON e.GROUP_ID = g.GROUP_ID
+        WHERE e.PARENT_EVENT_ID = #{parentEventId}
+          AND e.STATUS != 'DELETED'
+        ORDER BY e.START_DATE
+    </select>
+
+    <select id="hasAccess" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM TB_EVENT e
+        INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
+        LEFT JOIN TB_EVENT_SHARE es ON e.EVENT_ID = es.EVENT_ID
+            AND es.USERNAME = #{username}
+            AND es.DELETED_AT IS NULL
+        LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
+            AND cs.USERNAME = #{username}
+            AND cs.DELETED_AT IS NULL
+        LEFT JOIN TB_USER_GROUP ug ON e.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = #{username}
+            AND ug.DELETED_AT IS NULL
+        WHERE e.EVENT_ID = #{eventId}
+          AND e.STATUS != 'DELETED'
+          AND (
+              e.OWNER_USERNAME = #{username}
+              OR es.EVENT_SHARE_ID IS NOT NULL
+              OR cs.CALENDAR_SHARE_ID IS NOT NULL
+              OR (e.GROUP_ID IS NOT NULL AND ug.USER_GROUP_ID IS NOT NULL)
+          )
+    </select>
+
+    <select id="getPermission" resultType="string">
+        SELECT
+            CASE
+                WHEN e.OWNER_USERNAME = #{username} THEN 'OWNER'
+                WHEN es.SHARE_TYPE IS NOT NULL THEN es.SHARE_TYPE
+                WHEN cs.SHARE_TYPE IS NOT NULL THEN cs.SHARE_TYPE
+                WHEN ug.USER_GROUP_ID IS NOT NULL THEN 'EDIT'
+                ELSE NULL
+            END
+        FROM TB_EVENT e
+        INNER JOIN TB_CALENDAR c ON e.CALENDAR_ID = c.CALENDAR_ID
+        LEFT JOIN TB_EVENT_SHARE es ON e.EVENT_ID = es.EVENT_ID
+            AND es.USERNAME = #{username}
+            AND es.DELETED_AT IS NULL
+        LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
+            AND cs.USERNAME = #{username}
+            AND cs.DELETED_AT IS NULL
+        LEFT JOIN TB_USER_GROUP ug ON e.GROUP_ID = ug.GROUP_ID
+            AND ug.USERNAME = #{username}
+            AND ug.DELETED_AT IS NULL
+        WHERE e.EVENT_ID = #{eventId}
+          AND e.STATUS != 'DELETED'
+    </select>
+
+    <select id="countByCalendarId" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_EVENT
+        WHERE CALENDAR_ID = #{calendarId}
+          AND STATUS != 'DELETED'
+    </select>
+
+</mapper>

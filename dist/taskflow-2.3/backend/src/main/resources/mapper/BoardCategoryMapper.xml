@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.BoardCategoryMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="BoardCategoryResultMap" type="com.taskflow.domain.BoardCategory">
+        <id property="boardCategoryId" column="ID"/>
+        <result property="boardId" column="BOARD_ID"/>
+        <result property="categoryId" column="CATEGORY_ID"/>
+        <result property="categoryName" column="CATEGORY_NAME"/>
+        <result property="categoryColor" column="CATEGORY_COLOR"/>
+        <result property="defaultYn" column="DEFAULT_YN"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectBoardCategory">
+        SELECT
+            bc.ID,
+            bc.BOARD_ID,
+            bc.CATEGORY_ID,
+            c.CATEGORY_NAME,
+            c.CATEGORY_COLOR,
+            bc.DEFAULT_YN,
+            bc.SORT_ORDER,
+            bc.CREATED_AT,
+            bc.CREATED_BY,
+            bc.DELETED_AT,
+            bc.DELETED_BY
+        FROM TB_BOARD_CATEGORY bc
+        LEFT JOIN TB_CATEGORY c ON bc.CATEGORY_ID = c.CATEGORY_ID
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- ID로 조회 -->
+    <select id="findById" resultMap="BoardCategoryResultMap">
+        <include refid="selectBoardCategory"/>
+        WHERE bc.ID = #{id}
+    </select>
+
+    <!-- 보드별 카테고리 목록 조회 -->
+    <select id="findByBoardId" resultMap="BoardCategoryResultMap">
+        <include refid="selectBoardCategory"/>
+        WHERE bc.BOARD_ID = #{boardId}
+          AND c.USE_YN = 'Y'
+        ORDER BY bc.DEFAULT_YN DESC, bc.SORT_ORDER, c.CATEGORY_NAME
+    </select>
+
+    <!-- 카테고리별 보드 목록 조회 -->
+    <select id="findByCategoryId" resultMap="BoardCategoryResultMap">
+        <include refid="selectBoardCategory"/>
+        WHERE bc.CATEGORY_ID = #{categoryId}
+        ORDER BY bc.BOARD_ID
+    </select>
+
+    <!-- 특정 보드-카테고리 연결 조회 -->
+    <select id="findByIds" resultMap="BoardCategoryResultMap">
+        <include refid="selectBoardCategory"/>
+        WHERE bc.BOARD_ID = #{boardId}
+          AND bc.CATEGORY_ID = #{categoryId}
+    </select>
+
+    <!-- 연결 존재 여부 확인 -->
+    <select id="exists" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_BOARD_CATEGORY
+            WHERE BOARD_ID = #{boardId}
+              AND CATEGORY_ID = #{categoryId}
+        )
+    </select>
+
+    <!-- 보드의 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), 0)
+        FROM TB_BOARD_CATEGORY
+        WHERE BOARD_ID = #{boardId}
+    </select>
+
+    <!-- 보드의 기본 카테고리 조회 (v2.0) -->
+    <select id="findDefaultByBoardId" resultMap="BoardCategoryResultMap">
+        <include refid="selectBoardCategory"/>
+        WHERE bc.BOARD_ID = #{boardId}
+          AND bc.DEFAULT_YN = 'Y'
+          AND c.USE_YN = 'Y'
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 카테고리 연결 등록 (v2.0: DEFAULT_YN 추가) -->
+    <insert id="insert" parameterType="com.taskflow.domain.BoardCategory" useGeneratedKeys="true" keyProperty="boardCategoryId">
+        INSERT INTO TB_BOARD_CATEGORY (
+            BOARD_ID,
+            CATEGORY_ID,
+            DEFAULT_YN,
+            SORT_ORDER,
+            CREATED_BY
+        ) VALUES (
+            #{boardId},
+            #{categoryId},
+            COALESCE(#{defaultYn}, 'N'),
+            COALESCE(#{sortOrder}, 0),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 일괄 카테고리 연결 등록 (v2.0: DEFAULT_YN 추가) -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO TB_BOARD_CATEGORY (
+            BOARD_ID,
+            CATEGORY_ID,
+            DEFAULT_YN,
+            SORT_ORDER,
+            CREATED_BY
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.boardId},
+                #{item.categoryId},
+                COALESCE(#{item.defaultYn}, 'N'),
+                COALESCE(#{item.sortOrder}, 0),
+                #{item.createdBy}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 정렬 순서 수정 -->
+    <update id="updateSortOrder">
+        UPDATE TB_BOARD_CATEGORY
+        SET SORT_ORDER = #{sortOrder}
+        WHERE BOARD_ID = #{boardId}
+          AND CATEGORY_ID = #{categoryId}
+    </update>
+
+    <!-- 기본 카테고리 설정 (v2.0) -->
+    <update id="updateDefaultYn">
+        UPDATE TB_BOARD_CATEGORY
+        SET DEFAULT_YN = #{defaultYn}
+        WHERE BOARD_ID = #{boardId}
+          AND CATEGORY_ID = #{categoryId}
+    </update>
+
+    <!-- 보드의 기본 카테고리 해제 (신규 기본 카테고리 설정 전 호출) -->
+    <update id="clearDefaultCategory">
+        UPDATE TB_BOARD_CATEGORY
+        SET DEFAULT_YN = 'N'
+        WHERE BOARD_ID = #{boardId}
+          AND DEFAULT_YN = 'Y'
+    </update>
+
+    <!-- 카테고리 연결 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_BOARD_CATEGORY
+        WHERE BOARD_ID = #{boardId}
+          AND CATEGORY_ID = #{categoryId}
+    </delete>
+
+    <!-- 보드의 모든 카테고리 연결 삭제 -->
+    <delete id="deleteByBoardId">
+        DELETE FROM TB_BOARD_CATEGORY
+        WHERE BOARD_ID = #{boardId}
+    </delete>
+
+</mapper>

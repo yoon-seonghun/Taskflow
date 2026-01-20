@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.ExternalDatasourceMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="ExternalDatasourceResultMap" type="com.taskflow.domain.ExternalDatasource">
+        <id property="datasourceId" column="DATASOURCE_ID"/>
+        <result property="datasourceCode" column="DATASOURCE_CODE"/>
+        <result property="datasourceName" column="DATASOURCE_NAME"/>
+        <result property="dbType" column="DB_TYPE"/>
+        <result property="connectionType" column="CONNECTION_TYPE"/>
+        <result property="host" column="HOST"/>
+        <result property="port" column="PORT"/>
+        <result property="databaseName" column="DATABASE_NAME"/>
+        <result property="schemaName" column="SCHEMA_NAME"/>
+        <result property="username" column="USERNAME"/>
+        <result property="passwordEncrypted" column="PASSWORD_ENCRYPTED"/>
+        <result property="connectionTimeout" column="CONNECTION_TIMEOUT"/>
+        <result property="queryTimeout" column="QUERY_TIMEOUT"/>
+        <result property="maxPoolSize" column="MAX_POOL_SIZE"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="createdByName" column="CREATED_BY_NAME"/>
+        <result property="updatedByName" column="UPDATED_BY_NAME"/>
+        <result property="queryCount" column="QUERY_COUNT"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectExternalDatasource">
+        SELECT
+            d.DATASOURCE_ID,
+            d.DATASOURCE_CODE,
+            d.DATASOURCE_NAME,
+            d.DB_TYPE,
+            d.CONNECTION_TYPE,
+            d.HOST,
+            d.PORT,
+            d.DATABASE_NAME,
+            d.SCHEMA_NAME,
+            d.USERNAME,
+            d.PASSWORD_ENCRYPTED,
+            d.CONNECTION_TIMEOUT,
+            d.QUERY_TIMEOUT,
+            d.MAX_POOL_SIZE,
+            d.USE_YN,
+            d.CREATED_AT,
+            d.CREATED_BY,
+            d.UPDATED_AT,
+            d.UPDATED_BY,
+            d.DELETED_AT,
+            d.DELETED_BY,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME,
+            (SELECT COUNT(*) FROM TB_EXTERNAL_QUERY q WHERE q.DATASOURCE_ID = d.DATASOURCE_ID AND q.DELETED_AT IS NULL) AS QUERY_COUNT
+        FROM TB_EXTERNAL_DATASOURCE d
+        LEFT JOIN TB_USER uc ON d.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON d.UPDATED_BY = uu.USERNAME
+    </sql>
+
+    <!-- 삭제되지 않은 조건 -->
+    <sql id="notDeleted">
+        AND d.DELETED_AT IS NULL
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- ID로 조회 -->
+    <select id="findById" resultMap="ExternalDatasourceResultMap">
+        <include refid="selectExternalDatasource"/>
+        WHERE d.DATASOURCE_ID = #{datasourceId}
+        <include refid="notDeleted"/>
+    </select>
+
+    <!-- 코드로 조회 -->
+    <select id="findByCode" resultMap="ExternalDatasourceResultMap">
+        <include refid="selectExternalDatasource"/>
+        WHERE d.DATASOURCE_CODE = #{datasourceCode}
+        <include refid="notDeleted"/>
+    </select>
+
+    <!-- 전체 목록 조회 -->
+    <select id="findAll" resultMap="ExternalDatasourceResultMap">
+        <include refid="selectExternalDatasource"/>
+        WHERE 1=1
+        <include refid="notDeleted"/>
+        ORDER BY d.DATASOURCE_NAME
+    </select>
+
+    <!-- 활성 목록 조회 -->
+    <select id="findAllActive" resultMap="ExternalDatasourceResultMap">
+        <include refid="selectExternalDatasource"/>
+        WHERE d.USE_YN = 'Y'
+        <include refid="notDeleted"/>
+        ORDER BY d.DATASOURCE_NAME
+    </select>
+
+    <!-- DB 타입별 목록 조회 -->
+    <select id="findByDbType" resultMap="ExternalDatasourceResultMap">
+        <include refid="selectExternalDatasource"/>
+        WHERE d.DB_TYPE = #{dbType}
+        <include refid="notDeleted"/>
+        ORDER BY d.DATASOURCE_NAME
+    </select>
+
+    <!-- 키워드 검색 -->
+    <select id="searchByKeyword" resultMap="ExternalDatasourceResultMap">
+        <include refid="selectExternalDatasource"/>
+        WHERE (
+            d.DATASOURCE_CODE LIKE CONCAT('%', #{keyword}, '%')
+            OR d.DATASOURCE_NAME LIKE CONCAT('%', #{keyword}, '%')
+            OR d.HOST LIKE CONCAT('%', #{keyword}, '%')
+        )
+        <include refid="notDeleted"/>
+        ORDER BY
+            CASE WHEN d.DATASOURCE_NAME LIKE CONCAT(#{keyword}, '%') THEN 0 ELSE 1 END,
+            d.DATASOURCE_NAME
+    </select>
+
+    <!-- 코드 중복 체크 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_EXTERNAL_DATASOURCE
+            WHERE DATASOURCE_CODE = #{datasourceCode}
+              AND DELETED_AT IS NULL
+            <if test="excludeId != null">
+                AND DATASOURCE_ID != #{excludeId}
+            </if>
+        )
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.ExternalDatasource" useGeneratedKeys="true" keyProperty="datasourceId">
+        INSERT INTO TB_EXTERNAL_DATASOURCE (
+            DATASOURCE_CODE,
+            DATASOURCE_NAME,
+            DB_TYPE,
+            CONNECTION_TYPE,
+            HOST,
+            PORT,
+            DATABASE_NAME,
+            SCHEMA_NAME,
+            USERNAME,
+            PASSWORD_ENCRYPTED,
+            CONNECTION_TIMEOUT,
+            QUERY_TIMEOUT,
+            MAX_POOL_SIZE,
+            USE_YN,
+            CREATED_BY
+        ) VALUES (
+            #{datasourceCode},
+            #{datasourceName},
+            #{dbType},
+            #{connectionType},
+            #{host},
+            #{port},
+            #{databaseName},
+            #{schemaName},
+            #{username},
+            #{passwordEncrypted},
+            COALESCE(#{connectionTimeout}, 5000),
+            COALESCE(#{queryTimeout}, 30000),
+            COALESCE(#{maxPoolSize}, 3),
+            COALESCE(#{useYn}, 'Y'),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.ExternalDatasource">
+        UPDATE TB_EXTERNAL_DATASOURCE
+        SET
+            DATASOURCE_NAME = COALESCE(#{datasourceName}, DATASOURCE_NAME),
+            CONNECTION_TYPE = COALESCE(#{connectionType}, CONNECTION_TYPE),
+            HOST = COALESCE(#{host}, HOST),
+            PORT = COALESCE(#{port}, PORT),
+            DATABASE_NAME = COALESCE(#{databaseName}, DATABASE_NAME),
+            SCHEMA_NAME = #{schemaName},
+            USERNAME = COALESCE(#{username}, USERNAME),
+            CONNECTION_TIMEOUT = COALESCE(#{connectionTimeout}, CONNECTION_TIMEOUT),
+            QUERY_TIMEOUT = COALESCE(#{queryTimeout}, QUERY_TIMEOUT),
+            MAX_POOL_SIZE = COALESCE(#{maxPoolSize}, MAX_POOL_SIZE),
+            USE_YN = COALESCE(#{useYn}, USE_YN),
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE DATASOURCE_ID = #{datasourceId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 비밀번호 수정 -->
+    <update id="updatePassword">
+        UPDATE TB_EXTERNAL_DATASOURCE
+        SET
+            PASSWORD_ENCRYPTED = #{passwordEncrypted},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE DATASOURCE_ID = #{datasourceId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 사용 여부 변경 -->
+    <update id="updateUseYn">
+        UPDATE TB_EXTERNAL_DATASOURCE
+        SET
+            USE_YN = #{useYn},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE DATASOURCE_ID = #{datasourceId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 논리 삭제 -->
+    <update id="softDelete">
+        UPDATE TB_EXTERNAL_DATASOURCE
+        SET
+            DELETED_BY = #{deletedBy},
+            DELETED_AT = CURRENT_TIMESTAMP
+        WHERE DATASOURCE_ID = #{datasourceId}
+          AND DELETED_AT IS NULL
+    </update>
+
+    <!-- 물리 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_EXTERNAL_DATASOURCE
+        WHERE DATASOURCE_ID = #{datasourceId}
+    </delete>
+
+    <!-- ============================================= -->
+    <!-- 통계 -->
+    <!-- ============================================= -->
+
+    <!-- 데이터소스별 쿼리 개수 조회 -->
+    <select id="countQueries" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_EXTERNAL_QUERY
+        WHERE DATASOURCE_ID = #{datasourceId}
+          AND DELETED_AT IS NULL
+    </select>
+
+</mapper>

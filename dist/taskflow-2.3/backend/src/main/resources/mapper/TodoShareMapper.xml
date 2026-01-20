@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.taskflow.mapper.TodoShareMapper">
+
+    <!-- 결과 매핑 -->
+    <resultMap id="TodoShareResultMap" type="com.taskflow.domain.TodoShare">
+        <id property="shareId" column="SHARE_ID"/>
+        <result property="todoId" column="TODO_ID"/>
+        <result property="sharedUserId" column="SHARED_USER_ID"/>
+        <result property="sharedByUserId" column="SHARED_BY_USER_ID"/>
+        <result property="permission" column="PERMISSION"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <!-- JOIN 필드 -->
+        <result property="sharedUserName" column="SHARED_USER_NAME"/>
+        <result property="sharedUsername" column="SHARED_USERNAME"/>
+        <result property="sharedByUserName" column="SHARED_BY_USER_NAME"/>
+        <result property="sharedByUsername" column="SHARED_BY_USERNAME"/>
+        <result property="todoTitle" column="TODO_TITLE"/>
+        <result property="departmentName" column="DEPARTMENT_NAME"/>
+        <!-- Todo 관련 필드 -->
+        <result property="todoDueDate" column="TODO_DUE_DATE"/>
+        <result property="todoDueTime" column="TODO_DUE_TIME"/>
+        <result property="todoPriority" column="TODO_PRIORITY"/>
+        <result property="todoOwnerUserName" column="TODO_OWNER_USER_NAME"/>
+    </resultMap>
+
+    <!-- Todo 공유 조회 -->
+    <select id="selectById" resultMap="TodoShareResultMap">
+        SELECT
+            s.SHARE_ID,
+            s.TODO_ID,
+            s.SHARED_USER_ID,
+            s.SHARED_BY_USER_ID,
+            s.PERMISSION,
+            s.CREATED_AT,
+            s.CREATED_BY,
+            su.NAME AS SHARED_USER_NAME,
+            su.USERNAME AS SHARED_USERNAME,
+            sb.NAME AS SHARED_BY_USER_NAME,
+            sb.USERNAME AS SHARED_BY_USERNAME,
+            t.TITLE AS TODO_TITLE,
+            d.DEPARTMENT_NAME
+        FROM TB_TODO_SHARE s
+        INNER JOIN TB_USER su ON s.SHARED_USER_ID = su.USER_ID
+        INNER JOIN TB_USER sb ON s.SHARED_BY_USER_ID = sb.USER_ID
+        INNER JOIN TB_TODO t ON s.TODO_ID = t.TODO_ID
+        LEFT JOIN TB_DEPARTMENT d ON su.DEPARTMENT_CODE = d.DEPARTMENT_CODE
+        WHERE s.SHARE_ID = #{shareId}
+    </select>
+
+    <!-- Todo별 공유 목록 조회 -->
+    <select id="selectByTodoId" resultMap="TodoShareResultMap">
+        SELECT
+            s.SHARE_ID,
+            s.TODO_ID,
+            s.SHARED_USER_ID,
+            s.SHARED_BY_USER_ID,
+            s.PERMISSION,
+            s.CREATED_AT,
+            s.CREATED_BY,
+            su.NAME AS SHARED_USER_NAME,
+            su.USERNAME AS SHARED_USERNAME,
+            sb.NAME AS SHARED_BY_USER_NAME,
+            sb.USERNAME AS SHARED_BY_USERNAME,
+            d.DEPARTMENT_NAME
+        FROM TB_TODO_SHARE s
+        INNER JOIN TB_USER su ON s.SHARED_USER_ID = su.USER_ID
+        INNER JOIN TB_USER sb ON s.SHARED_BY_USER_ID = sb.USER_ID
+        LEFT JOIN TB_DEPARTMENT d ON su.DEPARTMENT_CODE = d.DEPARTMENT_CODE
+        WHERE s.TODO_ID = #{todoId}
+        ORDER BY s.CREATED_AT DESC
+    </select>
+
+    <!-- 사용자가 공유받은 Todo 목록 조회 -->
+    <select id="selectBySharedUserId" resultMap="TodoShareResultMap">
+        SELECT
+            s.SHARE_ID,
+            s.TODO_ID,
+            s.SHARED_USER_ID,
+            s.SHARED_BY_USER_ID,
+            s.PERMISSION,
+            s.CREATED_AT,
+            s.CREATED_BY,
+            sb.NAME AS SHARED_BY_USER_NAME,
+            sb.USERNAME AS SHARED_BY_USERNAME,
+            t.TITLE AS TODO_TITLE,
+            t.DUE_DATE AS TODO_DUE_DATE,
+            t.DUE_TIME AS TODO_DUE_TIME,
+            t.PRIORITY AS TODO_PRIORITY,
+            ou.NAME AS TODO_OWNER_USER_NAME
+        FROM TB_TODO_SHARE s
+        INNER JOIN TB_TODO t ON s.TODO_ID = t.TODO_ID
+        INNER JOIN TB_USER sb ON s.SHARED_BY_USER_ID = sb.USER_ID
+        INNER JOIN TB_USER ou ON t.OWNER_USER_ID = ou.USER_ID
+        WHERE s.SHARED_USER_ID = #{sharedUserId}
+          AND t.USE_YN = 'Y'
+          AND t.IS_COMPLETED = FALSE
+        ORDER BY t.DUE_DATE ASC, t.DUE_TIME ASC, s.CREATED_AT DESC
+    </select>
+
+    <!-- 특정 Todo-사용자 공유 조회 -->
+    <select id="selectByTodoIdAndUserId" resultMap="TodoShareResultMap">
+        SELECT
+            s.SHARE_ID,
+            s.TODO_ID,
+            s.SHARED_USER_ID,
+            s.SHARED_BY_USER_ID,
+            s.PERMISSION,
+            s.CREATED_AT,
+            s.CREATED_BY,
+            su.NAME AS SHARED_USER_NAME,
+            su.USERNAME AS SHARED_USERNAME,
+            sb.NAME AS SHARED_BY_USER_NAME,
+            sb.USERNAME AS SHARED_BY_USERNAME
+        FROM TB_TODO_SHARE s
+        INNER JOIN TB_USER su ON s.SHARED_USER_ID = su.USER_ID
+        INNER JOIN TB_USER sb ON s.SHARED_BY_USER_ID = sb.USER_ID
+        WHERE s.TODO_ID = #{todoId}
+          AND s.SHARED_USER_ID = #{sharedUserId}
+    </select>
+
+    <!-- 공유 추가 -->
+    <insert id="insert" parameterType="com.taskflow.domain.TodoShare" useGeneratedKeys="true" keyProperty="shareId">
+        INSERT INTO TB_TODO_SHARE (
+            TODO_ID,
+            SHARED_USER_ID,
+            SHARED_BY_USER_ID,
+            PERMISSION,
+            CREATED_AT,
+            CREATED_BY
+        ) VALUES (
+            #{todoId},
+            #{sharedUserId},
+            #{sharedByUserId},
+            #{permission},
+            NOW(),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 권한 변경 -->
+    <update id="updatePermission">
+        UPDATE TB_TODO_SHARE
+        SET PERMISSION = #{permission}
+        WHERE SHARE_ID = #{shareId}
+    </update>
+
+    <!-- 공유 삭제 -->
+    <delete id="deleteById">
+        DELETE FROM TB_TODO_SHARE
+        WHERE SHARE_ID = #{shareId}
+    </delete>
+
+    <!-- Todo의 모든 공유 삭제 -->
+    <delete id="deleteByTodoId">
+        DELETE FROM TB_TODO_SHARE
+        WHERE TODO_ID = #{todoId}
+    </delete>
+
+    <!-- 특정 Todo-사용자 공유 삭제 -->
+    <delete id="deleteByTodoIdAndUserId">
+        DELETE FROM TB_TODO_SHARE
+        WHERE TODO_ID = #{todoId}
+          AND SHARED_USER_ID = #{sharedUserId}
+    </delete>
+
+    <!-- 사용자 관련 공유 삭제 (공유받은 것) -->
+    <delete id="deleteBySharedUserId">
+        DELETE FROM TB_TODO_SHARE
+        WHERE SHARED_USER_ID = #{sharedUserId}
+    </delete>
+
+    <!-- 중복 체크 -->
+    <select id="existsByTodoIdAndUserId" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM TB_TODO_SHARE
+        WHERE TODO_ID = #{todoId}
+          AND SHARED_USER_ID = #{sharedUserId}
+    </select>
+
+    <!-- 사용자의 Todo 접근 권한 확인 -->
+    <select id="getPermission" resultType="String">
+        SELECT PERMISSION
+        FROM TB_TODO_SHARE
+        WHERE TODO_ID = #{todoId}
+          AND SHARED_USER_ID = #{sharedUserId}
+    </select>
+
+    <!-- 공유 수 조회 -->
+    <select id="countByTodoId" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_TODO_SHARE
+        WHERE TODO_ID = #{todoId}
+    </select>
+
+</mapper>

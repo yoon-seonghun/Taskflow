@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.taskflow.mapper.EmailLogMapper">
+
+    <!-- ResultMap -->
+    <resultMap id="EmailLogResultMap" type="com.taskflow.domain.EmailLog">
+        <id property="emailLogId" column="EMAIL_LOG_ID"/>
+        <result property="emailType" column="EMAIL_TYPE"/>
+        <result property="subject" column="SUBJECT"/>
+        <result property="recipientEmail" column="RECIPIENT_EMAIL"/>
+        <result property="recipientName" column="RECIPIENT_NAME"/>
+        <result property="recipientUsername" column="RECIPIENT_USERNAME"/>
+        <result property="content" column="CONTENT"/>
+        <result property="status" column="STATUS"/>
+        <result property="errorMessage" column="ERROR_MESSAGE"/>
+        <result property="relatedType" column="RELATED_TYPE"/>
+        <result property="relatedId" column="RELATED_ID"/>
+        <result property="sentAt" column="SENT_AT"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+    </resultMap>
+
+    <!-- 메일 로그 저장 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="emailLogId">
+        INSERT INTO TB_EMAIL_LOG (
+            EMAIL_TYPE, SUBJECT, RECIPIENT_EMAIL, RECIPIENT_NAME,
+            RECIPIENT_USERNAME, CONTENT, STATUS, RELATED_TYPE,
+            RELATED_ID, CREATED_BY
+        ) VALUES (
+            #{emailType}, #{subject}, #{recipientEmail}, #{recipientName},
+            #{recipientUsername}, #{content}, COALESCE(#{status}, 'PENDING'), #{relatedType},
+            #{relatedId}, #{createdBy}
+        )
+    </insert>
+
+    <!-- 메일 로그 상태 업데이트 -->
+    <update id="updateStatus">
+        UPDATE TB_EMAIL_LOG
+        SET STATUS = #{status},
+            ERROR_MESSAGE = #{errorMessage},
+            SENT_AT = #{sentAt}
+        WHERE EMAIL_LOG_ID = #{emailLogId}
+    </update>
+
+    <!-- ID로 조회 -->
+    <select id="selectById" resultMap="EmailLogResultMap">
+        SELECT EMAIL_LOG_ID, EMAIL_TYPE, SUBJECT, RECIPIENT_EMAIL, RECIPIENT_NAME,
+               RECIPIENT_USERNAME, CONTENT, STATUS, ERROR_MESSAGE, RELATED_TYPE,
+               RELATED_ID, SENT_AT, CREATED_AT, CREATED_BY
+        FROM TB_EMAIL_LOG
+        WHERE EMAIL_LOG_ID = #{emailLogId}
+    </select>
+
+    <!-- 발송 유형별 목록 조회 -->
+    <select id="selectByType" resultMap="EmailLogResultMap">
+        SELECT EMAIL_LOG_ID, EMAIL_TYPE, SUBJECT, RECIPIENT_EMAIL, RECIPIENT_NAME,
+               RECIPIENT_USERNAME, CONTENT, STATUS, ERROR_MESSAGE, RELATED_TYPE,
+               RELATED_ID, SENT_AT, CREATED_AT, CREATED_BY
+        FROM TB_EMAIL_LOG
+        WHERE EMAIL_TYPE = #{emailType}
+        ORDER BY CREATED_AT DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 상태별 목록 조회 -->
+    <select id="selectByStatus" resultMap="EmailLogResultMap">
+        SELECT EMAIL_LOG_ID, EMAIL_TYPE, SUBJECT, RECIPIENT_EMAIL, RECIPIENT_NAME,
+               RECIPIENT_USERNAME, CONTENT, STATUS, ERROR_MESSAGE, RELATED_TYPE,
+               RELATED_ID, SENT_AT, CREATED_AT, CREATED_BY
+        FROM TB_EMAIL_LOG
+        WHERE STATUS = #{status}
+        ORDER BY CREATED_AT DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 관련 대상별 목록 조회 -->
+    <select id="selectByRelated" resultMap="EmailLogResultMap">
+        SELECT EMAIL_LOG_ID, EMAIL_TYPE, SUBJECT, RECIPIENT_EMAIL, RECIPIENT_NAME,
+               RECIPIENT_USERNAME, CONTENT, STATUS, ERROR_MESSAGE, RELATED_TYPE,
+               RELATED_ID, SENT_AT, CREATED_AT, CREATED_BY
+        FROM TB_EMAIL_LOG
+        WHERE RELATED_TYPE = #{relatedType}
+          AND RELATED_ID = #{relatedId}
+        ORDER BY CREATED_AT DESC
+    </select>
+
+    <!-- 기간별 목록 조회 -->
+    <select id="selectByDateRange" resultMap="EmailLogResultMap">
+        SELECT EMAIL_LOG_ID, EMAIL_TYPE, SUBJECT, RECIPIENT_EMAIL, RECIPIENT_NAME,
+               RECIPIENT_USERNAME, CONTENT, STATUS, ERROR_MESSAGE, RELATED_TYPE,
+               RELATED_ID, SENT_AT, CREATED_AT, CREATED_BY
+        FROM TB_EMAIL_LOG
+        WHERE CREATED_AT BETWEEN #{startDate} AND #{endDate}
+        ORDER BY CREATED_AT DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 전체 목록 조회 (페이징) -->
+    <select id="selectAll" resultMap="EmailLogResultMap">
+        SELECT EMAIL_LOG_ID, EMAIL_TYPE, SUBJECT, RECIPIENT_EMAIL, RECIPIENT_NAME,
+               RECIPIENT_USERNAME, CONTENT, STATUS, ERROR_MESSAGE, RELATED_TYPE,
+               RELATED_ID, SENT_AT, CREATED_AT, CREATED_BY
+        FROM TB_EMAIL_LOG
+        ORDER BY CREATED_AT DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 전체 건수 조회 -->
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM TB_EMAIL_LOG
+    </select>
+
+    <!-- 상태별 건수 조회 -->
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*) FROM TB_EMAIL_LOG WHERE STATUS = #{status}
+    </select>
+
+    <!-- PENDING 상태 메일 목록 조회 (재발송용) -->
+    <select id="selectPendingEmails" resultMap="EmailLogResultMap">
+        SELECT EMAIL_LOG_ID, EMAIL_TYPE, SUBJECT, RECIPIENT_EMAIL, RECIPIENT_NAME,
+               RECIPIENT_USERNAME, CONTENT, STATUS, ERROR_MESSAGE, RELATED_TYPE,
+               RELATED_ID, SENT_AT, CREATED_AT, CREATED_BY
+        FROM TB_EMAIL_LOG
+        WHERE STATUS = 'PENDING'
+        ORDER BY CREATED_AT ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

@@ -1,0 +1,1021 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { itemApi } from '@/api/item'
+import { isItemOverdue } from '@/utils/item'
+import type {
+  Item,
+  ItemCreateRequest,
+  ItemUpdateRequest,
+  ItemSearchRequest,
+  ItemTransferRequest,
+  // v2.2: 하위 업무 관련 타입
+  SubTaskCreateRequest,
+  SubTaskReorderRequest,
+  AncestorResponse,
+  ItemCompleteRequest,
+  IncompleteChildrenResponse
+} from '@/types/item'
+import type { Share, ShareRequest, ShareUpdateRequest } from '@/types/share'
+
+export const useItemStore = defineStore('item', () => {
+  // ==================== State ====================
+  const items = ref<Item[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+  const selectedItemId = ref<number | null>(null)
+  const currentBoardId = ref<number | null>(null)
+
+  // 필터 상태
+  const filters = ref<ItemSearchRequest>({
+    includeCompleted: false,
+    includeDeleted: false,
+    sortField: 'sortOrder',
+    sortDirection: 'asc'
+  })
+
+  // 편집 상태 추적 (충돌 감지용)
+  const editingItemId = ref<number | null>(null)
+  const editingItemData = ref<Partial<Item> | null>(null)
+
+  // ==================== Getters ====================
+  const selectedItem = computed(() =>
+    items.value.find(item => item.itemId === selectedItemId.value) || null
+  )
+
+  // 활성 아이템 (완료/삭제 제외)
+  const activeItems = computed(() =>
+    items.value.filter(item => item.status !== 'COMPLETED' && item.status !== 'DELETED')
+  )
+
+  // 완료된 아이템
+  const completedItems = computed(() =>
+    items.value.filter(item => item.status === 'COMPLETED')
+  )
+
+  // 삭제된 아이템
+  const deletedItems = computed(() =>
+    items.value.filter(item => item.status === 'DELETED')
+  )
+
+  // 대기 중인 아이템
+  const pendingItems = computed(() =>
+    items.value.filter(item => item.status === 'PENDING')
+  )
+
+  // 지연된 아이템 (dueDate 기준, 완료/삭제 제외)
+  const overdueItems = computed(() =>
+    items.value.filter(item => isItemOverdue(item))
+  )
+
+  // 지연 아이템 수
+  const overdueItemCount = computed(() => overdueItems.value.length)
+
+  // 오늘 완료/삭제된 아이템 (당일 기준 Hidden 처리용)
+  const todayCompletedItems = computed(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return items.value.filter(item => {
+      if (item.status === 'COMPLETED' && item.completedAt) {
+        return item.completedAt.startsWith(today)
+      }
+      if (item.status === 'DELETED' && item.deletedAt) {
+        return item.deletedAt.startsWith(today)
+      }
+      return false
+    })
+  })
+
+  // 그룹별 아이템
+  const itemsByGroup = computed(() => {
+    const grouped: Record<number, Item[]> = {}
+    for (const item of activeItems.value) {
+      const groupId = item.groupId || 0
+      if (!grouped[groupId]) {
+        grouped[groupId] = []
+      }
+      grouped[groupId].push(item)
+    }
+    return grouped
+  })
+
+  // 상태별 아이템 (칸반 뷰용)
+  const itemsByStatus = computed(() => {
+    return {
+      NOT_STARTED: items.value.filter(i => i.status === 'NOT_STARTED'),
+      IN_PROGRESS: items.value.filter(i => i.status === 'IN_PROGRESS'),
+      PENDING: items.value.filter(i => i.status === 'PENDING'),
+      COMPLETED: items.value.filter(i => i.status === 'COMPLETED'),
+      DELETED: items.value.filter(i => i.status === 'DELETED')
+    }
+  })
+
+  // 아이템 수
+  const itemCount = computed(() => items.value.length)
+  const activeItemCount = computed(() => activeItems.value.length)
+
+  // v2.2: 루트 아이템만 (하위 업무 제외)
+  const rootItems = computed(() =>
+    items.value.filter(item => !item.parentItemId || item.itemDepth === 0)
+  )
+
+  // v2.2: 활성 루트 아이템
+  const activeRootItems = computed(() =>
+    rootItems.value.filter(item => item.status !== 'COMPLETED' && item.status !== 'DELETED')
+  )
+
+  // ==================== Internal Mutations ====================
+  function _setItems(newItems: Item[]) {
+    items.value = newItems
+  }
+
+  function _addItem(item: Item) {
+    items.value.unshift(item)
+  }
+
+  function _updateItem(itemId: number, data: Partial<Item>) {
+    const index = items.value.findIndex(item => item.itemId === itemId)
+    if (index !== -1) {
+      items.value[index] = { ...items.value[index], ...data }
+    }
+  }
+
+  function _removeItem(itemId: number) {
+    items.value = items.value.filter(item => item.itemId !== itemId)
+  }
+
+  // ==================== Actions ====================
+
+  /**
+   * 아이템 목록 조회
+   */
+  async function fetchItems(boardId: number, params?: ItemSearchRequest): Promise<boolean> {
+    loading.value = true
+    error.value = null
+    currentBoardId.value = boardId
+
+    try {
+      const response = await itemApi.getItems(boardId, { ...filters.value, ...params })
+      if (response.success && response.data) {
+        _setItems(response.data.content)
+        return true
+      }
+      error.value = response.message || '아이템 목록을 불러오는데 실패했습니다.'
+      return false
+    } catch (e) {
+      error.value = '아이템 목록을 불러오는데 실패했습니다.'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 아이템 상세 조회
+   */
+  async function fetchItem(boardId: number, itemId: number): Promise<Item | null> {
+    try {
+      const response = await itemApi.getItem(boardId, itemId)
+      if (response.success && response.data) {
+        _updateItem(itemId, response.data)
+        return response.data
+      }
+      return null
+    } catch (e) {
+      return null
+    }
+  }
+
+  /**
+   * 아이템 생성
+   */
+  async function createItem(boardId: number, data: ItemCreateRequest): Promise<Item | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await itemApi.createItem(boardId, data)
+      if (response.success && response.data) {
+        _addItem(response.data)
+        return response.data
+      }
+      error.value = response.message || '아이템 생성에 실패했습니다.'
+      return null
+    } catch (e) {
+      error.value = '아이템 생성에 실패했습니다.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 아이템 수정 (Optimistic Update)
+   * @returns 성공 시 업데이트된 Item 객체, 실패 시 null
+   */
+  async function updateItem(
+    boardId: number,
+    itemId: number,
+    data: ItemUpdateRequest
+  ): Promise<Item | null> {
+    // 1. 원본 데이터 백업
+    const originalItem = items.value.find(item => item.itemId === itemId)
+
+    // 목록에 없는 경우 (개별 조회된 아이템) - API만 호출
+    if (!originalItem) {
+      try {
+        const response = await itemApi.updateItem(boardId, itemId, data)
+        if (response.success && response.data) {
+          return response.data
+        }
+        error.value = response.message || '아이템 수정에 실패했습니다.'
+        return null
+      } catch (e) {
+        error.value = '아이템 수정에 실패했습니다.'
+        return null
+      }
+    }
+
+    const originalData = { ...originalItem }
+
+    // 2. Store 먼저 갱신 (Optimistic Update)
+    _updateItem(itemId, data)
+
+    try {
+      // 3. API 호출
+      const response = await itemApi.updateItem(boardId, itemId, data)
+      if (response.success && response.data) {
+        // 서버 응답으로 최종 업데이트
+        _updateItem(itemId, response.data)
+        return response.data
+      }
+
+      // 4. 실패 시 롤백
+      _updateItem(itemId, originalData)
+      error.value = response.message || '아이템 수정에 실패했습니다.'
+      return null
+    } catch (e) {
+      // 4. 실패 시 롤백
+      _updateItem(itemId, originalData)
+      error.value = '아이템 수정에 실패했습니다.'
+      return null
+    }
+  }
+
+  /**
+   * 아이템 삭제 (Optimistic Update)
+   */
+  async function deleteItem(boardId: number, itemId: number): Promise<boolean> {
+    // 1. 원본 데이터 백업
+    const originalItems = [...items.value]
+
+    // 2. Store 먼저 갱신 (Optimistic Update) - 소프트 삭제로 상태 변경
+    _updateItem(itemId, {
+      status: 'DELETED',
+      deletedAt: new Date().toISOString()
+    })
+
+    try {
+      // 3. API 호출
+      const response = await itemApi.deleteItem(boardId, itemId)
+      if (response.success) {
+        return true
+      }
+
+      // 4. 실패 시 롤백
+      items.value = originalItems
+      error.value = response.message || '아이템 삭제에 실패했습니다.'
+      return false
+    } catch (e) {
+      // 4. 실패 시 롤백
+      items.value = originalItems
+      error.value = '아이템 삭제에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 아이템 완료 처리 (Optimistic Update)
+   */
+  async function completeItem(boardId: number, itemId: number): Promise<boolean> {
+    // 1. 원본 데이터 백업
+    const originalItem = items.value.find(item => item.itemId === itemId)
+    if (!originalItem) return false
+
+    const originalData = { ...originalItem }
+
+    // 2. Store 먼저 갱신 (Optimistic Update)
+    _updateItem(itemId, {
+      status: 'COMPLETED',
+      completedAt: new Date().toISOString()
+    })
+
+    try {
+      // 3. API 호출
+      const response = await itemApi.completeItem(boardId, itemId)
+      if (response.success && response.data) {
+        _updateItem(itemId, response.data)
+        return true
+      }
+
+      // 4. 실패 시 롤백
+      _updateItem(itemId, originalData)
+      error.value = response.message || '완료 처리에 실패했습니다.'
+      return false
+    } catch (e) {
+      // 4. 실패 시 롤백
+      _updateItem(itemId, originalData)
+      error.value = '완료 처리에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 아이템 복원 (Optimistic Update)
+   */
+  async function restoreItem(boardId: number, itemId: number): Promise<boolean> {
+    // 1. 원본 데이터 백업
+    const originalItem = items.value.find(item => item.itemId === itemId)
+    if (!originalItem) return false
+
+    const originalData = { ...originalItem }
+
+    // 2. Store 먼저 갱신 (Optimistic Update)
+    _updateItem(itemId, {
+      status: 'NOT_STARTED',
+      completedAt: undefined,
+      deletedAt: undefined
+    })
+
+    try {
+      // 3. API 호출
+      const response = await itemApi.restoreItem(boardId, itemId)
+      if (response.success && response.data) {
+        _updateItem(itemId, response.data)
+        return true
+      }
+
+      // 4. 실패 시 롤백
+      _updateItem(itemId, originalData)
+      error.value = response.message || '복원에 실패했습니다.'
+      return false
+    } catch (e) {
+      // 4. 실패 시 롤백
+      _updateItem(itemId, originalData)
+      error.value = '복원에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 아이템 속성값 수정 (Optimistic Update)
+   */
+  async function updateItemProperty(
+    boardId: number,
+    itemId: number,
+    propertyId: number,
+    value: unknown
+  ): Promise<boolean> {
+    const item = items.value.find(i => i.itemId === itemId)
+    if (!item) return false
+
+    // 원본 백업
+    const originalProperties = item.propertyValues ? { ...item.propertyValues } : {}
+
+    // Optimistic Update
+    const newProperties = { ...originalProperties, [propertyId]: value }
+    _updateItem(itemId, { propertyValues: newProperties })
+
+    try {
+      const response = await itemApi.updateItem(boardId, itemId, {
+        properties: { [propertyId]: value }
+      })
+
+      if (response.success && response.data) {
+        _updateItem(itemId, response.data)
+        return true
+      }
+
+      // 롤백
+      _updateItem(itemId, { propertyValues: originalProperties })
+      return false
+    } catch (e) {
+      // 롤백
+      _updateItem(itemId, { propertyValues: originalProperties })
+      return false
+    }
+  }
+
+  /**
+   * 아이템 순서 변경 (Optimistic Update)
+   * - 새 reorder API 사용 (서버에서 다른 아이템 순서도 조정)
+   */
+  async function reorderItem(
+    boardId: number,
+    itemId: number,
+    newSortOrder: number
+  ): Promise<boolean> {
+    const originalItem = items.value.find(i => i.itemId === itemId)
+    if (!originalItem) return false
+
+    const originalOrder = originalItem.sortOrder ?? 0
+    const oldOrder = originalOrder
+    const newOrder = newSortOrder
+
+    // 동일 순서면 무시
+    if (oldOrder === newOrder) return true
+
+    // Optimistic Update - 새 배열로 교체하여 reactivity 보장
+    items.value = items.value.map(item => {
+      if (item.itemId === itemId) {
+        return { ...item, sortOrder: newOrder }
+      } else if (item.sortOrder !== undefined) {
+        if (oldOrder > newOrder) {
+          // 위로 이동: newOrder <= x < oldOrder인 아이템들은 +1
+          if (item.sortOrder >= newOrder && item.sortOrder < oldOrder) {
+            return { ...item, sortOrder: item.sortOrder + 1 }
+          }
+        } else {
+          // 아래로 이동: oldOrder < x <= newOrder인 아이템들은 -1
+          if (item.sortOrder > oldOrder && item.sortOrder <= newOrder) {
+            return { ...item, sortOrder: item.sortOrder - 1 }
+          }
+        }
+      }
+      return item
+    })
+
+    try {
+      const response = await itemApi.reorderItem(boardId, {
+        itemId,
+        newOrder: newSortOrder
+      })
+
+      if (response.success) {
+        // 성공 시 전체 목록 새로고침하여 서버 상태와 동기화
+        await fetchItems(boardId)
+        return true
+      }
+
+      // 실패 시 롤백 - 전체 목록 새로고침
+      await fetchItems(boardId)
+      return false
+    } catch (e) {
+      console.error('[Store] reorderItem error:', e)
+      // 실패 시 롤백 - 전체 목록 새로고침
+      await fetchItems(boardId)
+      return false
+    }
+  }
+
+  // ==================== Utility Functions ====================
+  function selectItem(itemId: number | null) {
+    selectedItemId.value = itemId
+  }
+
+  function setBoardId(boardId: number | null) {
+    currentBoardId.value = boardId
+  }
+
+  function setFilters(newFilters: Partial<ItemSearchRequest>) {
+    filters.value = { ...filters.value, ...newFilters }
+  }
+
+  function getItemById(itemId: number): Item | undefined {
+    return items.value.find(item => item.itemId === itemId)
+  }
+
+  function clearItems() {
+    items.value = []
+    selectedItemId.value = null
+    currentBoardId.value = null
+    error.value = null
+    loading.value = false
+    editingItemId.value = null
+    editingItemData.value = null
+    // 필터 기본값으로 리셋
+    filters.value = {
+      includeCompleted: false,
+      includeDeleted: false,
+      sortField: 'sortOrder',
+      sortDirection: 'asc'
+    }
+  }
+
+  function clearError() {
+    error.value = null
+  }
+
+  // SSE 이벤트 핸들러용
+  function handleSseItemCreated(item: Item) {
+    if (item.boardId === currentBoardId.value) {
+      // 이미 존재하는지 확인
+      if (!items.value.find(i => i.itemId === item.itemId)) {
+        _addItem(item)
+      }
+    }
+  }
+
+  function handleSseItemUpdated(item: Item) {
+    _updateItem(item.itemId, item)
+  }
+
+  function handleSseItemDeleted(itemId: number) {
+    _removeItem(itemId)
+  }
+
+  /**
+   * SSE 이벤트용 로컬 아이템 업데이트 (API 호출 없이 Store만 갱신)
+   * 댓글 수 증가 등 SSE 이벤트에서 사용
+   */
+  function updateItemLocal(itemId: number, data: Partial<Item>) {
+    _updateItem(itemId, data)
+  }
+
+  // ==================== 편집 상태 관리 (충돌 감지용) ====================
+
+  /**
+   * 편집 시작 - 편집 중인 아이템과 데이터 추적
+   */
+  function startEditing(itemId: number, data?: Partial<Item>) {
+    editingItemId.value = itemId
+    // 현재 아이템의 원본 데이터 저장
+    const item = items.value.find(i => i.itemId === itemId)
+    editingItemData.value = data || (item ? { ...item } : null)
+  }
+
+  /**
+   * 편집 데이터 업데이트 (사용자가 값을 변경할 때)
+   */
+  function updateEditingData(data: Partial<Item>) {
+    if (editingItemData.value) {
+      editingItemData.value = { ...editingItemData.value, ...data }
+    }
+  }
+
+  /**
+   * 편집 종료
+   */
+  function stopEditing() {
+    editingItemId.value = null
+    editingItemData.value = null
+  }
+
+  /**
+   * 특정 아이템이 현재 편집 중인지 확인
+   */
+  function isEditing(itemId: number): boolean {
+    return editingItemId.value === itemId
+  }
+
+  /**
+   * 현재 편집 중인 데이터 가져오기
+   */
+  function getEditingData(): Partial<Item> | null {
+    return editingItemData.value
+  }
+
+  // ==================== 업무 이관 ====================
+
+  /**
+   * 업무 이관 (다른 보드 또는 다른 사용자에게)
+   */
+  async function transferItem(
+    boardId: number,
+    itemId: number,
+    request: ItemTransferRequest
+  ): Promise<Item | null> {
+    try {
+      const response = await itemApi.transferItem(boardId, itemId, request)
+      if (response.success && response.data) {
+        // 이관된 업무는 현재 보드에서 제거
+        _removeItem(itemId)
+        return response.data
+      }
+      error.value = response.message || '업무 이관에 실패했습니다.'
+      return null
+    } catch (e) {
+      error.value = '업무 이관에 실패했습니다.'
+      return null
+    }
+  }
+
+  /**
+   * 이관 가능 여부 확인
+   */
+  async function canTransferItem(boardId: number, itemId: number): Promise<boolean> {
+    try {
+      const response = await itemApi.canTransfer(boardId, itemId)
+      return response.success && response.data === true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * 공유 가능 여부 확인
+   */
+  async function canShareItem(boardId: number, itemId: number): Promise<boolean> {
+    try {
+      const response = await itemApi.canShare(boardId, itemId)
+      return response.success && response.data === true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * 업무 권한 조회
+   */
+  async function getItemPermission(boardId: number, itemId: number): Promise<string | null> {
+    try {
+      const response = await itemApi.getItemPermission(boardId, itemId)
+      if (response.success) {
+        return response.data
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  // ==================== 업무 공유 ====================
+
+  /**
+   * 업무 공유 목록 조회
+   */
+  async function fetchItemShares(itemId: number): Promise<Share[]> {
+    try {
+      const response = await itemApi.getItemShares(itemId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * 업무 공유 추가
+   */
+  async function addItemShare(itemId: number, request: ShareRequest): Promise<boolean> {
+    try {
+      const response = await itemApi.addItemShare(itemId, request)
+      return response.success
+    } catch {
+      error.value = '공유 추가에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 업무 공유 권한 변경
+   */
+  async function updateItemShare(
+    itemId: number,
+    username: string,
+    request: ShareUpdateRequest
+  ): Promise<boolean> {
+    try {
+      const response = await itemApi.updateItemShare(itemId, username, request)
+      return response.success
+    } catch {
+      error.value = '권한 변경에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 업무 공유 제거
+   */
+  async function removeItemShare(itemId: number, username: string): Promise<boolean> {
+    try {
+      const response = await itemApi.removeItemShare(itemId, username)
+      return response.success
+    } catch {
+      error.value = '공유 제거에 실패했습니다.'
+      return false
+    }
+  }
+
+  // ==================== v2.2: 하위 업무 (Sub-Task) ====================
+
+  /**
+   * 하위 업무 목록 조회
+   */
+  async function fetchChildren(
+    boardId: number,
+    parentItemId: number,
+    params?: { includeCompleted?: boolean; includeDeleted?: boolean }
+  ): Promise<Item[]> {
+    try {
+      const response = await itemApi.getChildren(boardId, parentItemId, params)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * 업무 트리 조회 (부모 + 모든 하위)
+   */
+  async function fetchItemTree(
+    boardId: number,
+    itemId: number,
+    params?: { maxDepth?: number; includeCompleted?: boolean }
+  ): Promise<Item | null> {
+    try {
+      const response = await itemApi.getItemTree(boardId, itemId, params)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 상위 계층 조회 (Breadcrumb용)
+   */
+  async function fetchAncestors(boardId: number, itemId: number): Promise<AncestorResponse[]> {
+    try {
+      const response = await itemApi.getAncestors(boardId, itemId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * 부모 업무 조회
+   */
+  async function fetchParent(boardId: number, itemId: number): Promise<Item | null> {
+    try {
+      const response = await itemApi.getParent(boardId, itemId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 루트 업무 목록 조회 (보드별)
+   */
+  async function fetchRootItems(
+    boardId: number,
+    params?: { includeCompleted?: boolean; includeDeleted?: boolean }
+  ): Promise<Item[]> {
+    try {
+      const response = await itemApi.getRootItems(boardId, params)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * 하위 업무 생성
+   */
+  async function createSubTask(
+    boardId: number,
+    parentItemId: number,
+    data: SubTaskCreateRequest
+  ): Promise<Item | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await itemApi.createSubTask(boardId, parentItemId, data)
+      if (response.success && response.data) {
+        // 생성된 하위 업무를 목록에 추가
+        _addItem(response.data)
+        // 부모 아이템의 childCount, hasChildren 업데이트
+        const parentItem = items.value.find(i => i.itemId === parentItemId)
+        if (parentItem) {
+          _updateItem(parentItemId, {
+            childCount: (parentItem.childCount || 0) + 1,
+            hasChildren: true,
+            canCreateChild: (parentItem.itemDepth ?? 0) < 2
+          })
+        }
+        return response.data
+      }
+      error.value = response.message || '하위 업무 생성에 실패했습니다.'
+      return null
+    } catch (e) {
+      error.value = '하위 업무 생성에 실패했습니다.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 하위 업무 순서 변경
+   */
+  async function reorderChildren(
+    boardId: number,
+    parentItemId: number,
+    data: SubTaskReorderRequest
+  ): Promise<boolean> {
+    try {
+      const response = await itemApi.reorderChildren(boardId, parentItemId, data)
+      return response.success
+    } catch {
+      error.value = '하위 업무 순서 변경에 실패했습니다.'
+      return false
+    }
+  }
+
+  /**
+   * 업무 완료 처리 (하위 업무 체크 포함)
+   * @returns { success: true, item: Item } 또는 { success: false, incompleteChildren: IncompleteChildrenResponse }
+   */
+  async function completeItemWithChildren(
+    boardId: number,
+    itemId: number,
+    forceComplete: boolean = false
+  ): Promise<{ success: boolean; item?: Item; incompleteChildren?: IncompleteChildrenResponse }> {
+    const originalItem = items.value.find(item => item.itemId === itemId)
+    if (!originalItem) {
+      return { success: false }
+    }
+
+    const originalData = { ...originalItem }
+
+    // forceComplete가 true이면 Optimistic Update
+    if (forceComplete) {
+      _updateItem(itemId, {
+        status: 'COMPLETED',
+        completedAt: new Date().toISOString()
+      })
+    }
+
+    try {
+      const response = await itemApi.completeItemWithChildren(boardId, itemId, { forceComplete })
+
+      if (response.success && response.data) {
+        // 응답 데이터 확인: incompleteChildCount가 있으면 미완료 하위 업무 정보
+        const data = response.data as any
+        if (data.incompleteChildCount !== undefined) {
+          // 미완료 하위 업무가 있음 - 롤백
+          if (forceComplete) {
+            _updateItem(itemId, originalData)
+          }
+          return {
+            success: false,
+            incompleteChildren: data as IncompleteChildrenResponse
+          }
+        }
+
+        // 완료 성공
+        _updateItem(itemId, data as Item)
+        return { success: true, item: data as Item }
+      }
+
+      // 실패 시 롤백
+      if (forceComplete) {
+        _updateItem(itemId, originalData)
+      }
+      error.value = response.message || '완료 처리에 실패했습니다.'
+      return { success: false }
+    } catch (e) {
+      // 실패 시 롤백
+      if (forceComplete) {
+        _updateItem(itemId, originalData)
+      }
+      error.value = '완료 처리에 실패했습니다.'
+      return { success: false }
+    }
+  }
+
+  /**
+   * 미완료 하위 업무 조회
+   */
+  async function fetchIncompleteChildren(
+    boardId: number,
+    itemId: number
+  ): Promise<IncompleteChildrenResponse | null> {
+    try {
+      const response = await itemApi.getIncompleteChildren(boardId, itemId)
+      if (response.success && response.data) {
+        return response.data
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 특정 아이템의 하위 업무 가져오기 (로컬 캐시에서)
+   */
+  function getChildrenFromCache(parentItemId: number): Item[] {
+    return items.value.filter(item => item.parentItemId === parentItemId)
+  }
+
+  /**
+   * 특정 아이템이 하위 업무인지 확인
+   */
+  function isChildItem(item: Item): boolean {
+    return (item.itemDepth ?? 0) > 0 || !!item.parentItemId
+  }
+
+  /**
+   * 특정 아이템에 하위 업무 생성 가능 여부 확인
+   */
+  function canCreateChildItem(item: Item): boolean {
+    return (item.itemDepth ?? 0) < 2
+  }
+
+  return {
+    // State
+    items,
+    loading,
+    error,
+    selectedItemId,
+    currentBoardId,
+    filters,
+    editingItemId,
+    editingItemData,
+    // Getters
+    selectedItem,
+    activeItems,
+    completedItems,
+    deletedItems,
+    pendingItems,
+    overdueItems,
+    overdueItemCount,
+    todayCompletedItems,
+    itemsByGroup,
+    itemsByStatus,
+    itemCount,
+    activeItemCount,
+    // v2.2: 하위 업무 관련 Getters
+    rootItems,
+    activeRootItems,
+    // Actions
+    fetchItems,
+    fetchItem,
+    createItem,
+    updateItem,
+    deleteItem,
+    completeItem,
+    restoreItem,
+    updateItemProperty,
+    reorderItem,
+    // Utility
+    selectItem,
+    setBoardId,
+    setFilters,
+    getItemById,
+    clearItems,
+    clearError,
+    // SSE Handlers
+    handleSseItemCreated,
+    handleSseItemUpdated,
+    handleSseItemDeleted,
+    updateItemLocal,
+    // Editing State (충돌 감지용)
+    startEditing,
+    updateEditingData,
+    stopEditing,
+    isEditing,
+    getEditingData,
+    // 업무 이관
+    transferItem,
+    canTransferItem,
+    canShareItem,
+    getItemPermission,
+    // 업무 공유
+    fetchItemShares,
+    addItemShare,
+    updateItemShare,
+    removeItemShare,
+    // v2.2: 하위 업무 (Sub-Task)
+    fetchChildren,
+    fetchItemTree,
+    fetchAncestors,
+    fetchParent,
+    fetchRootItems,
+    createSubTask,
+    reorderChildren,
+    completeItemWithChildren,
+    fetchIncompleteChildren,
+    getChildrenFromCache,
+    isChildItem,
+    canCreateChildItem
+  }
+})

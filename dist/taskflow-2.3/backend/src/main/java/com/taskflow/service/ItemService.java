@@ -1,0 +1,306 @@
+package com.taskflow.service;
+
+import com.taskflow.dto.item.AncestorResponse;
+import com.taskflow.dto.item.CrossBoardSearchRequest;
+import com.taskflow.dto.item.IncompleteChildrenResponse;
+import com.taskflow.dto.item.ItemCompleteRequest;
+import com.taskflow.dto.item.ItemCreateRequest;
+import com.taskflow.dto.item.ItemPageResponse;
+import com.taskflow.dto.item.ItemPropertySortRequest;
+import com.taskflow.dto.item.ItemReorderRequest;
+import com.taskflow.dto.item.ItemResponse;
+import com.taskflow.dto.item.ItemSearchRequest;
+import com.taskflow.dto.item.ItemUpdateRequest;
+import com.taskflow.dto.item.SubTaskCreateRequest;
+import com.taskflow.dto.item.SubTaskReorderRequest;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 아이템 서비스 인터페이스
+ */
+public interface ItemService {
+
+    // =============================================
+    // 아이템 조회
+    // =============================================
+
+    /**
+     * 아이템 ID로 조회
+     *
+     * @param itemId 아이템 ID
+     * @return 아이템 응답
+     */
+    ItemResponse getItem(Long itemId);
+
+    /**
+     * 보드별 아이템 목록 조회 (필터/정렬/페이징)
+     *
+     * @param boardId 보드 ID
+     * @param request 검색 조건
+     * @return 페이징된 아이템 목록
+     */
+    ItemPageResponse getItemsByBoardId(Long boardId, ItemSearchRequest request);
+
+    /**
+     * 보드별 활성 아이템 목록 조회
+     *
+     * @param boardId 보드 ID
+     * @return 아이템 목록
+     */
+    List<ItemResponse> getActiveItemsByBoardId(Long boardId);
+
+    /**
+     * 오늘 완료/삭제된 아이템 목록 조회
+     *
+     * @param boardId 보드 ID
+     * @return 아이템 목록
+     */
+    List<ItemResponse> getTodayCompletedOrDeleted(Long boardId);
+
+    /**
+     * 그룹별 아이템 목록 조회
+     *
+     * @param groupId 그룹 ID
+     * @return 아이템 목록
+     */
+    List<ItemResponse> getItemsByGroupId(Long groupId);
+
+    /**
+     * 담당자별 아이템 목록 조회
+     *
+     * @param assigneeUsername 담당자 사용자명
+     * @param boardId          보드 ID (null이면 전체)
+     * @return 아이템 목록
+     */
+    List<ItemResponse> getItemsByAssigneeUsername(String assigneeUsername, Long boardId);
+
+    // =============================================
+    // 아이템 등록/수정/삭제
+    // =============================================
+
+    /**
+     * 아이템 등록
+     *
+     * @param boardId   보드 ID
+     * @param request   등록 요청
+     * @param createdBy 생성자 사용자명
+     * @return 생성된 아이템 응답
+     */
+    ItemResponse createItem(Long boardId, ItemCreateRequest request, String createdBy);
+
+    /**
+     * 아이템 수정
+     *
+     * @param itemId    아이템 ID
+     * @param request   수정 요청
+     * @param updatedBy 수정자 사용자명
+     * @return 수정된 아이템 응답
+     */
+    ItemResponse updateItem(Long itemId, ItemUpdateRequest request, String updatedBy);
+
+    /**
+     * 아이템 완료 처리
+     *
+     * @param itemId      아이템 ID
+     * @param completedBy 완료자 사용자명
+     * @return 완료된 아이템 응답
+     */
+    ItemResponse completeItem(Long itemId, String completedBy);
+
+    /**
+     * 아이템 삭제 처리 (논리 삭제)
+     *
+     * @param itemId    아이템 ID
+     * @param deletedBy 삭제자 사용자명
+     * @return 삭제된 아이템 응답
+     */
+    ItemResponse deleteItem(Long itemId, String deletedBy);
+
+    /**
+     * 아이템 복원
+     *
+     * @param itemId    아이템 ID
+     * @param updatedBy 수정자 사용자명
+     * @return 복원된 아이템 응답
+     */
+    ItemResponse restoreItem(Long itemId, String updatedBy);
+
+    /**
+     * 아이템 물리 삭제
+     *
+     * @param itemId 아이템 ID
+     */
+    void hardDeleteItem(Long itemId);
+
+    /**
+     * 아이템 순서 변경
+     *
+     * @param boardId   보드 ID
+     * @param request   순서 변경 요청
+     * @param updatedBy 수정자 사용자명
+     */
+    void reorderItem(Long boardId, ItemReorderRequest request, String updatedBy);
+
+    // =============================================
+    // Cross-board 조회
+    // =============================================
+
+    /**
+     * 지연 아이템 목록 조회 (Cross-board)
+     *
+     * @param username 사용자명
+     * @param request  검색 조건
+     * @return 페이징된 지연 아이템 목록
+     */
+    ItemPageResponse getOverdueItems(String username, CrossBoardSearchRequest request);
+
+    /**
+     * 보류 아이템 목록 조회 (Cross-board)
+     *
+     * @param username 사용자명
+     * @param request  검색 조건
+     * @return 페이징된 보류 아이템 목록
+     */
+    ItemPageResponse getPendingItems(String username, CrossBoardSearchRequest request);
+
+    /**
+     * 활성 아이템 목록 조회 (Cross-board)
+     *
+     * @param username 사용자명
+     * @param request  검색 조건
+     * @return 페이징된 활성 아이템 목록
+     */
+    ItemPageResponse getActiveItemsCrossBoard(String username, CrossBoardSearchRequest request);
+
+    /**
+     * 지연/보류 업무 통계 조회 (Cross-board)
+     *
+     * @param username 사용자명
+     * @return 통계 정보 (overdue, pending 등)
+     */
+    Map<String, Object> getCrossBoardStats(String username);
+
+    // =============================================
+    // 아이템 속성 순서 변경
+    // =============================================
+
+    /**
+     * 아이템 속성 순서 변경
+     *
+     * @param itemId    아이템 ID
+     * @param request   순서 변경 요청
+     * @param updatedBy 수정자 사용자명
+     */
+    void updatePropertySortOrders(Long itemId, ItemPropertySortRequest request, String updatedBy);
+
+    // =============================================
+    // 공유받은 업무 조회
+    // =============================================
+
+    /**
+     * 공유받은 업무 목록 조회
+     *
+     * @param username 사용자명
+     * @param request  검색 조건
+     * @return 페이징된 공유받은 업무 목록
+     */
+    ItemPageResponse getSharedItems(String username, CrossBoardSearchRequest request);
+
+    // =============================================
+    // 하위 업무 조회 (v2.2)
+    // =============================================
+
+    /**
+     * 하위 업무 목록 조회
+     *
+     * @param parentItemId    부모 업무 ID
+     * @param includeCompleted 완료 포함 여부
+     * @param includeDeleted   삭제 포함 여부
+     * @return 하위 업무 목록
+     */
+    List<ItemResponse> getChildren(Long parentItemId, Boolean includeCompleted, Boolean includeDeleted);
+
+    /**
+     * 업무 트리 조회 (부모 + 모든 하위)
+     *
+     * @param itemId           업무 ID
+     * @param maxDepth         조회 깊이 (null이면 전체)
+     * @param includeCompleted 완료 포함 여부
+     * @return 트리 구조의 업무 응답
+     */
+    ItemResponse getItemTree(Long itemId, Integer maxDepth, Boolean includeCompleted);
+
+    /**
+     * 상위 계층 조회 (Breadcrumb용)
+     *
+     * @param itemId 업무 ID
+     * @return 상위 업무 목록 (최상위부터)
+     */
+    List<AncestorResponse> getAncestors(Long itemId);
+
+    /**
+     * 부모 업무 조회
+     *
+     * @param itemId 업무 ID
+     * @return 부모 업무 (없으면 null)
+     */
+    ItemResponse getParent(Long itemId);
+
+    /**
+     * 루트 업무 목록 조회 (보드별)
+     *
+     * @param boardId          보드 ID
+     * @param includeCompleted 완료 포함 여부
+     * @param includeDeleted   삭제 포함 여부
+     * @return 루트 업무 목록
+     */
+    List<ItemResponse> getRootItemsByBoardId(Long boardId, Boolean includeCompleted, Boolean includeDeleted);
+
+    // =============================================
+    // 하위 업무 등록/수정 (v2.2)
+    // =============================================
+
+    /**
+     * 하위 업무 등록
+     *
+     * @param boardId      보드 ID
+     * @param parentItemId 부모 업무 ID
+     * @param request      등록 요청
+     * @param createdBy    생성자 사용자명
+     * @return 생성된 하위 업무 응답
+     */
+    ItemResponse createSubTask(Long boardId, Long parentItemId, SubTaskCreateRequest request, String createdBy);
+
+    /**
+     * 하위 업무 순서 변경
+     *
+     * @param parentItemId 부모 업무 ID
+     * @param request      순서 변경 요청
+     * @param updatedBy    수정자 사용자명
+     */
+    void reorderChildren(Long parentItemId, SubTaskReorderRequest request, String updatedBy);
+
+    // =============================================
+    // 하위 업무 완료 처리 (v2.2)
+    // =============================================
+
+    /**
+     * 업무 완료 처리 (하위 업무 체크 포함)
+     *
+     * @param itemId      업무 ID
+     * @param request     완료 요청 (강제 완료 옵션)
+     * @param completedBy 완료자 사용자명
+     * @return 완료된 업무 응답 또는 미완료 하위 업무 정보
+     */
+    Object completeItemWithChildren(Long itemId, ItemCompleteRequest request, String completedBy);
+
+    /**
+     * 미완료 하위 업무 조회
+     *
+     * @param itemId 업무 ID
+     * @return 미완료 하위 업무 정보 (없으면 null)
+     */
+    IncompleteChildrenResponse getIncompleteChildren(Long itemId);
+}

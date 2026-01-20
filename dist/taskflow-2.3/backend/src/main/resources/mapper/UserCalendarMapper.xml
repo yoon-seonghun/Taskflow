@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.UserCalendarMapper">
+
+    <!-- ============================================= -->
+    <!-- ResultMap -->
+    <!-- ============================================= -->
+    <resultMap id="CalendarResultMap" type="com.taskflow.domain.Calendar">
+        <id property="calendarId" column="CALENDAR_ID"/>
+        <result property="ownerUsername" column="OWNER_USERNAME"/>
+        <result property="calendarName" column="CALENDAR_NAME"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="color" column="COLOR"/>
+        <result property="isDefault" column="IS_DEFAULT"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <result property="useYn" column="USE_YN"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="ownerName" column="OWNER_NAME"/>
+        <result property="eventCount" column="EVENT_COUNT"/>
+        <result property="isShared" column="IS_SHARED"/>
+        <result property="sharedByUsername" column="SHARED_BY_USERNAME"/>
+        <result property="sharedByName" column="SHARED_BY_NAME"/>
+        <result property="shareType" column="SHARE_TYPE"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- INSERT -->
+    <!-- ============================================= -->
+    <insert id="insert" parameterType="com.taskflow.domain.Calendar" useGeneratedKeys="true" keyProperty="calendarId">
+        INSERT INTO TB_CALENDAR (
+            OWNER_USERNAME, CALENDAR_NAME, DESCRIPTION, COLOR,
+            IS_DEFAULT, SORT_ORDER, USE_YN, CREATED_BY
+        ) VALUES (
+            #{ownerUsername}, #{calendarName}, #{description}, #{color},
+            #{isDefault}, #{sortOrder}, #{useYn}, #{createdBy}
+        )
+    </insert>
+
+    <!-- ============================================= -->
+    <!-- UPDATE -->
+    <!-- ============================================= -->
+    <update id="update" parameterType="com.taskflow.domain.Calendar">
+        UPDATE TB_CALENDAR
+        SET
+            CALENDAR_NAME = #{calendarName},
+            DESCRIPTION = #{description},
+            COLOR = #{color},
+            IS_DEFAULT = #{isDefault},
+            SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy}
+        WHERE CALENDAR_ID = #{calendarId}
+          AND USE_YN = 'Y'
+    </update>
+
+    <update id="delete">
+        UPDATE TB_CALENDAR
+        SET USE_YN = 'N', UPDATED_BY = #{username}
+        WHERE CALENDAR_ID = #{calendarId}
+          AND OWNER_USERNAME = #{username}
+    </update>
+
+    <update id="setDefaultCalendar">
+        UPDATE TB_CALENDAR
+        SET IS_DEFAULT = TRUE
+        WHERE CALENDAR_ID = #{calendarId}
+          AND OWNER_USERNAME = #{username}
+          AND USE_YN = 'Y'
+    </update>
+
+    <update id="clearDefaultCalendar">
+        UPDATE TB_CALENDAR
+        SET IS_DEFAULT = FALSE
+        WHERE OWNER_USERNAME = #{username}
+          AND USE_YN = 'Y'
+    </update>
+
+    <!-- ============================================= -->
+    <!-- SELECT -->
+    <!-- ============================================= -->
+    <select id="findById" resultMap="CalendarResultMap">
+        SELECT
+            c.*,
+            u.NAME as OWNER_NAME,
+            (SELECT COUNT(*) FROM TB_EVENT e WHERE e.CALENDAR_ID = c.CALENDAR_ID AND e.STATUS != 'DELETED') as EVENT_COUNT
+        FROM TB_CALENDAR c
+        LEFT JOIN TB_USER u ON c.OWNER_USERNAME = u.USERNAME
+        WHERE c.CALENDAR_ID = #{calendarId}
+          AND c.USE_YN = 'Y'
+    </select>
+
+    <select id="findByIdWithShare" resultMap="CalendarResultMap">
+        SELECT
+            c.*,
+            u.NAME as OWNER_NAME,
+            (SELECT COUNT(*) FROM TB_EVENT e WHERE e.CALENDAR_ID = c.CALENDAR_ID AND e.STATUS != 'DELETED') as EVENT_COUNT,
+            CASE WHEN c.OWNER_USERNAME = #{username} THEN FALSE ELSE TRUE END as IS_SHARED,
+            cs.SHARED_BY as SHARED_BY_USERNAME,
+            su.NAME as SHARED_BY_NAME,
+            cs.SHARE_TYPE as SHARE_TYPE
+        FROM TB_CALENDAR c
+        LEFT JOIN TB_USER u ON c.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
+            AND cs.USERNAME = #{username}
+            AND cs.DELETED_AT IS NULL
+        LEFT JOIN TB_USER su ON cs.SHARED_BY = su.USERNAME
+        WHERE c.CALENDAR_ID = #{calendarId}
+          AND c.USE_YN = 'Y'
+          AND (c.OWNER_USERNAME = #{username} OR cs.CALENDAR_SHARE_ID IS NOT NULL)
+    </select>
+
+    <select id="selectMyCalendars" resultMap="CalendarResultMap">
+        SELECT
+            c.*,
+            u.NAME as OWNER_NAME,
+            (SELECT COUNT(*) FROM TB_EVENT e WHERE e.CALENDAR_ID = c.CALENDAR_ID AND e.STATUS != 'DELETED') as EVENT_COUNT,
+            CASE WHEN c.OWNER_USERNAME = #{username} THEN FALSE ELSE TRUE END as IS_SHARED,
+            cs.SHARED_BY as SHARED_BY_USERNAME,
+            su.NAME as SHARED_BY_NAME,
+            cs.SHARE_TYPE as SHARE_TYPE
+        FROM TB_CALENDAR c
+        LEFT JOIN TB_USER u ON c.OWNER_USERNAME = u.USERNAME
+        LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
+            AND cs.USERNAME = #{username}
+            AND cs.DELETED_AT IS NULL
+        LEFT JOIN TB_USER su ON cs.SHARED_BY = su.USERNAME
+        WHERE c.USE_YN = 'Y'
+          AND (c.OWNER_USERNAME = #{username} OR cs.CALENDAR_SHARE_ID IS NOT NULL)
+        ORDER BY
+            CASE WHEN c.OWNER_USERNAME = #{username} THEN 0 ELSE 1 END,
+            c.IS_DEFAULT DESC,
+            c.SORT_ORDER,
+            c.CALENDAR_NAME
+    </select>
+
+    <select id="selectOwnedCalendars" resultMap="CalendarResultMap">
+        SELECT
+            c.*,
+            u.NAME as OWNER_NAME,
+            (SELECT COUNT(*) FROM TB_EVENT e WHERE e.CALENDAR_ID = c.CALENDAR_ID AND e.STATUS != 'DELETED') as EVENT_COUNT,
+            FALSE as IS_SHARED,
+            NULL as SHARED_BY_USERNAME,
+            NULL as SHARED_BY_NAME,
+            NULL as SHARE_TYPE
+        FROM TB_CALENDAR c
+        LEFT JOIN TB_USER u ON c.OWNER_USERNAME = u.USERNAME
+        WHERE c.OWNER_USERNAME = #{username}
+          AND c.USE_YN = 'Y'
+        ORDER BY c.IS_DEFAULT DESC, c.SORT_ORDER, c.CALENDAR_NAME
+    </select>
+
+    <select id="findDefaultCalendar" resultMap="CalendarResultMap">
+        SELECT
+            c.*,
+            u.NAME as OWNER_NAME,
+            (SELECT COUNT(*) FROM TB_EVENT e WHERE e.CALENDAR_ID = c.CALENDAR_ID AND e.STATUS != 'DELETED') as EVENT_COUNT
+        FROM TB_CALENDAR c
+        LEFT JOIN TB_USER u ON c.OWNER_USERNAME = u.USERNAME
+        WHERE c.OWNER_USERNAME = #{username}
+          AND c.IS_DEFAULT = TRUE
+          AND c.USE_YN = 'Y'
+        LIMIT 1
+    </select>
+
+    <select id="countEvents" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_EVENT
+        WHERE CALENDAR_ID = #{calendarId}
+          AND STATUS != 'DELETED'
+    </select>
+
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT MAX(SORT_ORDER)
+        FROM TB_CALENDAR
+        WHERE OWNER_USERNAME = #{username}
+          AND USE_YN = 'Y'
+    </select>
+
+    <select id="hasAccess" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM TB_CALENDAR c
+        LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
+            AND cs.USERNAME = #{username}
+            AND cs.DELETED_AT IS NULL
+        WHERE c.CALENDAR_ID = #{calendarId}
+          AND c.USE_YN = 'Y'
+          AND (c.OWNER_USERNAME = #{username} OR cs.CALENDAR_SHARE_ID IS NOT NULL)
+    </select>
+
+    <select id="getPermission" resultType="string">
+        SELECT
+            CASE
+                WHEN c.OWNER_USERNAME = #{username} THEN 'OWNER'
+                ELSE cs.SHARE_TYPE
+            END
+        FROM TB_CALENDAR c
+        LEFT JOIN TB_CALENDAR_SHARE cs ON c.CALENDAR_ID = cs.CALENDAR_ID
+            AND cs.USERNAME = #{username}
+            AND cs.DELETED_AT IS NULL
+        WHERE c.CALENDAR_ID = #{calendarId}
+          AND c.USE_YN = 'Y'
+          AND (c.OWNER_USERNAME = #{username} OR cs.CALENDAR_SHARE_ID IS NOT NULL)
+    </select>
+
+</mapper>

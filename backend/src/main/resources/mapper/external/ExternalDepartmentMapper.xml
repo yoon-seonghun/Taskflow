@@ -4,80 +4,97 @@
 <mapper namespace="com.taskflow.mapper.external.ExternalDepartmentMapper">
 
     <!-- 부서 ResultMap -->
-    <!-- VIEW 컬럼: DEPARTMENT_ID, DEPARTMENT_CODE, DEPARTMENT_NAME, PARENT_CODE, SORT_ORDER, USE_YN, CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY -->
+    <!-- VIEW 컬럼(소문자): department_id, department_code, department_name, parent_id, sort_order, use_yn, created_at, created_by, updated_at, updated_by -->
+    <!-- 주의: VIEW에서 parent_id로 반환하므로 parent_code로 매핑 -->
     <resultMap id="DepartmentResultMap" type="com.taskflow.domain.Department">
-        <id property="departmentId" column="DEPARTMENT_ID"/>
-        <result property="departmentCode" column="DEPARTMENT_CODE"/>
-        <result property="departmentName" column="DEPARTMENT_NAME"/>
-        <result property="parentCode" column="PARENT_CODE"/>
-        <result property="sortOrder" column="SORT_ORDER"/>
-        <result property="useYn" column="USE_YN"/>
-        <result property="createdAt" column="CREATED_AT"/>
-        <result property="createdBy" column="CREATED_BY"/>
-        <result property="updatedAt" column="UPDATED_AT"/>
-        <result property="updatedBy" column="UPDATED_BY"/>
+        <id property="departmentId" column="department_id"/>
+        <result property="departmentCode" column="department_code"/>
+        <result property="departmentName" column="department_name"/>
+        <result property="parentCode" column="parent_code"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="useYn" column="use_yn"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="updatedBy" column="updated_by"/>
     </resultMap>
+
+    <!-- 공통 SELECT 컬럼 (VIEW 소문자 컬럼명 사용) -->
+    <!-- VIEW의 parent_id를 parent_code로 별칭 변환 -->
+    <!-- parent_id as parent_code,-->
+    <sql id="selectColumns">
+        department_id,
+        department_code,
+        department_name,
+        parent_code,
+        sort_order,
+        use_yn,
+        created_at,
+        created_by,
+        updated_at,
+        updated_by
+    </sql>
 
     <!-- ID로 조회 -->
     <select id="findById" resultMap="DepartmentResultMap">
-        SELECT *
+        SELECT <include refid="selectColumns"/>
         FROM ${departmentTable}
-        WHERE DEPARTMENT_ID = #{departmentId}
+        WHERE department_id = #{departmentId}
     </select>
 
     <!-- 부서 코드로 조회 -->
     <select id="findByCode" resultMap="DepartmentResultMap">
-        SELECT *
+        SELECT <include refid="selectColumns"/>
         FROM ${departmentTable}
-        WHERE DEPARTMENT_CODE = #{departmentCode}
+        WHERE department_code = #{departmentCode}
     </select>
 
     <!-- 전체 부서 목록 조회 (평면 구조) -->
     <select id="findAllFlat" resultMap="DepartmentResultMap">
-        SELECT *
+        SELECT <include refid="selectColumns"/>
         FROM ${departmentTable}
         <where>
             <if test="useYn != null and useYn != ''">
-                AND USE_YN = #{useYn}
+                AND use_yn = #{useYn}
             </if>
         </where>
-        ORDER BY SORT_ORDER, DEPARTMENT_NAME
+        ORDER BY sort_order, department_name
     </select>
 
     <!-- 최상위 부서 목록 조회 -->
     <select id="findRootDepartments" resultMap="DepartmentResultMap">
-        SELECT *
+        SELECT <include refid="selectColumns"/>
         FROM ${departmentTable}
-        WHERE PARENT_CODE IS NULL OR PARENT_CODE = ''
+        WHERE parent_id IS NULL OR parent_id = ''
         <if test="useYn != null and useYn != ''">
-            AND USE_YN = #{useYn}
+            AND use_yn = #{useYn}
         </if>
-        ORDER BY SORT_ORDER, DEPARTMENT_NAME
+        ORDER BY sort_order, department_name
     </select>
 
     <!-- 특정 부서의 하위 부서 목록 조회 (parentId 기반) -->
     <select id="findChildren" resultMap="DepartmentResultMap">
-        SELECT *
+        SELECT <include refid="selectColumns"/>
         FROM ${departmentTable}
-        WHERE PARENT_CODE = (SELECT DEPARTMENT_CODE FROM ${departmentTable} WHERE DEPARTMENT_ID = #{parentId})
-          AND USE_YN = 'Y'
-        ORDER BY SORT_ORDER, DEPARTMENT_NAME
+        WHERE parent_id = (SELECT department_code FROM ${departmentTable} WHERE department_id = #{parentId})
+          AND use_yn = 'Y'
+        ORDER BY sort_order, department_name
     </select>
 
     <!-- 특정 부서의 하위 부서 목록 조회 (parentCode 기반) -->
     <select id="findByParentCode" resultMap="DepartmentResultMap">
-        SELECT *
+        SELECT <include refid="selectColumns"/>
         FROM ${departmentTable}
-        WHERE PARENT_CODE = #{parentCode}
-          AND USE_YN = 'Y'
-        ORDER BY SORT_ORDER, DEPARTMENT_NAME
+        WHERE parent_id = #{parentCode}
+          AND use_yn = 'Y'
+        ORDER BY sort_order, department_name
     </select>
 
     <!-- 부서 코드 중복 확인 -->
     <select id="existsByCode" resultType="boolean">
         SELECT EXISTS(
             SELECT 1 FROM ${departmentTable}
-            WHERE DEPARTMENT_CODE = #{departmentCode}
+            WHERE department_code = #{departmentCode}
         )
     </select>
 

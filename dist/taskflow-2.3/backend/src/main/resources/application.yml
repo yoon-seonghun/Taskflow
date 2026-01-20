@@ -1,0 +1,320 @@
+spring:
+  profiles:
+    active: local
+
+  application:
+    name: taskflow-backend
+
+  main:
+    allow-bean-definition-overriding: true
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Seoul
+    serialization:
+      write-dates-as-timestamps: false
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
+
+# TaskFlow 사용자 관리 설정
+# mode: internal (기본 관리) | external (외부 DB 연동)
+taskflow:
+  user-management:
+    mode: ${USER_MANAGEMENT_MODE:internal}
+    internal:
+      password-encoder: bcrypt
+      bcrypt-strength: 10
+      user-crud-enabled: true
+      department-crud-enabled: true
+    external:
+      password-encoder: sha256
+      sha256-use-salt: false
+      user-crud-enabled: false
+      department-crud-enabled: false
+      user-table: ${EXTERNAL_USER_TABLE:VW_TASKFLOW_USER}
+      department-table: ${EXTERNAL_DEPARTMENT_TABLE:VW_TASKFLOW_DEPARTMENT}
+
+# 외부 DB 연결 암호화 설정
+encryption:
+  aes:
+    secret-key: ${AES_SECRET_KEY:VGFza0Zsb3dBRVMyNTZLZXlGb3JFeHRlcm5hbERCUGFzc3dvcmRFbmNyeXB0aW9u}
+
+# 외부 쿼리 설정
+external-query:
+  default-query-timeout: 30000
+  max-result-rows: 1000
+  default-cache-ttl: 300
+  # Tibero JDBC 드라이버 JAR 경로 (동적 로딩용)
+  tibero:
+    tibero6-jar-path: ${TIBERO6_JAR_PATH:libs/tibero6-jdbc.jar}
+    tibero7-jar-path: ${TIBERO7_JAR_PATH:libs/tibero7-jdbc.jar}
+    driver-class-name: com.tmax.tibero.jdbc.TbDriver
+
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+# MyBatis Configuration
+# 주의: mapper-locations는 MyBatisConfig.java에서 재정의됨
+# - Primary: classpath:mapper/*.xml (external 폴더 제외)
+# - External: classpath:mapper/external/**/*.xml (external 모드에서만)
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.taskflow.domain
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: NULL
+
+# Logging
+logging:
+  pattern:
+    console: "[%d{yyyy-MM-dd HH:mm:ss}] [%level] [%thread] %logger{36} - %msg%n"
+  level:
+    root: INFO
+    com.taskflow: DEBUG
+    org.springframework.security: DEBUG
+
+# File Upload Configuration
+spring.servlet.multipart:
+  enabled: true
+  max-file-size: 10MB
+  max-request-size: 50MB
+
+---
+# Local Profile
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    jdbc-url: jdbc:mysql://localhost:3306/taskflow?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: taskflow
+    password: taskflow123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    maximum-pool-size: 10
+    minimum-idle: 5
+    idle-timeout: 30000
+    connection-timeout: 20000
+    # External DataSource (external 모드 시 활성화)
+    # 로컬 테스트 시 환경변수 또는 아래 값 직접 설정
+    external:
+      jdbc-url: ${EXTERNAL_DB_URL:}
+      username: ${EXTERNAL_DB_USERNAME:}
+      password: ${EXTERNAL_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      maximum-pool-size: 5
+      minimum-idle: 2
+      read-only: true
+
+# JWT Configuration (Base64 encoded secret - 최소 256비트)
+jwt:
+  secret: ${JWT_SECRET:bG9jYWwtZGV2LWp3dC1zZWNyZXQta2V5LW11c3QtYmUtYXQtbGVhc3QtMjU2LWJpdHMtbG9uZy1mb3ItaHMyNTY=}
+  access-token-validity: 1800000    # 30분 (밀리초)
+  refresh-token-validity: 604800000  # 7일 (밀리초)
+
+# CORS Configuration
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173
+  max-age: 3600
+
+# Cookie Configuration (Local - HTTP)
+cookie:
+  secure: false
+
+logging:
+  level:
+    com.taskflow.mapper: DEBUG
+
+# File Storage Configuration (Local)
+file:
+  storage:
+    type: LOCAL
+    max-file-size: 10MB
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - webp
+      - svg
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - ppt
+      - pptx
+      - txt
+      - zip
+    local:
+      base-path: ./uploads
+
+---
+# Docker Profile
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    jdbc-url: jdbc:mysql://mysql:3306/taskflow?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: taskflow
+    password: taskflow123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    maximum-pool-size: 20
+    minimum-idle: 10
+    idle-timeout: 30000
+    connection-timeout: 20000
+    # External DataSource (외부 DB 연동 모드)
+    external:
+      jdbc-url: ${EXTERNAL_DB_URL:}
+      username: ${EXTERNAL_DB_USERNAME:}
+      password: ${EXTERNAL_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      maximum-pool-size: 5
+      minimum-idle: 2
+      read-only: true
+
+jwt:
+  secret: ${JWT_SECRET:ZG9ja2VyLWp3dC1zZWNyZXQta2V5LW11c3QtYmUtYXQtbGVhc3QtMjU2LWJpdHMtbG9uZy1mb3ItaHMyNTY=}
+  access-token-validity: 1800000
+  refresh-token-validity: 604800000
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  max-age: 3600
+
+# Cookie Configuration (Docker - 내부 네트워크)
+cookie:
+  secure: ${COOKIE_SECURE:false}
+
+logging:
+  level:
+    com.taskflow: INFO
+    com.taskflow.mapper: INFO
+
+# File Storage Configuration (Docker)
+file:
+  storage:
+    type: LOCAL
+    max-file-size: 10MB
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - webp
+      - svg
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - ppt
+      - pptx
+      - txt
+      - zip
+    local:
+      base-path: /app/uploads
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    jdbc-url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    maximum-pool-size: 30
+    minimum-idle: 10
+    idle-timeout: 30000
+    connection-timeout: 20000
+    # External DataSource (외부 DB 연동 모드)
+    external:
+      jdbc-url: ${EXTERNAL_DB_URL:}
+      username: ${EXTERNAL_DB_USERNAME:}
+      password: ${EXTERNAL_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      maximum-pool-size: 10
+      minimum-idle: 2
+      read-only: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity: 1800000
+  refresh-token-validity: 604800000
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  max-age: 3600
+
+# Cookie Configuration (Production - HTTPS 필수)
+cookie:
+  secure: true
+
+logging:
+  level:
+    root: WARN
+    com.taskflow: INFO
+
+# File Storage Configuration (Production - 환경변수로 유연하게 설정)
+# type: LOCAL, SFTP, NAS, S3
+file:
+  storage:
+    type: ${FILE_STORAGE_TYPE:LOCAL}
+    max-file-size: ${FILE_MAX_SIZE:10MB}
+    allowed-extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - webp
+      - svg
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - ppt
+      - pptx
+      - txt
+      - zip
+    local:
+      base-path: ${FILE_LOCAL_PATH:/app/uploads}
+    sftp:
+      host: ${SFTP_HOST:}
+      port: ${SFTP_PORT:22}
+      username: ${SFTP_USERNAME:}
+      password: ${SFTP_PASSWORD:}
+      private-key-path: ${SFTP_PRIVATE_KEY_PATH:}
+      private-key-passphrase: ${SFTP_PRIVATE_KEY_PASSPHRASE:}
+      base-path: ${SFTP_BASE_PATH:/data/uploads}
+      connection-timeout: ${SFTP_CONNECTION_TIMEOUT:30000}
+      channel-timeout: ${SFTP_CHANNEL_TIMEOUT:60000}
+      strict-host-key-checking: ${SFTP_STRICT_HOST_KEY_CHECKING:false}
+      known-hosts-path: ${SFTP_KNOWN_HOSTS_PATH:}
+      pool-size: ${SFTP_POOL_SIZE:5}
+      keep-alive-interval: ${SFTP_KEEP_ALIVE_INTERVAL:30000}
+    nas:
+      base-path: ${FILE_NAS_PATH:}
+      mount-path: ${FILE_NAS_MOUNT:}
+    s3:
+      bucket: ${AWS_S3_BUCKET:}
+      region: ${AWS_REGION:}
+      access-key: ${AWS_ACCESS_KEY:}
+      secret-key: ${AWS_SECRET_KEY:}

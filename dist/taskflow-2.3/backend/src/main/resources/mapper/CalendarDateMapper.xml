@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.taskflow.mapper.CalendarDateMapper">
+
+    <!-- ResultMap -->
+    <resultMap id="CalendarDateResultMap" type="com.taskflow.domain.CalendarDate">
+        <id property="calDate" column="CAL_DATE"/>
+        <result property="solarYear" column="SOLAR_YEAR"/>
+        <result property="solarMonth" column="SOLAR_MONTH"/>
+        <result property="solarDay" column="SOLAR_DAY"/>
+        <result property="dayOfWeek" column="DAY_OF_WEEK"/>
+        <result property="dayOfWeekName" column="DAY_OF_WEEK_NAME"/>
+        <result property="weekOfYear" column="WEEK_OF_YEAR"/>
+        <result property="weekOfMonth" column="WEEK_OF_MONTH"/>
+        <result property="quarter" column="QUARTER"/>
+        <result property="lunarYear" column="LUNAR_YEAR"/>
+        <result property="lunarMonth" column="LUNAR_MONTH"/>
+        <result property="lunarDay" column="LUNAR_DAY"/>
+        <result property="isLeapMonth" column="IS_LEAP_MONTH"/>
+        <result property="lunarDisplay" column="LUNAR_DISPLAY"/>
+        <result property="isHoliday" column="IS_HOLIDAY"/>
+        <result property="holidayName" column="HOLIDAY_NAME"/>
+        <result property="holidayType" column="HOLIDAY_TYPE"/>
+        <result property="isWorkday" column="IS_WORKDAY"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+    </resultMap>
+
+    <!-- 공통 컬럼 -->
+    <sql id="calendarDateColumns">
+        CAL_DATE, SOLAR_YEAR, SOLAR_MONTH, SOLAR_DAY, DAY_OF_WEEK, DAY_OF_WEEK_NAME,
+        WEEK_OF_YEAR, WEEK_OF_MONTH, QUARTER,
+        LUNAR_YEAR, LUNAR_MONTH, LUNAR_DAY, IS_LEAP_MONTH, LUNAR_DISPLAY,
+        IS_HOLIDAY, HOLIDAY_NAME, HOLIDAY_TYPE, IS_WORKDAY,
+        CREATED_AT, UPDATED_AT
+    </sql>
+
+    <!-- 날짜 조회 -->
+    <select id="findByDate" resultMap="CalendarDateResultMap">
+        SELECT <include refid="calendarDateColumns"/>
+        FROM TB_CALENDAR_DATE
+        WHERE CAL_DATE = #{calDate}
+    </select>
+
+    <!-- 기간 조회 -->
+    <select id="findByDateRange" resultMap="CalendarDateResultMap">
+        SELECT <include refid="calendarDateColumns"/>
+        FROM TB_CALENDAR_DATE
+        WHERE CAL_DATE BETWEEN #{startDate} AND #{endDate}
+        ORDER BY CAL_DATE
+    </select>
+
+    <!-- 월간 조회 -->
+    <select id="findByMonth" resultMap="CalendarDateResultMap">
+        SELECT <include refid="calendarDateColumns"/>
+        FROM TB_CALENDAR_DATE
+        WHERE SOLAR_YEAR = #{year} AND SOLAR_MONTH = #{month}
+        ORDER BY CAL_DATE
+    </select>
+
+    <!-- 연간 조회 -->
+    <select id="findByYear" resultMap="CalendarDateResultMap">
+        SELECT <include refid="calendarDateColumns"/>
+        FROM TB_CALENDAR_DATE
+        WHERE SOLAR_YEAR = #{year}
+        ORDER BY CAL_DATE
+    </select>
+
+    <!-- 음력 날짜로 조회 -->
+    <select id="findByLunarDate" resultMap="CalendarDateResultMap">
+        SELECT <include refid="calendarDateColumns"/>
+        FROM TB_CALENDAR_DATE
+        WHERE LUNAR_YEAR = #{lunarYear}
+          AND LUNAR_MONTH = #{lunarMonth}
+          AND LUNAR_DAY = #{lunarDay}
+        <if test="isLeapMonth != null">
+          AND IS_LEAP_MONTH = #{isLeapMonth}
+        </if>
+        ORDER BY CAL_DATE
+    </select>
+
+    <!-- 공휴일 목록 조회 -->
+    <select id="findHolidays" resultMap="CalendarDateResultMap">
+        SELECT <include refid="calendarDateColumns"/>
+        FROM TB_CALENDAR_DATE
+        WHERE CAL_DATE BETWEEN #{startDate} AND #{endDate}
+          AND IS_HOLIDAY = TRUE
+        ORDER BY CAL_DATE
+    </select>
+
+    <!-- 근무일수 카운트 -->
+    <select id="countWorkdays" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_CALENDAR_DATE
+        WHERE CAL_DATE BETWEEN #{startDate} AND #{endDate}
+          AND IS_WORKDAY = TRUE
+    </select>
+
+    <!-- 데이터 존재 여부 확인 -->
+    <select id="existsByDate" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM TB_CALENDAR_DATE
+        WHERE CAL_DATE = #{calDate}
+    </select>
+
+    <!-- 연도 데이터 카운트 -->
+    <select id="countByYear" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_CALENDAR_DATE
+        WHERE SOLAR_YEAR = #{year}
+    </select>
+
+    <!-- 단건 저장 -->
+    <insert id="insert">
+        INSERT INTO TB_CALENDAR_DATE (
+            CAL_DATE, SOLAR_YEAR, SOLAR_MONTH, SOLAR_DAY, DAY_OF_WEEK, DAY_OF_WEEK_NAME,
+            WEEK_OF_YEAR, WEEK_OF_MONTH, QUARTER,
+            LUNAR_YEAR, LUNAR_MONTH, LUNAR_DAY, IS_LEAP_MONTH, LUNAR_DISPLAY,
+            IS_HOLIDAY, HOLIDAY_NAME, HOLIDAY_TYPE, IS_WORKDAY
+        ) VALUES (
+            #{calDate}, #{solarYear}, #{solarMonth}, #{solarDay}, #{dayOfWeek}, #{dayOfWeekName},
+            #{weekOfYear}, #{weekOfMonth}, #{quarter},
+            #{lunarYear}, #{lunarMonth}, #{lunarDay}, #{isLeapMonth}, #{lunarDisplay},
+            #{isHoliday}, #{holidayName}, #{holidayType}, #{isWorkday}
+        )
+    </insert>
+
+    <!-- 벌크 저장 -->
+    <insert id="insertBatch">
+        INSERT INTO TB_CALENDAR_DATE (
+            CAL_DATE, SOLAR_YEAR, SOLAR_MONTH, SOLAR_DAY, DAY_OF_WEEK, DAY_OF_WEEK_NAME,
+            WEEK_OF_YEAR, WEEK_OF_MONTH, QUARTER,
+            LUNAR_YEAR, LUNAR_MONTH, LUNAR_DAY, IS_LEAP_MONTH, LUNAR_DISPLAY,
+            IS_HOLIDAY, HOLIDAY_NAME, HOLIDAY_TYPE, IS_WORKDAY
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.calDate}, #{item.solarYear}, #{item.solarMonth}, #{item.solarDay},
+                #{item.dayOfWeek}, #{item.dayOfWeekName}, #{item.weekOfYear}, #{item.weekOfMonth},
+                #{item.quarter}, #{item.lunarYear}, #{item.lunarMonth}, #{item.lunarDay},
+                #{item.isLeapMonth}, #{item.lunarDisplay},
+                #{item.isHoliday}, #{item.holidayName}, #{item.holidayType}, #{item.isWorkday}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 공휴일 정보 업데이트 -->
+    <update id="updateHoliday">
+        UPDATE TB_CALENDAR_DATE
+        SET IS_HOLIDAY = #{isHoliday},
+            HOLIDAY_NAME = #{holidayName},
+            HOLIDAY_TYPE = #{holidayType},
+            IS_WORKDAY = #{isWorkday}
+        WHERE CAL_DATE = #{calDate}
+    </update>
+
+    <!-- 연도별 삭제 -->
+    <delete id="deleteByYear">
+        DELETE FROM TB_CALENDAR_DATE
+        WHERE SOLAR_YEAR = #{year}
+    </delete>
+
+    <!-- 최소 연도 조회 -->
+    <select id="findMinYear" resultType="java.lang.Integer">
+        SELECT MIN(SOLAR_YEAR) FROM TB_CALENDAR_DATE
+    </select>
+
+    <!-- 최대 연도 조회 -->
+    <select id="findMaxYear" resultType="java.lang.Integer">
+        SELECT MAX(SOLAR_YEAR) FROM TB_CALENDAR_DATE
+    </select>
+
+</mapper>

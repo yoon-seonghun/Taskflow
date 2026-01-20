@@ -1,0 +1,1370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.taskflow.mapper.ItemMapper">
+
+    <!-- ============================================= -->
+    <!-- Result Map -->
+    <!-- ============================================= -->
+
+    <resultMap id="ItemResultMap" type="com.taskflow.domain.Item">
+        <id property="itemId" column="ITEM_ID"/>
+        <result property="boardId" column="BOARD_ID"/>
+        <result property="ownerUsername" column="OWNER_USERNAME"/>
+        <result property="ownerName" column="OWNER_NAME"/>
+        <result property="groupId" column="GROUP_ID"/>
+        <result property="categoryId" column="CATEGORY_ID"/>
+        <result property="title" column="TITLE"/>
+        <result property="content" column="CONTENT"/>
+        <result property="description" column="DESCRIPTION"/>
+        <result property="status" column="STATUS"/>
+        <result property="priority" column="PRIORITY"/>
+        <result property="assigneeUsername" column="ASSIGNEE_USERNAME"/>
+        <result property="requestDate" column="REQUEST_DATE"/>
+        <result property="dueDate" column="DUE_DATE"/>
+        <result property="previousStatus" column="PREVIOUS_STATUS"/>
+        <result property="completedBy" column="COMPLETED_BY"/>
+        <result property="deletedAt" column="DELETED_AT"/>
+        <result property="deletedBy" column="DELETED_BY"/>
+        <result property="transferredFrom" column="TRANSFERRED_FROM"/>
+        <result property="transferredAt" column="TRANSFERRED_AT"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="createdBy" column="CREATED_BY"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="updatedBy" column="UPDATED_BY"/>
+        <!-- 조인 필드 -->
+        <result property="boardName" column="BOARD_NAME"/>
+        <result property="groupName" column="GROUP_NAME"/>
+        <result property="groupColor" column="GROUP_COLOR"/>
+        <result property="categoryName" column="CATEGORY_NAME"/>
+        <result property="categoryColor" column="CATEGORY_COLOR"/>
+        <result property="assigneeName" column="ASSIGNEE_NAME"/>
+        <result property="createdByName" column="CREATED_BY_NAME"/>
+        <result property="updatedByName" column="UPDATED_BY_NAME"/>
+        <result property="commentCount" column="COMMENT_COUNT"/>
+        <result property="shareCount" column="SHARE_COUNT"/>
+        <!-- 공유/이관 필드 -->
+        <result property="isSharedToMe" column="IS_SHARED_TO_ME"/>
+        <result property="sharedByUsername" column="SHARED_BY_USERNAME"/>
+        <result property="sharedByUserName" column="SHARED_BY_USER_NAME"/>
+        <result property="transferredByUsername" column="TRANSFERRED_BY_USERNAME"/>
+        <result property="transferredByUserName" column="TRANSFERRED_BY_USER_NAME"/>
+        <result property="sortOrder" column="SORT_ORDER"/>
+        <!-- v2.2: 하위 업무 필드 -->
+        <result property="parentItemId" column="PARENT_ITEM_ID"/>
+        <result property="itemDepth" column="ITEM_DEPTH"/>
+        <result property="childSortOrder" column="CHILD_SORT_ORDER"/>
+        <result property="childCount" column="CHILD_COUNT"/>
+        <result property="completedChildCount" column="COMPLETED_CHILD_COUNT"/>
+        <result property="hasChildren" column="HAS_CHILDREN"/>
+        <result property="canCreateChild" column="CAN_CREATE_CHILD"/>
+        <result property="parentTitle" column="PARENT_TITLE"/>
+        <result property="parentStatus" column="PARENT_STATUS"/>
+        <result property="rootItemId" column="ROOT_ITEM_ID"/>
+        <result property="rootTitle" column="ROOT_TITLE"/>
+        <result property="rootStatus" column="ROOT_STATUS"/>
+        <!-- v2.1: 배정 필드 -->
+        <result property="isAssignedToMe" column="IS_ASSIGNED_TO_ME"/>
+        <result property="assignedByUsername" column="ASSIGNED_BY_USERNAME"/>
+        <result property="assignedByUserName" column="ASSIGNED_BY_USER_NAME"/>
+        <result property="assignedAt" column="ASSIGNED_AT"/>
+        <!-- v2.1: 배정 대상 정보 (소유자 화면용) -->
+        <result property="assignedToUsername" column="ASSIGNED_TO_USERNAME"/>
+        <result property="assignedToUserName" column="ASSIGNED_TO_USER_NAME"/>
+    </resultMap>
+
+    <!-- ============================================= -->
+    <!-- 공통 SQL 조각 -->
+    <!-- ============================================= -->
+
+    <sql id="selectItem">
+        SELECT
+            i.ITEM_ID,
+            i.BOARD_ID,
+            i.OWNER_USERNAME,
+            i.GROUP_ID,
+            i.CATEGORY_ID,
+            i.CONTENT AS TITLE,
+            i.CONTENT,
+            i.DESCRIPTION,
+            i.STATUS,
+            i.PRIORITY,
+            i.ASSIGNEE_USERNAME,
+            i.REQUEST_DATE,
+            i.DUE_DATE,
+            i.PREVIOUS_STATUS,
+            i.COMPLETED_BY,
+            i.DELETED_AT,
+            i.DELETED_BY,
+            i.TRANSFERRED_FROM,
+            i.TRANSFERRED_AT,
+            i.SORT_ORDER,
+            i.CREATED_AT,
+            i.CREATED_BY,
+            i.UPDATED_AT,
+            i.UPDATED_BY,
+            /* v2.2: 하위 업무 필드 */
+            i.PARENT_ITEM_ID,
+            i.ITEM_DEPTH,
+            i.CHILD_SORT_ORDER,
+            /* v2.2: 하위 업무 계산 필드 */
+            (SELECT COUNT(*) FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS != 'DELETED') AS CHILD_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS = 'COMPLETED') AS COMPLETED_CHILD_COUNT,
+            (EXISTS (SELECT 1 FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS != 'DELETED')) AS HAS_CHILDREN,
+            (COALESCE(i.ITEM_DEPTH, 0) &lt; 2) AS CAN_CREATE_CHILD,
+            /* v2.2: 부모 업무 정보 */
+            parent.CONTENT AS PARENT_TITLE,
+            parent.STATUS AS PARENT_STATUS,
+            /* v2.2: 최상위 업무 정보 (CTE 없이 2단계 조인) */
+            COALESCE(grandparent.ITEM_ID, parent.ITEM_ID) AS ROOT_ITEM_ID,
+            COALESCE(grandparent.CONTENT, parent.CONTENT) AS ROOT_TITLE,
+            COALESCE(grandparent.STATUS, parent.STATUS) AS ROOT_STATUS,
+            b.BOARD_NAME,
+            uo.NAME AS OWNER_NAME,
+            g.GROUP_NAME,
+            g.GROUP_COLOR,
+            cat.CATEGORY_NAME,
+            cat.CATEGORY_COLOR,
+            ua.NAME AS ASSIGNEE_NAME,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME,
+            (SELECT COUNT(*) FROM TB_COMMENT c WHERE c.ITEM_ID = i.ITEM_ID) AS COMMENT_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM_SHARE s WHERE s.ITEM_ID = i.ITEM_ID AND s.DELETED_AT IS NULL) AS SHARE_COUNT,
+            /* 이관 정보 - 원본 보드의 소유자가 이관자 */
+            tb_orig.OWNER_USERNAME AS TRANSFERRED_BY_USERNAME,
+            ut.NAME AS TRANSFERRED_BY_USER_NAME,
+            /* 공유 정보 - 기본값 NULL (공유 업무 조회 시 별도 설정) */
+            NULL AS IS_SHARED_TO_ME,
+            NULL AS SHARED_BY_USERNAME,
+            NULL AS SHARED_BY_USER_NAME,
+            /* v2.1: 배정 정보 (소유자 화면용) - 기본값 NULL (공유 업무 조회 시 별도 설정) */
+            NULL AS IS_ASSIGNED_TO_ME,
+            ish_assign.ASSIGNED_BY AS ASSIGNED_BY_USERNAME,
+            uab.NAME AS ASSIGNED_BY_USER_NAME,
+            ish_assign.ASSIGNED_AT AS ASSIGNED_AT,
+            /* v2.1: 배정 대상 정보 (소유자 화면용) - 누구에게 배정했는지 */
+            ish_assign.USERNAME AS ASSIGNED_TO_USERNAME,
+            uat.NAME AS ASSIGNED_TO_USER_NAME
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+        LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+        LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+        LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+        LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+        LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+        LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+        /* v2.2: 부모/조부모 업무 조인 */
+        LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+        LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+        /* v2.1: 배정 정보 조인 - SHARE_TYPE='ASSIGN'인 활성 배정만 조회 */
+        LEFT JOIN TB_ITEM_SHARE ish_assign ON i.ITEM_ID = ish_assign.ITEM_ID AND ish_assign.SHARE_TYPE = 'ASSIGN'
+        LEFT JOIN TB_USER uab ON ish_assign.ASSIGNED_BY = uab.USERNAME
+        LEFT JOIN TB_USER uat ON ish_assign.USERNAME = uat.USERNAME
+    </sql>
+
+    <!-- 필터 조건 -->
+    <sql id="filterConditions">
+        <if test="request.keyword != null and request.keyword != ''">
+            AND i.CONTENT LIKE CONCAT('%', #{request.keyword}, '%')
+        </if>
+        <if test="request.status != null and request.status != ''">
+            AND i.STATUS = #{request.status}
+        </if>
+        <if test="request.priority != null and request.priority != ''">
+            AND i.PRIORITY = #{request.priority}
+        </if>
+        <if test="request.assigneeUsername != null and request.assigneeUsername != ''">
+            AND i.ASSIGNEE_USERNAME = #{request.assigneeUsername}
+        </if>
+        <if test="request.groupId != null">
+            AND i.GROUP_ID = #{request.groupId}
+        </if>
+        <if test="request.categoryId != null">
+            AND i.CATEGORY_ID = #{request.categoryId}
+        </if>
+        <if test="request.departmentCode != null and request.departmentCode != ''">
+            AND ua.DEPARTMENT_CODE = #{request.departmentCode}
+        </if>
+        <if test="request.startDate != null">
+            AND DATE(i.CREATED_AT) >= #{request.startDate}
+        </if>
+        <if test="request.endDate != null">
+            AND DATE(i.CREATED_AT) &lt;= #{request.endDate}
+        </if>
+        <if test="request.includeCompleted == null or request.includeCompleted == false">
+            AND i.STATUS != 'COMPLETED'
+        </if>
+        <if test="request.includeDeleted == null or request.includeDeleted == false">
+            AND i.STATUS != 'DELETED'
+        </if>
+    </sql>
+
+    <!-- ============================================= -->
+    <!-- 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 아이템 ID로 조회 -->
+    <select id="findById" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.ITEM_ID = #{itemId}
+    </select>
+
+    <!-- 보드별 아이템 목록 조회 (필터/정렬/페이징) -->
+    <select id="findByBoardIdWithFilter" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.BOARD_ID = #{boardId}
+        <include refid="filterConditions"/>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 보드별 아이템 총 개수 조회 -->
+    <select id="countByBoardIdWithFilter" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        WHERE i.BOARD_ID = #{boardId}
+        <include refid="filterConditions"/>
+    </select>
+
+    <!-- 보드별 활성 아이템 목록 조회 -->
+    <select id="findActiveByBoardId" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.BOARD_ID = #{boardId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY i.SORT_ORDER ASC, i.CREATED_AT DESC
+    </select>
+
+    <!-- 그룹별 아이템 목록 조회 -->
+    <select id="findByGroupId" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.GROUP_ID = #{groupId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY i.CREATED_AT DESC
+    </select>
+
+    <!-- 담당자별 아이템 목록 조회 -->
+    <select id="findByAssigneeUsername" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.ASSIGNEE_USERNAME = #{assigneeUsername}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <if test="boardId != null">
+            AND i.BOARD_ID = #{boardId}
+        </if>
+        ORDER BY i.PRIORITY DESC, i.CREATED_AT DESC
+    </select>
+
+    <!-- 오늘 완료/삭제된 아이템 목록 조회 -->
+    <select id="findTodayCompletedOrDeleted" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.BOARD_ID = #{boardId}
+          AND (
+              (i.STATUS = 'COMPLETED' AND DATE(i.UPDATED_AT) = CURDATE())
+              OR (i.STATUS = 'DELETED' AND DATE(i.DELETED_AT) = CURDATE())
+          )
+        ORDER BY
+            CASE WHEN i.STATUS = 'COMPLETED' THEN i.UPDATED_AT ELSE i.DELETED_AT END DESC
+    </select>
+
+    <!-- 보드 내 최대 정렬 순서 조회 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(SORT_ORDER), -1)
+        FROM TB_ITEM
+        WHERE BOARD_ID = #{boardId}
+          AND STATUS NOT IN ('DELETED')
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 등록/수정/삭제 -->
+    <!-- ============================================= -->
+
+    <!-- 아이템 등록 -->
+    <insert id="insert" parameterType="com.taskflow.domain.Item" useGeneratedKeys="true" keyProperty="itemId">
+        INSERT INTO TB_ITEM (
+            BOARD_ID,
+            OWNER_USERNAME,
+            GROUP_ID,
+            CATEGORY_ID,
+            PARENT_ITEM_ID,
+            ITEM_DEPTH,
+            CHILD_SORT_ORDER,
+            CONTENT,
+            DESCRIPTION,
+            STATUS,
+            PRIORITY,
+            ASSIGNEE_USERNAME,
+            REQUEST_DATE,
+            DUE_DATE,
+            SORT_ORDER,
+            CREATED_BY
+        ) VALUES (
+            #{boardId},
+            #{ownerUsername},
+            #{groupId},
+            #{categoryId},
+            #{parentItemId},
+            COALESCE(#{itemDepth}, 0),
+            #{childSortOrder},
+            COALESCE(#{content}, #{title}),
+            #{description},
+            COALESCE(#{status}, 'NOT_STARTED'),
+            COALESCE(#{priority}, 'NORMAL'),
+            #{assigneeUsername},
+            #{requestDate},
+            #{dueDate},
+            COALESCE(#{sortOrder}, 0),
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- 아이템 수정 -->
+    <update id="update" parameterType="com.taskflow.domain.Item">
+        UPDATE TB_ITEM
+        SET
+            GROUP_ID = #{groupId},
+            CATEGORY_ID = #{categoryId},
+            CONTENT = COALESCE(#{content}, #{title}),
+            DESCRIPTION = #{description},
+            STATUS = #{status},
+            PRIORITY = #{priority},
+            ASSIGNEE_USERNAME = #{assigneeUsername},
+            REQUEST_DATE = #{requestDate},
+            DUE_DATE = #{dueDate},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 상태 변경 -->
+    <update id="updateStatus">
+        UPDATE TB_ITEM
+        SET
+            STATUS = #{status},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 완료 처리 -->
+    <update id="complete">
+        UPDATE TB_ITEM
+        SET
+            PREVIOUS_STATUS = STATUS,
+            STATUS = 'COMPLETED',
+            COMPLETED_BY = #{completedBy},
+            UPDATED_BY = #{completedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 삭제 처리 (논리 삭제) -->
+    <update id="softDelete">
+        UPDATE TB_ITEM
+        SET
+            PREVIOUS_STATUS = STATUS,
+            STATUS = 'DELETED',
+            DELETED_AT = CURRENT_TIMESTAMP,
+            DELETED_BY = #{deletedBy},
+            UPDATED_BY = #{deletedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 복원 -->
+    <update id="restore">
+        UPDATE TB_ITEM
+        SET
+            STATUS = COALESCE(PREVIOUS_STATUS, 'NOT_STARTED'),
+            PREVIOUS_STATUS = NULL,
+            DELETED_AT = NULL,
+            DELETED_BY = NULL,
+            COMPLETED_BY = NULL,
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 아이템 물리 삭제 -->
+    <delete id="delete">
+        DELETE FROM TB_ITEM
+        WHERE ITEM_ID = #{itemId}
+    </delete>
+
+    <!-- 보드의 모든 아이템 삭제 -->
+    <delete id="deleteByBoardId">
+        DELETE FROM TB_ITEM
+        WHERE BOARD_ID = #{boardId}
+    </delete>
+
+    <!-- ============================================= -->
+    <!-- 아이템 순서 변경 -->
+    <!-- ============================================= -->
+
+    <!-- 아이템 순서 업데이트 -->
+    <update id="updateSortOrder">
+        UPDATE TB_ITEM
+        SET
+            SORT_ORDER = #{sortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 범위 내 아이템 순서 증가 (아이템을 위로 이동 시) -->
+    <update id="incrementSortOrderInRange">
+        UPDATE TB_ITEM
+        SET
+            SORT_ORDER = SORT_ORDER + 1,
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE BOARD_ID = #{boardId}
+          AND SORT_ORDER >= #{fromOrder}
+          AND SORT_ORDER &lt; #{toOrder}
+          AND ITEM_ID != #{excludeItemId}
+          AND STATUS NOT IN ('DELETED')
+    </update>
+
+    <!-- 범위 내 아이템 순서 감소 (아이템을 아래로 이동 시) -->
+    <update id="decrementSortOrderInRange">
+        UPDATE TB_ITEM
+        SET
+            SORT_ORDER = SORT_ORDER - 1,
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE BOARD_ID = #{boardId}
+          AND SORT_ORDER > #{fromOrder}
+          AND SORT_ORDER &lt;= #{toOrder}
+          AND ITEM_ID != #{excludeItemId}
+          AND STATUS NOT IN ('DELETED')
+    </update>
+
+    <!-- 보드별 아이템 목록 조회 (순서대로 정렬) -->
+    <select id="findByBoardIdOrderBySortOrder" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.BOARD_ID = #{boardId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY i.SORT_ORDER ASC, i.CREATED_AT ASC
+    </select>
+
+    <!-- ============================================= -->
+    <!-- Cross-board 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 사용자 접근 가능 보드 조건 -->
+    <sql id="accessibleBoardCondition">
+        AND (
+            b.OWNER_USERNAME = #{username}
+            OR EXISTS (
+                SELECT 1 FROM TB_BOARD_SHARE bs
+                WHERE bs.BOARD_ID = b.BOARD_ID AND bs.USERNAME = #{username}
+                  AND bs.DELETED_AT IS NULL
+            )
+        )
+        AND b.USE_YN = 'Y'
+    </sql>
+
+    <!-- Cross-board 공통 필터 조건 -->
+    <sql id="crossBoardFilterConditions">
+        <if test="request.keyword != null and request.keyword != ''">
+            AND i.CONTENT LIKE CONCAT('%', #{request.keyword}, '%')
+        </if>
+        <if test="request.priority != null and request.priority != ''">
+            AND i.PRIORITY = #{request.priority}
+        </if>
+        <if test="request.assigneeUsername != null and request.assigneeUsername != ''">
+            AND i.ASSIGNEE_USERNAME = #{request.assigneeUsername}
+        </if>
+        <if test="request.groupId != null">
+            AND i.GROUP_ID = #{request.groupId}
+        </if>
+        <if test="request.categoryId != null">
+            AND i.CATEGORY_ID = #{request.categoryId}
+        </if>
+        <if test="request.boardId != null">
+            AND i.BOARD_ID = #{request.boardId}
+        </if>
+        <if test="request.startDate != null">
+            AND DATE(i.CREATED_AT) >= #{request.startDate}
+        </if>
+        <if test="request.endDate != null">
+            AND DATE(i.CREATED_AT) &lt;= #{request.endDate}
+        </if>
+    </sql>
+
+    <!-- 지연 아이템 목록 조회 (Cross-board) - DUE_DATE 기준 -->
+    <select id="findOverdueItems" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.DUE_DATE IS NOT NULL
+          AND i.DUE_DATE &lt; CURDATE()
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 지연 아이템 총 개수 조회 (Cross-board) - DUE_DATE 기준 -->
+    <select id="countOverdueItems" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        WHERE i.DUE_DATE IS NOT NULL
+          AND i.DUE_DATE &lt; CURDATE()
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+    </select>
+
+    <!-- 보류 아이템 목록 조회 (Cross-board) -->
+    <select id="findPendingItems" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.STATUS = 'PENDING'
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 보류 아이템 총 개수 조회 (Cross-board) -->
+    <select id="countPendingItems" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        WHERE i.STATUS = 'PENDING'
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+    </select>
+
+    <!-- 활성 아이템 목록 조회 (Cross-board) -->
+    <select id="findActiveItemsCrossBoard" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+        <if test="request.status != null and request.status != ''">
+            AND i.STATUS = #{request.status}
+        </if>
+        <if test="request.overdueOnly != null and request.overdueOnly == true">
+            AND i.DUE_DATE IS NOT NULL
+            AND i.DUE_DATE &lt; CURDATE()
+        </if>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 활성 아이템 총 개수 조회 (Cross-board) -->
+    <select id="countActiveItemsCrossBoard" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        WHERE i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        <include refid="accessibleBoardCondition"/>
+        <include refid="crossBoardFilterConditions"/>
+        <if test="request.status != null and request.status != ''">
+            AND i.STATUS = #{request.status}
+        </if>
+        <if test="request.overdueOnly != null and request.overdueOnly == true">
+            AND i.DUE_DATE IS NOT NULL
+            AND i.DUE_DATE &lt; CURDATE()
+        </if>
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 업무 이관 관련 -->
+    <!-- ============================================= -->
+
+    <!-- 업무 보드 이동 (이관) -->
+    <!-- 업무 보드 이동 (이관) - v2.2.1: 소유자 변경 및 하위 업무 함께 이관 -->
+    <update id="transferToBoard">
+        UPDATE TB_ITEM
+        SET
+            BOARD_ID = #{newBoardId},
+            OWNER_USERNAME = #{newOwnerUsername},
+            TRANSFERRED_FROM = #{originalBoardId},
+            TRANSFERRED_AT = CURRENT_TIMESTAMP,
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+           OR PARENT_ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 보드 이관 시 업무 소유자 일괄 변경 (v2.2.1) -->
+    <update id="updateOwnerByBoardId">
+        UPDATE TB_ITEM
+        SET
+            OWNER_USERNAME = #{newOwnerUsername},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE BOARD_ID = #{boardId}
+    </update>
+
+    <!-- 특정 소유자의 업무 수 조회 (v2.2.1) -->
+    <select id="countByOwnerUsername" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_ITEM
+        WHERE OWNER_USERNAME = #{ownerUsername}
+          AND STATUS NOT IN ('DELETED')
+    </select>
+
+    <!-- 다중 업무 보드 이동 (이관) -->
+    <update id="transferItemsToBoard">
+        UPDATE TB_ITEM
+        SET
+            BOARD_ID = #{newBoardId},
+            TRANSFERRED_FROM = #{originalBoardId},
+            TRANSFERRED_AT = CURRENT_TIMESTAMP,
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID IN
+        <foreach item="itemId" collection="itemIds" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+    </update>
+
+    <!-- 이관된 업무 목록 조회 -->
+    <select id="findTransferredItems" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.TRANSFERRED_FROM IS NOT NULL
+          AND i.BOARD_ID = #{boardId}
+        ORDER BY i.TRANSFERRED_AT DESC
+    </select>
+
+    <!-- ============================================= -->
+    <!-- 공유받은 업무 조회 -->
+    <!-- ============================================= -->
+
+    <!-- 공유받은 업무 목록 조회 (특정 사용자가 공유/배정받은 모든 업무) -->
+    <select id="findSharedItems" resultMap="ItemResultMap">
+        SELECT
+            i.ITEM_ID,
+            i.BOARD_ID,
+            i.OWNER_USERNAME,
+            i.GROUP_ID,
+            i.CATEGORY_ID,
+            i.CONTENT AS TITLE,
+            i.CONTENT,
+            i.DESCRIPTION,
+            i.STATUS,
+            i.PRIORITY,
+            i.ASSIGNEE_USERNAME,
+            i.REQUEST_DATE,
+            i.DUE_DATE,
+            i.PREVIOUS_STATUS,
+            i.COMPLETED_BY,
+            i.DELETED_AT,
+            i.DELETED_BY,
+            i.TRANSFERRED_FROM,
+            i.TRANSFERRED_AT,
+            i.SORT_ORDER,
+            i.CREATED_AT,
+            i.CREATED_BY,
+            i.UPDATED_AT,
+            i.UPDATED_BY,
+            /* v2.2: 하위 업무 필드 */
+            i.PARENT_ITEM_ID,
+            i.ITEM_DEPTH,
+            i.CHILD_SORT_ORDER,
+            /* v2.2: 하위 업무 계산 필드 */
+            (SELECT COUNT(*) FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS != 'DELETED') AS CHILD_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS = 'COMPLETED') AS COMPLETED_CHILD_COUNT,
+            (EXISTS (SELECT 1 FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS != 'DELETED')) AS HAS_CHILDREN,
+            (COALESCE(i.ITEM_DEPTH, 0) &lt; 2) AS CAN_CREATE_CHILD,
+            /* v2.2: 부모 업무 정보 */
+            parent.CONTENT AS PARENT_TITLE,
+            parent.STATUS AS PARENT_STATUS,
+            /* v2.2: 최상위 업무 정보 (CTE 없이 2단계 조인) */
+            COALESCE(grandparent.ITEM_ID, parent.ITEM_ID) AS ROOT_ITEM_ID,
+            COALESCE(grandparent.CONTENT, parent.CONTENT) AS ROOT_TITLE,
+            COALESCE(grandparent.STATUS, parent.STATUS) AS ROOT_STATUS,
+            b.BOARD_NAME,
+            uo.NAME AS OWNER_NAME,
+            g.GROUP_NAME,
+            g.GROUP_COLOR,
+            cat.CATEGORY_NAME,
+            cat.CATEGORY_COLOR,
+            ua.NAME AS ASSIGNEE_NAME,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME,
+            (SELECT COUNT(*) FROM TB_COMMENT c WHERE c.ITEM_ID = i.ITEM_ID) AS COMMENT_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM_SHARE s WHERE s.ITEM_ID = i.ITEM_ID AND s.DELETED_AT IS NULL) AS SHARE_COUNT,
+            /* 이관 정보 */
+            tb_orig.OWNER_USERNAME AS TRANSFERRED_BY_USERNAME,
+            ut.NAME AS TRANSFERRED_BY_USER_NAME,
+            /* v2.1: 공유/배정 구분 - SHARE_TYPE에 따라 설정 */
+            CASE WHEN ish.SHARE_TYPE = 'SHARE' THEN TRUE ELSE FALSE END AS IS_SHARED_TO_ME,
+            CASE WHEN ish.SHARE_TYPE = 'ASSIGN' THEN TRUE ELSE FALSE END AS IS_ASSIGNED_TO_ME,
+            /* 공유 정보 (SHARE_TYPE = 'SHARE'일 때) */
+            CASE WHEN ish.SHARE_TYPE = 'SHARE' THEN ish.CREATED_BY ELSE NULL END AS SHARED_BY_USERNAME,
+            CASE WHEN ish.SHARE_TYPE = 'SHARE' THEN us.NAME ELSE NULL END AS SHARED_BY_USER_NAME,
+            /* 배정 정보 (SHARE_TYPE = 'ASSIGN'일 때) */
+            ish.ASSIGNED_BY AS ASSIGNED_BY_USERNAME,
+            /* 서브쿼리로 배정자 이름 조회 (JOIN 문제 우회) */
+            (SELECT u_ab.NAME FROM TB_USER u_ab WHERE u_ab.USERNAME = ish.ASSIGNED_BY) AS ASSIGNED_BY_USER_NAME,
+            ish.ASSIGNED_AT AS ASSIGNED_AT
+        FROM TB_ITEM i
+        INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.DELETED_AT IS NULL
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+        LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+        LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+        LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+        LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+        LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+        LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+        LEFT JOIN TB_USER us ON ish.CREATED_BY = us.USERNAME
+        /* v2.2: 부모/조부모 업무 조인 */
+        LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+        LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+        WHERE i.STATUS NOT IN ('DELETED')
+        <if test="request != null">
+            <if test="request.keyword != null and request.keyword != ''">
+                AND i.CONTENT LIKE CONCAT('%', #{request.keyword}, '%')
+            </if>
+            <if test="request.status != null and request.status != ''">
+                AND i.STATUS = #{request.status}
+            </if>
+            <if test="request.priority != null and request.priority != ''">
+                AND i.PRIORITY = #{request.priority}
+            </if>
+            <if test="request.includeCompleted == null or request.includeCompleted == false">
+                AND i.STATUS != 'COMPLETED'
+            </if>
+        </if>
+        ORDER BY ish.CREATED_AT DESC
+        <if test="request != null">
+            LIMIT #{request.size} OFFSET #{request.offset}
+        </if>
+    </select>
+
+    <!-- 공유받은 업무 총 개수 조회 -->
+    <select id="countSharedItems" resultType="long">
+        SELECT COUNT(*)
+        FROM TB_ITEM i
+        INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.DELETED_AT IS NULL
+        WHERE i.STATUS NOT IN ('DELETED')
+        <if test="request != null">
+            <if test="request.keyword != null and request.keyword != ''">
+                AND i.CONTENT LIKE CONCAT('%', #{request.keyword}, '%')
+            </if>
+            <if test="request.status != null and request.status != ''">
+                AND i.STATUS = #{request.status}
+            </if>
+            <if test="request.priority != null and request.priority != ''">
+                AND i.PRIORITY = #{request.priority}
+            </if>
+            <if test="request.includeCompleted == null or request.includeCompleted == false">
+                AND i.STATUS != 'COMPLETED'
+            </if>
+        </if>
+    </select>
+
+    <!-- 아이템 ID로 조회 (단건) -->
+    <select id="selectById" resultMap="ItemResultMap">
+        SELECT
+            i.ITEM_ID,
+            i.BOARD_ID,
+            i.GROUP_ID,
+            i.CATEGORY_ID,
+            i.CONTENT,
+            i.CONTENT AS TITLE,
+            i.DESCRIPTION,
+            i.STATUS,
+            i.PRIORITY,
+            i.ASSIGNEE_USERNAME,
+            i.REQUEST_DATE,
+            i.DUE_DATE,
+            i.SORT_ORDER,
+            i.PREVIOUS_STATUS,
+            i.COMPLETED_BY,
+            i.DELETED_AT,
+            i.DELETED_BY,
+            i.TRANSFERRED_FROM,
+            i.TRANSFERRED_AT,
+            i.CREATED_AT,
+            i.CREATED_BY,
+            i.UPDATED_AT,
+            i.UPDATED_BY,
+            b.BOARD_NAME,
+            g.GROUP_NAME,
+            g.GROUP_COLOR,
+            c.CATEGORY_NAME,
+            c.CATEGORY_COLOR,
+            ua.NAME AS ASSIGNEE_NAME,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME,
+            (SELECT COUNT(*) FROM TB_COMMENT cm WHERE cm.ITEM_ID = i.ITEM_ID) AS COMMENT_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM_SHARE s WHERE s.ITEM_ID = i.ITEM_ID AND s.DELETED_AT IS NULL) AS SHARE_COUNT,
+            /* 이관 정보 */
+            tb_orig.OWNER_USERNAME AS TRANSFERRED_BY_USERNAME,
+            ut.NAME AS TRANSFERRED_BY_USER_NAME
+        FROM TB_ITEM i
+        INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID
+        LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+        LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+        LEFT JOIN TB_CATEGORY c ON i.CATEGORY_ID = c.CATEGORY_ID
+        LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+        LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+        LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+        LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+        LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+        WHERE i.ITEM_ID = #{itemId}
+    </select>
+
+    <!-- 아이템 담당자 업데이트 -->
+    <update id="updateAssignee">
+        UPDATE TB_ITEM
+        SET ASSIGNEE_USERNAME = #{assigneeUsername},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{updatedBy}
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- ============================================= -->
+    <!-- v2.2: 하위 업무(Sub-task) 관련 쿼리 -->
+    <!-- ============================================= -->
+
+    <!-- 하위 업무 목록 조회 -->
+    <select id="findChildren" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.PARENT_ITEM_ID = #{parentItemId}
+        <if test="includeCompleted == null or includeCompleted == false">
+            AND i.STATUS != 'COMPLETED'
+        </if>
+        <if test="includeDeleted == null or includeDeleted == false">
+            AND i.STATUS != 'DELETED'
+        </if>
+        ORDER BY i.CHILD_SORT_ORDER ASC, i.CREATED_AT ASC
+    </select>
+
+    <!-- 모든 하위 업무 조회 (재귀) - 삭제 포함 -->
+    <select id="findAllDescendants" resultMap="ItemResultMap">
+        WITH RECURSIVE descendants AS (
+            SELECT ITEM_ID, PARENT_ITEM_ID, ITEM_DEPTH
+            FROM TB_ITEM
+            WHERE PARENT_ITEM_ID = #{parentItemId}
+            UNION ALL
+            SELECT c.ITEM_ID, c.PARENT_ITEM_ID, c.ITEM_DEPTH
+            FROM TB_ITEM c
+            INNER JOIN descendants d ON c.PARENT_ITEM_ID = d.ITEM_ID
+        )
+        <include refid="selectItem"/>
+        WHERE i.ITEM_ID IN (SELECT ITEM_ID FROM descendants)
+        ORDER BY i.ITEM_DEPTH ASC, i.CHILD_SORT_ORDER ASC
+    </select>
+
+    <!-- 상위 계층 조회 (Breadcrumb용) -->
+    <select id="findAncestors" resultMap="ItemResultMap">
+        WITH RECURSIVE ancestors AS (
+            SELECT ITEM_ID, PARENT_ITEM_ID, CONTENT, STATUS, ITEM_DEPTH, 0 AS LEVEL
+            FROM TB_ITEM
+            WHERE ITEM_ID = #{itemId}
+            UNION ALL
+            SELECT p.ITEM_ID, p.PARENT_ITEM_ID, p.CONTENT, p.STATUS, p.ITEM_DEPTH, a.LEVEL + 1
+            FROM TB_ITEM p
+            INNER JOIN ancestors a ON p.ITEM_ID = a.PARENT_ITEM_ID
+        )
+        SELECT
+            a.ITEM_ID,
+            a.ITEM_DEPTH,
+            a.CONTENT AS TITLE,
+            a.CONTENT,
+            a.STATUS
+        FROM ancestors a
+        ORDER BY a.LEVEL DESC
+    </select>
+
+    <!-- 부모 업무 조회 -->
+    <select id="findParent" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.ITEM_ID = (
+            SELECT PARENT_ITEM_ID FROM TB_ITEM WHERE ITEM_ID = #{itemId}
+        )
+    </select>
+
+    <!-- 미완료 하위 업무 목록 조회 -->
+    <select id="findIncompleteChildren" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.PARENT_ITEM_ID = #{parentItemId}
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY i.CHILD_SORT_ORDER ASC
+    </select>
+
+    <!-- 모든 미완료 하위 업무 조회 (재귀) -->
+    <select id="findAllIncompleteDescendants" resultMap="ItemResultMap">
+        WITH RECURSIVE descendants AS (
+            SELECT ITEM_ID, PARENT_ITEM_ID
+            FROM TB_ITEM
+            WHERE PARENT_ITEM_ID = #{parentItemId}
+              AND STATUS NOT IN ('COMPLETED', 'DELETED')
+            UNION ALL
+            SELECT c.ITEM_ID, c.PARENT_ITEM_ID
+            FROM TB_ITEM c
+            INNER JOIN descendants d ON c.PARENT_ITEM_ID = d.ITEM_ID
+            WHERE c.STATUS NOT IN ('COMPLETED', 'DELETED')
+        )
+        <include refid="selectItem"/>
+        WHERE i.ITEM_ID IN (SELECT ITEM_ID FROM descendants)
+          AND i.STATUS NOT IN ('COMPLETED', 'DELETED')
+        ORDER BY i.ITEM_DEPTH ASC, i.CHILD_SORT_ORDER ASC
+    </select>
+
+    <!-- 하위 업무 개수 조회 -->
+    <select id="countChildren" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_ITEM
+        WHERE PARENT_ITEM_ID = #{parentItemId}
+        <if test="includeDeleted == null or includeDeleted == false">
+            AND STATUS != 'DELETED'
+        </if>
+    </select>
+
+    <!-- 하위 업무 정렬 순서 업데이트 -->
+    <update id="updateChildSortOrder">
+        UPDATE TB_ITEM
+        SET
+            CHILD_SORT_ORDER = #{childSortOrder},
+            UPDATED_BY = #{updatedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE ITEM_ID = #{itemId}
+    </update>
+
+    <!-- 부모 내 최대 정렬 순서 조회 -->
+    <select id="getMaxChildSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(CHILD_SORT_ORDER), 0)
+        FROM TB_ITEM
+        WHERE PARENT_ITEM_ID = #{parentItemId}
+          AND STATUS != 'DELETED'
+    </select>
+
+    <!-- 보드별 기본 업무만 조회 (depth=0) -->
+    <select id="findRootItemsByBoardId" resultMap="ItemResultMap">
+        <include refid="selectItem"/>
+        WHERE i.BOARD_ID = #{boardId}
+          AND (i.PARENT_ITEM_ID IS NULL OR i.ITEM_DEPTH = 0)
+        <if test="includeCompleted == null or includeCompleted == false">
+            AND i.STATUS != 'COMPLETED'
+        </if>
+        <if test="includeDeleted == null or includeDeleted == false">
+            AND i.STATUS != 'DELETED'
+        </if>
+        ORDER BY i.SORT_ORDER ASC, i.CREATED_AT DESC
+    </select>
+
+    <!-- 하위 업무 일괄 삭제 (CASCADE는 DB에서 처리하지만 논리 삭제용) -->
+    <update id="softDeleteChildren">
+        UPDATE TB_ITEM
+        SET
+            PREVIOUS_STATUS = STATUS,
+            STATUS = 'DELETED',
+            DELETED_AT = CURRENT_TIMESTAMP,
+            DELETED_BY = #{deletedBy},
+            UPDATED_BY = #{deletedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE PARENT_ITEM_ID = #{parentItemId}
+    </update>
+
+    <!-- 하위 업무 일괄 완료 -->
+    <update id="completeChildren">
+        UPDATE TB_ITEM
+        SET
+            PREVIOUS_STATUS = STATUS,
+            STATUS = 'COMPLETED',
+            COMPLETED_BY = #{completedBy},
+            UPDATED_BY = #{completedBy},
+            UPDATED_AT = CURRENT_TIMESTAMP
+        WHERE PARENT_ITEM_ID = #{parentItemId}
+          AND STATUS NOT IN ('COMPLETED', 'DELETED')
+    </update>
+
+    <!-- 하위 업무 존재 여부 확인 -->
+    <select id="hasChildren" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM TB_ITEM
+            WHERE PARENT_ITEM_ID = #{itemId}
+              AND STATUS != 'DELETED'
+        )
+    </select>
+
+    <!-- 업무 깊이 조회 -->
+    <select id="getItemDepth" resultType="java.lang.Integer">
+        SELECT COALESCE(ITEM_DEPTH, 0)
+        FROM TB_ITEM
+        WHERE ITEM_ID = #{itemId}
+    </select>
+
+    <!-- 하위 업무 이관 방지 체크 -->
+    <select id="isChildItem" resultType="boolean">
+        SELECT (COALESCE(ITEM_DEPTH, 0) > 0) AS IS_CHILD
+        FROM TB_ITEM
+        WHERE ITEM_ID = #{itemId}
+    </select>
+
+    <!-- ============================================= -->
+    <!-- v2.1: 전체 업무 조회 (All Tasks) -->
+    <!-- ============================================= -->
+
+    <!-- AllItems ResultMap (sourceType 포함) -->
+    <resultMap id="AllItemResultMap" type="com.taskflow.domain.Item" extends="ItemResultMap">
+        <result property="sourceType" column="SOURCE_TYPE"/>
+        <result property="boardColor" column="BOARD_COLOR"/>
+        <result property="shareType" column="SHARE_TYPE"/>
+        <result property="permission" column="PERMISSION"/>
+        <result property="sharedAt" column="SHARED_AT"/>
+    </resultMap>
+
+    <!-- 전체 업무 공통 SELECT -->
+    <sql id="selectAllItems">
+        SELECT
+            i.ITEM_ID,
+            i.BOARD_ID,
+            i.OWNER_USERNAME,
+            i.GROUP_ID,
+            i.CATEGORY_ID,
+            i.CONTENT AS TITLE,
+            i.CONTENT,
+            i.DESCRIPTION,
+            i.STATUS,
+            i.PRIORITY,
+            i.ASSIGNEE_USERNAME,
+            i.REQUEST_DATE,
+            i.DUE_DATE,
+            i.PREVIOUS_STATUS,
+            i.COMPLETED_BY,
+            i.DELETED_AT,
+            i.DELETED_BY,
+            i.TRANSFERRED_FROM,
+            i.TRANSFERRED_AT,
+            i.SORT_ORDER,
+            i.CREATED_AT,
+            i.CREATED_BY,
+            i.UPDATED_AT,
+            i.UPDATED_BY,
+            /* 하위 업무 필드 */
+            i.PARENT_ITEM_ID,
+            i.ITEM_DEPTH,
+            i.CHILD_SORT_ORDER,
+            (SELECT COUNT(*) FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS != 'DELETED') AS CHILD_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS = 'COMPLETED') AS COMPLETED_CHILD_COUNT,
+            (EXISTS (SELECT 1 FROM TB_ITEM child WHERE child.PARENT_ITEM_ID = i.ITEM_ID AND child.STATUS != 'DELETED')) AS HAS_CHILDREN,
+            (COALESCE(i.ITEM_DEPTH, 0) &lt; 2) AS CAN_CREATE_CHILD,
+            parent.CONTENT AS PARENT_TITLE,
+            parent.STATUS AS PARENT_STATUS,
+            COALESCE(grandparent.ITEM_ID, parent.ITEM_ID) AS ROOT_ITEM_ID,
+            COALESCE(grandparent.CONTENT, parent.CONTENT) AS ROOT_TITLE,
+            COALESCE(grandparent.STATUS, parent.STATUS) AS ROOT_STATUS,
+            /* 보드 정보 */
+            b.BOARD_NAME,
+            b.COLOR AS BOARD_COLOR,
+            uo.NAME AS OWNER_NAME,
+            g.GROUP_NAME,
+            g.GROUP_COLOR,
+            cat.CATEGORY_NAME,
+            cat.CATEGORY_COLOR,
+            ua.NAME AS ASSIGNEE_NAME,
+            uc.NAME AS CREATED_BY_NAME,
+            uu.NAME AS UPDATED_BY_NAME,
+            (SELECT COUNT(*) FROM TB_COMMENT c WHERE c.ITEM_ID = i.ITEM_ID) AS COMMENT_COUNT,
+            (SELECT COUNT(*) FROM TB_ITEM_SHARE s WHERE s.ITEM_ID = i.ITEM_ID AND s.DELETED_AT IS NULL) AS SHARE_COUNT,
+            /* 이관 정보 */
+            tb_orig.OWNER_USERNAME AS TRANSFERRED_BY_USERNAME,
+            ut.NAME AS TRANSFERRED_BY_USER_NAME
+    </sql>
+
+    <!-- 전체 업무 조회 (UNION ALL로 4가지 출처 통합) -->
+    <select id="findAllItems" resultMap="AllItemResultMap">
+        SELECT * FROM (
+            /* 1. 소유 보드 업무 (OWNED) */
+            <include refid="selectAllItems"/>,
+            'OWNED' AS SOURCE_TYPE,
+            NULL AS SHARE_TYPE,
+            'FULL' AS PERMISSION,
+            NULL AS IS_SHARED_TO_ME,
+            NULL AS SHARED_BY_USERNAME,
+            NULL AS SHARED_BY_USER_NAME,
+            NULL AS SHARED_AT,
+            FALSE AS IS_ASSIGNED_TO_ME,
+            NULL AS ASSIGNED_BY_USERNAME,
+            NULL AS ASSIGNED_BY_USER_NAME,
+            NULL AS ASSIGNED_AT,
+            NULL AS ASSIGNED_TO_USERNAME,
+            NULL AS ASSIGNED_TO_USER_NAME
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.OWNER_USERNAME = #{username} AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+            LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+            LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+            LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+            LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+            LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+            LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+            LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+            WHERE 1=1
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 2. 공유 보드 업무 (BOARD_SHARED) */
+            <include refid="selectAllItems"/>,
+            'BOARD_SHARED' AS SOURCE_TYPE,
+            NULL AS SHARE_TYPE,
+            bs.PERMISSION AS PERMISSION,
+            FALSE AS IS_SHARED_TO_ME,
+            bs.CREATED_BY AS SHARED_BY_USERNAME,
+            usb.NAME AS SHARED_BY_USER_NAME,
+            bs.CREATED_AT AS SHARED_AT,
+            FALSE AS IS_ASSIGNED_TO_ME,
+            NULL AS ASSIGNED_BY_USERNAME,
+            NULL AS ASSIGNED_BY_USER_NAME,
+            NULL AS ASSIGNED_AT,
+            NULL AS ASSIGNED_TO_USERNAME,
+            NULL AS ASSIGNED_TO_USER_NAME
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username} AND bs.DELETED_AT IS NULL
+            LEFT JOIN TB_USER usb ON bs.CREATED_BY = usb.USERNAME
+            LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+            LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+            LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+            LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+            LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+            LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+            LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+            LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 3. 개별 공유 업무 (ITEM_SHARED) */
+            <include refid="selectAllItems"/>,
+            'ITEM_SHARED' AS SOURCE_TYPE,
+            ish.SHARE_TYPE AS SHARE_TYPE,
+            ish.PERMISSION AS PERMISSION,
+            TRUE AS IS_SHARED_TO_ME,
+            ish.CREATED_BY AS SHARED_BY_USERNAME,
+            uss.NAME AS SHARED_BY_USER_NAME,
+            ish.CREATED_AT AS SHARED_AT,
+            FALSE AS IS_ASSIGNED_TO_ME,
+            NULL AS ASSIGNED_BY_USERNAME,
+            NULL AS ASSIGNED_BY_USER_NAME,
+            NULL AS ASSIGNED_AT,
+            NULL AS ASSIGNED_TO_USERNAME,
+            NULL AS ASSIGNED_TO_USER_NAME
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'SHARE' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER uss ON ish.CREATED_BY = uss.USERNAME
+            LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+            LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+            LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+            LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+            LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+            LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+            LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+            LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 4. 배당받은 업무 (ASSIGNED) */
+            <include refid="selectAllItems"/>,
+            'ASSIGNED' AS SOURCE_TYPE,
+            ish.SHARE_TYPE AS SHARE_TYPE,
+            ish.PERMISSION AS PERMISSION,
+            FALSE AS IS_SHARED_TO_ME,
+            NULL AS SHARED_BY_USERNAME,
+            NULL AS SHARED_BY_USER_NAME,
+            NULL AS SHARED_AT,
+            TRUE AS IS_ASSIGNED_TO_ME,
+            ish.ASSIGNED_BY AS ASSIGNED_BY_USERNAME,
+            usa.NAME AS ASSIGNED_BY_USER_NAME,
+            ish.ASSIGNED_AT AS ASSIGNED_AT,
+            NULL AS ASSIGNED_TO_USERNAME,
+            NULL AS ASSIGNED_TO_USER_NAME
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'ASSIGN' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER usa ON ish.ASSIGNED_BY = usa.USERNAME
+            LEFT JOIN TB_USER uo ON i.OWNER_USERNAME = uo.USERNAME
+            LEFT JOIN TB_GROUP g ON i.GROUP_ID = g.GROUP_ID
+            LEFT JOIN TB_CATEGORY cat ON i.CATEGORY_ID = cat.CATEGORY_ID
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            LEFT JOIN TB_USER uc ON i.CREATED_BY = uc.USERNAME
+            LEFT JOIN TB_USER uu ON i.UPDATED_BY = uu.USERNAME
+            LEFT JOIN TB_BOARD tb_orig ON i.TRANSFERRED_FROM = tb_orig.BOARD_ID
+            LEFT JOIN TB_USER ut ON tb_orig.OWNER_USERNAME = ut.USERNAME
+            LEFT JOIN TB_ITEM parent ON i.PARENT_ITEM_ID = parent.ITEM_ID
+            LEFT JOIN TB_ITEM grandparent ON parent.PARENT_ITEM_ID = grandparent.ITEM_ID
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+        ) all_items
+        <where>
+            <if test="request.sourceType != null and request.sourceType != '' and request.sourceType != 'ALL'">
+                AND SOURCE_TYPE = #{request.sourceType}
+            </if>
+            <if test="request.assignedByUsername != null and request.assignedByUsername != ''">
+                AND ASSIGNED_BY_USERNAME = #{request.assignedByUsername}
+            </if>
+        </where>
+        ORDER BY ${request.orderBy}
+        LIMIT #{request.size} OFFSET #{request.offset}
+    </select>
+
+    <!-- 전체 업무 총 개수 조회 -->
+    <select id="countAllItems" resultType="long">
+        SELECT COUNT(*) FROM (
+            /* 1. 소유 보드 업무 */
+            SELECT i.ITEM_ID, 'OWNED' AS SOURCE_TYPE, NULL AS ASSIGNED_BY_USERNAME
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.OWNER_USERNAME = #{username} AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE 1=1
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 2. 공유 보드 업무 */
+            SELECT i.ITEM_ID, 'BOARD_SHARED' AS SOURCE_TYPE, NULL AS ASSIGNED_BY_USERNAME
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username} AND bs.DELETED_AT IS NULL
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 3. 개별 공유 업무 */
+            SELECT i.ITEM_ID, 'ITEM_SHARED' AS SOURCE_TYPE, NULL AS ASSIGNED_BY_USERNAME
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'SHARE' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 4. 배당받은 업무 */
+            SELECT i.ITEM_ID, 'ASSIGNED' AS SOURCE_TYPE, ish.ASSIGNED_BY AS ASSIGNED_BY_USERNAME
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'ASSIGN' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+        ) all_items
+        <where>
+            <if test="request.sourceType != null and request.sourceType != '' and request.sourceType != 'ALL'">
+                AND SOURCE_TYPE = #{request.sourceType}
+            </if>
+            <if test="request.assignedByUsername != null and request.assignedByUsername != ''">
+                AND ASSIGNED_BY_USERNAME = #{request.assignedByUsername}
+            </if>
+        </where>
+    </select>
+
+    <!-- 전체 업무 통계 조회 -->
+    <select id="getItemsStats" resultType="java.util.HashMap">
+        SELECT
+            SOURCE_TYPE,
+            STATUS,
+            PRIORITY,
+            COALESCE(ITEM_DEPTH, 0) AS ITEM_DEPTH,
+            COUNT(*) AS CNT
+        FROM (
+            /* 1. 소유 보드 업무 */
+            SELECT i.STATUS, i.PRIORITY, i.ITEM_DEPTH, 'OWNED' AS SOURCE_TYPE
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.OWNER_USERNAME = #{username} AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE 1=1
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 2. 공유 보드 업무 */
+            SELECT i.STATUS, i.PRIORITY, i.ITEM_DEPTH, 'BOARD_SHARED' AS SOURCE_TYPE
+            FROM TB_ITEM i
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            INNER JOIN TB_BOARD_SHARE bs ON b.BOARD_ID = bs.BOARD_ID AND bs.USERNAME = #{username} AND bs.DELETED_AT IS NULL
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 3. 개별 공유 업무 */
+            SELECT i.STATUS, i.PRIORITY, i.ITEM_DEPTH, 'ITEM_SHARED' AS SOURCE_TYPE
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'SHARE' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+
+            UNION ALL
+
+            /* 4. 배당받은 업무 */
+            SELECT i.STATUS, i.PRIORITY, i.ITEM_DEPTH, 'ASSIGNED' AS SOURCE_TYPE
+            FROM TB_ITEM i
+            INNER JOIN TB_ITEM_SHARE ish ON i.ITEM_ID = ish.ITEM_ID AND ish.USERNAME = #{username} AND ish.SHARE_TYPE = 'ASSIGN' AND ish.DELETED_AT IS NULL
+            INNER JOIN TB_BOARD b ON i.BOARD_ID = b.BOARD_ID AND b.USE_YN = 'Y'
+            LEFT JOIN TB_USER ua ON i.ASSIGNEE_USERNAME = ua.USERNAME
+            WHERE b.OWNER_USERNAME != #{username}
+            <include refid="allItemsFilterConditions"/>
+        ) all_items
+        GROUP BY SOURCE_TYPE, STATUS, PRIORITY, ITEM_DEPTH
+    </select>
+
+    <!-- 전체 업무 필터 조건 -->
+    <sql id="allItemsFilterConditions">
+        <if test="request.keyword != null and request.keyword != ''">
+            AND i.CONTENT LIKE CONCAT('%', #{request.keyword}, '%')
+        </if>
+        <if test="request.status != null and request.status != ''">
+            AND i.STATUS = #{request.status}
+        </if>
+        <if test="request.priority != null and request.priority != ''">
+            AND i.PRIORITY = #{request.priority}
+        </if>
+        <if test="request.assigneeUsername != null and request.assigneeUsername != ''">
+            AND i.ASSIGNEE_USERNAME = #{request.assigneeUsername}
+        </if>
+        <if test="request.boardId != null">
+            AND i.BOARD_ID = #{request.boardId}
+        </if>
+        <if test="request.groupId != null">
+            AND i.GROUP_ID = #{request.groupId}
+        </if>
+        <if test="request.startDate != null">
+            AND DATE(i.CREATED_AT) >= #{request.startDate}
+        </if>
+        <if test="request.endDate != null">
+            AND DATE(i.CREATED_AT) &lt;= #{request.endDate}
+        </if>
+        <if test="request.includeCompleted == null or request.includeCompleted == false">
+            AND i.STATUS != 'COMPLETED'
+        </if>
+        <if test="request.includeDeleted == null or request.includeDeleted == false">
+            AND i.STATUS != 'DELETED'
+        </if>
+        <if test="request.includeChildren == null or request.includeChildren == false">
+            AND (i.PARENT_ITEM_ID IS NULL OR i.ITEM_DEPTH = 0)
+        </if>
+        <if test="request.parentItemId != null">
+            AND i.PARENT_ITEM_ID = #{request.parentItemId}
+        </if>
+        <if test="request.depthFilter != null">
+            AND COALESCE(i.ITEM_DEPTH, 0) = #{request.depthFilter}
+        </if>
+    </sql>
+
+</mapper>

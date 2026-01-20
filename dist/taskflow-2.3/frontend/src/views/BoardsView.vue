@@ -1,0 +1,949 @@
+<script setup lang="ts">
+/**
+ * 보드 관리 메뉴 (Boards View)
+ * - 보드 목록 조회 (소유/공유 분리)
+ * - 보드 CRUD
+ * - 보드 삭제 시 업무 이관
+ */
+import { ref, computed, onMounted, watch } from 'vue'
+import { useBoardStore } from '@/stores/board'
+import { useCategoryStore } from '@/stores/category'
+import { useUiStore } from '@/stores/ui'
+import { userApi } from '@/api/user'
+import { boardApi } from '@/api/board'
+import ShareUserSearch from '@/components/share/ShareUserSearch.vue'
+import ShareUserList from '@/components/share/ShareUserList.vue'
+import { EntityEditModal } from '@/components/common'
+import type { Board, BoardListResponse, BoardCreateRequest, TransferPreviewResponse, BoardShare, BoardShareRequest, BoardProperty, BoardCategory } from '@/types/board'
+import type { User } from '@/types/user'
+import type { Category } from '@/types/category'
+
+const boardStore = useBoardStore()
+const categoryStore = useCategoryStore()
+const uiStore = useUiStore()
+
+// 상태
+const loading = ref(false)
+const boardList = ref<BoardListResponse | null>(null)
+const users = ref<User[]>([])
+const categories = ref<Category[]>([])
+
+// 드래그 앤 드롭 상태
+const draggedBoard = ref<Board | null>(null)
+const draggedBoardType = ref<'owned' | 'shared' | null>(null)
+const dragOverBoardId = ref<number | null>(null)
+
+// 모달 상태
+const showCreateModal = ref(false)
+const showEditModal = ref(false)
+const showDeleteModal = ref(false)
+const showShareModal = ref(false)
+const selectedBoard = ref<Board | null>(null)
+const transferPreview = ref<TransferPreviewResponse | null>(null)
+
+// 공유 관련 (store의 boardShares 사용)
+const sharesLoading = ref(false)
+const shareAdding = ref(false)
+
+// 생성/수정 폼
+const formData = ref({
+  boardName: '',
+  description: '',
+  color: '#3B82F6',
+  categoryIds: [] as number[],
+  propertyIds: [] as number[],
+  propertyDefaults: {} as Record<number, string>
+})
+
+// 기존 보드의 카테고리/속성 (수정 시 사용)
+const existingBoardCategories = ref<BoardCategory[]>([])
+const existingBoardProperties = ref<BoardProperty[]>([])
+
+// 삭제 폼
+const deleteFormData = ref({
+  targetUserId: null as number | null,
+  forceDelete: false
+})
+
+// 색상 옵션
+const colorOptions = [
+  '#3B82F6', // Blue
+  '#10B981', // Green
+  '#F59E0B', // Yellow
+  '#EF4444', // Red
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+  '#6366F1', // Indigo
+  '#14B8A6', // Teal
+  '#F97316', // Orange
+  '#6B7280'  // Gray
+]
+
+// 초기 로드
+onMounted(async () => {
+  await loadBoards()
+  await loadUsers()
+  await loadCategories()
+})
+
+// 보드 목록 로드
+async function loadBoards() {
+  loading.value = true
+  try {
+    boardList.value = await boardStore.fetchBoardList()
+  } catch (error) {
+    console.error('Failed to load boards:', error)
+    uiStore.showError('보드 목록을 불러오는데 실패했습니다.')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 사용자 목록 로드 (이관 대상자 선택용)
+async function loadUsers() {
+  try {
+    const response = await userApi.getUsers({ useYn: 'Y' })
+    if (response.success && response.data && response.data.content) {
+      users.value = response.data.content
+    }
+  } catch (error) {
+    console.error('Failed to load users:', error)
+  }
+}
+
+// 카테고리 목록 로드
+async function loadCategories() {
+  try {
+    await categoryStore.fetchAccessibleCategories()
+    categories.value = categoryStore.activeAccessibleCategories
+  } catch (error) {
+    console.error('Failed to load categories:', error)
+  }
+}
+
+// 보드 생성 모달 열기
+function openCreateModal() {
+  formData.value = {
+    boardName: '',
+    description: '',
+    color: '#3B82F6',
+    categoryIds: [],
+    propertyIds: [],
+    propertyDefaults: {}
+  }
+  existingBoardCategories.value = []
+  existingBoardProperties.value = []
+  showCreateModal.value = true
+}
+
+// 보드 수정 모달 열기
+async function openEditModal(board: Board) {
+  selectedBoard.value = board
+
+  // 기존 카테고리와 속성을 먼저 로드한 후 모달을 열어야 함
+  // (모달이 열리면서 BoardPropertySelector가 마운트되기 전에 초기값이 설정되어야 함)
+  try {
+    const [catRes, propRes] = await Promise.all([
+      boardApi.getBoardCategories(board.boardId),
+      boardApi.getBoardProperties(board.boardId)
+    ])
+
+    // 카테고리 로드 결과 처리
+    let categoryIds: number[] = []
+    if (catRes.success && catRes.data) {
+      existingBoardCategories.value = catRes.data
+      categoryIds = catRes.data.map(c => c.categoryId)
+    } else {
+      existingBoardCategories.value = []
+    }
+
+    // 속성 로드 결과 처리
+    let propertyIds: number[] = []
+    const propertyDefaults: Record<number, string> = {}
+    if (propRes.success && propRes.data) {
+      existingBoardProperties.value = propRes.data
+      propertyIds = propRes.data.map(p => p.propertyId)
+      // 기본값 설정
+      propRes.data.forEach(p => {
+        if (p.defaultValue) {
+          propertyDefaults[p.propertyId] = p.defaultValue
+        }
+      })
+    } else {
+      existingBoardProperties.value = []
+    }
+
+    // formData 설정 (API 결과 반영)
+    formData.value = {
+      boardName: board.boardName,
+      description: board.description || '',
+      color: board.color || '#3B82F6',
+      categoryIds,
+      propertyIds,
+      propertyDefaults
+    }
+
+    // 모달 열기 (초기값이 모두 설정된 후)
+    showEditModal.value = true
+  } catch (error) {
+    console.error('Failed to load board categories/properties:', error)
+    // 로드 실패 시 기본값으로 모달 열기
+    existingBoardCategories.value = []
+    existingBoardProperties.value = []
+    formData.value = {
+      boardName: board.boardName,
+      description: board.description || '',
+      color: board.color || '#3B82F6',
+      categoryIds: [],
+      propertyIds: [],
+      propertyDefaults: {}
+    }
+    showEditModal.value = true
+  }
+}
+
+// 보드 삭제 모달 열기
+async function openDeleteModal(board: Board) {
+  selectedBoard.value = board
+  deleteFormData.value = {
+    targetUserId: null,
+    forceDelete: false
+  }
+
+  // 미완료 업무 미리보기 로드
+  try {
+    transferPreview.value = await boardStore.getTransferPreview(board.boardId)
+  } catch (error) {
+    console.error('Failed to load transfer preview:', error)
+    transferPreview.value = null
+  }
+
+  showDeleteModal.value = true
+}
+
+// 보드 생성 (EntityEditModal에서 호출)
+async function handleCreateSave(data: {
+  name: string
+  description: string
+  color: string
+  categoryIds: number[]
+  categoryId: number | null
+  propertyIds: number[]
+  propertyDefaults: Record<number, string>
+}) {
+  if (!data.name.trim()) {
+    uiStore.showError('보드 이름을 입력해주세요.')
+    return
+  }
+
+  try {
+    const request: BoardCreateRequest = {
+      boardName: data.name,
+      boardDescription: data.description,
+      color: data.color,
+      categoryIds: data.categoryIds.length > 0 ? data.categoryIds : undefined
+    }
+
+    const result = await boardStore.createBoard(request)
+    if (result) {
+      // 속성 추가
+      if (data.propertyIds.length > 0) {
+        await Promise.all(
+          data.propertyIds.map(propertyId =>
+            boardApi.addBoardProperty(result.boardId, propertyId, {
+              defaultValue: data.propertyDefaults[propertyId] || undefined
+            })
+          )
+        )
+      }
+
+      uiStore.showSuccess('보드가 생성되었습니다.')
+      showCreateModal.value = false
+      await loadBoards()
+    } else {
+      uiStore.showError(boardStore.error || '보드 생성에 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('Failed to create board:', error)
+    uiStore.showError('보드 생성에 실패했습니다.')
+  }
+}
+
+// 보드 수정 (EntityEditModal에서 호출)
+async function handleUpdateSave(data: {
+  name: string
+  description: string
+  color: string
+  categoryIds: number[]
+  categoryId: number | null
+  propertyIds: number[]
+  propertyDefaults: Record<number, string>
+}) {
+  if (!selectedBoard.value) return
+  if (!data.name.trim()) {
+    uiStore.showError('보드 이름을 입력해주세요.')
+    return
+  }
+
+  const boardId = selectedBoard.value.boardId
+
+  try {
+    // 1. 기본 정보 수정
+    const success = await boardStore.updateBoard(boardId, {
+      boardName: data.name,
+      boardDescription: data.description,
+      color: data.color
+    })
+
+    if (!success) {
+      uiStore.showError(boardStore.error || '보드 수정에 실패했습니다.')
+      return
+    }
+
+    // 2. 카테고리 변경 처리
+    const existingCatIds = new Set(existingBoardCategories.value.map(c => c.categoryId))
+    const newCatIds = new Set(data.categoryIds)
+
+    // 제거할 카테고리
+    const catsToRemove = [...existingCatIds].filter(id => !newCatIds.has(id))
+    // 추가할 카테고리
+    const catsToAdd = [...newCatIds].filter(id => !existingCatIds.has(id))
+
+    await Promise.all([
+      ...catsToRemove.map(catId => boardApi.removeBoardCategory(boardId, catId)),
+      ...catsToAdd.map(catId => boardApi.addBoardCategory(boardId, catId))
+    ])
+
+    // 3. 속성 변경 처리
+    const existingPropIds = new Set(existingBoardProperties.value.map(p => p.propertyId))
+    const newPropIds = new Set(data.propertyIds)
+
+    // 제거할 속성
+    const propsToRemove = [...existingPropIds].filter(id => !newPropIds.has(id))
+    // 추가할 속성
+    const propsToAdd = [...newPropIds].filter(id => !existingPropIds.has(id))
+
+    await Promise.all([
+      ...propsToRemove.map(propId => boardApi.removeBoardProperty(boardId, propId)),
+      ...propsToAdd.map(propId => boardApi.addBoardProperty(boardId, propId, {
+        defaultValue: data.propertyDefaults[propId] || undefined
+      }))
+    ])
+
+    // 4. 기존 속성 기본값 업데이트
+    const existingProps = existingBoardProperties.value.filter(p => newPropIds.has(p.propertyId))
+    await Promise.all(
+      existingProps
+        .filter(p => p.defaultValue !== data.propertyDefaults[p.propertyId])
+        .map(p => boardApi.updateBoardProperty(boardId, p.propertyId, {
+          defaultValue: data.propertyDefaults[p.propertyId] || undefined
+        }))
+    )
+
+    uiStore.showSuccess('보드가 수정되었습니다.')
+    showEditModal.value = false
+    await loadBoards()
+  } catch (error) {
+    console.error('Failed to update board:', error)
+    uiStore.showError('보드 수정에 실패했습니다.')
+  }
+}
+
+// 보드 삭제
+async function handleDelete() {
+  if (!selectedBoard.value) return
+
+  // 미완료 업무가 있는데 이관 대상자가 없고 강제 삭제도 아닌 경우
+  if (transferPreview.value && transferPreview.value.totalCount > 0) {
+    if (!deleteFormData.value.targetUserId && !deleteFormData.value.forceDelete) {
+      uiStore.showError('미완료 업무가 있습니다. 이관 대상자를 선택하거나 강제 삭제를 선택해주세요.')
+      return
+    }
+  }
+
+  try {
+    const result = await boardStore.deleteBoardWithTransfer(
+      selectedBoard.value.boardId,
+      {
+        targetUserId: deleteFormData.value.targetUserId || undefined,
+        forceDelete: deleteFormData.value.forceDelete
+      }
+    )
+
+    if (result) {
+      uiStore.showSuccess(`보드가 삭제되었습니다. ${result.message || ''}`)
+    } else {
+      uiStore.showSuccess('보드가 삭제되었습니다.')
+    }
+
+    showDeleteModal.value = false
+    await loadBoards()
+  } catch (error) {
+    console.error('Failed to delete board:', error)
+    uiStore.showError(boardStore.error || '보드 삭제에 실패했습니다.')
+  }
+}
+
+// 권한 라벨
+function getPermissionLabel(permission: string): string {
+  switch (permission) {
+    case 'OWNER': return '소유자'
+    case 'VIEW': return '조회'
+    case 'EDIT': return '편집'
+    case 'FULL': return '전체'
+    default: return permission
+  }
+}
+
+// 공유 모달 열기
+async function openShareModal(board: Board) {
+  selectedBoard.value = board
+  showShareModal.value = true
+  await loadBoardShares(board.boardId)
+}
+
+// 공유 사용자 목록 로드
+async function loadBoardShares(boardId: number) {
+  sharesLoading.value = true
+  try {
+    const success = await boardStore.fetchBoardShares(boardId)
+    if (!success) {
+      uiStore.showError('공유 사용자 목록을 불러오는데 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('Failed to load board shares:', error)
+    uiStore.showError('공유 사용자 목록을 불러오는데 실패했습니다.')
+  } finally {
+    sharesLoading.value = false
+  }
+}
+
+// 공유된 사용자 username 목록 (검색 시 제외용)
+const existingShareUsernames = computed(() => {
+  return boardStore.boardShares.map(share => share.username).filter(Boolean) as string[]
+})
+
+// 공유 사용자 추가
+async function handleAddShare(data: BoardShareRequest) {
+  if (!selectedBoard.value) return
+
+  shareAdding.value = true
+  try {
+    const result = await boardStore.addBoardShare(selectedBoard.value.boardId, data)
+    if (result) {
+      uiStore.showSuccess('공유 사용자가 추가되었습니다.')
+      await loadBoardShares(selectedBoard.value.boardId)
+      await loadBoards() // 공유 카운트 갱신
+    } else {
+      uiStore.showError(boardStore.error || '공유 사용자 추가에 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('Failed to add share:', error)
+    uiStore.showError('공유 사용자 추가에 실패했습니다.')
+  } finally {
+    shareAdding.value = false
+  }
+}
+
+// 공유 사용자 제거
+async function handleRemoveShare(share: BoardShare) {
+  if (!selectedBoard.value) return
+
+  if (!confirm(`${share.userName}님의 공유를 해제하시겠습니까?`)) {
+    return
+  }
+
+  try {
+    // username 기반으로 공유 해제
+    const success = await boardStore.removeBoardShare(selectedBoard.value.boardId, share.username)
+    if (success) {
+      uiStore.showSuccess('공유가 해제되었습니다.')
+      await loadBoardShares(selectedBoard.value.boardId)
+      await loadBoards() // 공유 카운트 갱신
+    } else {
+      uiStore.showError(boardStore.error || '공유 해제에 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('Failed to remove share:', error)
+    uiStore.showError('공유 해제에 실패했습니다.')
+  }
+}
+
+// =============================================
+// 드래그 앤 드롭 핸들러
+// =============================================
+
+function handleDragStart(event: DragEvent, board: Board, type: 'owned' | 'shared') {
+  draggedBoard.value = board
+  draggedBoardType.value = type
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(board.boardId))
+  }
+  // 드래그 시작 시 약간의 투명도 적용
+  const target = event.target as HTMLElement
+  setTimeout(() => {
+    target.classList.add('opacity-50')
+  }, 0)
+}
+
+function handleDragEnd(event: DragEvent) {
+  const target = event.target as HTMLElement
+  target.classList.remove('opacity-50')
+  draggedBoard.value = null
+  draggedBoardType.value = null
+  dragOverBoardId.value = null
+}
+
+function handleDragOver(event: DragEvent, boardId: number) {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dragOverBoardId.value = boardId
+}
+
+function handleDragLeave() {
+  dragOverBoardId.value = null
+}
+
+async function handleDrop(event: DragEvent, targetBoard: Board, type: 'owned' | 'shared') {
+  event.preventDefault()
+  dragOverBoardId.value = null
+
+  if (!draggedBoard.value || draggedBoardType.value !== type) {
+    return
+  }
+
+  if (draggedBoard.value.boardId === targetBoard.boardId) {
+    return
+  }
+
+  // 현재 보드 목록에서 해당 타입의 보드들만 추출
+  const boardsList = type === 'owned'
+    ? boardList.value?.ownedBoards || []
+    : boardList.value?.sharedBoards || []
+
+  const draggedIndex = boardsList.findIndex(b => b.boardId === draggedBoard.value!.boardId)
+  const targetIndex = boardsList.findIndex(b => b.boardId === targetBoard.boardId)
+
+  if (draggedIndex === -1 || targetIndex === -1) {
+    return
+  }
+
+  // 새로운 순서 계산 (0부터 시작)
+  const newSortOrder = targetIndex
+
+  try {
+    let success: boolean
+    if (type === 'owned') {
+      success = await boardStore.updateBoardOrder(draggedBoard.value.boardId, newSortOrder)
+    } else {
+      success = await boardStore.updateSharedBoardOrder(draggedBoard.value.boardId, newSortOrder)
+    }
+
+    if (success) {
+      // 목록 새로고침
+      await loadBoards()
+      uiStore.showSuccess('보드 순서가 변경되었습니다.')
+    } else {
+      uiStore.showError(boardStore.error || '순서 변경에 실패했습니다.')
+    }
+  } catch (error) {
+    console.error('Failed to update board order:', error)
+    uiStore.showError('순서 변경에 실패했습니다.')
+  }
+}
+</script>
+
+<template>
+  <div class="boards-view">
+    <!-- 헤더 -->
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">보드 관리</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          보드를 관리하고 공유 설정을 관리합니다.
+        </p>
+      </div>
+      <button
+        @click="openCreateModal"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        새 보드
+      </button>
+    </div>
+
+    <!-- 로딩 -->
+    <div v-if="loading" class="flex items-center justify-center py-12">
+      <svg class="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+    </div>
+
+    <template v-else-if="boardList">
+      <!-- 소유한 보드 -->
+      <div class="mb-8">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          내 보드 ({{ boardList.totalOwnedCount }}개)
+        </h2>
+
+        <div v-if="boardList.ownedBoards.length === 0" class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-gray-500 dark:text-gray-400">소유한 보드가 없습니다.</p>
+          <button @click="openCreateModal" class="mt-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium">
+            새 보드 만들기
+          </button>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            v-for="board in boardList.ownedBoards"
+            :key="board.boardId"
+            class="board-card bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md dark:hover:shadow-gray-900/50 transition-all cursor-move"
+            :class="{
+              'border-blue-500 border-2': dragOverBoardId === board.boardId && draggedBoardType === 'owned',
+              'ring-2 ring-blue-300 dark:ring-blue-600': draggedBoard?.boardId === board.boardId
+            }"
+            draggable="true"
+            @dragstart="handleDragStart($event, board, 'owned')"
+            @dragend="handleDragEnd"
+            @dragover="handleDragOver($event, board.boardId)"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop($event, board, 'owned')"
+          >
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <!-- 드래그 핸들 아이콘 -->
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                </svg>
+                <div
+                  class="w-3 h-3 rounded-full flex-shrink-0"
+                  :style="{ backgroundColor: board.color || '#3B82F6' }"
+                />
+                <h3 class="font-medium text-gray-900 dark:text-white">{{ board.boardName }}</h3>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  @click="openShareModal(board)"
+                  class="p-1.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 rounded"
+                  title="공유 관리"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </button>
+                <button
+                  @click="openEditModal(board)"
+                  class="p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded"
+                  title="수정"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  @click="openDeleteModal(board)"
+                  class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 rounded"
+                  title="삭제"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <p v-if="board.description" class="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
+              {{ board.description }}
+            </p>
+
+            <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+              <span class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                {{ board.itemCount || 0 }}건
+              </span>
+              <span v-if="board.pendingItemCount" class="flex items-center gap-1 text-orange-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                미완료 {{ board.pendingItemCount }}건
+              </span>
+              <span class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                공유 {{ board.shareCount || 0 }}명
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 공유받은 보드 -->
+      <div>
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          공유받은 보드 ({{ boardList.totalSharedCount }}개)
+        </h2>
+
+        <div v-if="boardList.sharedBoards.length === 0" class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p class="text-gray-500 dark:text-gray-400">공유받은 보드가 없습니다.</p>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            v-for="board in boardList.sharedBoards"
+            :key="board.boardId"
+            class="board-card bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md dark:hover:shadow-gray-900/50 transition-all cursor-move"
+            :class="{
+              'border-blue-500 border-2': dragOverBoardId === board.boardId && draggedBoardType === 'shared',
+              'ring-2 ring-blue-300 dark:ring-blue-600': draggedBoard?.boardId === board.boardId
+            }"
+            draggable="true"
+            @dragstart="handleDragStart($event, board, 'shared')"
+            @dragend="handleDragEnd"
+            @dragover="handleDragOver($event, board.boardId)"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop($event, board, 'shared')"
+          >
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <!-- 드래그 핸들 아이콘 -->
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                </svg>
+                <div
+                  class="w-3 h-3 rounded-full flex-shrink-0"
+                  :style="{ backgroundColor: board.color || '#3B82F6' }"
+                />
+                <h3 class="font-medium text-gray-900 dark:text-white">{{ board.boardName }}</h3>
+              </div>
+              <span
+                class="px-2 py-0.5 text-xs font-medium rounded-full"
+                :class="{
+                  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': board.currentUserPermission === 'VIEW',
+                  'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400': board.currentUserPermission === 'EDIT',
+                  'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400': board.currentUserPermission === 'FULL'
+                }"
+              >
+                {{ getPermissionLabel(board.currentUserPermission || 'VIEW') }}
+              </span>
+            </div>
+
+            <p v-if="board.description" class="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
+              {{ board.description }}
+            </p>
+
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-500 dark:text-gray-400">
+                소유자: {{ board.ownerName }}
+              </span>
+              <span class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                {{ board.itemCount || 0 }}건
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- 보드 생성 모달 -->
+    <EntityEditModal
+      v-model="showCreateModal"
+      mode="board"
+      title="새 보드 만들기"
+      :categories="categories"
+      :color-options="colorOptions"
+      name-label="보드 이름"
+      @save="handleCreateSave"
+      @cancel="showCreateModal = false"
+    />
+
+    <!-- 보드 수정 모달 -->
+    <EntityEditModal
+      v-model="showEditModal"
+      mode="board"
+      title="보드 수정"
+      :categories="categories"
+      :color-options="colorOptions"
+      name-label="보드 이름"
+      :initial-name="formData.boardName"
+      :initial-description="formData.description"
+      :initial-color="formData.color"
+      :initial-category-ids="formData.categoryIds"
+      :initial-property-ids="formData.propertyIds"
+      :initial-property-defaults="formData.propertyDefaults"
+      @save="handleUpdateSave"
+      @cancel="showEditModal = false"
+    />
+
+    <!-- 보드 삭제 모달 -->
+    <Teleport to="body">
+      <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="fixed inset-0 bg-black/50" @click="showDeleteModal = false" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">보드 삭제</h3>
+
+          <div class="mb-4">
+            <p class="text-gray-700 dark:text-gray-300">
+              <span class="font-medium">{{ selectedBoard?.boardName }}</span> 보드를 삭제하시겠습니까?
+            </p>
+          </div>
+
+          <!-- 미완료 업무가 있는 경우 -->
+          <div v-if="transferPreview && transferPreview.totalCount > 0" class="mb-4">
+            <div class="p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg border border-yellow-200 dark:border-yellow-700">
+              <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                    미완료 업무가 {{ transferPreview.totalCount }}건 있습니다.
+                  </p>
+                  <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-400">
+                    삭제 전에 업무를 다른 사용자에게 이관하거나, 강제 삭제를 선택할 수 있습니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">업무 이관 대상자</label>
+                <select
+                  v-model="deleteFormData.targetUserId"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option :value="null">선택 안함</option>
+                  <option v-for="user in users" :key="user.userId" :value="user.userId">
+                    {{ user.name }} ({{ user.departmentName || '-' }})
+                  </option>
+                </select>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  이관 대상자를 선택하면 미완료 업무가 해당 사용자의 새 보드로 이동됩니다.
+                </p>
+              </div>
+
+              <label class="flex items-center gap-2">
+                <input
+                  v-model="deleteFormData.forceDelete"
+                  type="checkbox"
+                  class="w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 bg-white dark:bg-gray-700"
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300">이관 없이 강제 삭제 (미완료 업무 포함 삭제)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 mt-6">
+            <button
+              @click="showDeleteModal = false"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            >
+              취소
+            </button>
+            <button
+              @click="handleDelete"
+              class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg"
+            >
+              삭제
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 공유 관리 모달 -->
+    <Teleport to="body">
+      <div v-if="showShareModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="fixed inset-0 bg-black/50" @click="showShareModal = false" />
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+          <!-- 모달 헤더 -->
+          <div class="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">공유 관리</h3>
+              <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                <span class="font-medium">{{ selectedBoard?.boardName }}</span> 보드
+              </p>
+            </div>
+            <button
+              @click="showShareModal = false"
+              class="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- 모달 본문 -->
+          <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <!-- 사용자 추가 -->
+            <ShareUserSearch
+              :existing-usernames="existingShareUsernames"
+              :loading="shareAdding"
+              @add="handleAddShare"
+            />
+
+            <!-- 공유 사용자 목록 -->
+            <div>
+              <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                공유된 사용자 ({{ boardStore.boardShares.length }}명)
+              </h4>
+              <ShareUserList
+                :shares="boardStore.boardShares"
+                :loading="sharesLoading"
+                @remove="handleRemoveShare"
+              />
+            </div>
+          </div>
+
+          <!-- 모달 푸터 -->
+          <div class="flex justify-end px-6 py-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <button
+              @click="showShareModal = false"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
+</template>
+
+<style scoped>
+.boards-view {
+  @apply max-w-7xl mx-auto;
+}
+
+.board-card {
+  min-height: 120px;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

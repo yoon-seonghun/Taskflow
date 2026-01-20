@@ -1,0 +1,229 @@
+package com.taskflow.mapper;
+
+import com.taskflow.domain.PropertyDef;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 속성 정의 Mapper 인터페이스
+ *
+ * v2.0 변경사항:
+ * - 소유 유형별 조회 (GLOBAL, MANAGER, USER) 메서드 추가
+ */
+@Mapper
+public interface PropertyDefMapper {
+
+    // =============================================
+    // 조회
+    // =============================================
+
+    /**
+     * 속성 정의 ID로 조회
+     *
+     * @param propertyId 속성 정의 ID
+     * @return 속성 정의 (Optional)
+     */
+    Optional<PropertyDef> findById(@Param("propertyId") Long propertyId);
+
+    /**
+     * 보드별 속성 정의 목록 조회
+     *
+     * @param boardId   보드 ID
+     * @param visibleYn 표시 여부 필터 (null = 전체)
+     * @return 속성 정의 목록
+     */
+    List<PropertyDef> findByBoardId(@Param("boardId") Long boardId, @Param("visibleYn") String visibleYn);
+
+    /**
+     * 보드별 속성 정의 목록 조회 (옵션 포함)
+     *
+     * @param boardId   보드 ID
+     * @param visibleYn 표시 여부 필터 (null = 전체)
+     * @return 속성 정의 목록 (옵션 포함)
+     */
+    List<PropertyDef> findByBoardIdWithOptions(@Param("boardId") Long boardId, @Param("visibleYn") String visibleYn);
+
+    /**
+     * 보드 내 속성명으로 조회
+     *
+     * @param boardId      보드 ID
+     * @param propertyName 속성명
+     * @return 속성 정의 (Optional)
+     */
+    Optional<PropertyDef> findByBoardIdAndName(@Param("boardId") Long boardId, @Param("propertyName") String propertyName);
+
+    /**
+     * 보드 내 속성명 중복 확인
+     *
+     * @param boardId      보드 ID
+     * @param propertyName 속성명
+     * @return 중복 여부
+     */
+    boolean existsByBoardIdAndName(@Param("boardId") Long boardId, @Param("propertyName") String propertyName);
+
+    /**
+     * 보드 내 속성명 중복 확인 (자신 제외)
+     *
+     * @param boardId      보드 ID
+     * @param propertyName 속성명
+     * @param propertyId   제외할 속성 ID
+     * @return 중복 여부
+     */
+    boolean existsByBoardIdAndNameAndIdNot(@Param("boardId") Long boardId,
+                                            @Param("propertyName") String propertyName,
+                                            @Param("propertyId") Long propertyId);
+
+    /**
+     * 보드 내 최대 정렬 순서 조회
+     *
+     * @param boardId 보드 ID
+     * @return 최대 정렬 순서
+     */
+    Integer getMaxSortOrder(@Param("boardId") Long boardId);
+
+    /**
+     * 속성에 값이 사용 중인지 확인
+     *
+     * @param propertyId 속성 정의 ID
+     * @return 사용 여부
+     */
+    boolean hasPropertyValues(@Param("propertyId") Long propertyId);
+
+    // =============================================
+    // 등록/수정/삭제
+    // =============================================
+
+    /**
+     * 속성 정의 등록
+     *
+     * @param propertyDef 속성 정의 엔티티
+     * @return 영향받은 행 수
+     */
+    int insert(PropertyDef propertyDef);
+
+    /**
+     * 속성 정의 수정
+     *
+     * @param propertyDef 속성 정의 엔티티
+     * @return 영향받은 행 수
+     */
+    int update(PropertyDef propertyDef);
+
+    /**
+     * 속성 정의 논리 삭제 (USE_YN = 'N')
+     *
+     * @param propertyId 속성 정의 ID
+     * @param updatedBy  수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int softDelete(@Param("propertyId") Long propertyId, @Param("updatedBy") String updatedBy);
+
+    /**
+     * 속성 정의 물리 삭제 (사용 금지 - 논리 삭제만 사용 권장)
+     *
+     * @param propertyId 속성 정의 ID
+     * @return 영향받은 행 수
+     */
+    int delete(@Param("propertyId") Long propertyId);
+
+    /**
+     * 보드의 모든 속성 정의 삭제
+     *
+     * @param boardId 보드 ID
+     * @return 영향받은 행 수
+     */
+    int deleteByBoardId(@Param("boardId") Long boardId);
+
+    /**
+     * 신규 보드용 기본 속성 정의 일괄 생성
+     * (카테고리만 - 담당자/요청일/마감일은 TB_ITEM 고정 컬럼으로 관리)
+     * 상태/우선순위도 TB_ITEM 고정 컬럼으로 관리됨
+     *
+     * @param boardId   보드 ID
+     * @param createdBy 생성자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int insertDefaultProperties(@Param("boardId") Long boardId, @Param("createdBy") String createdBy);
+
+    /**
+     * 보드의 속성 정의 목록 조회 (이름으로 조회용)
+     *
+     * @param boardId 보드 ID
+     * @return 속성 정의 목록
+     */
+    List<PropertyDef> findAllByBoardId(@Param("boardId") Long boardId);
+
+    /**
+     * 보드별 전체 속성 정의 목록 조회 (삭제된 속성 포함 - 관리용)
+     *
+     * @param boardId 보드 ID
+     * @param useYn   사용 여부 필터 (null = 전체)
+     * @return 속성 정의 목록 (옵션 포함)
+     */
+    List<PropertyDef> findAllByBoardIdIncludingDeleted(@Param("boardId") Long boardId, @Param("useYn") String useYn);
+
+    // =============================================
+    // v2.0 소유 유형별 조회
+    // =============================================
+
+    /**
+     * 글로벌 속성 목록 조회 (옵션 포함)
+     */
+    List<PropertyDef> findGlobalProperties();
+
+    /**
+     * 매니저 속성 목록 조회 (본인 소유 + 상위 부서 속성)
+     *
+     * @param username 사용자 USERNAME
+     * @param departmentCodes 접근 가능한 부서 코드 목록
+     * @return 매니저 속성 목록
+     */
+    List<PropertyDef> findManagerProperties(@Param("username") String username,
+                                             @Param("departmentCodes") List<String> departmentCodes);
+
+    /**
+     * 소유 유형별 속성 목록 조회
+     *
+     * @param ownerType 소유 유형 (GLOBAL/MANAGER/USER)
+     * @return 속성 목록
+     */
+    List<PropertyDef> findByOwnerType(@Param("ownerType") String ownerType);
+
+    /**
+     * 사용자 속성 목록 조회 (본인이 생성한 속성)
+     *
+     * @param username 사용자 USERNAME
+     * @return 사용자 속성 목록
+     */
+    List<PropertyDef> findUserProperties(@Param("username") String username);
+
+    /**
+     * 사용자가 접근 가능한 모든 속성 조회 (글로벌 + 매니저 + 본인 속성)
+     * 카테고리/보드에서 속성 선택 시 사용
+     *
+     * @param username 사용자 USERNAME
+     * @param departmentCodes 접근 가능한 부서 코드 목록
+     * @return 접근 가능한 속성 목록
+     */
+    List<PropertyDef> findAccessibleProperties(@Param("username") String username,
+                                                @Param("departmentCodes") List<String> departmentCodes);
+
+    // =============================================
+    // 순서 변경
+    // =============================================
+
+    /**
+     * 속성 정렬 순서 변경
+     *
+     * @param propertyId 속성 ID
+     * @param sortOrder  새 정렬 순서
+     * @param updatedBy  수정자 USERNAME
+     * @return 영향받은 행 수
+     */
+    int updateSortOrder(@Param("propertyId") Long propertyId,
+                        @Param("sortOrder") Integer sortOrder,
+                        @Param("updatedBy") String updatedBy);
+}
