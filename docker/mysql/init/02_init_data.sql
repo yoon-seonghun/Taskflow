@@ -247,12 +247,12 @@ FROM TB_PROPERTY_DEF WHERE PROPERTY_NAME = '리스크대응' AND OWNER_TYPE = 'G
 -- CONFIG_VALUE_ENCRYPTED: 암호화된 값 (비밀번호 등)
 -- ============================================
 INSERT INTO TB_SYSTEM_CONFIG (CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE, DESCRIPTION, CREATED_BY) VALUES
-('SMTP', 'HOST', 'mail.sns-at.co.kr', 'SMTP 서버 주소', 'system'),
+('SMTP', 'HOST', 'mail.co.kr', 'SMTP 서버 주소', 'system'),
 ('SMTP', 'PORT', '587', 'SMTP 포트', 'system'),
 ('SMTP', 'SECURITY_TYPE', 'STARTTLS', '보안 유형 (STARTTLS, TLS, NONE)', 'system'),
-('SMTP', 'USERNAME', 'sns@sns-at.co.kr', 'SMTP 계정', 'system'),
-('SMTP', 'FROM_ADDRESS', 'TaskFlow <sns@sns-at.co.kr>', '발신자 주소', 'system'),
-('SMTP', 'ADMIN_EMAIL', 'admin@sns-at.co.kr', '관리자 이메일', 'system')
+('SMTP', 'USERNAME', 'mail@mail.co.kr', 'SMTP 계정', 'system'),
+('SMTP', 'FROM_ADDRESS', 'TaskFlow <mail@mail.co.kr>', '발신자 주소', 'system'),
+('SMTP', 'ADMIN_EMAIL', 'admin@mail.co.kr', '관리자 이메일', 'system')
 ON DUPLICATE KEY UPDATE UPDATED_AT = CURRENT_TIMESTAMP;
 
 -- PASSWORD는 암호화되어 저장되므로 별도 처리 필요 (애플리케이션에서 설정)

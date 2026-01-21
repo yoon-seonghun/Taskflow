@@ -73,13 +73,14 @@ public class UserSyncServiceImpl implements UserSyncService {
                 .email(externalUser.getEmail())
                 .departmentCode(externalUser.getDepartmentCode())
                 .positionCode(externalUser.getPositionCode())
+                .role(externalUser.getRole()) // 외부 DB의 역할(ADMIN/USER) 동기화
                 .headYn(externalUser.getHeadYn() != null ? externalUser.getHeadYn() : "N")
                 .useYn(externalUser.getUseYn() != null ? externalUser.getUseYn() : "Y")
                 .createdBy("SYSTEM")
                 .build();
 
         userMapper.upsertByUsername(user);
-        log.info("User synced on login: username={}, name={}", username, externalUser.getName());
+        log.info("User synced on login: username={}, name={}, role={}", username, externalUser.getName(), externalUser.getRole());
 
         // 5. 동기화된 사용자 정보 반환
         return userMapper.findByUsername(username).orElse(null);
@@ -122,6 +123,7 @@ public class UserSyncServiceImpl implements UserSyncService {
                         .email(externalUser.getEmail())
                         .departmentCode(externalUser.getDepartmentCode())
                         .positionCode(externalUser.getPositionCode())
+                        .role(externalUser.getRole()) // 외부 DB의 역할(ADMIN/USER) 동기화
                         .headYn(externalUser.getHeadYn() != null ? externalUser.getHeadYn() : "N")
                         .useYn(externalUser.getUseYn() != null ? externalUser.getUseYn() : "Y")
                         .createdBy("SYSTEM")
@@ -135,7 +137,7 @@ public class UserSyncServiceImpl implements UserSyncService {
                     created++;
                 }
 
-                log.debug("Synced user: {} ({})", externalUser.getUsername(), externalUser.getName());
+                log.debug("Synced user: {} ({}) role={}", externalUser.getUsername(), externalUser.getName(), externalUser.getRole());
             }
 
             // 5. 동기화 대상이 아닌 사용자 비활성화 (admin 제외)

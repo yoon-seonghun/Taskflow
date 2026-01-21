@@ -26,7 +26,7 @@ spring:
 # mode: internal (기본 관리) | external (외부 DB 연동)
 taskflow:
   user-management:
-    mode: ${USER_MANAGEMENT_MODE:internal}
+    mode: ${USER_MANAGEMENT_MODE:external}
     internal:
       password-encoder: bcrypt
       bcrypt-strength: 10
@@ -37,8 +37,10 @@ taskflow:
       sha256-use-salt: false
       user-crud-enabled: false
       department-crud-enabled: false
+      position-crud-enabled: false
       user-table: ${EXTERNAL_USER_TABLE:VW_TASKFLOW_USER}
       department-table: ${EXTERNAL_DEPARTMENT_TABLE:VW_TASKFLOW_DEPARTMENT}
+      position-table: ${EXTERNAL_POSITION_TABLE:VW_TASKFLOW_POSITION}
 
 # 외부 DB 연결 암호화 설정
 encryption:
@@ -87,8 +89,8 @@ logging:
 # File Upload Configuration
 spring.servlet.multipart:
   enabled: true
-  max-file-size: 10MB
-  max-request-size: 50MB
+  max-file-size: 100MB
+  max-request-size: 500MB
 
 ---
 # Local Profile
@@ -140,7 +142,7 @@ logging:
 file:
   storage:
     type: LOCAL
-    max-file-size: 10MB
+    max-file-size: 100MB
     allowed-extensions:
       - jpg
       - jpeg
@@ -204,11 +206,12 @@ logging:
     com.taskflow: INFO
     com.taskflow.mapper: INFO
 
-# File Storage Configuration (Docker)
+# File Storage Configuration (Docker - 환경변수로 유연하게 설정)
+# type: LOCAL, SFTP, NAS, S3
 file:
   storage:
-    type: LOCAL
-    max-file-size: 10MB
+    type: ${FILE_STORAGE_TYPE:LOCAL}
+    max-file-size: ${FILE_MAX_SIZE:10MB}
     allowed-extensions:
       - jpg
       - jpeg
@@ -226,7 +229,22 @@ file:
       - txt
       - zip
     local:
-      base-path: /app/uploads
+      base-path: ${FILE_LOCAL_PATH:/app/uploads}
+    sftp:
+      host: ${SFTP_HOST:}
+      port: ${SFTP_PORT:22}
+      username: ${SFTP_USERNAME:}
+      password: ${SFTP_PASSWORD:}
+      private-key-path: ${SFTP_PRIVATE_KEY_PATH:}
+      private-key-passphrase: ${SFTP_PRIVATE_KEY_PASSPHRASE:}
+      home-path: ${SFTP_HOME_PATH:}
+      base-path: ${SFTP_BASE_PATH:uploads}
+      connection-timeout: ${SFTP_CONNECTION_TIMEOUT:30000}
+      channel-timeout: ${SFTP_CHANNEL_TIMEOUT:60000}
+      strict-host-key-checking: ${SFTP_STRICT_HOST_KEY_CHECKING:false}
+      known-hosts-path: ${SFTP_KNOWN_HOSTS_PATH:}
+      pool-size: ${SFTP_POOL_SIZE:5}
+      keep-alive-interval: ${SFTP_KEEP_ALIVE_INTERVAL:30000}
 
 ---
 # Production Profile
@@ -277,7 +295,7 @@ logging:
 file:
   storage:
     type: ${FILE_STORAGE_TYPE:LOCAL}
-    max-file-size: ${FILE_MAX_SIZE:10MB}
+    max-file-size: ${FILE_MAX_SIZE:100MB}
     allowed-extensions:
       - jpg
       - jpeg
@@ -303,7 +321,8 @@ file:
       password: ${SFTP_PASSWORD:}
       private-key-path: ${SFTP_PRIVATE_KEY_PATH:}
       private-key-passphrase: ${SFTP_PRIVATE_KEY_PASSPHRASE:}
-      base-path: ${SFTP_BASE_PATH:/data/uploads}
+      home-path: ${SFTP_HOME_PATH:}
+      base-path: ${SFTP_BASE_PATH:uploads}
       connection-timeout: ${SFTP_CONNECTION_TIMEOUT:30000}
       channel-timeout: ${SFTP_CHANNEL_TIMEOUT:60000}
       strict-host-key-checking: ${SFTP_STRICT_HOST_KEY_CHECKING:false}

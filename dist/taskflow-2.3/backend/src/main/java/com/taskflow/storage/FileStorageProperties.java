@@ -118,9 +118,14 @@ public class FileStorageProperties {
         private String privateKeyPassphrase;
 
         /**
-         * 원격 서버 기본 경로 (업로드 디렉토리)
+         * SFTP 접속 후 최초 이동할 디렉토리 (홈 디렉토리와 다를 경우 설정)
          */
-        private String basePath = "/data/uploads";
+        private String homePath;
+
+        /**
+         * 원격 서버 기본 경로 (업로드 디렉토리, homePath 기준 상대 경로 또는 절대 경로)
+         */
+        private String basePath = "uploads";
 
         /**
          * 연결 타임아웃 (밀리초)

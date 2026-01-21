@@ -41,8 +41,20 @@ public class SftpFileStorage implements FileStorageService {
     public void init() {
         FileStorageProperties.SftpStorage sftp = properties.getSftp();
 
+        // SFTP 설정 유효성 검사 - host가 필수
+        if (sftp.getHost() == null || sftp.getHost().isBlank()) {
+            throw new IllegalStateException(
+                "SFTP storage is enabled but host is not configured. " +
+                "Please set 'file.storage.sftp.host' property or change storage type to LOCAL."
+            );
+        }
+
         log.info("Initializing SFTP file storage: {}@{}:{}",
                 sftp.getUsername(), sftp.getHost(), sftp.getPort());
+        if (sftp.getHomePath() != null && !sftp.getHomePath().isBlank()) {
+            log.info("SFTP home path: {}", sftp.getHomePath());
+        }
+        log.info("SFTP base path: {}", sftp.getBasePath());
 
         jsch = new JSch();
 
@@ -74,7 +86,7 @@ public class SftpFileStorage implements FileStorageService {
             ensureBaseDirectoryExists(testSession);
 
             testSession.disconnect();
-            log.info("SFTP file storage initialized successfully. Base path: {}", sftp.getBasePath());
+            log.info("SFTP file storage initialized successfully. Full base path: {}", getFullBasePath());
 
         } catch (JSchException e) {
             throw new RuntimeException("Failed to initialize SFTP storage: " + e.getMessage(), e);
@@ -100,7 +112,6 @@ public class SftpFileStorage implements FileStorageService {
 
     @Override
     public String upload(MultipartFile file, String directory) throws IOException {
-        FileStorageProperties.SftpStorage sftp = properties.getSftp();
         Session session = null;
         ChannelSftp channel = null;
 
@@ -108,8 +119,8 @@ public class SftpFileStorage implements FileStorageService {
             session = getSession();
             channel = openSftpChannel(session);
 
-            // 원격 디렉토리 경로 생성
-            String remoteDirPath = sftp.getBasePath() + "/" + directory;
+            // 원격 디렉토리 경로 생성 (homePath + basePath + directory)
+            String remoteDirPath = getFullBasePath() + "/" + directory;
             ensureRemoteDirectoryExists(channel, remoteDirPath);
 
             // 고유 파일명 생성
@@ -144,7 +155,6 @@ public class SftpFileStorage implements FileStorageService {
 
     @Override
     public Resource download(String storagePath) throws IOException {
-        FileStorageProperties.SftpStorage sftp = properties.getSftp();
         Session session = null;
         ChannelSftp channel = null;
 
@@ -152,7 +162,7 @@ public class SftpFileStorage implements FileStorageService {
             session = getSession();
             channel = openSftpChannel(session);
 
-            String remoteFilePath = sftp.getBasePath() + "/" + storagePath;
+            String remoteFilePath = getFullBasePath() + "/" + storagePath;
 
             // 파일 존재 확인
             try {
@@ -188,7 +198,6 @@ public class SftpFileStorage implements FileStorageService {
 
     @Override
     public boolean delete(String storagePath) {
-        FileStorageProperties.SftpStorage sftp = properties.getSftp();
         Session session = null;
         ChannelSftp channel = null;
 
@@ -196,7 +205,7 @@ public class SftpFileStorage implements FileStorageService {
             session = getSession();
             channel = openSftpChannel(session);
 
-            String remoteFilePath = sftp.getBasePath() + "/" + storagePath;
+            String remoteFilePath = getFullBasePath() + "/" + storagePath;
 
             // 파일 삭제
             channel.rm(remoteFilePath);
@@ -222,7 +231,6 @@ public class SftpFileStorage implements FileStorageService {
 
     @Override
     public boolean exists(String storagePath) {
-        FileStorageProperties.SftpStorage sftp = properties.getSftp();
         Session session = null;
         ChannelSftp channel = null;
 
@@ -230,7 +238,7 @@ public class SftpFileStorage implements FileStorageService {
             session = getSession();
             channel = openSftpChannel(session);
 
-            String remoteFilePath = sftp.getBasePath() + "/" + storagePath;
+            String remoteFilePath = getFullBasePath() + "/" + storagePath;
 
             channel.lstat(remoteFilePath);
             return true;
@@ -267,16 +275,17 @@ public class SftpFileStorage implements FileStorageService {
         long startTime = System.currentTimeMillis();
         Session session = null;
         ChannelSftp channel = null;
+        String fullBasePath = getFullBasePath();
 
         try {
             session = getSession();
             channel = openSftpChannel(session);
 
             // 기본 디렉토리 접근 확인
-            channel.lstat(sftp.getBasePath());
+            channel.lstat(fullBasePath);
 
             // 테스트 파일 쓰기/삭제
-            String testFilePath = sftp.getBasePath() + "/.health-check-" + System.currentTimeMillis();
+            String testFilePath = fullBasePath + "/.health-check-" + System.currentTimeMillis();
             channel.put(new java.io.ByteArrayInputStream("health-check".getBytes()), testFilePath);
             channel.rm(testFilePath);
 
@@ -286,7 +295,7 @@ public class SftpFileStorage implements FileStorageService {
                     true,
                     StorageType.SFTP,
                     String.format("SFTP storage is healthy. Host: %s:%d, Base path: %s",
-                            sftp.getHost(), sftp.getPort(), sftp.getBasePath()),
+                            sftp.getHost(), sftp.getPort(), fullBasePath),
                     responseTime
             );
 
@@ -399,12 +408,11 @@ public class SftpFileStorage implements FileStorageService {
      * 기본 디렉토리 존재 확인 및 생성
      */
     private void ensureBaseDirectoryExists(Session session) {
-        FileStorageProperties.SftpStorage sftp = properties.getSftp();
         ChannelSftp channel = null;
 
         try {
             channel = openSftpChannel(session);
-            ensureRemoteDirectoryExists(channel, sftp.getBasePath());
+            ensureRemoteDirectoryExists(channel, getFullBasePath());
         } catch (JSchException | SftpException e) {
             log.warn("Could not ensure base directory exists: {}", e.getMessage());
         } finally {
@@ -446,12 +454,12 @@ public class SftpFileStorage implements FileStorageService {
      * 빈 디렉토리 정리
      */
     private void cleanupEmptyDirectories(ChannelSftp channel, String filePath) {
-        FileStorageProperties.SftpStorage sftp = properties.getSftp();
+        String fullBasePath = getFullBasePath();
 
         try {
             String dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
 
-            while (!dirPath.equals(sftp.getBasePath()) && dirPath.startsWith(sftp.getBasePath())) {
+            while (!dirPath.equals(fullBasePath) && dirPath.startsWith(fullBasePath)) {
                 try {
                     @SuppressWarnings("unchecked")
                     java.util.Vector<ChannelSftp.LsEntry> entries = channel.ls(dirPath);
@@ -471,6 +479,30 @@ public class SftpFileStorage implements FileStorageService {
         } catch (Exception e) {
             log.warn("Failed to cleanup empty directories: {}", e.getMessage());
         }
+    }
+
+    /**
+     * 전체 기본 경로 반환 (homePath + basePath)
+     * homePath가 설정되어 있으면 homePath/basePath 형태로 반환
+     * homePath가 없으면 basePath만 반환
+     */
+    private String getFullBasePath() {
+        FileStorageProperties.SftpStorage sftp = properties.getSftp();
+        String homePath = sftp.getHomePath();
+        String basePath = sftp.getBasePath();
+
+        if (homePath != null && !homePath.isBlank()) {
+            // homePath가 /로 끝나면 중복 제거
+            if (homePath.endsWith("/")) {
+                homePath = homePath.substring(0, homePath.length() - 1);
+            }
+            // basePath가 /로 시작하면 절대 경로로 간주하여 basePath만 사용
+            if (basePath.startsWith("/")) {
+                return basePath;
+            }
+            return homePath + "/" + basePath;
+        }
+        return basePath;
     }
 
     /**

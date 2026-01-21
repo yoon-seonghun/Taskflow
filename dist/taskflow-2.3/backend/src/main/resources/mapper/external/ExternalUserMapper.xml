@@ -6,62 +6,68 @@
     <!-- 사용자 ResultMap -->
     <!-- VIEW 기본 컬럼: USER_ID, USERNAME, PASSWORD, NAME, EMAIL, DEPARTMENT_CODE, DEPARTMENT_NAME, USE_YN, LAST_LOGIN_AT, CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY -->
     <!-- 선택적 컬럼 (외부 뷰에 없을 수 있음): POSITION_CODE, POSITION_NAME, POSITION_SORT_ORDER, HEAD_YN, ROLE -->
+    <!-- 주의: 컬럼명은 JDBC 드라이버 대소문자 처리 일관성을 위해 소문자 사용 -->
     <resultMap id="UserResultMap" type="com.taskflow.domain.User">
-        <id property="userId" column="USER_ID"/>
-        <result property="username" column="USERNAME"/>
-        <result property="password" column="PASSWORD"/>
-        <result property="name" column="NAME"/>
-        <result property="email" column="EMAIL"/>
-        <result property="departmentCode" column="DEPARTMENT_CODE"/>
-        <result property="departmentName" column="DEPARTMENT_NAME"/>
-        <result property="positionCode" column="POSITION_CODE"/>
-        <result property="positionName" column="POSITION_NAME"/>
-        <result property="positionSortOrder" column="POSITION_SORT_ORDER"/>
-        <result property="role" column="ROLE"/>
-        <result property="headYn" column="HEAD_YN"/>
-        <result property="useYn" column="USE_YN"/>
-        <result property="lastLoginAt" column="LAST_LOGIN_AT"/>
-        <result property="createdAt" column="CREATED_AT"/>
-        <result property="createdBy" column="CREATED_BY"/>
-        <result property="updatedAt" column="UPDATED_AT"/>
-        <result property="updatedBy" column="UPDATED_BY"/>
+        <id property="userId" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="name" column="name"/>
+        <result property="email" column="email"/>
+        <result property="departmentCode" column="department_code"/>
+        <result property="departmentName" column="department_name"/>
+        <result property="positionCode" column="position_code"/>
+        <result property="positionName" column="position_name"/>
+        <result property="positionSortOrder" column="position_sort_order"/>
+        <result property="role" column="role"/>
+        <result property="headYn" column="head_yn"/>
+        <result property="useYn" column="use_yn"/>
+        <result property="lastLoginAt" column="last_login_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="updatedBy" column="updated_by"/>
     </resultMap>
 
-    <!-- 공통 SQL 조각: VIEW에서 직접 DEPARTMENT_CODE, DEPARTMENT_NAME 제공 (조인 불필요) -->
-    <!-- VIEW에 컬럼이 있으면 사용, 없거나 NULL이면 기본값 적용 (COALESCE) -->
+    <!-- 공통 SQL 조각: VIEW에서 직접 소문자 별칭으로 컬럼 제공 -->
+    <!-- VIEW 컬럼: user_id, username, password, name, email, department_code, department_name, -->
+    <!--           position_code, position_name, sort_order, role, head_yn, use_yn, etc. -->
+    <!-- 주의: VIEW의 컬럼명을 그대로 사용 (VIEW에서 이미 upper(role) 적용됨) -->
+    <!-- COALESCE(sort_order, 999) as position_sort_order, -->
+    <!-- COALESCE(role, 'USER') as role, -->
+    <!-- COALESCE(head_yn, 'N') as head_yn, -->
     <sql id="selectUser">
         SELECT
-            USER_ID,
-            USERNAME,
-            PASSWORD,
-            NAME,
-            EMAIL,
-            DEPARTMENT_CODE,
-            DEPARTMENT_NAME,
-            POSITION_CODE,
-            POSITION_NAME,
-            COALESCE(SORT_ORDER, 999) AS POSITION_SORT_ORDER,
-            COALESCE(UPPER(ROLE), 'USER') AS ROLE,
-            COALESCE(HEAD_YN, 'N') AS HEAD_YN,
-            USE_YN,
-            LAST_LOGIN_AT,
-            CREATED_AT,
-            CREATED_BY,
-            UPDATED_AT,
-            UPDATED_BY
+            user_id,
+            username,
+            password,
+            name,
+            email,
+            department_code,
+            department_name,
+            position_code,
+            position_name,
+            position_sort_order,
+            role,
+            head_yn,
+            use_yn,
+            last_login_at,
+            created_at,
+            created_by,
+            updated_at,
+            updated_by
         FROM ${userTable}
     </sql>
 
     <!-- ID로 조회 -->
     <select id="findById" resultMap="UserResultMap">
         <include refid="selectUser"/>
-        WHERE USER_ID = #{userId}
+        WHERE user_id = #{userId}
     </select>
 
     <!-- 로그인 아이디로 조회 -->
     <select id="findByUsername" resultMap="UserResultMap">
         <include refid="selectUser"/>
-        WHERE USERNAME = #{username}
+        WHERE lower(username) = lower(#{username})
     </select>
 
     <!-- 사용자 목록 조회 -->
@@ -70,19 +76,19 @@
         <where>
             <if test="request.keyword != null and request.keyword != ''">
                 AND (
-                    NAME LIKE CONCAT('%', #{request.keyword}, '%')
-                    OR USERNAME LIKE CONCAT('%', #{request.keyword}, '%')
-                    OR EMAIL LIKE CONCAT('%', #{request.keyword}, '%')
+                    name LIKE CONCAT('%', #{request.keyword}, '%')
+                    OR username LIKE CONCAT('%', #{request.keyword}, '%')
+                    OR email LIKE CONCAT('%', #{request.keyword}, '%')
                 )
             </if>
             <if test="request.departmentCode != null and request.departmentCode != ''">
-                AND DEPARTMENT_CODE = #{request.departmentCode}
+                AND department_code = #{request.departmentCode}
             </if>
             <if test="request.useYn != null and request.useYn != ''">
-                AND USE_YN = #{request.useYn}
+                AND use_yn = #{request.useYn}
             </if>
         </where>
-        ORDER BY NAME
+        ORDER BY name
         <if test="request.size != null and request.size > 0">
             LIMIT #{request.size} OFFSET #{request.offset}
         </if>
@@ -95,16 +101,16 @@
         <where>
             <if test="request.keyword != null and request.keyword != ''">
                 AND (
-                    NAME LIKE CONCAT('%', #{request.keyword}, '%')
-                    OR USERNAME LIKE CONCAT('%', #{request.keyword}, '%')
-                    OR EMAIL LIKE CONCAT('%', #{request.keyword}, '%')
+                    name LIKE CONCAT('%', #{request.keyword}, '%')
+                    OR username LIKE CONCAT('%', #{request.keyword}, '%')
+                    OR email LIKE CONCAT('%', #{request.keyword}, '%')
                 )
             </if>
             <if test="request.departmentCode != null and request.departmentCode != ''">
-                AND DEPARTMENT_CODE = #{request.departmentCode}
+                AND department_code = #{request.departmentCode}
             </if>
             <if test="request.useYn != null and request.useYn != ''">
-                AND USE_YN = #{request.useYn}
+                AND use_yn = #{request.useYn}
             </if>
         </where>
     </select>
@@ -112,24 +118,24 @@
     <!-- 부서별 사용자 목록 조회 -->
     <select id="findByDepartmentCode" resultMap="UserResultMap">
         <include refid="selectUser"/>
-        WHERE DEPARTMENT_CODE = #{departmentCode}
-          AND USE_YN = 'Y'
-        ORDER BY NAME
+        WHERE department_code = #{departmentCode}
+          AND use_yn = 'Y'
+        ORDER BY name
     </select>
 
     <!-- 아이디 중복 확인 -->
     <select id="existsByUsername" resultType="boolean">
         SELECT EXISTS(
             SELECT 1 FROM ${userTable}
-            WHERE USERNAME = #{username}
+            WHERE username = #{username}
         )
     </select>
 
     <!-- 전체 활성 사용자 목록 조회 (동기화용) -->
     <select id="findAllActive" resultMap="UserResultMap">
         <include refid="selectUser"/>
-        WHERE USE_YN = 'Y'
-        ORDER BY USERNAME
+        WHERE use_yn = 'Y'
+        ORDER BY username
     </select>
 
 </mapper>
